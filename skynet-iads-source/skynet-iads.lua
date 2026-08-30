@@ -96,9 +96,9 @@ end
 function SkynetIADS:addEarlyWarningRadarsByPrefix(prefix)
 	self:deactivateEarlyWarningRadars()
 	self.earlyWarningRadars = {}
-	for unitName, unit in pairs(mist.DBs.unitsByName) do
+	for unitName in pairs(SkynetIADSUtils.getUnitNames()) do
 		local pos = self:findSubString(unitName, prefix)
-		--somehow the MIST unit db contains StaticObject, we check to see we only add Units
+		--the listing can contain StaticObjects, we check to see we only add Units
 		local unit = Unit.getByName(unitName)
 		if pos and pos == 1 and unit then
 			self:addEarlyWarningRadar(unitName)
@@ -161,10 +161,10 @@ end
 function SkynetIADS:addSAMSitesByPrefix(prefix)
 	self:deativateSAMSites()
 	self.samSites = {}
-	for groupName, groupData in pairs(mist.DBs.groupsByName) do
+	for groupName in pairs(SkynetIADSUtils.getGroupNames()) do
 		local pos = self:findSubString(groupName, prefix)
 		if pos and pos == 1 then
-			--mist returns groups, units and, StaticObjects
+			--the listing returns groups, units and, StaticObjects
 			local dcsObject = Group.getByName(groupName)
 			if dcsObject and dcsObject:getUnits()[1]:isActive() then
 				self:addSAMSite(groupName)
@@ -535,8 +535,8 @@ end
 
 -- will start going through the Early Warning Radars and SAM sites to check what targets they have detected
 function SkynetIADS.activate(self)
-	mist.removeFunction(self.ewRadarScanMistTaskID)
-	self.ewRadarScanMistTaskID = mist.scheduleFunction(SkynetIADS.evaluateContacts, {self}, 1, self.contactUpdateInterval)
+	SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
+	self.ewRadarScanMistTaskID = SkynetIADSUtils.scheduleFunction(SkynetIADS.evaluateContacts, {self}, 1, self.contactUpdateInterval)
 	self:buildRadarCoverage()
 end
 
@@ -546,8 +546,8 @@ function SkynetIADS:setupSAMSitesAndThenActivate(setupTime)
 end
 
 function SkynetIADS:deactivate()
-	mist.removeFunction(self.ewRadarScanMistTaskID)
-	mist.removeFunction(self.samSetupMistTaskID)
+	SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
+	SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)
 	self:deativateSAMSites()
 	self:deactivateEarlyWarningRadars()
 	self:deactivateCommandCenters()
