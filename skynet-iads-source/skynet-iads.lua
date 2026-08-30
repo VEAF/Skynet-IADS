@@ -96,9 +96,9 @@ end
 function SkynetIADS:addEarlyWarningRadarsByPrefix(prefix)
 	self:deactivateEarlyWarningRadars()
 	self.earlyWarningRadars = {}
-	for unitName, unit in pairs(mist.DBs.unitsByName) do
+	for unitName in pairs(SkynetIADSUtils.getUnitNames()) do
 		local pos = self:findSubString(unitName, prefix)
-		--somehow the MIST unit db contains StaticObject, we check to see we only add Units
+		--the listing can contain StaticObjects, we check to see we only add Units
 		local unit = Unit.getByName(unitName)
 		if pos and pos == 1 and unit then
 			self:addEarlyWarningRadar(unitName)
@@ -161,10 +161,10 @@ end
 function SkynetIADS:addSAMSitesByPrefix(prefix)
 	self:deativateSAMSites()
 	self.samSites = {}
-	for groupName, groupData in pairs(mist.DBs.groupsByName) do
+	for groupName in pairs(SkynetIADSUtils.getGroupNames()) do
 		local pos = self:findSubString(groupName, prefix)
 		if pos and pos == 1 then
-			--mist returns groups, units and, StaticObjects
+			--the listing returns groups, units and, StaticObjects
 			local dcsObject = Group.getByName(groupName)
 			if dcsObject and dcsObject:getUnits()[1]:isActive() then
 				self:addSAMSite(groupName)
@@ -327,11 +327,11 @@ function SkynetIADS.evaluateContacts(self)
 			local samSitesUnderCoverage = ewRadar:getUsableChildRadars()
 			for j = 1, #samSitesUnderCoverage do
 				local samSiteUnterCoverage = samSitesUnderCoverage[j]
-				-- only if a SAM site is not active we add it to the hash of SAM sites to be iterated later on
-				if samSiteUnterCoverage:isActive() == false then
-					--we add them to a hash to make sure each SAM site is in the collection only once, reducing the number of loops we conduct later on
-					samSitesToTrigger[samSiteUnterCoverage:getDCSName()] = samSiteUnterCoverage
-				end
+				--we add them to a hash to make sure each SAM site is in the collection only once, reducing the number of loops we conduct later on
+				--sites that are already active are included deliberately: targetCycleUpdateStart() has just
+				--cleared their targetsInRange flag, so skipping them left it false and targetCycleUpdateEnd()
+				--sent them dark again on the very next cycle, with the target still under EW coverage
+				samSitesToTrigger[samSiteUnterCoverage:getDCSName()] = samSiteUnterCoverage
 			end
 			for j = 1, #ewContacts do
 				local contact = ewContacts[j]
@@ -535,8 +535,8 @@ end
 
 -- will start going through the Early Warning Radars and SAM sites to check what targets they have detected
 function SkynetIADS.activate(self)
-	mist.removeFunction(self.ewRadarScanMistTaskID)
-	self.ewRadarScanMistTaskID = mist.scheduleFunction(SkynetIADS.evaluateContacts, {self}, 1, self.contactUpdateInterval)
+	SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
+	self.ewRadarScanMistTaskID = SkynetIADSUtils.scheduleFunction(SkynetIADS.evaluateContacts, {self}, 1, self.contactUpdateInterval)
 	self:buildRadarCoverage()
 end
 
@@ -546,8 +546,8 @@ function SkynetIADS:setupSAMSitesAndThenActivate(setupTime)
 end
 
 function SkynetIADS:deactivate()
-	mist.removeFunction(self.ewRadarScanMistTaskID)
-	mist.removeFunction(self.samSetupMistTaskID)
+	SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
+	SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)
 	self:deativateSAMSites()
 	self:deactivateEarlyWarningRadars()
 	self:deactivateCommandCenters()
