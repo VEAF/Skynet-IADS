@@ -27,6 +27,15 @@ if (Test-Path ../demo-missions/skynet-iads-compiled.lua) {
 Move-Item -Path ./tmp/skynet-iads-compiled.lua ../demo-missions/skynet-iads-compiled.lua
 
 $toc = ./bin/gh-md-toc.exe --hide-footer ../skynet-iads-source/README_source.md
+# VEAF #4: gh-md-toc.exe needs network. On failure it still exits 0 but emits only
+# the "Table of Contents" header with no entries, which then silently replaces the
+# README's TOC with a blank line. Bail unless we got a non-zero exit, empty output,
+# or output with no actual anchor links (]( #...) ).
+$tocJoined = ($toc -join "`n")
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tocJoined) -or $tocJoined -notmatch '\]\(#') {
+    Write-Error "Table of contents generation failed; leaving README.md untouched."
+    return
+}
 $toc = $toc -replace "=================", "=================`n"
 $toc = $toc -replace "Table of Contents", "Table of Contents`n"
 $toc = $toc -replace "\)", "`)`n"
