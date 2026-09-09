@@ -1,6 +1,8 @@
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
+local loader = dofile(base .. "/skynet-loader.lua")
+loader.load("skynet-iads-utils")
 
 TestDcsStub = {}
 
@@ -103,25 +105,50 @@ function TestDcsStub:test_env_captured()
   luaunit.assertEquals(dcsStub.logs[2].text, "warn line")
 end
 
-function TestDcsStub:test_scheduler_ids_and_removal()
-  luaunit.assertEquals(dcsStub.scheduledCount(), 0)
-  local id1 = mist.scheduleFunction(function() end, {}, 1, 10)
-  local id2 = mist.scheduleFunction(function() end, {}, 1, 10)
-  luaunit.assertEquals(id1, 1)
-  luaunit.assertEquals(id2, 2)
-  luaunit.assertEquals(dcsStub.scheduledCount(), 2)
-  luaunit.assertEquals(mist.removeFunction(id1), id1) -- truthy on hit
-  luaunit.assertEquals(dcsStub.scheduledCount(), 1)
-  luaunit.assertNil(mist.removeFunction(id1)) -- already gone
-  luaunit.assertNil(mist.removeFunction(999)) -- unknown
-  luaunit.assertNil(mist.removeFunction(nil)) -- nil-safe
+function TestDcsStub:test_timer_scheduleFunction_records_and_fires()
+  local ran = {}
+  local id = timer.scheduleFunction(function(arg) ran[#ran + 1] = arg; return nil end, "A", 10)
+  luaunit.assertEquals(id, 1)
+  dcsStub.setClock(5)
+  dcsStub.fireDueTimers() -- nothing due yet
+  luaunit.assertEquals(#ran, 0)
+  dcsStub.setClock(10)
+  dcsStub.fireDueTimers()
+  luaunit.assertEquals(ran, { "A" })
+  dcsStub.fireDueTimers() -- one-shot task is gone
+  luaunit.assertEquals(#ran, 1)
 end
 
-function TestDcsStub:test_reset_clears_scheduler()
-  mist.scheduleFunction(function() end, {}, 1, 1)
+function TestDcsStub:test_timer_scheduleFunction_reschedules_on_numeric_return()
+  local n = 0
+  timer.scheduleFunction(function() n = n + 1; return dcsStub.now() + 10 end, nil, 10)
+  dcsStub.setClock(10); dcsStub.fireDueTimers()
+  dcsStub.setClock(20); dcsStub.fireDueTimers()
+  dcsStub.setClock(20); dcsStub.fireDueTimers() -- same tick, not due again
+  luaunit.assertEquals(n, 2)
+end
+
+function TestDcsStub:test_reset_clears_timers()
+  timer.scheduleFunction(function() end, nil, 1)
   dcsStub.reset()
+  luaunit.assertEquals(timer.scheduleFunction(function() end, nil, 1), 1) -- id counter reset
+end
+
+function TestDcsStub:test_stubUtilsScheduler_records_without_firing()
+  dcsStub.stubUtilsScheduler()
   luaunit.assertEquals(dcsStub.scheduledCount(), 0)
-  luaunit.assertEquals(mist.scheduleFunction(function() end, {}, 1, 1), 1) -- counter reset
+  local fired = false
+  local id = SkynetIADSUtils.scheduleFunction(function() fired = true end, {}, 1, 10)
+  luaunit.assertEquals(dcsStub.scheduledCount(), 1)
+  luaunit.assertEquals(fired, false) -- recorder never fires
+  luaunit.assertEquals(SkynetIADSUtils.removeFunction(id), true)
+  luaunit.assertEquals(SkynetIADSUtils.removeFunction(id), false)
+  luaunit.assertEquals(dcsStub.scheduledCount(), 0)
+end
+
+function TestDcsStub:test_scheduledCount_asserts_without_recorder()
+  -- fresh reset, recorder not installed
+  luaunit.assertErrorMsgContains("stubUtilsScheduler", dcsStub.scheduledCount)
 end
 
 function TestDcsStub:test_timer_getTime_tracks_clock()

@@ -6,8 +6,9 @@
 
 local now = 0
 
-local scheduled = {}
-local nextScheduleId = 0
+local timerTasks = {}
+local nextTimerId = 0
+local utilsSchedulerTasks = nil
 
 dcsStub = {}
 dcsStub.world = {}          -- name -> fake object, backs *.getByName
@@ -28,16 +29,9 @@ function dcsStub.reset()
   dcsStub.world = {}
   dcsStub.logs = {}
   dcsStub.eventHandlers = {}
-  scheduled = {}
-  nextScheduleId = 0
-end
-
-function dcsStub.scheduledCount()
-  local n = 0
-  for _ in pairs(scheduled) do
-    n = n + 1
-  end
-  return n
+  timerTasks = {}
+  nextTimerId = 0
+  utilsSchedulerTasks = nil
 end
 
 -- ---- enums / singletons -------------------------------------------------
@@ -104,33 +98,60 @@ end }
 timer.getTime = function()
   return now
 end
--- timer.scheduleFunction: DCS's native scheduler. Post-MiST, SkynetIADSUtils.scheduleFunction
--- calls this (not mist.scheduleFunction). Minimal no-fire recorder so the SkynetIADSUtils
--- scheduler path resolves and the non-scheduler suites run; it is NOT yet wired to
--- dcsStub.scheduledCount()/SkynetIADSUtils.removeFunction, so jammer's task-count assertions
--- still fail. Task 3 unifies the two scheduler fakes.
-function timer.scheduleFunction(fn, arg, modelTime)
-  nextScheduleId = nextScheduleId + 1
-  scheduled[nextScheduleId] = { fn = fn, args = { arg }, startTime = modelTime }
-  return nextScheduleId
+-- Controllable timer. SkynetIADSUtils' scheduler runs on top of this; no task
+-- fires until a test calls dcsStub.fireDueTimers(), matching what a synchronous
+-- luaunit run sees. dcsStub.reset() clears it.
+function timer.scheduleFunction(fn, arg, time)
+  nextTimerId = nextTimerId + 1
+  timerTasks[nextTimerId] = { fn = fn, arg = arg, time = time }
+  return nextTimerId
+end
+function timer.removeFunction(id)
+  timerTasks[id] = nil
+end
+function dcsStub.fireDueTimers()
+  local ids = {}
+  for id in pairs(timerTasks) do ids[#ids + 1] = id end
+  table.sort(ids)
+  for _, id in ipairs(ids) do
+    local task = timerTasks[id]
+    if task and task.time <= now then
+      local nextTime = task.fn(task.arg)
+      if type(nextTime) == "number" then
+        task.time = nextTime
+      else
+        timerTasks[id] = nil
+      end
+    end
+  end
 end
 
--- Deliberate no-fire scheduler fake: tasks are recorded and cancellable but
--- never dispatched, matching what the .miz tests see inside a synchronous
--- luaunit run. Lives here, not in mist-stub.lua, because it is DCS-runtime
--- plumbing, not a copied math function.
-mist = mist or {}
-function mist.scheduleFunction(fn, args, startTime, interval)
-  nextScheduleId = nextScheduleId + 1
-  scheduled[nextScheduleId] = { fn = fn, args = args, startTime = startTime, interval = interval }
-  return nextScheduleId
-end
-function mist.removeFunction(id)
-  if id ~= nil and scheduled[id] ~= nil then
-    scheduled[id] = nil
-    return id
+-- A no-fire recorder for SkynetIADSUtils' scheduler. A ported suite that mocks
+-- the whole SAM/radar/IADS surface and drives runCycle by hand installs this in
+-- setUp (after loader.loadAll()) so "is anything still scheduled?" is a stable
+-- count, not dependent on the real scheduler's re-arm timing.
+function dcsStub.stubUtilsScheduler()
+  utilsSchedulerTasks = {}
+  local n = 0
+  SkynetIADSUtils.scheduleFunction = function(fn, args)
+    n = n + 1
+    utilsSchedulerTasks[n] = { fn = fn, args = args }
+    return n
   end
-  return nil
+  SkynetIADSUtils.removeFunction = function(id)
+    if id ~= nil and utilsSchedulerTasks[id] ~= nil then
+      utilsSchedulerTasks[id] = nil
+      return true
+    end
+    return false
+  end
+end
+
+function dcsStub.scheduledCount()
+  assert(utilsSchedulerTasks, "dcsStub.scheduledCount: call dcsStub.stubUtilsScheduler() first")
+  local c = 0
+  for _ in pairs(utilsSchedulerTasks) do c = c + 1 end
+  return c
 end
 
 AI = {

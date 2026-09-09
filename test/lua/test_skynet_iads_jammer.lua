@@ -16,6 +16,7 @@ TestSkynetIADSJammer = {}
 
 function TestSkynetIADSJammer:setUp()
   dcsStub.reset()
+  dcsStub.stubUtilsScheduler()
   self.emitter = dcsStub.makeUnit({ name = "jammer-source", type = "F-16C", pos = { x = 0, y = 1000, z = 0 } })
   self.mockIADS = {}
   function self.mockIADS:getDebugSettings()
