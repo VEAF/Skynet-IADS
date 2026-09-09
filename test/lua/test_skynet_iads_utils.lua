@@ -87,11 +87,15 @@ function TestSkynetIADSUtils:test_scheduleFunction_repeats()
 end
 
 function TestSkynetIADSUtils:test_scheduleFunction_clamps_past_start_time()
-  -- a first run asked for a time already past must still happen (VEAF #5 /
-  -- cde577d): the module arms it no earlier than now + MINIMUM_DELAY.
+  -- VEAF #5 / cde577d: a first run asked for a time already past must still
+  -- happen, but not before now + MINIMUM_DELAY. Without the clamp the task
+  -- would be armed at t=1 and fire immediately at clock 200; the clamp pushes
+  -- it to 200 + 0.01, so it must NOT run at clock 200 and MUST run at 200.01.
   local ran = false
   dcsStub.setClock(200)
   SkynetIADSUtils.scheduleFunction(function() ran = true end, {}, 1) -- start 1s, clock 200
+  dcsStub.fireDueTimers()
+  luaunit.assertEquals(ran, false) -- clamped to 200.01 — fails here if the clamp regresses
   dcsStub.setClock(200.01)
   dcsStub.fireDueTimers()
   luaunit.assertEquals(ran, true)

@@ -26,7 +26,7 @@ Skynet has two test suites with different jobs:
 
 | Suite | Runs where | Use for |
 |-------|-----------|---------|
-| `test/lua/` | plain Lua 5.1 — in VSCode, or `lua5.1 test/lua/run.lua`, and in CI on every push/PR | **logic**: state machines, parsing, maths, branching. No DCS needed. New logic tests go here. |
+| `test/lua/` | plain Lua 5.1 — in VSCode, or `lua5.1 test/lua/run.lua`, and in CI on pull requests and pushes to master | **logic**: state machines, parsing, maths, branching. No DCS needed. New logic tests go here. |
 | `unit-tests/*.miz` | inside DCS — launch the mission, read `dcs.log` | **functional / smoke**: behaviour that needs the simulator — terrain elevation, radar detection geometry, real in-game events. |
 
 As of milestone 2, the DCS-independent suites (`harm-detection`, `jammer`,

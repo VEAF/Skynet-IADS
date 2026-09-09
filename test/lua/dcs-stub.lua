@@ -1,14 +1,14 @@
 --- Fake DCS scripting environment for the standalone Lua test suite.
 --- Lua 5.1 clean. Defines the DCS globals the loaded Skynet source touches,
---- plus fixture factories. Started scoped to the contact module (M1); M2 grew
---- it for the scheduler fake, group/static fixtures, AI.Option, controllers,
---- sensors and ammo. Grows as more modules are ported.
+--- plus fixture factories. Includes a controllable timer.scheduleFunction +
+--- dcsStub.fireDueTimers() that the real SkynetIADSUtils scheduler runs on, and
+--- dcsStub.stubUtilsScheduler() (a no-fire recorder). Grows as more modules are ported.
 
 local now = 0
 
 local timerTasks = {}
 local nextTimerId = 0
-local utilsSchedulerTasks = nil
+local utilsSchedulerTasks = nil -- recorder table; installed by dcsStub.stubUtilsScheduler(), cleared by dcsStub.reset()
 
 dcsStub = {}
 dcsStub.world = {}          -- name -> fake object, backs *.getByName
@@ -134,11 +134,13 @@ function dcsStub.stubUtilsScheduler()
   utilsSchedulerTasks = {}
   local n = 0
   SkynetIADSUtils.scheduleFunction = function(fn, args)
+    assert(utilsSchedulerTasks, "dcsStub: scheduler recorder was cleared by reset(); call dcsStub.stubUtilsScheduler() again")
     n = n + 1
     utilsSchedulerTasks[n] = { fn = fn, args = args }
     return n
   end
   SkynetIADSUtils.removeFunction = function(id)
+    assert(utilsSchedulerTasks, "dcsStub: scheduler recorder was cleared by reset(); call dcsStub.stubUtilsScheduler() again")
     if id ~= nil and utilsSchedulerTasks[id] ~= nil then
       utilsSchedulerTasks[id] = nil
       return true
