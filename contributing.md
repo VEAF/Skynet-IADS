@@ -36,7 +36,7 @@ As of milestone 2, the DCS-independent suites (`harm-detection`, `jammer`,
 cycle behind it.
 
 For the standalone suite, add a `test/lua/test_<module>.lua` that `dofile`s
-`luaunit.lua`, `dcs-stub.lua`, `mist-stub.lua`, loads the source module(s) via
+`luaunit.lua`, `dcs-stub.lua`, loads the source module(s) via
 `skynet-loader.lua`, and ends with `os.exit(luaunit.LuaUnit.run())`. See
 `test/lua/test_skynet_iads_contact.lua` for the pattern and `test/lua/README.md`
 for how to run it.
