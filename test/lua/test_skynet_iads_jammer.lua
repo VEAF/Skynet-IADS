@@ -4,11 +4,10 @@
 --- trigger.action.explosion(...). Here the emitter is a code-defined
 --- dcsStub.makeUnit fixture, killed with emitter:__destroy(), and the
 --- "is any task still scheduled?" checks use dcsStub.scheduledCount() in
---- place of the iterate-mist.removeFunction(0..10000) idiom.
+--- place of the iterate-removeFunction(0..10000) idiom.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
-dofile(base .. "/mist-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()
 
@@ -88,7 +87,7 @@ function TestSkynetIADSJammer:testIsActiveForKnownType()
 end
 
 -- ---- scheduler lifecycle (adapted) ------------------------------
--- .miz version scans mist.removeFunction(0..10000) for a live id; here
+-- .miz version scans removeFunction(0..10000) for a live id; here
 -- dcsStub.scheduledCount() reports the live task count directly.
 
 function TestSkynetIADSJammer:testCleanUpJammer()

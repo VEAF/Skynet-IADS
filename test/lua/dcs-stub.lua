@@ -181,8 +181,8 @@ land = {
 
 -- coord: map metres <-> lat/lon. The standalone world has no theatre; this is a
 -- linear fake with north == +x, present only so
--- SkynetIADSUtils.getNorthCorrection evaluates to 0 (the old mist-stub dropped
--- the correction term outright — same net effect).
+-- SkynetIADSUtils.getNorthCorrection evaluates to 0 (grid heading == true
+-- heading, so no correction term is needed here).
 coord = {
   LOtoLL = function(vec3)
     return vec3.x / 111000, vec3.z / 111000 -- lat from +x, lon from +z
@@ -212,7 +212,7 @@ function dcsStub.makeUnit(spec)
   end
   function u:getPosition()
     -- p = translation; x/y/z = orientation unit vectors. Skynet reads p.*;
-    -- mist.getHeading reads x.x / x.z.
+    -- SkynetIADSUtils.getHeading reads x.x / x.z.
     return {
       p = { x = pos.x, y = pos.y, z = pos.z },
       x = { x = math.cos(heading), y = 0, z = math.sin(heading) },

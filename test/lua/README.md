@@ -44,7 +44,6 @@ Still DCS-only (need the demo-IADS-world fixture — a later milestone):
 | `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
 | `dcs-stub.lua` | Fake DCS scripting environment + fixture factories |
 | `dcs-fixtures.lua` | Reusable fixtures — SAM group builders, connection nodes, the IADS-contact factory |
-| `mist-stub.lua` | The slice of `mist` the loaded source calls |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |
 | `test_*.lua` | Test suites — self-contained, self-executing |

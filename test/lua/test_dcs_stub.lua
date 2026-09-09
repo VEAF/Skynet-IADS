@@ -237,8 +237,7 @@ function TestDcsStub:test_coord_zero_north_correction()
   --   lat, lon = coord.LOtoLL(p);  n = coord.LLtoLO(lat + 1, lon)
   --   return atan2(n.z - p.z, n.x - p.x)
   -- The standalone world has no theatre, so "one degree north" must lie purely
-  -- along +x for the correction to be 0 (grid heading == true heading), which
-  -- is what the old mist-stub did by dropping the term entirely.
+  -- along +x for the correction to be 0 (grid heading == true heading).
   local p = { x = 1234, y = 0, z = -567 }
   local lat, lon = coord.LOtoLL(p)
   local n = coord.LLtoLO(lat + 1, lon)
