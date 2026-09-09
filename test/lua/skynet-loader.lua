@@ -11,6 +11,7 @@ local src = (os.getenv("SKYNET_SRC") or (base .. "/../../skynet-iads-source")) .
 -- Verbatim order from build-compiled-script.ps1 (highdigitsams entry omitted:
 -- it is a separate suite, not part of the core load).
 local ORDER = {
+  "skynet-iads-utils",
   "skynet-iads-supported-types",
   "skynet-iads-logger",
   "skynet-iads",

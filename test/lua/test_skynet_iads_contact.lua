@@ -8,6 +8,7 @@ luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 dofile(base .. "/mist-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
+loader.load("skynet-iads-utils")
 loader.load("skynet-iads-abstract-dcs-object-wrapper")
 loader.load("skynet-iads-contact")
 

@@ -104,6 +104,16 @@ end }
 timer.getTime = function()
   return now
 end
+-- timer.scheduleFunction: DCS's native scheduler. Post-MiST, SkynetIADSUtils.scheduleFunction
+-- calls this (not mist.scheduleFunction). Minimal no-fire recorder so the SkynetIADSUtils
+-- scheduler path resolves and the non-scheduler suites run; it is NOT yet wired to
+-- dcsStub.scheduledCount()/SkynetIADSUtils.removeFunction, so jammer's task-count assertions
+-- still fail. Task 3 unifies the two scheduler fakes.
+function timer.scheduleFunction(fn, arg, modelTime)
+  nextScheduleId = nextScheduleId + 1
+  scheduled[nextScheduleId] = { fn = fn, args = { arg }, startTime = modelTime }
+  return nextScheduleId
+end
 
 -- Deliberate no-fire scheduler fake: tasks are recorded and cancellable but
 -- never dispatched, matching what the .miz tests see inside a synchronous
@@ -145,6 +155,19 @@ land = {
   end,
   isVisible = function()
     return true
+  end,
+}
+
+-- coord: map metres <-> lat/lon. The standalone world has no theatre; this is a
+-- linear fake with north == +x, present only so
+-- SkynetIADSUtils.getNorthCorrection evaluates to 0 (the old mist-stub dropped
+-- the correction term outright — same net effect).
+coord = {
+  LOtoLL = function(vec3)
+    return vec3.x / 111000, vec3.z / 111000 -- lat from +x, lon from +z
+  end,
+  LLtoLO = function(lat, lon)
+    return { x = lat * 111000, y = 0, z = lon * 111000 }
   end,
 }
 

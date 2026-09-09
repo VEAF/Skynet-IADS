@@ -24,6 +24,19 @@ function TestHarnessSmoke:test_loader_loads_wrapper_and_contact()
   luaunit.assertEquals(SkynetIADSContact.HARM, "HARM")
 end
 
+function TestHarnessSmoke:test_loader_loads_skynet_iads_utils()
+  loader.load("skynet-iads-utils")
+  luaunit.assertEquals(type(SkynetIADSUtils), "table")
+  luaunit.assertEquals(type(SkynetIADSUtils.round), "function")
+  luaunit.assertEquals(SkynetIADSUtils.round(2.5), 3)
+end
+
+function TestHarnessSmoke:test_loadAll_includes_utils()
+  loader.reset()
+  loader.loadAll()
+  luaunit.assertEquals(type(SkynetIADSUtils), "table")
+end
+
 function TestHarnessSmoke:test_loader_memoises()
   loader.load("skynet-iads-contact")
   loader.load("skynet-iads-contact") -- second call must be a no-op, not an error
