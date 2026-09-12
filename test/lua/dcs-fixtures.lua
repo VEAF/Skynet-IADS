@@ -71,6 +71,21 @@ function F.samGroup(natoShort, groupName)
   return dcsStub.makeGroup({ name = groupName, units = units })
 end
 
+function F.earlyWarningRadarUnit(name)
+  -- '1L13 EWR' (Box Spring) is a plain ground search radar in samTypesDB with
+  -- no launcher entry, so SkynetIADSEWRadar:setupElements() finds it via the
+  -- same 'searchRadar' lookup SAM search radars use. desc.category is set
+  -- explicitly so SkynetIADS:addEarlyWarningRadar()'s AIRPLANE/SHIP check
+  -- reliably takes the ground-radar branch instead of building an AWACS radar.
+  return dcsStub.makeUnit({
+    name = name,
+    type = "1L13 EWR",
+    pos = { x = 0, y = 0, z = 0 },
+    desc = { category = Unit.Category.GROUND_UNIT },
+    sensors = searchRadarSensors(),
+  })
+end
+
 function F.connectionNodeUnit(name)
   -- makeUnit self-registers into dcsStub.world (name given), like makeStatic below.
   return dcsStub.makeUnit({ name = name, type = "Ural-375", pos = { x = 0, y = 0, z = 0 } })
