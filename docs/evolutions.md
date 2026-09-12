@@ -1,16 +1,5 @@
 # Skynet-IADS — Notes, ideas and future evolutions
 
-## Standalone Lua regression test for the SAM "goes dark" fix
-
-The `3a94937` fix was implemented before the integration of the `test/lua/` test suite, so it only included a test in the legacy `unit-test` suite (destined to be reforged into a kind of smoke tests on a running DCS mission). The `test/lua/` fix for it has to be created.
-
-**Rough steps:**
-- Prototype the minimal fixture; decide minimal-vs-full-world
-- Add any missing builders to `test/lua/dcs-fixtures.lua`
-- Write `test/lua/test_skynet_iads.lua` (or a narrower file) — mirror `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`: `evaluateContacts()` x3 with the target under coverage, assert the site stays `isActive()`
-- Full suite green (`lua5.1 test/lua/run.lua`), commit
-- Note whether VEAF's `.miz` copy can eventually retire, or stays as the in-sim smoke
-
 ## VEAF issue #3 — `cleanUp()` leaves `harmSilenceID` stale
 
 **Issue:** https://github.com/VEAF/Skynet-IADS/issues/3

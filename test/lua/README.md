@@ -33,8 +33,13 @@ These `unit-tests/` suites now also run standalone (their `.miz` copies are kept
 `harm-detection`, `abstract-dcs-object-wrapper`, `moose-a2a-connector` (1 test),
 `jammer`, `abstract-element`, `sam-site`, plus the M1 `contact` pilot.
 
+`test_skynet_iads.lua` additionally carries one narrow regression test
+(`testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`, the `3a94937` fix)
+ported straight off the real `addEarlyWarningRadar`/`addSAMSite`/`activate`
+API — it does not port the rest of `unit-tests/test-skynet-iads.lua`.
+
 Still DCS-only (need the demo-IADS-world fixture — a later milestone):
-`early-warning-radar`, `abstract-radar-element`, `iads`,
+`early-warning-radar`, `abstract-radar-element`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
 
 ## Files
