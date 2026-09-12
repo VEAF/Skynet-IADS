@@ -31,6 +31,12 @@ function TestSkynetIADS:testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage()
   F.earlyWarningRadarUnit("EW-west23")
   local ewRadar = iads:addEarlyWarningRadar("EW-west23")
 
+  -- EW-west23 sits at the origin with a 120 km detection range (RADAR_RANGE_M in
+  -- dcs-fixtures.lua); the SA-2 group's units sit at x=1..4 m. A target at
+  -- x=10000 m / y=2000 m altitude is ~10 km out — well inside both the EW radar's
+  -- 120 km range and the SA-2 launcher's 40 km rangeMaxAltMin (real SA-2 data in
+  -- skynet-iads-source/syknet-iads-sam-launcher.lua, reused by dcs-fixtures.lua's
+  -- launcherAmmo for the search radar).
   dcsStub.makeUnit({
     name = "test-in-firing-range-of-sa-2",
     type = "F-16C",
@@ -50,6 +56,7 @@ function TestSkynetIADS:testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage()
   end
 
   samSite:goDark()
+  luaunit.assertEquals(samSite:isActive(), false) -- addSAMSite() leaves it dark; cycle 1 must be what brings it live
   iads:activate()
 
   iads:evaluateContacts()

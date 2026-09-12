@@ -36,7 +36,9 @@ These `unit-tests/` suites now also run standalone (their `.miz` copies are kept
 `test_skynet_iads.lua` additionally carries one narrow regression test
 (`testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`, the `3a94937` fix)
 ported straight off the real `addEarlyWarningRadar`/`addSAMSite`/`activate`
-API — it does not port the rest of `unit-tests/test-skynet-iads.lua`.
+API — it does not port the rest of `unit-tests/test-skynet-iads.lua`. The
+`.miz` copy stays the in-sim functional/smoke suite for the rest of the
+`iads` class until (if ever) that gets a standalone port too.
 
 Still DCS-only (need the demo-IADS-world fixture — a later milestone):
 `early-warning-radar`, `abstract-radar-element`, most of `iads`,
@@ -48,7 +50,7 @@ Still DCS-only (need the demo-IADS-world fixture — a later milestone):
 |------|---------|
 | `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
 | `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord` and a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler |
-| `dcs-fixtures.lua` | Reusable fixtures — SAM group builders, connection nodes, the IADS-contact factory |
+| `dcs-fixtures.lua` | Reusable fixtures — SAM group builders, connection nodes, the EW radar unit builder, the IADS-contact factory |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
 | `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |

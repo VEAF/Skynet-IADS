@@ -60,7 +60,7 @@ Group = {}
 Unit = {}
 Unit.SensorType = { OPTIC = 0, RADAR = 1, IRST = 2, RWR = 3 }
 Unit.Category = { AIRPLANE = 0, HELICOPTER = 1, GROUND_UNIT = 2, SHIP = 3, STRUCTURE = 4 }
-Controller = { Detection = { VISUAL = 0, OPTIC = 1, RADAR = 2, IRST = 3, RWR = 4, DLINK = 5 } }
+Controller = { Detection = { VISUAL = 1, OPTIC = 2, RADAR = 4, IRST = 8, RWR = 16, DLINK = 32 } }
 StaticObject = {}
 
 world = {
