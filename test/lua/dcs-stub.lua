@@ -59,6 +59,8 @@ Weapon = { Category = { SHELL = 0, MISSILE = 1, ROCKET = 2, BOMB = 3 } }
 Group = {}
 Unit = {}
 Unit.SensorType = { OPTIC = 0, RADAR = 1, IRST = 2, RWR = 3 }
+Unit.Category = { AIRPLANE = 0, HELICOPTER = 1, GROUND_UNIT = 2, SHIP = 3, STRUCTURE = 4 }
+Controller = { Detection = { VISUAL = 0, OPTIC = 1, RADAR = 2, IRST = 3, RWR = 4, DLINK = 5 } }
 StaticObject = {}
 
 world = {
@@ -231,6 +233,9 @@ function dcsStub.makeUnit(spec)
   function u:getDesc()
     return spec.desc or {}
   end
+  function u:getCoalition()
+    return spec.coalition
+  end
   function u:__setPos(p)
     pos = p
   end
@@ -244,6 +249,15 @@ function dcsStub.makeUnit(spec)
     end,
     setOnOff = function(_, value)
       table.insert(u.__controllerCalls, { setOnOff = value })
+    end,
+    -- SkynetIADSAbstractRadarElement:getDetectedTargets() calls this with
+    -- Controller.Detection.RADAR whenever a radar/SAM-site fixture hasn't
+    -- overridden getDetectedTargets() yet (e.g. transiently during goDark()/
+    -- goLive() inside addEarlyWarningRadar()/addSAMSite(), before the test
+    -- gets a chance to override it). No fixture needs real contacts from
+    -- this path today, so an empty list is the correct default.
+    getDetectedTargets = function(_, ...)
+      return {}
     end,
   }
   function u:getController()
@@ -283,9 +297,21 @@ function dcsStub.makeGroup(groupSpec)
     setOnOff = function(_, value)
       table.insert(g.__controllerCalls, { setOnOff = value })
     end,
+    -- SkynetIADSAbstractRadarElement:getDetectedTargets() calls this with
+    -- Controller.Detection.RADAR whenever a radar/SAM-site fixture hasn't
+    -- overridden getDetectedTargets() yet (e.g. transiently during goDark()/
+    -- goLive() inside addEarlyWarningRadar()/addSAMSite(), before the test
+    -- gets a chance to override it). No fixture needs real contacts from
+    -- this path today, so an empty list is the correct default.
+    getDetectedTargets = function(_, ...)
+      return {}
+    end,
   }
   function g:getName()
     return groupSpec.name or "unnamed-group"
+  end
+  function g:getCoalition()
+    return groupSpec.coalition
   end
   function g:enableEmission(value)
     g.__emissionEnabled = value
