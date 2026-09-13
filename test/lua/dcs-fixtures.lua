@@ -27,7 +27,7 @@ local function launcherAmmo(count)
       desc = {
         category = Weapon.Category.MISSILE,
         -- real SA-2 data (see the trailing comment block in
-        -- skynet-iads-source/syknet-iads-sam-launcher.lua). altMin >= altMax, so
+        -- skynet-iads-source/skynet-iads-sam-launcher.lua). altMin >= altMax, so
         -- setupRangeData takes altMin: maximumRange stays 40000 m.
         rangeMaxAltMin = 40000,
         rangeMaxAltMax = 30000,
