@@ -1,10 +1,15 @@
---- Standalone regression test for 3a94937: a live SAM site must stay live
---- while its target remains under EW radar coverage. Mirrors
+--- Standalone tests for SkynetIADS (skynet-iads-source/skynet-iads.lua),
+--- mirroring how test_skynet_iads_sam_site.lua/test_skynet_iads_jammer.lua/
+--- etc. each own their class. Add future SkynetIADS-level tests here rather
+--- than spawning a new narrowly-named file per fix.
+---
+--- Currently holds one regression test for 3a94937: a live SAM site must
+--- stay live while its target remains under EW radar coverage. Mirrors
 --- unit-tests/test-skynet-iads.lua's
 --- testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage, built on
 --- dcs-fixtures instead of the skynet-unit-tests.miz. SkynetIADS and
 --- SkynetIADSEWRadar are not otherwise ported to test/lua yet (see
---- test/lua/README.md) — this file only exercises the one code path the fix
+--- test/lua/README.md) — this test only exercises the one code path the fix
 --- touches (SkynetIADS.evaluateContacts), not the whole iads/early-warning-
 --- radar suites.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
