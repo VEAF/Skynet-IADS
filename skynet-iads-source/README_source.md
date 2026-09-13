@@ -747,7 +747,7 @@ to add interceptors to the IADS. See [Skynet Moose AI_A2A_DISPATCHER](#connectin
 An example setup of Skynet and the [AI_A2A_DISPATCHER](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/AI.AI_A2A_Dispatcher.html) :
 ```lua
 
---Setup Syknet IADS:
+--Setup Skynet IADS:
 redIADS = SkynetIADS:create('Enemy IADS')
 redIADS:addSAMSitesByPrefix('SAM')
 redIADS:addEarlyWarningRadarsByPrefix('EW')

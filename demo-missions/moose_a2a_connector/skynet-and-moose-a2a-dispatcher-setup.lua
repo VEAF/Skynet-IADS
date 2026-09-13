@@ -1,7 +1,7 @@
 do
 
 
---Setup Syknet IADS:
+--Setup Skynet IADS:
 redIADS = SkynetIADS:create('Enemy IADS')
 
 

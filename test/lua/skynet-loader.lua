@@ -28,7 +28,7 @@ local ORDER = {
   "skynet-iads-sam-search-radar",
   "skynet-iads-sam-site",
   "skynet-iads-sam-tracking-radar",
-  "syknet-iads-sam-launcher",
+  "skynet-iads-sam-launcher",
   "skynet-iads-harm-detection",
 }
 
