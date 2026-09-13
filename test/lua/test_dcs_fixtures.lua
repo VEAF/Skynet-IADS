@@ -38,6 +38,14 @@ function TestDcsFixtures:test_connectionNode_helpers_register()
   luaunit.assertEquals(s:isExist(), true)
 end
 
+function TestDcsFixtures:test_earlyWarningRadarUnit_registers_ground_radar_fixture()
+  local unit = F.earlyWarningRadarUnit("EW-test")
+  luaunit.assertIs(Unit.getByName("EW-test"), unit)
+  luaunit.assertEquals(unit:getTypeName(), "1L13 EWR")
+  luaunit.assertEquals(unit:getDesc().category, Unit.Category.GROUND_UNIT)
+  luaunit.assertNotNil(unit:getSensors())
+end
+
 function TestDcsFixtures:test_iadsContact_returns_refreshed_contact()
   dcsStub.setClock(100)
   dcsStub.world["ctc"] = dcsStub.makeUnit({ name = "ctc", type = "F-16C", pos = { x = 0, y = 500, z = 0 } })

@@ -42,6 +42,15 @@ function TestDcsStub:test_object_getCategory_nil_for_destroyed_unit()
   luaunit.assertEquals(Object.getCategory(dcsStub.makeUnit({ type = "MiG-29" })), Object.Category.UNIT)
 end
 
+function TestDcsStub:test_unit_category_enum_matches_dcs()
+  -- verbatim DCS numbering (see the comment in skynet-iads.lua's evaluateContacts)
+  luaunit.assertEquals(Unit.Category.AIRPLANE, 0)
+  luaunit.assertEquals(Unit.Category.HELICOPTER, 1)
+  luaunit.assertEquals(Unit.Category.GROUND_UNIT, 2)
+  luaunit.assertEquals(Unit.Category.SHIP, 3)
+  luaunit.assertEquals(Unit.Category.STRUCTURE, 4)
+end
+
 function TestDcsStub:test_makeUnit_basic_accessors()
   local u = dcsStub.makeUnit({ name = "u1", type = "MiG-29", pos = { x = 10, y = 500, z = -20 } })
   luaunit.assertEquals(u:getName(), "u1")
@@ -70,6 +79,18 @@ function TestDcsStub:test_makeUnit_heading_orientation_vector()
   u:__setHeading(math.pi / 2)
   luaunit.assertAlmostEquals(u:getPosition().x.x, 0, 1e-9)
   luaunit.assertAlmostEquals(u:getPosition().x.z, 1, 1e-9)
+end
+
+function TestDcsStub:test_makeUnit_getCoalition()
+  local u = dcsStub.makeUnit({ coalition = 2 })
+  luaunit.assertEquals(u:getCoalition(), 2)
+  local uNoCoalition = dcsStub.makeUnit({})
+  luaunit.assertNil(uNoCoalition:getCoalition())
+end
+
+function TestDcsStub:test_makeUnit_controller_getDetectedTargets_defaults_empty()
+  local u = dcsStub.makeUnit({})
+  luaunit.assertEquals(#u:getController():getDetectedTargets(Controller.Detection.RADAR), 0)
 end
 
 function TestDcsStub:test_getByName_registry()
@@ -203,6 +224,16 @@ function TestDcsStub:test_group_controller_setOnOff_and_enableEmission()
   luaunit.assertEquals(g.__controllerCalls[1].setOnOff, false)
   g:enableEmission(true)
   luaunit.assertEquals(g.__emissionEnabled, true)
+end
+
+function TestDcsStub:test_makeGroup_getCoalition()
+  local g = dcsStub.makeGroup({ coalition = 1, units = {} })
+  luaunit.assertEquals(g:getCoalition(), 1)
+end
+
+function TestDcsStub:test_makeGroup_controller_getDetectedTargets_defaults_empty()
+  local g = dcsStub.makeGroup({ units = {} })
+  luaunit.assertEquals(#g:getController():getDetectedTargets(Controller.Detection.RADAR), 0)
 end
 
 function TestDcsStub:test_makeGroup_units_and_destroy()
