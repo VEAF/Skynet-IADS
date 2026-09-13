@@ -40,7 +40,7 @@ function TestSkynetIADS:testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage()
   -- dcs-fixtures.lua); the SA-2 group's units sit at x=1..4 m. A target at
   -- x=10000 m / y=2000 m altitude is ~10 km out — well inside both the EW radar's
   -- 120 km range and the SA-2 launcher's 40 km rangeMaxAltMin (real SA-2 data in
-  -- skynet-iads-source/syknet-iads-sam-launcher.lua, reused by dcs-fixtures.lua's
+  -- skynet-iads-source/skynet-iads-sam-launcher.lua, reused by dcs-fixtures.lua's
   -- launcherAmmo for the search radar).
   dcsStub.makeUnit({
     name = "test-in-firing-range-of-sa-2",
