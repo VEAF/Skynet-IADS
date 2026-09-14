@@ -60,6 +60,45 @@ function TestSkynetIADSContact:test_getTypeName_is_harm_when_identified()
   luaunit.assertEquals(self.contact:getTypeName(), SkynetIADSContact.HARM)
 end
 
+-- ---- getCategory -----------------------------------------------------
+-- docs/evolutions.md "No isExist() / nil guard before Object.getCategory in the
+-- contact loop": skynet-iads.lua called Object.getCategory(contact:getDCSRepresentation())
+-- bare at the evaluateContacts() call site, unlike this same lookup done for
+-- getTypeName() above, which guards it. getCategory() gives contacts the same
+-- guarded lookup so callers stop duplicating it unguarded.
+
+function TestSkynetIADSContact:test_getCategory_is_unit()
+  luaunit.assertEquals(self.contact:getCategory(), Object.Category.UNIT)
+end
+
+function TestSkynetIADSContact:test_getCategory_is_weapon()
+  local missile = dcsStub.makeUnit({
+    name = "harm-2",
+    type = "weapons.missiles.AGM_88",
+    category = Object.Category.WEAPON,
+    pos = { x = 0, y = 100, z = 0 },
+  })
+  dcsStub.world["harm-2"] = missile
+  local weaponContact = SkynetIADSContact:create({ object = missile })
+  luaunit.assertEquals(weaponContact:getCategory(), Object.Category.WEAPON)
+end
+
+function TestSkynetIADSContact:test_getCategory_nil_when_no_representation()
+  function self.contact:getDCSRepresentation()
+    return nil
+  end
+  luaunit.assertEquals(self.contact:getCategory(), nil)
+end
+
+function TestSkynetIADSContact:test_getCategory_nil_when_destroyed()
+  -- destroyed-but-non-nil representation: Object.getCategory (unlike rep:getCategory())
+  -- returns nil instead of raising, same contract getTypeName() relies on.
+  function self.contact:getDCSRepresentation()
+    return { isExist = function() return false end }
+  end
+  luaunit.assertEquals(self.contact:getCategory(), nil)
+end
+
 -- ---- height / heading ----------------------------------------------
 
 function TestSkynetIADSContact:test_getHeightInFeetMSL()

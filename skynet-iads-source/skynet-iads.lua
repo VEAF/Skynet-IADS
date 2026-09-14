@@ -376,7 +376,7 @@ function SkynetIADS.evaluateContacts(self)
 			]]
 
 			local bShouldInform = false
-			local objectCategory = Object.getCategory(contact:getDCSRepresentation())
+			local objectCategory = contact:getCategory()
 			local category = contact:getDesc().category
 
 			if (objectCategory == Object.Category.UNIT) then

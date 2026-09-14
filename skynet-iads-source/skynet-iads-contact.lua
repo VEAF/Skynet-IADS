@@ -72,16 +72,22 @@ function SkynetIADSContact:getTypeName()
 		return SkynetIADSContact.HARM
 	end
 
-	-- self:getDCSRepresentation():getCategory() will fail with an error if self:getDCSRepresentation() is not nil but the unit is destroyed. The error will obviously interrupt the treatment that called getTypeName(), with consequences I did not try to track.
-	-- Using Object.getCategory instead will get us nil in that case.
-	if self:getDCSRepresentation() ~= nil then
-		local category = Object.getCategory(self:getDCSRepresentation())
-		-- a contact can be a unit or a weapon (missile, bomb, rocket, shell); in both cases self.typeName holds the DCS type name
-		if category == Object.Category.UNIT or category == Object.Category.WEAPON then
-			return self.typeName
-		end
+	-- a contact can be a unit or a weapon (missile, bomb, rocket, shell); in both cases self.typeName holds the DCS type name
+	local category = self:getCategory()
+	if category == Object.Category.UNIT or category == Object.Category.WEAPON then
+		return self.typeName
 	end
 	return "UNKNOWN"
+end
+
+function SkynetIADSContact:getCategory()
+	-- Note: we don't use self:getDCSRepresentation():getCategory()
+	-- because it will fail with an error if self:getDCSRepresentation() is not nil but the unit is destroyed.
+	-- Using the static Object.getCategory instead gets us nil in that case, and we only call it once there is a representation to pass it.
+	if self:getDCSRepresentation() ~= nil then
+		return Object.getCategory(self:getDCSRepresentation())
+	end
+	return nil
 end
 
 function SkynetIADSContact:getPosition()

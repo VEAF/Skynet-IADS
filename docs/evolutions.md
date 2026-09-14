@@ -43,30 +43,6 @@ so **bombs and missiles are now deliberately passed**. Weapons transit friendly 
 
 **Interesting because:** it's a behaviour change from this integration widening a surface the original author explicitly marked as coalition-unsafe.
 
-### No `isExist()` / nil guard before `Object.getCategory` in the contact loop
-
-[skynet-iads.lua:379-380](../../../skynet-iads-source/skynet-iads.lua):
-
-```lua
-local objectCategory = Object.getCategory(contact:getDCSRepresentation())
-local category = contact:getDesc().category
-```
-
-Called bare, once per contact, inside `for j = 1, #self.contacts`. The sibling call site `SkynetIADSContact:getTypeName()` ([skynet-iads-contact.lua:77](../../../skynet-iads-source/skynet-iads-contact.lua)) guards it:
-
-```lua
-if self:getDCSRepresentation() ~= nil then
-    local category = Object.getCategory(self:getDCSRepresentation())
-```
-
-and its comment explains why `Object.getCategory` is used instead of `rep:getCategory()`: the latter *raises* on a non-nil but destroyed unit.`getDesc()` on a destroyed unit can raise too.
-
-**Check:** can a contact in `self.contacts` be nil-`getDCSRepresentation()` or already-destroyed at line 379? The loop runs right after `self:cleanAgedTargets()` ([:343](../../../skynet-iads-source/skynet-iads.lua) / `:405`), so aged ones are gone — but a unit destroyed *this* cycle (between `cleanAgedTargets` and the loop, or by a weapon impact mid-evaluation) would still be in the list. `dcsRepresentation` is set in `SkynetIADSContact:create` from `dcsRadarTarget.object` and never cleared, so the nil path looks unreachable today — but `getDesc()` on a fresh wreck is the real risk.
-
-**If confirmed:** wrap the per-contact body in `if contact:getDCSRepresentation() and contact:getDCSRepresentation():isExist() then`, or `pcall` the classification. A raise here aborts the entire inform-the-SAM-sites loop for that cycle — every contact after the bad one is skipped, silently.
-
-**Interesting because:** same shape as `458b64f` (one bad object, whole listing truncated, nothing in the log). If 2.1's weapon-passing makes mid-cycle destruction more common at this exact code point, the two interact.
-
 ## Smoke tests
 
 Study how the legacy `unit-test` can be transformed into something more usable and build in-sim smoke tests. See if MCPs or such exists that can help communicate with a running DCS mission. Use of the log file is always possible but may be complex.
