@@ -1,6 +1,8 @@
 # Design: `test/insim/` — a live-DCS test tier
 
-Status: approved by user, pending implementation plan.
+Status: **SUPERSEDED** by [2026-09-15-insim-test-tier-design.md](2026-09-15-insim-test-tier-design.md). Kept for the
+rationale it records; its architecture (dedicated-server mode, file-IPC command channel) was
+replaced after review.
 Related: [docs/evolutions.md](../../evolutions.md) "Smoke tests" section, VEAF issue #3, the
 `evolutions.md` "No coalition check on weapon contacts" item.
 
