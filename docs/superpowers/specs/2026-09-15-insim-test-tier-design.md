@@ -186,22 +186,46 @@ be read by the extractor and to give a map view of the fixture world.
 ### Isolation: removeJunk for the dead, same-name replacement for the living
 
 Measured in DCS on 2026-09-16 with a throwaway F10 probe
-(`GroundStrikeSandboxSyria/Scripts/FgInsimProbe.lua`, DCS API only, no MOOSE). Groups and
-statics behaved identically on all three points:
+(`GroundStrikeSandboxSyria/Scripts/FgInsimProbe.lua`, DCS API only, no MOOSE), using a
+3-vehicle ground group and a single static:
 
 | Action | Result |
 |---|---|
 | Spawn same name over a **live** group/static | Replaced, as documented |
 | Spawn same name over an **exploded** group/static | **Neither replaced nor despawned** — the wreck survives |
 | `world.removeJunk` over the zone | Clears the wrecks |
+| Spawn same name after `removeJunk` | Whole, alive entity (3/3 units, static life restored) |
 
-So neither mechanism alone is sufficient, and the model uses both. The background that led here:
+So neither mechanism alone is sufficient, and the model uses both.
 
-- `skynet-iads-source/skynet-iads-utils.lua:238-242` — `coalition.getGroups` hands back groups
-  that have been destroyed, and asking one for its units *raises*, aborting the enclosing
-  `pairs` loop. An `isExist()` guard exists specifically for this.
+**Groups and statics differ in what a destroyed entity leaves behind**, which decides how much
+the leftovers actually matter:
+
+| After destruction | Group | Static |
+|---|---|---|
+| `getByName` | **nil** | found |
+| `isExist()` | n/a | **false** |
+| entries in `coalition.getGroups` | **0** | n/a |
+
+A destroyed group leaves **no logical trace** — it is absent from both `getByName` and
+`coalition.getGroups`. What `removeJunk` clears is therefore *physical debris*, not stale
+listings. A destroyed static is the opposite: its handle survives, reporting `isExist() == false`.
+
+That asymmetry happens to suit Skynet. `SkynetIADSAbstractElement:genericCheckOneObjectIsAlive`
+holds stored references to power sources and connection nodes — typically statics — and calls
+`object:isExist()` on each. Because destroyed statics keep a valid handle, that loop behaves
+correctly; had statics vanished the way groups do, the stored reference would go stale and
+raise inside the loop.
+
+Two related notes from this repo, neither contradicted by the measurement above:
+
+- `skynet-iads-source/skynet-iads-utils.lua:238-242` — `coalition.getGroups` *can* hand back a
+  destroyed group, and asking it for units raises, aborting the enclosing `pairs` loop. The
+  probe did not reproduce this for a fully destroyed group, so the case it guards is likely
+  partial destruction or the window immediately after death. The guard stays warranted.
 - `skynet-iads-source/skynet-iads-abstract-radar-element.lua:754` — "there are cases when a
-  destroyed object is still visible as a target to the radar".
+  destroyed object is still visible as a target to the radar". This is the standing reason to
+  clear debris between runs even though the logical listing is already clean.
 - mist, ~9,000 lines and the de-facto standard for a decade, contains **zero** `destroy()`
   calls. Its entire respawn/teleport/clone machinery routes through a single
   `coalition.addGroup`. The idiomatic reset in DCS is re-adding a group under the same name.
@@ -227,9 +251,12 @@ tearDown  Object.destroy() on each tracked group still alive       -- clean, lea
 ```
 
 - Each scenario spawns under deterministic, test-scoped names
-  (`insim_TestSamGoesDark_SAM-1`) at its own well-separated anchor coordinate. The unique
-  prefix keeps Skynet's prefix-based discovery honest; the separated anchor gives `removeJunk`
-  a volume that cannot touch another scenario's fixtures.
+  (`insim_TestSamGoesDark_SAM-1`) at its own well-separated anchor coordinate. The separated
+  anchor gives `removeJunk` a volume that cannot touch another scenario's fixtures; the unique
+  prefix keeps scenarios from colliding over names. Prefix-based discovery picking up *dead*
+  sites is not a concern — destroyed groups leave no entry in `coalition.getGroups` — but
+  leftover *live* units from an interrupted run would be, and the scoped name plus same-name
+  replacement handles those.
 - `removeJunk` runs in `setUp` rather than `tearDown` deliberately: it then also covers runs
   that crashed, were interrupted mid-scenario, or were re-triggered from F10 before finishing —
   cases a `tearDown` never reaches.
@@ -330,13 +357,13 @@ not design forks.
    works, `coldAtStart` honored? First implementation step. If some asset class fails, that
    asset falls back to a late-activated editor-placed group and its scenarios accept one
    destructive run per mission session — a per-asset escape hatch, not a redesign.
-2. **Stale listings.** Does a wreck leave an entry behind in `coalition.getGroups()`, and does
-   `removeJunk` clear that entry or only the visual debris? Skynet's `forEachLiveGroup`
-   guard already tolerates the raise either way, but prefix-based discovery counts could be
-   affected. Cheap to measure with the same probe.
-3. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
+2. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
    nearby destroyed units, with a fix referenced around December 2024. Confirmed working in
    single player on the current version; the multiplayer blast radius is nil for this tier.
+3. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
+   with some units alive and some dead is the case `forEachLiveGroup` was written for, and it
+   is the state a mid-scenario assertion will most often observe. Worth a readout during
+   implementation, though no design decision hangs on it.
 
 ## Risks for the implementation plan
 
