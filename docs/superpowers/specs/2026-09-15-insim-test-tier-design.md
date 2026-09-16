@@ -196,6 +196,17 @@ DCS does not cleanly despawn units, and this repo already documents it:
   calls. Its entire respawn/teleport/clone machinery routes through a single
   `coalition.addGroup`. The idiomatic reset in DCS is re-adding a group under the same name.
 
+Removal *is* possible for live objects — `Object.destroy()` "physically removes it from the
+game world without creating an event", and MOOSE's `GROUP:Destroy()` builds on it. The
+long-standing limitation is that it stops working once a unit is destroyed and burning
+(MOOSE issue #695, closed as a DCS bug). So despawn is exactly backwards for this tier: it
+works on the units we do not need to clear and fails on the ones we do.
+
+Same-name replacement, by contrast, is **documented API behavior**, not merely mist
+convention. ED's `coalition.addGroup` documentation states: "If the group or any unit within
+shares a name of an existing group or unit, the existing group or unit will be destroyed when
+the new group is created."
+
 So `tearDown` is not built on despawn:
 
 - `setUp` spawns with a deterministic, test-scoped group name (`insim_TestSamGoesDark_SAM-1`).
@@ -294,16 +305,34 @@ machinery, leaving all of it unproven until the first real scenario.
 DCS's own behavior, to be settled by asking the DCS scripting community or by a spike in the
 sim — not by reasoning.
 
-1. Does `coalition.addGroup`, called with an already-used group name, cleanly **replace** that
-   group — including when its units have been destroyed — or does it error, duplicate, or
-   leave the wrecks behind?
+Same-name replacement itself is documented (see "Isolation") and is no longer in question.
+What remains is whether that documented replacement also clears a **wreck**:
+
+1. When the existing same-named group's units have already been **destroyed**, does
+   `coalition.addGroup` still clear them — or does it hit the same wall that stops
+   `Object.destroy()` on a burning unit, leaving debris and a stale entry in
+   `coalition.getGroups()`?
 2. Does a group spawned from an extracted table behave identically to its editor-placed
    original as far as Skynet can tell: types resolve, radar emits, detection works,
    `coldAtStart` honored?
 
-If (1) is no, the isolation model changes and the F10 re-run loop degrades to one destructive
-run per mission session. That is a spec-level change, which is why it gates the plan rather
-than sitting in a risk list.
+### Fallback ladder for (1)
+
+The answer determines which rung is needed, not whether the design works:
+
+1. **Same-name spawn alone.** If replacement clears wrecks, nothing further is needed.
+2. **`world.removeJunk` before spawning.** Added in DCS 2.8.4:
+   `number world.removeJunk(volume)` takes a segment/box/sphere/pyramid volume and returns the
+   count removed; it clears "craters, object wreckage, and any other debris within the search
+   volume" but not scenery wreckage. Each scenario already has its own well-separated anchor
+   coordinate, so `setUp` can clear a sphere around it before spawning. Caveat to verify
+   against the current DCS version: removeJunk has a history of client CTDs a few seconds
+   after removing nearby destroyed units, with a fix referenced around December 2024.
+   Single-player-only use here limits the blast radius.
+3. **Mission restart between destructive runs.** Degraded F10 loop, still functional.
+
+Rung 2 is expected to be sufficient regardless of (1), so this gate is about confirming which
+rung to build rather than about whether the tier is viable.
 
 ## Risks for the implementation plan
 
