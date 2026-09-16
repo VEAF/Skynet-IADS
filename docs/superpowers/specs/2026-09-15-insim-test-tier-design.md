@@ -1,7 +1,7 @@
 # Design: `test/insim/` — a live-DCS test tier
 
-Status: **design approved; blocked on one open question** (see "Blocking open question")
-before an implementation plan may be written.
+Status: **design approved**; the wreck-clearing question that previously gated it was answered
+empirically on 2026-09-16. Remaining items are implementation-time verification, not design forks.
 
 Supersedes [2026-09-14-insim-test-tier-design.md](2026-09-14-insim-test-tier-design.md).
 Related: [docs/evolutions.md](../../evolutions.md) "Smoke tests".
@@ -183,9 +183,19 @@ Gulf) and re-anchored on Caucasus.
 The late-activated units inside `skynet-insim.miz` never activate during a run. They exist to
 be read by the extractor and to give a map view of the fixture world.
 
-### Isolation: replacement, not removal
+### Isolation: removeJunk for the dead, same-name replacement for the living
 
-DCS does not cleanly despawn units, and this repo already documents it:
+Measured in DCS on 2026-09-16 with a throwaway F10 probe
+(`GroundStrikeSandboxSyria/Scripts/FgInsimProbe.lua`, DCS API only, no MOOSE). Groups and
+statics behaved identically on all three points:
+
+| Action | Result |
+|---|---|
+| Spawn same name over a **live** group/static | Replaced, as documented |
+| Spawn same name over an **exploded** group/static | **Neither replaced nor despawned** — the wreck survives |
+| `world.removeJunk` over the zone | Clears the wrecks |
+
+So neither mechanism alone is sufficient, and the model uses both. The background that led here:
 
 - `skynet-iads-source/skynet-iads-utils.lua:238-242` — `coalition.getGroups` hands back groups
   that have been destroyed, and asking one for its units *raises*, aborting the enclosing
@@ -207,16 +217,25 @@ convention. ED's `coalition.addGroup` documentation states: "If the group or any
 shares a name of an existing group or unit, the existing group or unit will be destroyed when
 the new group is created."
 
-So `tearDown` is not built on despawn:
+The cycle, therefore:
 
-- `setUp` spawns with a deterministic, test-scoped group name (`insim_TestSamGoesDark_SAM-1`).
-- Re-running the test spawns **that same name again**, replacing the previous instance —
-  including units a HARM destroyed. This is what makes the F10 re-run loop work.
-- `tearDown` removes nothing. It calls `iads:deactivate()` and stops.
-- Because wrecks linger both in `coalition.getGroups()` and in radar returns, each scenario
-  gets a unique name prefix and its own well-separated coordinates. That keeps Skynet's
-  prefix-based discovery honest and stops one test's debris appearing in another's detection
-  results.
+```
+setUp     world.removeJunk(sphere around this scenario's anchor)   -- clears wrecks from last run
+          coalition.addGroup(scoped name)                          -- replaces any live leftovers
+tearDown  Object.destroy() on each tracked group still alive       -- clean, leaves no wreck
+          iads:deactivate()
+```
+
+- Each scenario spawns under deterministic, test-scoped names
+  (`insim_TestSamGoesDark_SAM-1`) at its own well-separated anchor coordinate. The unique
+  prefix keeps Skynet's prefix-based discovery honest; the separated anchor gives `removeJunk`
+  a volume that cannot touch another scenario's fixtures.
+- `removeJunk` runs in `setUp` rather than `tearDown` deliberately: it then also covers runs
+  that crashed, were interrupted mid-scenario, or were re-triggered from F10 before finishing —
+  cases a `tearDown` never reaches.
+- `tearDown` destroys what is still alive because that path is reliable for live units and
+  keeps the world from accumulating. Anything killed during the test is left to the next
+  `setUp`'s `removeJunk`.
 - The hard reset is a mission restart, occasionally needed after a long session — an accepted
   cost of the manual-launch model.
 
@@ -299,40 +318,25 @@ A synchronous placeholder ("assert `Group.getByName` returns a unit") is explici
 the proof: it would exercise none of the spawning, coroutine-waiting, timeout or isolation
 machinery, leaving all of it unproven until the first real scenario.
 
-## Blocking open question
+## Open questions
 
-**An implementation plan may not be written until this is answered.** It is a question about
-DCS's own behavior, to be settled by asking the DCS scripting community or by a spike in the
-sim — not by reasoning.
+The wreck-clearing question that previously gated this spec was **answered empirically on
+2026-09-16** (see "Isolation"): same-name spawn does not clear wrecks, `world.removeJunk` does,
+and the design uses both. The remaining items are verification steps for the implementation,
+not design forks.
 
-Same-name replacement itself is documented (see "Isolation") and is no longer in question.
-What remains is whether that documented replacement also clears a **wreck**:
-
-1. When the existing same-named group's units have already been **destroyed**, does
-   `coalition.addGroup` still clear them — or does it hit the same wall that stops
-   `Object.destroy()` on a burning unit, leaving debris and a stale entry in
-   `coalition.getGroups()`?
-2. Does a group spawned from an extracted table behave identically to its editor-placed
-   original as far as Skynet can tell: types resolve, radar emits, detection works,
-   `coldAtStart` honored?
-
-### Fallback ladder for (1)
-
-The answer determines which rung is needed, not whether the design works:
-
-1. **Same-name spawn alone.** If replacement clears wrecks, nothing further is needed.
-2. **`world.removeJunk` before spawning.** Added in DCS 2.8.4:
-   `number world.removeJunk(volume)` takes a segment/box/sphere/pyramid volume and returns the
-   count removed; it clears "craters, object wreckage, and any other debris within the search
-   volume" but not scenery wreckage. Each scenario already has its own well-separated anchor
-   coordinate, so `setUp` can clear a sphere around it before spawning. Caveat to verify
-   against the current DCS version: removeJunk has a history of client CTDs a few seconds
-   after removing nearby destroyed units, with a fix referenced around December 2024.
-   Single-player-only use here limits the blast radius.
-3. **Mission restart between destructive runs.** Degraded F10 loop, still functional.
-
-Rung 2 is expected to be sufficient regardless of (1), so this gate is about confirming which
-rung to build rather than about whether the tier is viable.
+1. **Spawn fidelity.** Does a group spawned from an extracted table behave identically to its
+   editor-placed original as far as Skynet can tell: types resolve, radar emits, detection
+   works, `coldAtStart` honored? First implementation step. If some asset class fails, that
+   asset falls back to a late-activated editor-placed group and its scenarios accept one
+   destructive run per mission session — a per-asset escape hatch, not a redesign.
+2. **Stale listings.** Does a wreck leave an entry behind in `coalition.getGroups()`, and does
+   `removeJunk` clear that entry or only the visual debris? Skynet's `forEachLiveGroup`
+   guard already tolerates the raise either way, but prefix-based discovery counts could be
+   affected. Cheap to measure with the same probe.
+3. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
+   nearby destroyed units, with a fix referenced around December 2024. Confirmed working in
+   single player on the current version; the multiplayer blast radius is nil for this tier.
 
 ## Risks for the implementation plan
 
