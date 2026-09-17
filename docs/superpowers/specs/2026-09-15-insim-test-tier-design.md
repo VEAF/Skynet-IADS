@@ -125,6 +125,16 @@ The mission therefore carries several slot types rather than one:
 Game Master is the recommended slot: no scenario requires the tester to fly, since target
 aircraft are spawned by the scenario itself, and the map view is the useful vantage point.
 
+**Further playable slots may be added as needed — out of scope here.** Some mechanics are only
+observable from a cockpit: RWR indications when a SAM goes active, lock and launch warnings,
+HARM seeker behaviour. Adding an aircraft type to the mission to check those is expected and
+cheap, and it does not disturb anything in this design.
+
+Worth being clear about what that buys, though: in-cockpit checking is **human observation, not
+an assertion**. A scenario cannot read the RWR, so this tier's automated pass/fail will never
+cover it. The realistic pattern is a scenario that drives the IADS into the state of interest
+while the tester watches from a cockpit — automation for the setup, eyes for the verdict.
+
 Menu reachability from CA and observer slots is a verification item, not an assumption — see
 "Open questions". If the radio menu proves unavailable outside aircraft slots, the fallback is
 a one-way trigger file: the runner already ticks on `timer.scheduleFunction` and already has
