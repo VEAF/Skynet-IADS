@@ -283,14 +283,17 @@ Added units fire `S_EVENT_BIRTH`, which Skynet already handles
 ### No mist
 
 Skynet source contains **zero** mist references; mist is purely test-harness, and `test/lua`
-has already dropped its mist stub.
+has already dropped its mist stub. Nothing is vendored here.
 
-What mist would have provided is written here instead, and **rewritten rather than copied**:
-the mist copy in the legacy `.miz` carries no license header at all (authors Speed and Grimes,
-`mrSkortch/MissionScriptingTools`), while this repo is Apache 2.0. What is taken is knowledge —
-that the reset primitive is re-adding under the same name, and how country/category enums
-resolve — not implementation. Anything mist-derived in structure carries a provenance comment
-marked `-- FGA`, per the repo convention for third-party-derived code.
+The handful of things mist would have provided — adding a group, a table serializer, a deep
+copy — are written fresh against the documented DCS API and sized for this tier's needs. mist
+is inspiration, not a source: what it supplies is knowledge, such as re-adding under the same
+name being the reset primitive, and how country and category enums resolve.
+
+This follows the precedent `SkynetIADSUtils` already set when it replaced Skynet's 13 mist
+calls: reproduce the behaviour, and where the implementation departs from what mist did, say so
+at the call site. Those comments carry engineering information — what the behaviour is
+equivalent to, and where it deliberately is not — rather than attribution.
 
 ### Results
 
