@@ -103,8 +103,7 @@ group- or coalition-scoped variants, so it reaches whichever slot the tester occ
 already uses `missionCommands` for its own radio menu
 (`skynet-iads-source/skynet-iads.lua:613`).
 
-**The mission carries a single Neutral Game Master slot.** Verified in-game on 2026-09-17: the
-F10 menu is reachable from it and spawned units are visible on the map. Neutral rather than
+**The mission carries a single Neutral Game Master slot.** Neutral rather than
 red or blue because a neutral Game Master sees both coalitions, which a scenario spawning red
 sites against a blue target needs.
 
@@ -115,9 +114,27 @@ for in-cockpit observation without disturbing anything
 aircraft are spawned by the scenario itself, and the Combined Arms map view is the useful
 vantage point for debugging a detection test.
 
-Source loading reuses `test/lua/skynet-loader.lua` verbatim: already mist-free, already
-resolves its root from configuration, already exposes `reset()`. Load order has one source of
-truth shared by both tiers.
+### Shared test assets: `test/common/`
+
+Two files are needed by both `test/lua/` and `test/insim/`, and neither belongs to either tier:
+
+| File | Why shared |
+|---|---|
+| `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order. That order must have one source of truth, not a copy per tier. Already mist-free and already exposes `reset()` for reloading |
+| `luaunit.lua` | Both tiers assert with it — `test/insim/` keeps luaunit's assertions even though it replaces its run loop |
+
+Both move to `test/common/`, and `test/lua/`'s suites update their `dofile` paths accordingly.
+The legacy `unit-tests/luaunit.lua` is left alone: it is a different vintage and is embedded in
+its `.miz` regardless.
+
+The loader's default root resolution still works from the new location — its relative
+`../../skynet-iads-source` is the same depth from `test/common/` as from `test/lua/`. It gains
+one addition: an explicit root setter, so the in-sim runner can pass the repo path the
+bootstrap has already resolved rather than falling back on `debug.getinfo` inside the mission
+environment. `test/lua/` keeps the relative default and is otherwise unchanged.
+
+Moving these is a small, targeted refactor of `test/lua/`, included here because this work is
+what makes them shared.
 
 ### Async model: coroutines, not luaunit's run loop
 
@@ -294,6 +311,10 @@ revert path, the multiplayer consequence, and the config file.
 ## Layout
 
 ```
+test/common/                    shared by both Lua tiers (moved out of test/lua/)
+  skynet-loader.lua             dependency-ordered source loading, one source of truth
+  luaunit.lua                   vendored luaunit 3.4
+
 test/insim/
   runner/init.lua               entry point: preflight, load source, build F10 menu
   runner/runner.lua             coroutine scheduler, result collection
