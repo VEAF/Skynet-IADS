@@ -127,10 +127,10 @@ a failed assertion.
 ```lua
 function TestSamGoesDark:testGoesDarkUnderHarm()
   local sam = self.iads:getSAMSiteByGroupName(self:scoped("SAM-1"))
-  waitFor(function() return sam:isRadarEmitting() end, 60)
+  waitFor(function() return sam:isActive() end, 60)
   fireHarmAt(sam)
-  waitFor(function() return not sam:isRadarEmitting() end, 60)
-  waitFor(function() return sam:isRadarEmitting() end, 300)   -- comes back up
+  waitFor(function() return not sam:isActive() end, 60)
+  waitFor(function() return sam:isActive() end, 300)   -- comes back up
 end
 ```
 
