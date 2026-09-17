@@ -63,7 +63,7 @@ Three artifacts: one touched occasionally, the rest constantly.
 ```
 skynet-insim.miz            authored in the Mission Editor, extended only when a new
   ├─ Caucasus map           fixture asset type is needed              (binary, committed)
-  ├─ one playable aircraft slot
+  ├─ slots: Game Master (preferred), Tactical Commander, one aircraft, observer
   ├─ late-activated fixture assets, placed at correct coordinates
   └─ MISSION START trigger → ~15-line inline bootstrap
                               └─ dofile(<repo>/test/insim/runner/init.lua)
@@ -102,15 +102,35 @@ sanitization edit.
 
 ### Run loop: hot reload from the F10 menu
 
-Launch `skynet-insim.miz` in the normal DCS client, take the aircraft slot, then
-**F10 → Skynet Tests → Run all / Re-run last / Run one suite**.
+Launch `skynet-insim.miz` in the normal DCS client, take a slot (Game Master by preference),
+then **F10 → Skynet Tests → Run all / Re-run last / Run one suite**.
 
 Every invocation re-`dofile`s Skynet source *and* scenario files from disk. Edit a scenario in
 an editor, press F10, see the result. No mission restart, no Mission Editor, no alt-tab.
 
-Consequence accepted: `missionCommands.addCommand` requires a player in a slot, so the mission
-needs a playable aircraft and the tester must occupy it. Skynet already uses `missionCommands`
-for its own radio menu (`skynet-iads-source/skynet-iads.lua:613`), so this is idiomatic here.
+The menu is built at mission start with the **global** `missionCommands.addCommand`, not the
+group- or coalition-scoped variants, so it reaches whichever slot the tester occupies. Skynet
+already uses `missionCommands` for its own radio menu
+(`skynet-iads-source/skynet-iads.lua:613`), so this is idiomatic here.
+
+The mission therefore carries several slot types rather than one:
+
+| Slot | Why |
+|---|---|
+| **Game Master** (preferred) | Combined Arms map view shows spawned sites, wrecks and unit positions live while a scenario runs — far better for debugging a detection test than a cockpit |
+| Tactical Commander | Same map view, coalition-restricted; useful for checking what one side can see |
+| One aircraft | Fallback if the radio menu turns out not to reach CA slots, and available if a scenario ever wants a human-flown target |
+| Observer | For watching a run without occupying a commanding slot |
+
+Game Master is the recommended slot: no scenario requires the tester to fly, since target
+aircraft are spawned by the scenario itself, and the map view is the useful vantage point.
+
+Menu reachability from CA and observer slots is a verification item, not an assumption — see
+"Open questions". If the radio menu proves unavailable outside aircraft slots, the fallback is
+a one-way trigger file: the runner already ticks on `timer.scheduleFunction` and already has
+`lfs`, so it can check for `test/insim/run.trigger`, run, and delete it. That is input-only —
+no response file, no handshake, no race — and so does not reintroduce the command/response
+channel rejected in the non-goals.
 
 Source loading reuses `test/lua/skynet-loader.lua` verbatim — it is already mist-free, already
 resolves its root from configuration rather than a hardcoded path, and already exposes
@@ -326,7 +346,8 @@ test/insim/
   scenarios/scenario_*.lua      suites: luaunit assertions, coroutine bodies
   results/                      gitignored
   README.md
-  skynet-insim.miz              Caucasus, playable slot, bootstrap, late-activated fixtures
+  skynet-insim.miz              Caucasus, GM/TC/aircraft/observer slots, bootstrap,
+                                late-activated fixtures
 ```
 
 `insim-test-tools.lua` holds the helpers this tier needs that neither Skynet source nor luaunit
@@ -357,10 +378,15 @@ not design forks.
    works, `coldAtStart` honored? First implementation step. If some asset class fails, that
    asset falls back to a late-activated editor-placed group and its scenarios accept one
    destructive run per mission session — a per-asset escape hatch, not a redesign.
-2. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
+2. **Menu reachability by slot.** Do global `missionCommands` items appear in the F10 radio
+   menu from a Game Master slot, a Tactical Commander slot, and as an observer — or only from
+   an aircraft slot? Game Master is documented as having the F10 *map* view and unit command,
+   which is a different thing from the radio menu. Cheap to check by entering each slot.
+   Fallback if not: the one-way trigger file described under "Run loop".
+3. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
    nearby destroyed units, with a fix referenced around December 2024. Confirmed working in
    single player on the current version; the multiplayer blast radius is nil for this tier.
-3. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
+4. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
    with some units alive and some dead is the case `forEachLiveGroup` was written for, and it
    is the state a mid-scenario assertion will most often observe. Worth a readout during
    implementation, though no design decision hangs on it.
