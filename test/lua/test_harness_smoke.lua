@@ -59,4 +59,21 @@ function TestHarnessSmoke:test_loader_reset_forces_reload()
   luaunit.assertEquals(type(SkynetIADSContact), "table")
 end
 
+function TestHarnessSmoke:test_set_root_overrides_source_directory()
+  local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
+  local fresh = dofile(base .. "/../common/skynet-loader.lua")
+  fresh.setRoot(base .. "/no-such-directory")
+  local ok, err = pcall(fresh.load, "skynet-iads-utils")
+  luaunit.assertFalse(ok)
+  luaunit.assertStrContains(tostring(err), "no-such-directory")
+end
+
+function TestHarnessSmoke:test_set_root_accepts_trailing_separator()
+  local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
+  local fresh = dofile(base .. "/../common/skynet-loader.lua")
+  fresh.setRoot(base .. "/../../skynet-iads-source/")
+  fresh.load("skynet-iads-utils")
+  luaunit.assertNotNil(SkynetIADSUtils)
+end
+
 os.exit(luaunit.LuaUnit.run())

@@ -46,12 +46,12 @@ Still DCS-only (need the demo-IADS-world fixture — a later milestone):
 
 ## Files
 
+`luaunit.lua` and `skynet-loader.lua` now live in `test/common/`, shared with `test/insim/`.
+
 | File | Purpose |
 |------|---------|
-| `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
 | `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord` and a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler |
 | `dcs-fixtures.lua` | Reusable fixtures — SAM group builders, connection nodes, the EW radar unit builder, the IADS-contact factory |
-| `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
 | `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |
 | `test_*.lua` | Test suites — self-contained, self-executing |

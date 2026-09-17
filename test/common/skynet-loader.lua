@@ -8,6 +8,14 @@
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "./"
 local src = (os.getenv("SKYNET_SRC") or (base .. "/../../skynet-iads-source")) .. "/"
 
+--- Overrides where source files are read from. The in-sim runner calls this with the repo
+--- path its bootstrap already resolved, so it does not depend on debug.getinfo or an
+--- environment variable inside the DCS mission environment.
+local function setRoot(path)
+  assert(type(path) == "string", "skynet-loader.setRoot: path must be a string")
+  src = path:gsub("[\\/]*$", "") .. "/"
+end
+
 -- Verbatim order from build-compiled-script.ps1 (highdigitsams entry omitted:
 -- it is a separate suite, not part of the core load).
 local ORDER = {
@@ -32,7 +40,7 @@ local ORDER = {
   "skynet-iads-harm-detection",
 }
 
-local M = { _loaded = {}, ORDER = ORDER }
+local M = { _loaded = {}, ORDER = ORDER, setRoot = setRoot }
 
 function M.load(name)
   if M._loaded[name] then
