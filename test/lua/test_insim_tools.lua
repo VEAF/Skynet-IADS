@@ -55,6 +55,12 @@ function TestInsimTools:testSerializeRoundTripsBooleansAndNegativeNumbers()
   luaunit.assertEquals(roundTrip(value), value)
 end
 
+function TestInsimTools:testSerializeRoundTripsComputedDoublesNeedingSeventeenDigits()
+  -- These fail to round-trip under %.14g, so this test falsifies a truncating format.
+  local value = { third = 1 / 3, pi = math.pi, ratio = 10 / 7 }
+  luaunit.assertEquals(roundTrip(value), value)
+end
+
 function TestInsimTools:testSerializeSortsKeysSoOutputIsStable()
   local first = InsimTestTools.serialize({ b = 1, a = 2, c = 3 })
   local second = InsimTestTools.serialize({ c = 3, a = 2, b = 1 })

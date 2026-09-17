@@ -393,8 +393,9 @@ local function serializeScalar(value)
     return string.format("%q", value)
   end
   if kind == "number" then
-    -- %.14g round-trips a double through Lua 5.1's reader without exponent surprises.
-    return string.format("%.14g", value)
+    -- A double needs 17 significant digits to be recovered exactly; %g strips trailing
+    -- zeros, so clean values stay short.
+    return string.format("%.17g", value)
   end
   if kind == "boolean" then
     return tostring(value)
