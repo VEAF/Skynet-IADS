@@ -1,8 +1,8 @@
 --- Smoke test: the vendored luaunit runs, and skynet-loader loads the two
 --- source files the contact pilot needs, populating their globals.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 
 -- Group is the only global the wrapper touches at load time (a sentinel it
 -- compares metatables against). dcs-stub owns it from Task 2 on; here a bare

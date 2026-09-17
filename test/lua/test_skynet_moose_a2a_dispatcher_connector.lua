@@ -4,9 +4,9 @@
 --- addEarlyWarningRadarsByPrefix / addSAMSitesByPrefix, which enumerate the
 --- 17-EW / 17-SAM demo world; they stay in the .miz suite.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
 
 TestMooseA2ADispatcherConnector = {}
