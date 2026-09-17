@@ -84,9 +84,10 @@ Recorded as motivation, not as planned work:
 
 ### In-cockpit checks
 
-Further playable slots may be added to `skynet-insim.miz` as needed. Some mechanics are only
-observable from a cockpit: RWR indications when a SAM goes active, lock and launch warnings,
-HARM seeker behavior. Adding an aircraft type costs nothing and disturbs nothing in the design.
+`skynet-insim.miz` ships with one Neutral Game Master slot. Further playable slots may be added
+as needed: some mechanics are only observable from a cockpit — RWR indications when a SAM goes
+active, lock and launch warnings, HARM seeker behavior. Nothing in the design depends on the
+slot type, so adding an aircraft costs nothing.
 
 The limit is worth stating: a scenario cannot read the RWR, so this is **human observation, not
 an assertion**, and the tier's automated pass/fail will never cover it. The workable pattern is
@@ -99,3 +100,9 @@ Running DCS unattended needs a licensed, GPU-capable machine, so whether this ti
 CI is a separate decision. The design leaves the door open cheaply: `results/last-run.lua` is
 machine-readable, and a reader that prints a `test/lua`-shaped report and sets an exit code is
 roughly 40 lines whenever someone wants it.
+
+Triggering a run from outside the sim would be the other half. The runner already ticks on
+`timer.scheduleFunction` and already has `lfs`, so it could watch for a `run.trigger` file,
+run, and delete it — input-only, no response file or handshake, so it would not resurrect the
+external-driver architecture the design rejects. Not needed while runs are triggered by hand
+from the F10 menu, which is confirmed working.

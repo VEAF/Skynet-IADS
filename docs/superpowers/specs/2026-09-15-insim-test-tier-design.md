@@ -41,8 +41,8 @@ Three frictions make that tier unpleasant enough to skip:
 ## Non-goals
 
 - **Unattended operation.** The tester launches DCS and triggers runs by hand.
-- **A command/response handshake.** Nothing polls for a reply, and no response file is written
-  back for an external process to read. (A one-way input trigger is permitted — see "Run loop".)
+- **Any external process driving the run.** No command file, no response file, no handshake.
+  The mission reads scenarios from disk and is triggered from inside the sim.
 - **CI integration.** Running DCS needs a licensed, GPU-capable machine.
 - **Migrating `unit-tests/*.miz`,** which stays as the fallback.
 - **Writing a backlog of regression scenarios.** This work delivers the tier plus one real
@@ -56,7 +56,7 @@ Three frictions make that tier unpleasant enough to skip:
 ```
 skynet-insim.miz            authored in the Mission Editor, extended only when a new
   ├─ Caucasus map           fixture asset type is needed              (binary, committed)
-  ├─ slots: Game Master (preferred), Tactical Commander, aircraft, observer
+  ├─ one Neutral Game Master slot
   ├─ late-activated fixture assets, placed at correct coordinates
   └─ MISSION START trigger → ~15-line inline bootstrap
                               └─ dofile(<repo>/test/insim/runner/init.lua)
@@ -103,17 +103,17 @@ group- or coalition-scoped variants, so it reaches whichever slot the tester occ
 already uses `missionCommands` for its own radio menu
 (`skynet-iads-source/skynet-iads.lua:613`).
 
-**Game Master is the recommended slot.** No scenario requires the tester to fly — target
-aircraft are spawned by the scenario itself — and the Combined Arms map view shows spawned
-sites, wrecks and unit positions live while a scenario runs, which is the useful vantage point
-for debugging a detection test. Tactical Commander gives the same view coalition-restricted;
-the aircraft slot is there as a fallback if the radio menu turns out not to reach CA slots;
-observer is for watching without commanding.
+**The mission carries a single Neutral Game Master slot.** Verified in-game on 2026-09-17: the
+F10 menu is reachable from it and spawned units are visible on the map. Neutral rather than
+red or blue because a neutral Game Master sees both coalitions, which a scenario spawning red
+sites against a blue target needs.
 
-If the radio menu proves unavailable outside aircraft slots, the fallback is a one-way trigger
-file: the runner already ticks on `timer.scheduleFunction` and already has `lfs`, so it can
-check for `test/insim/run.trigger`, run, and delete it. Input-only — no response file, no
-handshake — so it stays inside the non-goal above.
+One slot, not several, keeps the mission simple. Nothing about the design depends on the slot
+type — the menu is global and the runner is indifferent — so further slots can be added later
+for in-cockpit observation without disturbing anything
+(see [docs/evolutions.md](../../evolutions.md)). No scenario requires the tester to fly: target
+aircraft are spawned by the scenario itself, and the Combined Arms map view is the useful
+vantage point for debugging a detection test.
 
 Source loading reuses `test/lua/skynet-loader.lua` verbatim: already mist-free, already
 resolves its root from configuration, already exposes `reset()`. Load order has one source of
@@ -307,8 +307,7 @@ test/insim/
   scenarios/scenario_*.lua      suites: luaunit assertions, coroutine bodies
   results/                      gitignored
   README.md
-  skynet-insim.miz              Caucasus, GM/TC/aircraft/observer slots, bootstrap,
-                                late-activated fixtures
+  skynet-insim.miz              Caucasus, Neutral GM slot, bootstrap, late-activated fixtures
 ```
 
 `insim-test-tools.lua` holds helpers this tier needs that neither Skynet source nor luaunit
@@ -337,18 +336,14 @@ None of these are design forks; each has a known fallback.
    session.
 2. **`lfs.writedir()` availability** in the mission environment post-unsanitize. It is the only
    path-resolution mechanism, the environment-variable fallback having been dropped by choice.
-3. **Menu reachability by slot.** Do global `missionCommands` items appear from Game Master,
-   Tactical Commander and observer slots, or only from an aircraft slot? Game Master is
-   documented as having the F10 *map* view and unit command, which is not the same thing as the
-   radio menu. Fallback: the one-way trigger file.
-4. **`coalition.addGroup` country and category enum correctness** for these ground groups.
-5. **Re-anchoring** — whether group tables extracted from the Persian Gulf `.miz` land cleanly
+3. **`coalition.addGroup` country and category enum correctness** for these ground groups.
+4. **Re-anchoring** — whether group tables extracted from the Persian Gulf `.miz` land cleanly
    on Caucasus or need per-site coordinate fixups.
-6. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
+5. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
    nearby destroyed units, with a fix referenced around December 2024. Confirmed working in
    single player; the multiplayer blast radius is nil for this tier.
-7. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
+6. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
    with some alive and some dead is the case `forEachLiveGroup` guards, and the state a
    mid-scenario assertion will most often observe.
-8. **Detection timing** is non-deterministic. Timeouts are generous by policy; any scenario
+7. **Detection timing** is non-deterministic. Timeouts are generous by policy; any scenario
    needing tight timing is the wrong scenario for this tier.
