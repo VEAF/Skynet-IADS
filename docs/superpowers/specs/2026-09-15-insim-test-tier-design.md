@@ -36,7 +36,7 @@ Three frictions make that tier unpleasant enough to skip:
   or opening the Mission Editor.
 - Scenarios can wait for simulated time to pass, because the motivating behaviors require it.
 - Always runs against current source, never a stale build.
-- Minimal in-repo tooling: no new external dependency, no binary/ABI risk, no mist.
+- Minimal in-repo tooling: no new external dependency, no binary/ABI risk.
 
 ## Non-goals
 
@@ -103,38 +103,15 @@ group- or coalition-scoped variants, so it reaches whichever slot the tester occ
 already uses `missionCommands` for its own radio menu
 (`skynet-iads-source/skynet-iads.lua:613`).
 
-**The mission carries a single Neutral Game Master slot.** Neutral rather than
-red or blue because a neutral Game Master sees both coalitions, which a scenario adding red
-sites against a blue target needs.
+**The mission carries a single Neutral Game Master slot** — neutral rather than red or blue
+because a neutral Game Master sees both coalitions, which a scenario adding red sites against a
+blue target needs. No scenario requires the tester to fly: target aircraft are added by the
+scenario itself, and the Combined Arms map view is the useful vantage point for debugging a
+detection test.
 
-One slot, not several, keeps the mission simple. Nothing about the design depends on the slot
-type — the menu is global and the runner is indifferent — so further slots can be added later
-for in-cockpit observation without disturbing anything
-(see [docs/evolutions.md](../../evolutions.md)). No scenario requires the tester to fly: target
-aircraft are added by the scenario itself, and the Combined Arms map view is the useful
-vantage point for debugging a detection test.
-
-### Shared test assets: `test/common/`
-
-Two files are needed by both `test/lua/` and `test/insim/`, and neither belongs to either tier:
-
-| File | Why shared |
-|---|---|
-| `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order. That order must have one source of truth, not a copy per tier. Already mist-free and already exposes `reset()` for reloading |
-| `luaunit.lua` | Both tiers assert with it — `test/insim/` keeps luaunit's assertions even though it replaces its run loop |
-
-Both move to `test/common/`, and `test/lua/`'s suites update their `dofile` paths accordingly.
-The legacy `unit-tests/luaunit.lua` is left alone: it is a different vintage and is embedded in
-its `.miz` regardless.
-
-The loader's default root resolution still works from the new location — its relative
-`../../skynet-iads-source` is the same depth from `test/common/` as from `test/lua/`. It gains
-one addition: an explicit root setter, so the in-sim runner can pass the repo path the
-bootstrap has already resolved rather than falling back on `debug.getinfo` inside the mission
-environment. `test/lua/` keeps the relative default and is otherwise unchanged.
-
-Moving these is a small, targeted refactor of `test/lua/`, included here because this work is
-what makes them shared.
+One slot keeps the mission simple, and nothing in the design depends on the slot type — the
+menu is global and the runner is indifferent — so further slots can be added later for
+in-cockpit observation without disturbing anything.
 
 ### Async model: coroutines, not luaunit's run loop
 
@@ -163,7 +140,8 @@ luaunit's assertions stay unchanged — they only call `error()` — and it remo
 on yielding across a `pcall` boundary, which LuaJIT allows but stock Lua 5.1 does not.
 
 Every wait is bounded, and each test carries an overall budget, so a hung test fails rather
-than wedging the mission.
+than wedging the mission. Timeouts are generous by policy: live detection timing is
+non-deterministic, and any scenario needing tight timing is the wrong scenario for this tier.
 
 ### Fixtures: authored in the editor, stored as text, added at runtime
 
@@ -185,7 +163,7 @@ already uses — no in-sim step, no mist, no Mission Editor session needed to ex
 
 Fixtures are stored as **templates plus a placement**: unit types, counts, headings and offsets
 relative to the site origin are map-independent and reusable, while only the anchor coordinate
-is Caucasus-specific. A unit entry is seven keys, matching the tables in the existing `.miz`:
+is Caucasus-specific. A unit entry carries only what the `.miz`'s own tables carry:
 
 ```lua
 { type = "Kub 1S91 str", dx = 0, dy = 0, heading = 2.827, skill = "Excellent" }
@@ -239,8 +217,8 @@ How DCS responds to each:
 Neither operation resets a scenario on its own: `destroy` acts only on what is still live, and
 `add` replaces only what is still live. Wrecks are `removeJunk`'s job.
 
-What an **exploded** entity leaves behind differs by kind, which decides how much the leftovers
-matter:
+What an **exploded** entity leaves behind differs by kind, and that decides how much the
+leftovers matter:
 
 | After exploding | Group | Static |
 |---|---|---|
@@ -250,8 +228,8 @@ matter:
 
 An exploded group leaves **no logical trace**, so `removeJunk` clears *physical debris* rather
 than stale listings, and prefix-based discovery cannot pick up dead sites. The standing reason
-to clear debris anyway is `skynet-iads-abstract-radar-element.lua:754`: "there are cases when a
-destroyed object is still visible as a target to the radar".
+to clear debris anyway is `skynet-iads-source/skynet-iads-abstract-radar-element.lua:754`:
+"there are cases when a destroyed object is still visible as a target to the radar".
 
 An exploded static is the opposite — its handle survives, reporting `isExist() == false` — and
 that suits Skynet. `SkynetIADSAbstractElement:genericCheckOneObjectIsAlive` holds stored
@@ -302,7 +280,7 @@ The same data, three outputs:
 - **On screen** via `trigger.action.outText` — the primary readout, pass/fail without leaving
   the sim.
 - **`dcs.log`** via `env.info`, prefixed `SKYNET_INSIM`, for failure detail and context.
-- **`test/insim/results/last-run.lua`** — machine-readable, gitignored. No reader is built now;
+- **`test/insim/results/last-run.lua`** — machine-readable, gitignored. No reader is built here;
   the file is the contract that makes one trivial later.
 
 ### Setup cost
@@ -319,6 +297,20 @@ message on screen rather than failing obscurely. `test/insim/README.md` document
 revert path, the multiplayer consequence, and the config file.
 
 ## Layout
+
+Two files are needed by both `test/lua/` and `test/insim/` and belong to neither, so they move
+to `test/common/` and `test/lua/`'s suites update their `dofile` paths:
+
+| File | Why shared |
+|---|---|
+| `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order. That order needs one source of truth, not a copy per tier. Already mist-free, already exposes `reset()` for reloading |
+| `luaunit.lua` | Both tiers assert with it — `test/insim/` keeps luaunit's assertions even though it replaces its run loop |
+
+The legacy `unit-tests/luaunit.lua` is left alone: different vintage, and embedded in its `.miz`
+regardless. The loader's relative default root is the same depth from `test/common/` as from
+`test/lua/`, so that keeps working; it gains one addition, an explicit root setter, so the
+in-sim runner can pass the repo path the bootstrap already resolved rather than falling back on
+`debug.getinfo` inside the mission environment.
 
 ```
 test/common/                    shared by both Lua tiers (moved out of test/lua/)
@@ -358,7 +350,8 @@ it would exercise none of the adding, coroutine-waiting, timeout or isolation ma
 
 ## To verify during implementation
 
-None of these are design forks; each has a known fallback.
+None of these are design forks. Each is either already covered by a fallback or affects only
+how much fixture work is needed.
 
 1. **Fixture fidelity** — first step. Does a group added from an extracted table behave
    identically to its editor-placed original as far as Skynet can tell: types resolve, radar
@@ -376,5 +369,3 @@ None of these are design forks; each has a known fallback.
 6. **Partially exploded groups.** Behaviour is known for groups whose units have *all*
    exploded. A group with some units live and some exploded is the case `forEachLiveGroup`
    guards, and the state a mid-scenario assertion will most often observe.
-7. **Detection timing** is non-deterministic. Timeouts are generous by policy; any scenario
-   needing tight timing is the wrong scenario for this tier.
