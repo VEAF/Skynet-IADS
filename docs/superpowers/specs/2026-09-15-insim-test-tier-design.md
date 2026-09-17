@@ -104,14 +104,14 @@ already uses `missionCommands` for its own radio menu
 (`skynet-iads-source/skynet-iads.lua:613`).
 
 **The mission carries a single Neutral Game Master slot.** Neutral rather than
-red or blue because a neutral Game Master sees both coalitions, which a scenario spawning red
+red or blue because a neutral Game Master sees both coalitions, which a scenario adding red
 sites against a blue target needs.
 
 One slot, not several, keeps the mission simple. Nothing about the design depends on the slot
 type — the menu is global and the runner is indifferent — so further slots can be added later
 for in-cockpit observation without disturbing anything
 (see [docs/evolutions.md](../../evolutions.md)). No scenario requires the tester to fly: target
-aircraft are spawned by the scenario itself, and the Combined Arms map view is the useful
+aircraft are added by the scenario itself, and the Combined Arms map view is the useful
 vantage point for debugging a detection test.
 
 ### Shared test assets: `test/common/`
@@ -165,7 +165,7 @@ on yielding across a `pcall` boundary, which LuaJIT allows but stock Lua 5.1 doe
 Every wait is bounded, and each test carries an overall budget, so a hung test fails rather
 than wedging the mission.
 
-### Fixtures: authored in the editor, stored as text, spawned at runtime
+### Fixtures: authored in the editor, stored as text, added at runtime
 
 ```
 Mission Editor (occasionally, by hand)
@@ -175,7 +175,7 @@ Offline extractor (test/insim/tools/extract-fixtures.lua, plain Lua 5.1, no DCS)
   read that .miz's `mission` file  →  test/insim/fixtures/generated/*.lua  (committed, diffable)
 
 Runtime (every F10 run)
-  setUp spawns from the generated table  →  fresh units
+  setUp adds from the generated table  →  fresh units
 ```
 
 The Mission Editor is the source of truth for placement: hand-authoring coordinates is
@@ -208,69 +208,76 @@ silently produces units in the wrong place or facing the wrong way:
 **east** offset, not altitude and not north. `getPosition()`'s `.x`/`.y`/`.z` are orientation
 *unit vectors*, not coordinates at all — position lives in its `.p`. Heading comes from the
 forward vector, `math.atan2(pos.x.z, pos.x.x)`; the mission file stores `heading` directly as a
-scalar, so the extractor needs no such conversion, but the spawn-fidelity check does if it
-compares a spawned unit's live facing against its editor-placed original.
+scalar, so the extractor needs no such conversion, but the fixture-fidelity check does if it
+compares an added unit's live facing against its editor-placed original.
 
 The late-activated units in `skynet-insim.miz` are not activated by a normal run: they exist to
 be read by the extractor and to give a map view of the fixture world. The one exception is an
-asset class that fails the spawn-fidelity check below, which falls back to being activated
+asset class that fails the fixture-fidelity check below, which falls back to being activated
 directly.
 
-### Isolation: removeJunk for the dead, same-name replacement for the living
+### Isolation: removeJunk for the exploded, re-add for the live
 
-Measured in DCS on 2026-09-16 with a throwaway F10 probe (DCS API only, no MOOSE), using a
-3-vehicle ground group and a single static. Both behaved the same way:
+Three distinct operations, kept distinct throughout this document:
 
-| Action | Result |
+| Term | Means |
 |---|---|
-| Spawn same name over a **live** entity | Replaced |
-| Spawn same name over an **exploded** entity | New entity is whole and alive; the old wreck stays as debris beside it |
-| `world.removeJunk` over the zone | Clears the wrecks |
+| **add** | create a group or static — `coalition.addGroup`, `coalition.addStaticObject` |
+| **destroy** | remove a live group or static through the API — `Object.destroy()` |
+| **explode** | in-game destruction, by weapons or `trigger.action.explosion`; leaves a wreck |
 
-What a destroyed entity leaves behind differs by kind, which decides how much the leftovers
+How DCS responds to each:
+
+| Operation | Result |
+|---|---|
+| **add** with the name of a **live** entity | The live one is destroyed; the new one takes its place |
+| **add** with the name of an **exploded** entity | The new one is added whole and live; the wreck remains beside it |
+| **destroy** a **live** entity | Removed cleanly, no wreck |
+| **destroy** an **exploded** entity | No effect; the wreck remains |
+| `removeJunk` over a volume | Clears wrecks |
+
+Neither operation resets a scenario on its own: `destroy` acts only on what is still live, and
+`add` replaces only what is still live. Wrecks are `removeJunk`'s job.
+
+What an **exploded** entity leaves behind differs by kind, which decides how much the leftovers
 matter:
 
-| After destruction | Group | Static |
+| After exploding | Group | Static |
 |---|---|---|
 | `getByName` | **nil** | found |
 | `isExist()` | n/a | **false** |
 | entries in `coalition.getGroups` | **0** | n/a |
 
-A destroyed group leaves **no logical trace**. So `removeJunk` clears *physical debris*, not
-stale listings, and prefix-based discovery cannot pick up dead sites. The standing reason to
-clear debris anyway is `skynet-iads-abstract-radar-element.lua:754`: "there are cases when a
+An exploded group leaves **no logical trace**, so `removeJunk` clears *physical debris* rather
+than stale listings, and prefix-based discovery cannot pick up dead sites. The standing reason
+to clear debris anyway is `skynet-iads-abstract-radar-element.lua:754`: "there are cases when a
 destroyed object is still visible as a target to the radar".
 
-A destroyed static is the opposite — its handle survives reporting `isExist() == false` — and
+An exploded static is the opposite — its handle survives, reporting `isExist() == false` — and
 that suits Skynet. `SkynetIADSAbstractElement:genericCheckOneObjectIsAlive` holds stored
 references to power sources and connection nodes, typically statics, and calls `isExist()` on
 each; had statics vanished the way groups do, those references would go stale and raise.
 
-Despawn is the wrong primitive here. `Object.destroy()` removes a live object cleanly but stops
-working once a unit is destroyed and burning (MOOSE issue #695, closed as a DCS bug) — it works
-on what need not be cleared and fails on what does. Same-name replacement, by contrast, is
-documented `coalition.addGroup` behavior.
-
 The cycle:
 
 ```
-setUp     world.removeJunk(sphere around this scenario's anchor)   -- clears wrecks from last run
-          coalition.addGroup(scoped name)                          -- replaces any live leftovers
-tearDown  Object.destroy() on each tracked group still alive       -- clean, leaves no wreck
+setUp     removeJunk(sphere around this scenario's anchor)   -- clear wrecks from the last run
+          add each fixture under its scoped name             -- replaces any live leftovers
+tearDown  destroy each tracked entity still live             -- leaves no wreck behind
           iads:deactivate()
 ```
 
-- Each scenario spawns under deterministic, test-scoped names (`insim_TestSamGoesDark_SAM-1`)
-  at its own well-separated anchor. The anchor gives `removeJunk` a volume that cannot touch
-  another scenario's fixtures; the scoped name plus same-name replacement handles live
-  leftovers from an interrupted run.
+- Fixtures are added under deterministic, test-scoped names (`insim_TestSamGoesDark_SAM-1`) at
+  the scenario's own well-separated anchor. The anchor gives `removeJunk` a volume that cannot
+  touch another scenario's fixtures; the scoped name means re-adding replaces that scenario's
+  own live leftovers and nothing else.
 - `removeJunk` runs in `setUp`, not `tearDown`, so it also covers runs that crashed, were
   interrupted, or were re-triggered from F10 before finishing — cases a `tearDown` never reaches.
-- `tearDown` destroys what is still alive, which is reliable for live units and keeps the world
-  from accumulating. Anything killed during the test is left to the next `setUp`.
+- `tearDown` destroys what is still live, which keeps the world from accumulating. Anything
+  that exploded during the test is left to the next `setUp`.
 - The hard reset is a mission restart, occasionally needed after a long session.
 
-Spawned units fire `S_EVENT_BIRTH`, which Skynet already handles
+Added units fire `S_EVENT_BIRTH`, which Skynet already handles
 (`skynet-iads-source/skynet-iads.lua:31`, currently a log line). Benign, but on the path.
 
 ### No mist
@@ -321,7 +328,7 @@ test/insim/
   runner/wait.lua               waitFor / waitSeconds
   runner/report.lua             outText + env.info + results file
   tools/insim-test-tools.lua    toolbox: pure-Lua helpers (deepCopy, serialize) and
-                                DCS-world helpers (spawnOrReplace, name scoping)
+                                DCS-world helpers (addOrReplace, name scoping)
   tools/extract-fixtures.lua    offline entry point, plain Lua 5.1, no DCS API
   fixtures/generated/*.lua      extracted templates (committed)
   fixtures/placements.lua       Caucasus anchor coordinates, one region per scenario
@@ -340,17 +347,17 @@ preference.
 
 ## Deliverable
 
-The tier, plus **one real time-dependent scenario**: spawn an EWR, a red SAM site and a moving
+The tier, plus **one real time-dependent scenario**: add an EWR, a red SAM site and a moving
 aircraft; wait for genuine radar detection; assert that the IADS reacts.
 
 A synchronous placeholder ("assert `Group.getByName` returns a unit") is rejected as the proof:
-it would exercise none of the spawning, coroutine-waiting, timeout or isolation machinery.
+it would exercise none of the adding, coroutine-waiting, timeout or isolation machinery.
 
 ## To verify during implementation
 
 None of these are design forks; each has a known fallback.
 
-1. **Spawn fidelity** — first step. Does a group spawned from an extracted table behave
+1. **Fixture fidelity** — first step. Does a group added from an extracted table behave
    identically to its editor-placed original as far as Skynet can tell: types resolve, radar
    emits, detection works, `coldAtStart` honored? If an asset class fails, it falls back to a
    late-activated editor-placed group and its scenarios accept one destructive run per mission
@@ -360,11 +367,11 @@ None of these are design forks; each has a known fallback.
 3. **`coalition.addGroup` country and category enum correctness** for these ground groups.
 4. **Re-anchoring** — whether group tables extracted from the Persian Gulf `.miz` land cleanly
    on Caucasus or need per-site coordinate fixups.
-5. **`removeJunk` stability.** It has a history of client CTDs a few seconds after removing
-   nearby destroyed units, with a fix referenced around December 2024. Confirmed working in
-   single player; the multiplayer blast radius is nil for this tier.
-6. **Partial destruction.** The probe measured groups whose units were *all* destroyed. A group
-   with some alive and some dead is the case `forEachLiveGroup` guards, and the state a
-   mid-scenario assertion will most often observe.
+5. **`removeJunk` stability.** It has a history of client CTDs a few seconds after clearing
+   nearby wrecks, with a fix referenced around December 2024. Working in single player; the
+   multiplayer blast radius is nil for this tier.
+6. **Partially exploded groups.** Behaviour is known for groups whose units have *all*
+   exploded. A group with some units live and some exploded is the case `forEachLiveGroup`
+   guards, and the state a mid-scenario assertion will most often observe.
 7. **Detection timing** is non-deterministic. Timeouts are generous by policy; any scenario
    needing tight timing is the wrong scenario for this tier.
