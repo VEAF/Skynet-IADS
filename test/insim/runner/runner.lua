@@ -14,6 +14,9 @@ inside a single coroutine would be the obvious alternative, and it cannot work h
 stock Lua 5.1 cannot yield across a pcall boundary.
 
 coroutine.resume IS the protected call. There is no pcall anywhere in this file.
+
+The budget bounds COOPERATIVE hangs only. A test that never yields at all (`while true do end`)
+never returns control to the runner, so nothing here can stop it.
 ]]
 
 InsimRunner = {}
@@ -158,8 +161,31 @@ function InsimRunner.step(state)
   if phase.pending then
     local satisfied = false
     if phase.pending.kind == "waitFor" then
-      -- The predicate runs here, on the runner's tick, never inside the test coroutine.
-      satisfied = phase.pending.predicate() and true or false
+      -- The predicate runs here, on the runner's tick, never inside the test coroutine. It is
+      -- arbitrary test code and it CAN raise: querying a DCS object destroyed mid-test raises,
+      -- which is precisely what a scenario predicate does. Running it in its own coroutine keeps
+      -- that raise from escaping the timer callback and killing the run silently, and keeps this
+      -- file pcall-free, since resume is itself the protected call.
+      local probe = coroutine.create(phase.pending.predicate)
+      local ok, value = coroutine.resume(probe)
+
+      local predicateFailure
+      if not ok then
+        predicateFailure = "waitFor predicate raised: " .. tostring(value)
+      elseif coroutine.status(probe) ~= "dead" then
+        predicateFailure = "waitFor predicate yielded; a predicate must not wait"
+      end
+
+      if predicateFailure then
+        item.failure = item.failure or predicateFailure
+        state.phase = advancePhase(state, item, phase.index)
+        if not state.phase then
+          finishTest(state)
+        end
+        return state.queue[state.index] ~= nil
+      end
+
+      satisfied = value and true or false
     end
 
     if satisfied then
@@ -195,8 +221,15 @@ function InsimRunner.step(state)
   end
 
   -- Still alive, so it yielded a wait descriptor.
-  assert(type(yielded) == "table" and yielded.timeout,
-    item.testName .. ": a test coroutine yielded something that is not a wait descriptor")
+  if type(yielded) ~= "table" or not yielded.timeout then
+    item.failure = item.failure or (item.testName ..
+      ": a test coroutine yielded something that is not a wait descriptor")
+    state.phase = advancePhase(state, item, phase.index)
+    if not state.phase then
+      finishTest(state)
+    end
+    return state.queue[state.index] ~= nil
+  end
   phase.pending = yielded
   phase.deadline = now + yielded.timeout
 

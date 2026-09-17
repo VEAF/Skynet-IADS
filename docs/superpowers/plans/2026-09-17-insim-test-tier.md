@@ -1173,6 +1173,37 @@ function TestInsimRunner:testStartArmsARepeatingTickAndCallsBackOnCompletion()
   luaunit.assertNotNil(seen, "onComplete was never called")
   luaunit.assertEquals(seen.passed, 1)
 end
+
+function TestInsimRunner:testARaisingPredicateFailsOnlyThatTestAndRunsItsTearDown()
+  local torn = false
+  local results = runToCompletion({
+    { name = "RaisingPredicate", suite = {
+        tearDown = function() torn = true end,
+        testPredicateRaises = function()
+          waitFor(function() error("attempt to index a destroyed unit") end, 60)
+        end,
+      } },
+    { name = "Later", suite = { testStillRuns = function() end } },
+  })
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertEquals(results.passed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "predicate raised")
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "destroyed unit")
+  luaunit.assertTrue(torn, "tearDown must still run after a predicate raises")
+  luaunit.assertEquals(results.suites[2].tests[1].status, "pass")
+end
+
+function TestInsimRunner:testAMalformedYieldFailsOnlyThatTest()
+  local results = runToCompletion({
+    { name = "BadYield", suite = {
+        testYieldsGarbage = function() coroutine.yield("not a descriptor") end,
+      } },
+    { name = "Later", suite = { testStillRuns = function() end } },
+  })
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertEquals(results.passed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
+end
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -1201,6 +1232,9 @@ inside a single coroutine would be the obvious alternative, and it cannot work h
 stock Lua 5.1 cannot yield across a pcall boundary.
 
 coroutine.resume IS the protected call. There is no pcall anywhere in this file.
+
+The budget bounds COOPERATIVE hangs only. A test that never yields at all (`while true do end`)
+never returns control to the runner, so nothing here can stop it.
 ]]
 
 InsimRunner = {}
@@ -1345,8 +1379,31 @@ function InsimRunner.step(state)
   if phase.pending then
     local satisfied = false
     if phase.pending.kind == "waitFor" then
-      -- The predicate runs here, on the runner's tick, never inside the test coroutine.
-      satisfied = phase.pending.predicate() and true or false
+      -- The predicate runs here, on the runner's tick, never inside the test coroutine. It is
+      -- arbitrary test code and it CAN raise: querying a DCS object destroyed mid-test raises,
+      -- which is precisely what a scenario predicate does. Running it in its own coroutine keeps
+      -- that raise from escaping the timer callback and killing the run silently, and keeps this
+      -- file pcall-free, since resume is itself the protected call.
+      local probe = coroutine.create(phase.pending.predicate)
+      local ok, value = coroutine.resume(probe)
+
+      local predicateFailure
+      if not ok then
+        predicateFailure = "waitFor predicate raised: " .. tostring(value)
+      elseif coroutine.status(probe) ~= "dead" then
+        predicateFailure = "waitFor predicate yielded; a predicate must not wait"
+      end
+
+      if predicateFailure then
+        item.failure = item.failure or predicateFailure
+        state.phase = advancePhase(state, item, phase.index)
+        if not state.phase then
+          finishTest(state)
+        end
+        return state.queue[state.index] ~= nil
+      end
+
+      satisfied = value and true or false
     end
 
     if satisfied then
@@ -1382,8 +1439,15 @@ function InsimRunner.step(state)
   end
 
   -- Still alive, so it yielded a wait descriptor.
-  assert(type(yielded) == "table" and yielded.timeout,
-    item.testName .. ": a test coroutine yielded something that is not a wait descriptor")
+  if type(yielded) ~= "table" or not yielded.timeout then
+    item.failure = item.failure or (item.testName ..
+      ": a test coroutine yielded something that is not a wait descriptor")
+    state.phase = advancePhase(state, item, phase.index)
+    if not state.phase then
+      finishTest(state)
+    end
+    return state.queue[state.index] ~= nil
+  end
   phase.pending = yielded
   phase.deadline = now + yielded.timeout
 

@@ -267,4 +267,35 @@ function TestInsimRunner:testStartArmsARepeatingTickAndCallsBackOnCompletion()
   luaunit.assertEquals(seen.passed, 1)
 end
 
+function TestInsimRunner:testARaisingPredicateFailsOnlyThatTestAndRunsItsTearDown()
+  local torn = false
+  local results = runToCompletion({
+    { name = "RaisingPredicate", suite = {
+        tearDown = function() torn = true end,
+        testPredicateRaises = function()
+          waitFor(function() error("attempt to index a destroyed unit") end, 60)
+        end,
+      } },
+    { name = "Later", suite = { testStillRuns = function() end } },
+  })
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertEquals(results.passed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "predicate raised")
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "destroyed unit")
+  luaunit.assertTrue(torn, "tearDown must still run after a predicate raises")
+  luaunit.assertEquals(results.suites[2].tests[1].status, "pass")
+end
+
+function TestInsimRunner:testAMalformedYieldFailsOnlyThatTest()
+  local results = runToCompletion({
+    { name = "BadYield", suite = {
+        testYieldsGarbage = function() coroutine.yield("not a descriptor") end,
+      } },
+    { name = "Later", suite = { testStillRuns = function() end } },
+  })
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertEquals(results.passed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
+end
+
 os.exit(luaunit.LuaUnit.run())
