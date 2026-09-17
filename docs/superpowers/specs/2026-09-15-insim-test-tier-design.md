@@ -174,10 +174,25 @@ is Caucasus-specific. A unit entry is seven keys, matching the tables in the exi
 { type = "Kub 1S91 str", dx = 0, dy = 0, heading = 2.827, skill = "Excellent" }
 ```
 
-`dx`/`dy` are offsets in DCS mission-table coordinates, where **`y` is the map north axis, not
-altitude** — the same convention the `.miz` itself uses. The extractor computes them relative
-to each site's first unit, so the compositions Skynet was built against can be harvested out of
-`unit-tests/skynet-unit-tests.miz` (Persian Gulf) and re-anchored on Caucasus.
+The extractor computes `dx`/`dy` relative to each site's first unit, so the compositions Skynet
+was built against can be harvested out of `unit-tests/skynet-unit-tests.miz` (Persian Gulf) and
+re-anchored on Caucasus.
+
+**Axis conventions.** Three different things in DCS are spelled `x`/`y`/`z`, and mixing them up
+silently produces units in the wrong place or facing the wrong way:
+
+| | `x` | `y` | `z` |
+|---|---|---|---|
+| `Vec3` — world position | north | **altitude** | east |
+| `Vec2` — and mission-file unit tables | north | **east** | — |
+| `getPosition()` `.x`/`.y`/`.z` | forward | up | right |
+
+`Vec2.x == Vec3.x`, `Vec2.y == Vec3.z`. Fixture offsets are Vec2/mission-table, so `dy` is an
+**east** offset, not altitude and not north. `getPosition()`'s `.x`/`.y`/`.z` are orientation
+*unit vectors*, not coordinates at all — position lives in its `.p`. Heading comes from the
+forward vector, `math.atan2(pos.x.z, pos.x.x)`; the mission file stores `heading` directly as a
+scalar, so the extractor needs no such conversion, but the spawn-fidelity check does if it
+compares a spawned unit's live facing against its editor-placed original.
 
 The late-activated units in `skynet-insim.miz` are not activated by a normal run: they exist to
 be read by the extractor and to give a map view of the fixture world. The one exception is an
