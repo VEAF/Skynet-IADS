@@ -112,4 +112,20 @@ function TestInsimExtractor:testFixtureFileTextIsStableAcrossRuns()
   luaunit.assertEquals(first, second)
 end
 
+function TestInsimExtractor:testIsStaticGroupRecognisesAUnitCarryingACategory()
+  luaunit.assertTrue(InsimExtractor.isStaticGroup({
+    name = "Static MBT-1",
+    units = { { type = "M-60", category = "Armor" } },
+  }))
+end
+
+function TestInsimExtractor:testIsStaticGroupRejectsAVehicleGroup()
+  luaunit.assertFalse(InsimExtractor.isStaticGroup(sampleGroup()))
+end
+
+function TestInsimExtractor:testIsStaticGroupRejectsAGroupWithNoUnits()
+  luaunit.assertFalse(InsimExtractor.isStaticGroup({ name = "Empty", units = {} }))
+  luaunit.assertFalse(InsimExtractor.isStaticGroup({ name = "Nil units" }))
+end
+
 os.exit(luaunit.LuaUnit.run())

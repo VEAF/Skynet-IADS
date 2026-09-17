@@ -690,6 +690,15 @@ function InsimExtractor.groupsFromMissionTable(mission, prefix)
   return found
 end
 
+--- Distinguishes a static group from a vehicle group. Mission files mark statics by carrying a
+--- `category` on the unit ("Armor", "Fortifications", ...); vehicle and aircraft units never
+--- do. Measured across two independent missions in this project: 156 static units carry
+--- `category`, zero vehicle or plane units do.
+function InsimExtractor.isStaticGroup(group)
+  local unit = type(group) == "table" and group.units and group.units[1]
+  return unit ~= nil and unit.category ~= nil
+end
+
 --- A committed fixture file: a Lua chunk returning { <key> = <template>, ... }.
 function InsimExtractor.fixtureFileText(templatesByName)
   local lines = {
@@ -718,7 +727,7 @@ if arg and arg[0] and arg[0]:find("extract%-fixtures") and arg[1] then
 
   local templates = {}
   for _, group in ipairs(InsimExtractor.groupsFromMissionTable(mission, prefix)) do
-    local isStatic = group.units and group.units[1] and group.units[1].category ~= nil
+    local isStatic = InsimExtractor.isStaticGroup(group)
     templates[group.name] = isStatic
       and InsimExtractor.templateFromStatic(group)
       or InsimExtractor.templateFromGroup(group)
