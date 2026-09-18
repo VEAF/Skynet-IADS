@@ -1642,6 +1642,23 @@ function TestInsimReport:testEmitPutsTheSummaryOnScreenAndDetailInTheLog()
   luaunit.assertStrContains(table.concat(logged, "\n"), "SKYNET_INSIM")
 end
 
+function TestInsimReport:testEmitStillReportsWhenTheResultsFileCannotBeWritten()
+  -- A path whose directory does not exist, which is the state of a fresh checkout: the results
+  -- directory is created by nothing until the first successful write.
+  InsimReport.emit(self.results, "Z:/no/such/repo/for/skynet/insim")
+
+  luaunit.assertEquals(#dcsStub.outTexts, 1, "the screen summary must still appear")
+  luaunit.assertStrContains(dcsStub.outTexts[1].text, "1 failed")
+
+  local logged = {}
+  for _, entry in ipairs(dcsStub.logs) do
+    logged[#logged + 1] = entry.text
+  end
+  local allLogged = table.concat(logged, "\n")
+  luaunit.assertStrContains(allLogged, "SKYNET_INSIM")
+  luaunit.assertStrContains(allLogged, "cannot write")
+end
+
 os.exit(luaunit.LuaUnit.run())
 ```
 
@@ -1746,9 +1763,19 @@ Expected: PASS, 27 tests
 
 - [ ] **Step 6: Run the full suite and commit**
 
+The results file this task's reporter writes (`test/insim/results/last-run.lua`) is
+machine-generated and must not be committed, so the `.gitignore` entry for it is added here
+(originally slated for Task 9, moved up since Task 6 is what makes the file real):
+
+Append to `.gitignore`:
+
+```
+/test/insim/results/
+```
+
 ```bash
 & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
-git add test/insim/runner/report.lua test/lua/dcs-stub.lua test/lua/test_insim_runner.lua
+git add test/insim/runner/report.lua test/lua/dcs-stub.lua test/lua/test_insim_runner.lua .gitignore
 git commit -m "feat: add insim result reporting to screen, log and file"
 ```
 
@@ -2183,14 +2210,6 @@ Expected: a **Skynet Tests** menu with **Run all**, **Re-run last** and **Run on
 
 If instead the screen says "re-apply the MissionScripting.lua edit", Step 1 did not take.
 If it names the config file, Step 2 did not take.
-
-- [ ] **Step 6: Ignore the results directory**
-
-Append to `.gitignore`:
-
-```
-/test/insim/results/
-```
 
 - [ ] **Step 7: Write the README**
 

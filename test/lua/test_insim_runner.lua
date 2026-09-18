@@ -399,4 +399,21 @@ function TestInsimReport:testEmitPutsTheSummaryOnScreenAndDetailInTheLog()
   luaunit.assertStrContains(table.concat(logged, "\n"), "SKYNET_INSIM")
 end
 
+function TestInsimReport:testEmitStillReportsWhenTheResultsFileCannotBeWritten()
+  -- A path whose directory does not exist, which is the state of a fresh checkout: the results
+  -- directory is created by nothing until the first successful write.
+  InsimReport.emit(self.results, "Z:/no/such/repo/for/skynet/insim")
+
+  luaunit.assertEquals(#dcsStub.outTexts, 1, "the screen summary must still appear")
+  luaunit.assertStrContains(dcsStub.outTexts[1].text, "1 failed")
+
+  local logged = {}
+  for _, entry in ipairs(dcsStub.logs) do
+    logged[#logged + 1] = entry.text
+  end
+  local allLogged = table.concat(logged, "\n")
+  luaunit.assertStrContains(allLogged, "SKYNET_INSIM")
+  luaunit.assertStrContains(allLogged, "cannot write")
+end
+
 os.exit(luaunit.LuaUnit.run())
