@@ -119,7 +119,7 @@ local function run(onlyFile)
   -- live coroutines, arm a second scheduled tick, and race to overwrite last-run.lua. An
   -- impatient double-press is likely, and the result would read as flaky tests.
   if running then
-    trigger.action.outText("skynet-insim: a run is already in progress", 10)
+    fail("a run is already in progress")
     return
   end
 
@@ -144,10 +144,19 @@ local function run(onlyFile)
   trigger.action.outText(string.format("skynet-insim: running %d suite(s)...", #suites), 10)
 
   running = true
-  InsimRunner.start(suites, function(results)
+
+  -- InsimRunner.plan asserts more strictly than loadSuites does, so a malformed scenario can
+  -- raise here, after the flag is set. Releasing it on failure keeps a bad scenario file from
+  -- wedging the menu until the mission is restarted.
+  local started, err = pcall(InsimRunner.start, suites, function(results)
     running = false
     InsimReport.emit(results, repoPath)
   end)
+
+  if not started then
+    running = false
+    fail("could not start the run: " .. tostring(err))
+  end
 end
 
 function InsimInit.start()
