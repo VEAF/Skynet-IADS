@@ -6,6 +6,8 @@ luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 dofile(base .. "/../insim/runner/wait.lua")
 dofile(base .. "/../insim/runner/runner.lua")
+dofile(base .. "/../insim/tools/insim-test-tools.lua")
+dofile(base .. "/../insim/runner/report.lua")
 
 TestInsimWait = {}
 
@@ -328,6 +330,73 @@ function TestInsimRunner:testASetUpMalformedYieldSkipsTheBodyButStillRunsTearDow
   luaunit.assertTrue(torn, "tearDown must still run after a failed setUp")
   luaunit.assertEquals(results.failed, 1)
   luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
+end
+
+TestInsimReport = {}
+
+function TestInsimReport:setUp()
+  dcsStub.reset()
+  dcsStub.setClock(100)
+  self.results = {
+    passed = 2,
+    failed = 1,
+    suites = {
+      { name = "Detection", tests = {
+          { name = "testDetects", status = "pass" },
+          { name = "testGoesDark", status = "fail", message = "waitFor timed out after 60s" },
+        } },
+      { name = "Power", tests = { { name = "testLosesPower", status = "pass" } } },
+    },
+  }
+end
+
+function TestInsimReport:testSummaryLeadsWithTheCountsAndNamesFailures()
+  local text = InsimReport.summaryText(self.results)
+  luaunit.assertStrContains(text, "2 passed")
+  luaunit.assertStrContains(text, "1 failed")
+  luaunit.assertStrContains(text, "testGoesDark")
+end
+
+function TestInsimReport:testSummaryOfAGreenRunSaysSo()
+  local text = InsimReport.summaryText({ passed = 3, failed = 0, suites = {} })
+  luaunit.assertStrContains(text, "3 passed")
+  luaunit.assertStrContains(text, "ALL PASSED")
+end
+
+function TestInsimReport:testDetailLinesIncludeEveryTestAndEachFailureMessage()
+  local lines = table.concat(InsimReport.detailLines(self.results), "\n")
+  luaunit.assertStrContains(lines, "Detection")
+  luaunit.assertStrContains(lines, "testDetects")
+  luaunit.assertStrContains(lines, "testLosesPower")
+  luaunit.assertStrContains(lines, "waitFor timed out after 60s")
+end
+
+function TestInsimReport:testDetailLinesAreTaggedForLogGrepping()
+  for _, line in ipairs(InsimReport.detailLines(self.results)) do
+    luaunit.assertStrContains(line, "SKYNET_INSIM")
+  end
+end
+
+function TestInsimReport:testResultsFileTextLoadsBackAsTheSameCounts()
+  local chunk, err = loadstring(InsimReport.resultsFileText(self.results))
+  luaunit.assertNotNil(chunk, tostring(err))
+  local loaded = chunk()
+  luaunit.assertEquals(loaded.passed, 2)
+  luaunit.assertEquals(loaded.failed, 1)
+  luaunit.assertEquals(loaded.suites[1].tests[2].message, "waitFor timed out after 60s")
+end
+
+function TestInsimReport:testEmitPutsTheSummaryOnScreenAndDetailInTheLog()
+  InsimReport.emit(self.results, nil)
+  luaunit.assertEquals(#dcsStub.outTexts, 1)
+  luaunit.assertStrContains(dcsStub.outTexts[1].text, "1 failed")
+  luaunit.assertTrue(dcsStub.outTexts[1].duration > 0)
+
+  local logged = {}
+  for _, entry in ipairs(dcsStub.logs) do
+    logged[#logged + 1] = entry.text
+  end
+  luaunit.assertStrContains(table.concat(logged, "\n"), "SKYNET_INSIM")
 end
 
 os.exit(luaunit.LuaUnit.run())

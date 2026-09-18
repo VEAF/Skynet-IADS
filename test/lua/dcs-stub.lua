@@ -29,6 +29,7 @@ function dcsStub.reset()
   dcsStub.world = {}
   dcsStub.logs = {}
   dcsStub.eventHandlers = {}
+  dcsStub.outTexts = {}
   timerTasks = {}
   nextTimerId = 0
   utilsSchedulerTasks = nil
@@ -92,7 +93,14 @@ env = {
   end,
 }
 
-trigger = { action = { outText = function() end, explosion = function() end } }
+-- outText is captured, not discarded: test/insim's reporter puts its primary readout there.
+dcsStub.outTexts = {}
+trigger = { action = {
+  outText = function(text, duration)
+    dcsStub.outTexts[#dcsStub.outTexts + 1] = { text = text, duration = duration }
+  end,
+  explosion = function() end,
+} }
 
 timer = { getAbsTime = function()
   return now
