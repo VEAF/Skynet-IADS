@@ -123,6 +123,21 @@ local function finishTest(state)
   state.phase = nil
 end
 
+--- Records a failure for the current test, then moves to the next phase. Every failure path
+--- goes through here on purpose: a setUp that fails must skip the body, and that flag was
+--- forgotten in two separate branches before this helper existed.
+local function failPhase(state, item, phase, message)
+  item.failure = item.failure or message
+  if phase.name == "setUp" then
+    item.failedSetUp = true
+  end
+  state.phase = advancePhase(state, item, phase.index)
+  if not state.phase then
+    finishTest(state)
+  end
+  return state.queue[state.index] ~= nil
+end
+
 --- One tick. Returns true while the run has more to do.
 function InsimRunner.step(state)
   local item = state.queue[state.index]
@@ -177,15 +192,7 @@ function InsimRunner.step(state)
       end
 
       if predicateFailure then
-        item.failure = item.failure or predicateFailure
-        if phase.name == "setUp" then
-          item.failedSetUp = true
-        end
-        state.phase = advancePhase(state, item, phase.index)
-        if not state.phase then
-          finishTest(state)
-        end
-        return state.queue[state.index] ~= nil
+        return failPhase(state, item, phase, predicateFailure)
       end
 
       satisfied = value and true or false
@@ -204,15 +211,7 @@ function InsimRunner.step(state)
 
   if not ok then
     -- A raise from any phase fails the test. setUp additionally skips the body.
-    item.failure = item.failure or tostring(yielded)
-    if phase.name == "setUp" then
-      item.failedSetUp = true
-    end
-    state.phase = advancePhase(state, item, phase.index)
-    if not state.phase then
-      finishTest(state)
-    end
-    return state.queue[state.index] ~= nil
+    return failPhase(state, item, phase, tostring(yielded))
   end
 
   if coroutine.status(phase.co) == "dead" then
@@ -225,13 +224,8 @@ function InsimRunner.step(state)
 
   -- Still alive, so it yielded a wait descriptor.
   if type(yielded) ~= "table" or not yielded.timeout then
-    item.failure = item.failure or (item.testName ..
+    return failPhase(state, item, phase, item.testName ..
       ": a test coroutine yielded something that is not a wait descriptor")
-    state.phase = advancePhase(state, item, phase.index)
-    if not state.phase then
-      finishTest(state)
-    end
-    return state.queue[state.index] ~= nil
   end
   phase.pending = yielded
   phase.deadline = now + yielded.timeout

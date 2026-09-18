@@ -315,4 +315,19 @@ function TestInsimRunner:testASetUpPredicateRaiseSkipsTheBodyButStillRunsTearDow
   luaunit.assertStrContains(results.suites[1].tests[1].message, "predicate raised")
 end
 
+function TestInsimRunner:testASetUpMalformedYieldSkipsTheBodyButStillRunsTearDown()
+  local bodyRan, torn = false, false
+  local results = runToCompletion({
+    { name = "SetUpYieldsGarbage", suite = {
+        setUp = function() coroutine.yield("not a descriptor") end,
+        tearDown = function() torn = true end,
+        testNeverRuns = function() bodyRan = true end,
+      } },
+  })
+  luaunit.assertFalse(bodyRan, "a setUp that failed must not be followed by the body")
+  luaunit.assertTrue(torn, "tearDown must still run after a failed setUp")
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
+end
+
 os.exit(luaunit.LuaUnit.run())
