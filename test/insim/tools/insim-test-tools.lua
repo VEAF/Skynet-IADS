@@ -83,4 +83,103 @@ function InsimTestTools.serialize(value, indent)
   return "{\n" .. table.concat(parts, ",\n") .. ",\n" .. indent .. "}"
 end
 
+--- DCS world ---------------------------------------------------------------------------------
+--- Everything below needs a running sim. See test/insim/README.md for how to exercise it.
+
+--- Test-scoped names keep one scenario's fixtures from colliding with another's, and give
+--- Skynet's prefix discovery a prefix that cannot match a neighbour's leftovers.
+function InsimTestTools.scopedName(scenarioName, fixtureName)
+  assert(type(scenarioName) == "string" and type(fixtureName) == "string",
+    "scopedName: both arguments must be strings")
+  return string.format("insim_%s_%s", scenarioName, fixtureName)
+end
+
+--- Adds a group from a template at `anchor`. Re-adding the same name replaces a LIVE group;
+--- a wreck is not replaced, which is why setUp calls removeJunkAround first.
+--- anchor/dx/dy are mission-table coordinates: x is NORTH, y is EAST.
+function InsimTestTools.addGroupFromTemplate(template, name, anchor, countryId)
+  assert(type(template) == "table" and template.units, "addGroupFromTemplate: bad template")
+  assert(type(name) == "string", "addGroupFromTemplate: name must be a string")
+  assert(type(anchor) == "table" and anchor.x and anchor.y,
+    "addGroupFromTemplate: anchor needs x (north) and y (east)")
+
+  local groupData = {
+    name = name,
+    task = template.task or "Ground Nothing",
+    units = {},
+    route = { points = {} },
+  }
+
+  for i, unit in ipairs(template.units) do
+    groupData.units[i] = {
+      name = string.format("%s-%d", name, i),
+      type = unit.type,
+      x = anchor.x + (unit.dx or 0),
+      y = anchor.y + (unit.dy or 0),
+      heading = unit.heading or 0,
+      skill = unit.skill or "Average",
+      playerCanDrive = false,
+    }
+  end
+
+  coalition.addGroup(countryId, Group.Category.GROUND, groupData)
+  return name
+end
+
+function InsimTestTools.addStaticFromTemplate(template, name, anchor, countryId)
+  assert(type(template) == "table" and template.type, "addStaticFromTemplate: bad template")
+  assert(type(anchor) == "table" and anchor.x and anchor.y,
+    "addStaticFromTemplate: anchor needs x (north) and y (east)")
+
+  coalition.addStaticObject(countryId, {
+    name = name,
+    type = template.type,
+    category = template.category,
+    x = anchor.x,
+    y = anchor.y,
+    heading = template.heading or 0,
+    dead = false,
+  })
+  return name
+end
+
+--- Destroys a group or static if it is still live. Has no effect on a wreck -- that is what
+--- removeJunkAround is for.
+function InsimTestTools.destroyIfLive(name)
+  local group = Group.getByName(name)
+  if group and group:isExist() then
+    group:destroy()
+    return true
+  end
+
+  local static = StaticObject.getByName(name)
+  if static and static:isExist() then
+    static:destroy()
+    return true
+  end
+
+  return false
+end
+
+--- Clears wrecks in a sphere around `anchor`. Returns how many objects DCS removed.
+--- The sphere is centred at terrain height so it covers ground clutter regardless of elevation.
+function InsimTestTools.removeJunkAround(anchor, radius)
+  assert(type(anchor) == "table" and anchor.x and anchor.y,
+    "removeJunkAround: anchor needs x (north) and y (east)")
+  assert(type(radius) == "number" and radius > 0, "removeJunkAround: radius must be positive")
+
+  -- land.getHeight takes a Vec2 {x = north, y = east}; world volumes take a Vec3
+  -- {x = north, y = altitude, z = east}.
+  local point = {
+    x = anchor.x,
+    y = land.getHeight({ x = anchor.x, y = anchor.y }),
+    z = anchor.y,
+  }
+
+  return world.removeJunk({
+    id = world.VolumeType.SPHERE,
+    params = { point = point, radius = radius },
+  }) or 0
+end
+
 end
