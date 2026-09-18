@@ -178,6 +178,9 @@ function InsimRunner.step(state)
 
       if predicateFailure then
         item.failure = item.failure or predicateFailure
+        if phase.name == "setUp" then
+          item.failedSetUp = true
+        end
         state.phase = advancePhase(state, item, phase.index)
         if not state.phase then
           finishTest(state)

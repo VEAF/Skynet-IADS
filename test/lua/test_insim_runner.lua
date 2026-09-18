@@ -298,4 +298,21 @@ function TestInsimRunner:testAMalformedYieldFailsOnlyThatTest()
   luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
 end
 
+function TestInsimRunner:testASetUpPredicateRaiseSkipsTheBodyButStillRunsTearDown()
+  local bodyRan, torn = false, false
+  local results = runToCompletion({
+    { name = "SetUpPredicateRaises", suite = {
+        setUp = function()
+          waitFor(function() error("unit already destroyed") end, 60)
+        end,
+        tearDown = function() torn = true end,
+        testNeverRuns = function() bodyRan = true end,
+      } },
+  })
+  luaunit.assertFalse(bodyRan, "a setUp that failed must not be followed by the body")
+  luaunit.assertTrue(torn, "tearDown must still run after a failed setUp")
+  luaunit.assertEquals(results.failed, 1)
+  luaunit.assertStrContains(results.suites[1].tests[1].message, "predicate raised")
+end
+
 os.exit(luaunit.LuaUnit.run())
