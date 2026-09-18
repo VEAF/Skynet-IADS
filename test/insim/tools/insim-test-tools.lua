@@ -98,7 +98,8 @@ end
 --- a wreck is not replaced, which is why setUp calls removeJunkAround first.
 --- anchor/dx/dy are mission-table coordinates: x is NORTH, y is EAST.
 function InsimTestTools.addGroupFromTemplate(template, name, anchor, countryId)
-  assert(type(template) == "table" and template.units, "addGroupFromTemplate: bad template")
+  assert(type(template) == "table" and template.units and template.units[1],
+    "addGroupFromTemplate: template has no units")
   assert(type(name) == "string", "addGroupFromTemplate: name must be a string")
   assert(type(anchor) == "table" and anchor.x and anchor.y,
     "addGroupFromTemplate: anchor needs x (north) and y (east)")
@@ -128,6 +129,9 @@ end
 
 function InsimTestTools.addStaticFromTemplate(template, name, anchor, countryId)
   assert(type(template) == "table" and template.type, "addStaticFromTemplate: bad template")
+  assert(template.category,
+    "addStaticFromTemplate: template has no category -- is this a group template?")
+  assert(type(name) == "string", "addStaticFromTemplate: name must be a string")
   assert(type(anchor) == "table" and anchor.x and anchor.y,
     "addStaticFromTemplate: anchor needs x (north) and y (east)")
 
@@ -162,6 +166,8 @@ function InsimTestTools.destroyIfLive(name)
 end
 
 --- Clears wrecks in a sphere around `anchor`. Returns how many objects DCS removed.
+--- `radius` is measured from the anchor, so it must cover the whole composition footprint plus
+--- debris scatter, not just the anchor point.
 --- The sphere is centred at terrain height so it covers ground clutter regardless of elevation.
 function InsimTestTools.removeJunkAround(anchor, radius)
   assert(type(anchor) == "table" and anchor.x and anchor.y,
@@ -176,10 +182,14 @@ function InsimTestTools.removeJunkAround(anchor, radius)
     z = anchor.y,
   }
 
-  return world.removeJunk({
+  local cleared = world.removeJunk({
     id = world.VolumeType.SPHERE,
     params = { point = point, radius = radius },
-  }) or 0
+  })
+
+  -- Documented as a count, but `or 0` alone would pass a boolean straight through to a caller
+  -- that is about to do arithmetic on it.
+  return type(cleared) == "number" and cleared or 0
 end
 
 end
