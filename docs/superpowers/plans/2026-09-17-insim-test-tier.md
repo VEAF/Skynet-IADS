@@ -1767,15 +1767,28 @@ The results file this task's reporter writes (`test/insim/results/last-run.lua`)
 machine-generated and must not be committed, so the `.gitignore` entry for it is added here
 (originally slated for Task 9, moved up since Task 6 is what makes the file real):
 
-Append to `.gitignore`:
+The *directory* must exist in a fresh checkout, though, or the very first in-sim run logs
+`cannot write ...last-run.lua` even when every test passed. So track the directory and ignore
+its contents, rather than ignoring the directory itself.
+
+Create an empty `test/insim/results/.gitkeep`, and append to `.gitignore`:
 
 ```
-/test/insim/results/
+/test/insim/results/*
+!/test/insim/results/.gitkeep
+```
+
+Confirm both halves hold (`check-ignore` exits 0 when a path is ignored, 1 when it is not; omit
+`-v`, which also prints negation rules and muddies the exit code):
+
+```bash
+git check-ignore test/insim/results/last-run.lua   # exits 0 -- ignored
+git check-ignore test/insim/results/.gitkeep       # exits 1 -- tracked
 ```
 
 ```bash
 & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
-git add test/insim/runner/report.lua test/lua/dcs-stub.lua test/lua/test_insim_runner.lua .gitignore
+git add test/insim/runner/report.lua test/lua/dcs-stub.lua test/lua/test_insim_runner.lua .gitignore test/insim/results/.gitkeep
 git commit -m "feat: add insim result reporting to screen, log and file"
 ```
 
@@ -1972,8 +1985,8 @@ revert that edit, so failing with an explicit message beats failing obscurely la
 
 InsimInit = {}
 
-local SCENARIO_NAMES = {}   -- filled by discovery below
-local lastRun = nil         -- suite list of the most recent run, for "Re-run last"
+local lastRun = nil         -- suite file of the most recent run, for "Re-run last"
+local running = false       -- guards against a second run being started over a live one
 
 local function fail(message)
   if trigger and trigger.action then
@@ -1993,7 +2006,7 @@ local function preflight()
   if not lfs then missing[#missing + 1] = "lfs" end
 
   if #missing > 0 then
-    fail("re-apply the MissionScripting.lua edit -- missing: "
+    fail("re-apply the edit in <DCS install>\\Scripts\\MissionScripting.lua -- missing: "
       .. table.concat(missing, ", ") .. ". A DCS update reverts it.")
     return false
   end
@@ -2019,18 +2032,30 @@ local function resolveRepoPath()
 end
 
 --- Scenario files are discovered by listing the directory, so adding one needs no registration.
+--- The directory is legitimately absent until the first scenario exists, and lfs.dir raises on
+--- a missing path. Menu building calls this outside any pcall, so absence must read as "none".
+--- Returns names, dir, err -- the error is kept rather than swallowed so a caller can tell
+--- "nobody has written a scenario yet" apart from "that directory cannot be read".
 local function discoverScenarioFiles(repoPath)
   local dir = repoPath .. "/test/insim/scenarios"
   local names = {}
 
-  for entry in lfs.dir(dir) do
-    if entry:match("^scenario_.+%.lua$") then
-      names[#names + 1] = entry
+  -- The whole enumeration is protected, not just the lfs.dir call: LuaFileSystem builds differ
+  -- over whether a missing directory raises when the iterator is created or on its first step.
+  local listed, err = pcall(function()
+    for entry in lfs.dir(dir) do
+      if entry:match("^scenario_.+%.lua$") then
+        names[#names + 1] = entry
+      end
     end
+  end)
+
+  if not listed then
+    return {}, dir, err
   end
 
   table.sort(names)
-  return names, dir
+  return names, dir, nil
 end
 
 --- Re-reads Skynet source and every scenario file, then returns the suite list the runner takes.
@@ -2064,6 +2089,15 @@ end
 
 local function run(onlyFile)
   local repoPath = InsimInit.repoPath
+
+  -- A second run would re-dofile runner.lua and the Skynet source underneath the first run's
+  -- live coroutines, arm a second scheduled tick, and race to overwrite last-run.lua. An
+  -- impatient double-press is likely, and the result would read as flaky tests.
+  if running then
+    trigger.action.outText("skynet-insim: a run is already in progress", 10)
+    return
+  end
+
   local ok, suites = pcall(loadSuites, repoPath, onlyFile)
 
   if not ok then
@@ -2072,19 +2106,30 @@ local function run(onlyFile)
   end
 
   if #suites == 0 then
-    fail("no scenarios found")
+    local _, dir, err = discoverScenarioFiles(repoPath)
+    if err then
+      fail("cannot read " .. dir .. " -- " .. tostring(err))
+    else
+      fail("no scenarios in " .. dir .. " -- add scenario_<name>.lua there")
+    end
     return
   end
 
   lastRun = onlyFile
   trigger.action.outText(string.format("skynet-insim: running %d suite(s)...", #suites), 10)
 
+  running = true
   InsimRunner.start(suites, function(results)
+    running = false
     InsimReport.emit(results, repoPath)
   end)
 end
 
 function InsimInit.start()
+  if InsimInit.repoPath then
+    return   -- already bootstrapped; a second dofile must not build a second menu
+  end
+
   if not preflight() then
     return
   end

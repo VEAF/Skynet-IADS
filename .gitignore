@@ -1,4 +1,5 @@
 .DS_STORE
 /demo-missions/spikes/
 /.superpowers/
-/test/insim/results/
+/test/insim/results/*
+!/test/insim/results/.gitkeep
