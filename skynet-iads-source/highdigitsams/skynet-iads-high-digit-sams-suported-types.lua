@@ -3,13 +3,13 @@ do
 
 	--EW radars used in multiple SAM systems:
 
-	s300PMU164N6Esr = {
+	local s300PMU164N6Esr = {
 		["name"] = {
 			["NATO"] = "Big Bird",
 		},
 	}
 
-	s300PMU140B6MDsr = {
+	local s300PMU140B6MDsr = {
 		["name"] = {
 			["NATO"] = "Clam Shell",
 		},
