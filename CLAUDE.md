@@ -23,11 +23,13 @@ project are not only French-speaking.
   API behaviour — verify it against the [dcs-lua-datamine
   dataset](https://github.com/Quaggles/dcs-lua-datamine) or a real log.
 
-## Two generated files — never edit either
+## The generated deliverable — never edit it
 
 `demo-missions/skynet-iads-compiled.lua` is the **deliverable**, concatenated from
-`skynet-iads-source/*.lua`. `README.md` at the root is **regenerated** from
-`skynet-iads-source/README_source.md`. Editing either is lost at the next build, silently.
+`skynet-iads-source/*.lua`. Editing it is lost at the next build, silently.
+
+`README.md` at the root is hand-written and short — a door pointing at the published documentation
+in `documentation/`, built with MkDocs. See ticket 06 in `CHORE-PROFESSIONALIZE-THE-REPO`.
 
 Build from any working directory — paths resolve from the script's own location, and the version
 comes from `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`, not from an argument:
@@ -37,9 +39,7 @@ pwsh -File build-tools/build-compiled-script.ps1
 ```
 
 The source order lives in `build-tools/listToMerge.txt`, one path per line, commented with why the
-order is what it is — edit that file to add or reorder a source, never the script. The build no
-longer touches `README.md`; that file is now hand-written (`CHORE-PROFESSIONALIZE-THE-REPO` ticket
-06 covers the published documentation it points to).
+order is what it is — edit that file to add or reorder a source, never the script.
 
 CI (`.github/workflows/build.yml`) runs the build on every push and pull request, then loads and
 executes the artifact against the DCS stub with `build-tools/check-artifact.lua` — a build proves
@@ -47,6 +47,16 @@ the files concatenate, not that the result runs. A tag matching `v*`
 (`.github/workflows/release.yml`) builds, verifies, and publishes a GitHub release carrying the
 artifact and the `[Unreleased]` section of `CHANGELOG.md`; a tag that is not a plain `vX.Y.Z` is
 published as a pre-release.
+
+## Documentation
+
+The published documentation is `documentation/*.md`, built with MkDocs Material and versioned with
+`mike`, deployed by `.github/workflows/docs.yml` to <https://veaf.github.io/Skynet-IADS/>. Prose
+lives in exactly one place: either a page under `documentation/`, or the root `README.md` — never
+both. `develop` publishes as `dev` (the site default while no stable release exists), `master` as
+`latest`, and a tag as its own version — plus `latest` if the tag is a plain `vX.Y.Z`; a
+pre-release tag publishes its own version only, so a release candidate never becomes what a
+newcomer reads by default.
 
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under

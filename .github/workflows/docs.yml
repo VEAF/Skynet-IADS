@@ -1,0 +1,62 @@
+name: Documentation
+
+# Versioning matches the CTLD model: develop -> "dev" (site default until a stable release
+# exists), master -> "latest", a tag -> its own version (plus "latest" if it is a plain
+# vX.Y.Z; a pre-release tag publishes its own version only, so a release candidate never
+# becomes what a newcomer reads by default).
+on:
+  push:
+    branches: [master, develop]
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Build and deploy the documentation site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install MkDocs Material and mike
+        run: pip install -r build-tools/docs-requirements.txt
+
+      - name: Configure git for mike's commits to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy dev (develop branch)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          mike deploy --push --update-aliases dev
+          # Bootstrap only: keep "dev" the default until a stable release exists. Once
+          # "latest" exists, the master/tag steps below own the default from then on.
+          if ! mike list | grep -qw latest; then
+            mike set-default --push dev
+          fi
+
+      - name: Deploy latest (master branch)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          mike deploy --push --update-aliases latest
+          mike set-default --push latest
+
+      - name: Deploy a tagged release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            mike deploy --push --update-aliases "$version" latest
+            mike set-default --push latest
+          else
+            mike deploy --push "$version"
+          fi

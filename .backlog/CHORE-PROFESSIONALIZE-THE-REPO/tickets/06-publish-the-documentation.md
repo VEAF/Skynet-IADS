@@ -1,6 +1,11 @@
 # 06 — Publish the documentation, and shrink the README to a door
 
-Status: ⬜ ready
+Status: ✅ done, with one gap
+
+`documentation/api.md` documents the public API as it exists today. It does **not** yet document
+the wake-up entry point `FEAT-LAST-LINE-OF-DEFENSE` adds, since that lot is not landed — it is out
+of scope for the session that closed this ticket. Add that section to `api.md` when the lot merges;
+an entry point nobody can find is still not public until then.
 
 ## Decision
 
