@@ -1,55 +1,48 @@
 # 01 — the silence that outlives the jammer
 
-Status: ⬜ ready
+Status: 🚫 wontfix — **the defect does not exist.** Established 2026-09-19, during implementation.
 
-A jammed site is put on `WEAPON_HOLD` by `SkynetIADSAbstractRadarElement:jam()`. Nothing ever takes
-it off again except the next `jam()` whose roll fails, or a `goLive()` on a site that was dark.
+## What this ticket claimed
 
-So the moment `runCycle` stops reaching a site, the site keeps the last state it was given. Three
-ways that happens, all ordinary:
+That a battery put on `WEAPON_HOLD` by a jammer was never handed back when the jammer stopped
+jamming it — destroyed, switched off, out of range, line of sight lost — because the only code
+restoring `WEAPON_FREE` was `goLive()`, which runs on an element that *was dark*. An autonomous
+battery, never going dark, would therefore hold fire for the rest of the mission.
 
-- the emitter is destroyed — `runCycle` calls `masterArmSafe()` and returns;
-- the jammer flies beyond `maximumEffectiveDistanceNM`;
-- the jammer loses line of sight to every radar of the site.
+## Why that is wrong
 
-On a site under network control the silence ends at the next `goLive()`. On an **autonomous** site
-it never ends.
+`SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs` has done it all along, and says so:
 
-## What to build
+```lua
+--if an emitter dies the SAM site being jammed will revert back to normal operation:
+if self.lastJammerUpdate > 0 and (timer:getTime() - self.lastJammerUpdate) > 10 then
+    self:jam(0)
+    self.lastJammerUpdate = 0
+end
+```
 
-**The jammer remembers what it is holding, and releases it.** Decided on 2026-09-19, after weighing
-it against having the site count its jammers: keeping the state on the jammer is local to one class
-and needs no protocol between two. The cost is one cycle — ten seconds — during which a site held by
-*two* jammers can be released by the one that stops before the other takes it back. That is
-acceptable; two jammers on one battery is rare, and the window closes by itself.
+`jam(0)` is a probability no roll can beat, so it sets `WEAPON_FREE`. `goLive()` schedules that scan
+**every two seconds** on every live element, autonomous ones included. Measured against `develop`,
+with no new code: an autonomous battery, jammed, emitter destroyed, is back on `WEAPON_FREE` twelve
+seconds later.
 
-Shape:
+## How the wrong conclusion was reached, twice
 
-- the jammer keeps the set of sites it jammed on the previous cycle;
-- at the end of a cycle, any site in that set which was **not** jammed this time is released —
-  `WEAPON_FREE`, the same call `jam()` already makes when its roll fails;
-- `masterArmSafe()` releases everything it holds, so a destroyed emitter and a mission calling
-  *Master Arm Off* from the F10 menu behave the same way.
+Worth writing down, because both mistakes are easy to repeat here.
 
-Release through a method on the radar element rather than reaching into its controller from the
-jammer: `jam()` owns that option today and should keep owning it.
+1. **The first measurement only ran the jammer's own cycle.** `SkynetIADSJammer.runCycle` is not
+   where the release lives, so it never fired. The site stayed held, which looked like proof.
+2. **The second measurement ran the scan, and still showed the site held.** The stub's clock starts
+   at 0, so `jam()` stamped `lastJammerUpdate = 0`, and the guard `lastJammerUpdate > 0` can never
+   pass. A mission is never at t=0 when a jammer acts. With the clock advanced first, it works.
 
-## Watch out for
+A measurement that does not exercise the mechanism says nothing about the mechanism.
 
-**Do not release a site the jammer never held.** The set has to be what this jammer actually jammed,
-not every site it looked at, or a jammer would hand `WEAPON_FREE` to batteries that another part of
-Skynet had deliberately set otherwise.
+## What was done instead
 
-**A destroyed site.** `jam()` already guards on `isDestroyed()`; the release has to do the same, or
-it calls `getController()` on a dead group.
+The release path had **no test at all** — which is why reading the jammer did not reveal it. Two
+now cover it, in `test/lua/test_skynet_iads_abstract_radar_element.lua`:
+`testAJammedSiteIsReleasedTenSecondsAfterTheJammerStops` and `testTheReleaseHappensOnceNotOnEveryScan`.
+Three deliberate mutations of the block above each turn one of them red.
 
-**`getActiveSAMSites()` changes between cycles.** A site that goes dark leaves the list, so the
-release cannot be driven off the current list — it has to be driven off what was held.
-
-## Definition of done
-
-- A test kills the emitter after a successful jam and asserts the site is back on `WEAPON_FREE`.
-- A test flies the jammer out of range and asserts the same.
-- A test takes line of sight away and asserts the same.
-- A test asserts an autonomous site — the case where the silence used to be permanent — is released.
-- `masterArmSafe()` releases what it holds.
+`documentation/api.md` now states the ten-second delay, which it never mentioned.

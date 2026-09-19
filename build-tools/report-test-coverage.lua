@@ -3,10 +3,16 @@
 --- Beware the word: in Skynet, "coverage" is what an early warning radar does to a SAM
 --- site (CONTEXT.md). This reports *test* coverage and nothing else.
 ---
---- It reads the stats the suite merged into luacov.stats.out; it does not run anything.
---- Usage, from the repository root:
+--- It reads the stats the suite merged into luacov.stats.out; it does not run anything. So it
+--- reports whatever that file holds, and the run has to come first, every time:
 ---   SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 ---   lua5.1 build-tools/report-test-coverage.lua
+---
+--- Reporting without re-running measures the previous run. Worse, luacov *adds* to an existing
+--- luacov.stats.out rather than replacing it -- that is how the suite's separate child processes
+--- add up -- so two runs report the union of both, counting lines the first covered that the
+--- second no longer has. run.lua deletes the stale file before it starts, which is what keeps
+--- this honest; do not report against a stats file some other command produced.
 ---
 --- What is measured, and what is left out, lives in .luacov beside this repository's root.
 --- The lowest figure accepted is in build-tools/test-coverage-floor.txt.

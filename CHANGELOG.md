@@ -296,15 +296,6 @@ Until that release is cut, the build date in the artifact's first line remains t
   enrolment it was written to support was commented out in December 2023, ten months after it was
   added, leaving the line behind. Both are gone. `SkynetIADS:onEvent()` is still registered as a world event handler, so the next
   event feature has its place.
-- **Shoot a jammer down and the batteries it was jamming stay mute.** A jammer decides every ten
-  seconds whether each battery in reach holds fire or shoots, and writes that decision straight to
-  the battery. When it stops deciding, the last decision stays. So a jammer that is destroyed, that
-  is switched off, that flies beyond its effective distance or that loses sight of a battery behind
-  a ridge leaves that battery holding fire — and nothing takes it off hold except the battery going
-  dark and waking up again. A battery under the network's control does that on its own soon enough;
-  a battery that has gone **autonomous** never does, so it held fire for the rest of the mission.
-  Measured: six cycles after the emitter was destroyed, the site was still on weapon hold. A jammer
-  now remembers what it is holding and hands each battery back the moment it stops jamming it.
 - A battery with more than one radar was jammed once per radar instead of once per battery: each
   call rolled the dice again and overwrote the previous one, so whichever radar happened to come
   last decided. No mission behaved differently — the radars of one group are tens of metres apart,
@@ -319,3 +310,7 @@ Until that release is cut, the build date in the artifact's first line remains t
   beyond the reach of `removeRadioMenu()` for the rest of the mission. A mission that re-runs its
   setup on a respawn did exactly that. The second call now does nothing; removing the menu and
   adding it again still works.
+- Documented, rather than changed: a jammed battery is handed back about ten seconds after the
+  jammer stops jamming it — shot down, switched off, out of range, or line of sight lost. That has
+  always worked, through a timeout on the anti-radiation-missile scan every live battery runs, but
+  no test covered it and `documentation/api.md` never mentioned it. Both now do.

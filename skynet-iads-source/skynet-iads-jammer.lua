@@ -10,9 +10,6 @@ do
 		jammer.jammerTaskID = nil
 		jammer.iads = { iads }
 		jammer.maximumEffectiveDistanceNM = 200
-		--the sites this jammer put on weapon hold in the last cycle, so it can hand them back when
-		--it stops jamming them: see releaseSitesNoLongerJammed()
-		jammer.jammedSites = {}
 		--jammer probability settings are stored here, visualisation, see: https://docs.google.com/spreadsheets/d/16rnaU49ZpOczPEsdGJ6nfD0SLPxYLEYKmmo4i2Vfoe0/edit#gid=0
 		jammer.jammerTable = {
 			["SA-2"] = {
@@ -127,30 +124,12 @@ do
 		return nearest
 	end
 
-	-- Hands back every site this jammer was holding that it is no longer jamming. Without this a
-	-- site keeps the last state jam() wrote: a jammer shot down, flown out of range or blocked by
-	-- terrain used to leave its targets on weapon hold, and an autonomous site never passes
-	-- through goLive() to have that cleared.
-	-- A site that has gone dark is not released and does not need to be: goLive() sets weapon free
-	-- on its way back up, and a dark site is not shooting meanwhile. Leaving it alone also keeps
-	-- this away from the controller of a site that went dark under HARM attack, where goDark() has
-	-- called setOnOff(false) on purpose.
-	function SkynetIADSJammer:releaseSitesNoLongerJammed(sitesStillJammed)
-		for samSite in pairs(self.jammedSites) do
-			if sitesStillJammed[samSite] == nil and samSite:isDestroyed() == false and samSite:isActive() == true then
-				samSite:stopJamming()
-			end
-		end
-		self.jammedSites = sitesStillJammed
-	end
-
 	function SkynetIADSJammer.runCycle(self)
 		if self.emitter:isExist() == false then
 			self:masterArmSafe()
 			return
 		end
 
-		local sitesJammedThisCycle = {}
 		for i = 1, #self.iads do
 			local iads = self.iads[i]
 			local samSites = iads:getActiveSAMSites()
@@ -164,12 +143,10 @@ do
 							iads:printOutput("JAMMER: Distance: " .. distance)
 						end
 						samSite:jam(self:getSuccessProbability(distance, natoName))
-						sitesJammedThisCycle[samSite] = true
 					end
 				end
 			end
 		end
-		self:releaseSitesNoLongerJammed(sitesJammedThisCycle)
 	end
 
 	function SkynetIADSJammer:hasLineOfSightToRadar(radar)
@@ -181,7 +158,6 @@ do
 
 	function SkynetIADSJammer:masterArmSafe()
 		SkynetIADSUtils.removeFunction(self.jammerTaskID)
-		self:releaseSitesNoLongerJammed({})
 	end
 
 	--TODO: Remove Menu when emitter dies:
