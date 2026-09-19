@@ -1,6 +1,6 @@
 # 02 — the birth event nobody reads
 
-Status: ⬜ ready
+Status: ✅ done
 
 ```lua
 function SkynetIADS:onEvent(event)

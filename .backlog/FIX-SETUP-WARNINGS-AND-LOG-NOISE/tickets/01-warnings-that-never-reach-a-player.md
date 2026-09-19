@@ -1,6 +1,6 @@
 # 01 — the warnings a mission maker never sees
 
-Status: ⬜ ready
+Status: ✅ done
 
 Three call sites build a warning and hand it to a function that cannot carry one.
 
@@ -12,11 +12,14 @@ Three call sites build a warning and hand it to a function that cannot carry one
 
 Each passes `true` as a second argument. `printOutputToLog(output)` takes one.
 
-There is a fourth message of the same family, and it is **not** built as a warning:
-*you have added an SAM site that Skynet IADS can not handle: …*, in `addSAMSite()` when the group's
-NATO name comes back `UNKNOWN`. It deserves the same treatment — a prefix pointed at a truck convoy
-is exactly as much a setup mistake as a mistyped name — but decide that deliberately rather than by
-copying the line above it.
+There is a fourth message of the same family: *you have added an SAM site that Skynet IADS can not
+handle: …*, in `addSAMSite()` when the group's NATO name comes back `UNKNOWN`. It deserves the same
+treatment — a prefix pointed at a truck convoy is exactly as much a setup mistake as a mistyped name.
+
+> **Correction, made while implementing this (2026-09-19).** This ticket said the fourth message was
+> **not** built as a warning, and asked for that to be decided deliberately rather than copied. That
+> was wrong: it passes `true` exactly like the other three. There was nothing to decide — it is the
+> same defect, and it got the same fix.
 
 ## What to build
 

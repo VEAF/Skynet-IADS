@@ -1,6 +1,6 @@
 # FIX-SETUP-WARNINGS-AND-LOG-NOISE — Skynet says nothing to the one person who needs it, and something to everyone that helps nobody
 
-Status: ⬜ ready
+Status: ✅ done — merged as [PR #25](https://github.com/VEAF/Skynet-IADS/pull/25)
 
 Origin: found while writing the tests for `CHORE-TEST-COVERAGE-FLOOR` tickets 05 and 06, on
 2026-09-19. Both defects are pinned by tests that record today's behaviour and say, in as many
@@ -73,6 +73,26 @@ to decide what the right behaviour is rather than how to write it. They are reco
   same path.
 - **The jammer probability curves rise with distance** — measured, and it reads inverted, but the
   intent lives in a spreadsheet this repository does not have.
+
+## What implementing it taught us
+
+Two things this PRD got wrong, found by `git log -S` while writing the fix. Recorded here rather
+than silently corrected, because the second one changes what the change *is*.
+
+**The fourth message was already built as a warning.** Ticket 01 said it was not, and asked for that
+to be decided deliberately. It passes `true` like the other three — same defect, same fix, nothing
+to decide.
+
+**This reverses a decision, it does not repair an accident.** All four messages were shown on screen
+until `9437df1` (2020-11-28, walder, *"loging refactoring"*, whose body reads *"moved output to
+dcs.log console for multiple log events"*). That commit moved exactly six calls from `printOutput`
+to `printOutputToLog` — these four plus the two *"added to IADS"* lines — and left the "this is a
+warning" flag behind in a call that has no argument for it. The orphan flag is the whole reason the
+source reads like a mistake.
+
+The reversal stands, decided on 2026-09-19: a mission maker does not read `dcs.log`, walder no
+longer maintains this project, and these four are mistakes that can still be fixed in the mission
+editor. But the changelog says it is a reversal rather than a repair, and so does this.
 
 ## Definition of done
 
