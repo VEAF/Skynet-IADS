@@ -73,4 +73,39 @@ function TestInsimTools:testSerializeRoundTripsNumericKeys()
   luaunit.assertEquals(roundTrip(value), value)
 end
 
+function TestInsimTools:testOffsetFromGoesNorthOnBearingZero()
+  local p = InsimTestTools.offsetFrom({ x = 1000, y = 2000 }, 0, 500)
+  luaunit.assertAlmostEquals(p.x, 1500, 1e-6)   -- north is x
+  luaunit.assertAlmostEquals(p.y, 2000, 1e-6)
+end
+
+function TestInsimTools:testOffsetFromGoesEastOnBearingNinety()
+  local p = InsimTestTools.offsetFrom({ x = 1000, y = 2000 }, 90, 500)
+  luaunit.assertAlmostEquals(p.x, 1000, 1e-6)
+  luaunit.assertAlmostEquals(p.y, 2500, 1e-6)   -- east is y
+end
+
+function TestInsimTools:testOffsetFromGoesSouthAndWest()
+  local south = InsimTestTools.offsetFrom({ x = 0, y = 0 }, 180, 100)
+  luaunit.assertAlmostEquals(south.x, -100, 1e-6)
+  luaunit.assertAlmostEquals(south.y, 0, 1e-6)
+
+  local west = InsimTestTools.offsetFrom({ x = 0, y = 0 }, 270, 100)
+  luaunit.assertAlmostEquals(west.x, 0, 1e-6)
+  luaunit.assertAlmostEquals(west.y, -100, 1e-6)
+end
+
+function TestInsimTools:testOffsetFromHandlesADiagonalBearing()
+  local p = InsimTestTools.offsetFrom({ x = 0, y = 0 }, 45, 1000)
+  local leg = 1000 * math.sqrt(2) / 2
+  luaunit.assertAlmostEquals(p.x, leg, 1e-6)
+  luaunit.assertAlmostEquals(p.y, leg, 1e-6)
+end
+
+function TestInsimTools:testOffsetFromDoesNotMutateItsOrigin()
+  local origin = { x = 10, y = 20 }
+  InsimTestTools.offsetFrom(origin, 90, 500)
+  luaunit.assertEquals(origin, { x = 10, y = 20 })
+end
+
 os.exit(luaunit.LuaUnit.run())
