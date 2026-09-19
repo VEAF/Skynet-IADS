@@ -1,0 +1,14 @@
+# The lowest test coverage this repository accepts, in percent.
+#
+# It only goes up. Every pull request that adds tests raises it, in the same diff as the tests
+# that earned it — the number below is what was measured then, rounded down. Lowering it is a
+# decision taken in the open, with the reason in the commit message.
+#
+# It started at 70 because that is what the suite measured when the gate was built
+# (CHORE-TEST-COVERAGE-FLOOR ticket 02); the lot aims for 90. A gate set at the target rather
+# than at the measurement is red before anyone has done anything wrong, and gets bypassed.
+#
+# What counts as a measured line is in .luacov at the repository root.
+# Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+#                 lua5.1 build-tools/report-test-coverage.lua
+70

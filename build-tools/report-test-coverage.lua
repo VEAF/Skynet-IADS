@@ -9,10 +9,54 @@
 ---   lua5.1 build-tools/report-test-coverage.lua
 ---
 --- What is measured, and what is left out, lives in .luacov beside this repository's root.
+--- The lowest figure accepted is in build-tools/test-coverage-floor.txt.
+---
+--- Exit codes, kept apart on purpose: 1 means the suite covers less than the floor, 2 means
+--- the measurement did not happen at all. A luacov that installed badly must not look like a
+--- drop in test coverage.
+
+local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 
 local function fail(reason)
   io.stderr:write("report-test-coverage: " .. reason .. "\n")
   os.exit(2)
+end
+
+local function readFloor()
+  local path = base .. "/test-coverage-floor.txt"
+  local file = io.open(path, "r")
+  if not file then
+    fail("cannot read the floor from " .. path)
+  end
+  local value
+  for line in file:lines() do
+    local entry = line:match("^%s*(.-)%s*$")
+    if entry ~= "" and entry:sub(1, 1) ~= "#" then
+      value = tonumber(entry)
+      if not value then
+        file:close()
+        fail(path .. " holds '" .. entry .. "', which is not a number")
+      end
+      break
+    end
+  end
+  file:close()
+  if not value then
+    fail(path .. " holds no figure")
+  end
+  -- A percentage outside these bounds is a typo, and the two directions fail differently: 700
+  -- is a gate nothing can ever pass, -5 is a gate that passes everything and says nothing.
+  if value <= 0 or value > 100 then
+    fail(path .. " holds " .. value .. ", which is not a percentage between 0 and 100")
+  end
+  -- Whole percents only, which is how the floor is meant to be written anyway (the measured
+  -- figure, rounded down). It also keeps the line count below exact: floor * measured is then
+  -- integer arithmetic, where floor / 100 * measured is a double that can land a hair above a
+  -- whole number and round the gate up by one line nobody asked for.
+  if value ~= math.floor(value) then
+    fail(path .. " holds " .. value .. "; the floor is written as a whole percent")
+  end
+  return value
 end
 
 local ok, runner = pcall(require, "luacov.runner")
@@ -32,6 +76,10 @@ if not stats then
     .. "  Run the suite first: SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua")
 end
 stats:close()
+
+-- Read before reporting: a floor file nobody can parse is a broken gate, and should say so
+-- straight away rather than after a page of figures it is about to refuse to judge.
+local floor = readFloor()
 
 require("luacov.reporter").report()
 
@@ -98,8 +146,42 @@ for _, row in ipairs(rows) do
     row.name, row.hits, row.missed, row.percent))
 end
 
+local measured = total.hits + total.missed
+-- The verdict is decided on whole lines, not on the percentage: that figure is rounded to two
+-- decimals for reading, and a gate must not turn on a rounding nobody can see. The ceiling is
+-- taken in integers for the same reason — `floor / 100 * measured` is a double, and a product
+-- that should be exactly 1600 can come out at 1600.0000000000002 and demand a 1601st line.
+local product = floor * measured
+local required = math.floor(product / 100)
+if required * 100 < product then
+  required = required + 1
+end
+
 print("")
 print(string.format(
   "test coverage: %.2f%%  (%d / %d lines)",
-  total.percent, total.hits, total.hits + total.missed))
+  total.percent, total.hits, measured))
 print("per-line detail: " .. reportFile)
+print("")
+
+if total.hits < required then
+  -- On stdout, not stderr: the verdict is part of the report, and CI shows the report to the
+  -- reviewer. stderr is kept for the cases where the measurement itself did not happen.
+  print(string.format(
+    "FAIL: below the floor of %g%% (%d lines) — %d lines short.",
+    floor, required, required - total.hits))
+  print("The per-file table above says where. A drop is not always a lost test: deleting")
+  print("covered code, or adding a file nothing exercises, moves the number too.")
+  os.exit(1)
+end
+
+print(string.format("PASS: at or above the floor of %g%% (%d lines).", floor, required))
+
+-- The floor is meant to follow the work up, in the pull request that earned it. Said here
+-- rather than enforced: a change that improves test coverage must not fail for improving it.
+local reachable = math.floor(total.hits / measured * 100)
+if reachable > floor then
+  print(string.format(
+    "NOTE: build-tools/test-coverage-floor.txt can be raised from %g to %d.",
+    floor, reachable))
+end

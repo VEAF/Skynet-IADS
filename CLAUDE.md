@@ -83,6 +83,12 @@ instead of extending it — it exists to erode, never to grow.
   the simulator — terrain elevation, real detection geometry, in-game events — stays there.
 - **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
   its tests.
+- **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):
+  `SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua` then
+  `lua5.1 build-tools/report-test-coverage.lua`. It fails below the floor in
+  `build-tools/test-coverage-floor.txt`, which **only goes up** — when your tests carry the figure
+  past it, raise it in the same pull request; the report says when and to what. What counts is in
+  `.luacov`: the pure data tables are out of the denominator, because loading one is not testing it.
 - A test that passes only because the stub returns something convenient is worth nothing. When a
   test needs the stub extended, extend it deliberately and write down what real behaviour it stands
   in for.
