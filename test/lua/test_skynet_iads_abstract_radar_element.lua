@@ -408,4 +408,77 @@ function TestSkynetIADSAbstractRadarElement:testActAsEarlyWarningRadar()
 	samSA62:cleanUp()
 end
 
+-- ---- the jamming timeout (FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER) --------------------------
+--
+-- jam() writes the site's ROE and stamps lastJammerUpdate. Nothing in the jammer ever takes the
+-- weapon hold off again: what does is evaluateIfTargetsContainHARMs(), which goLive() schedules
+-- every two seconds and which calls jam(0) -- a probability no roll can beat -- once ten seconds
+-- have passed without the jammer saying anything. That is how a battery comes back when the
+-- jammer is destroyed, switched off, flown out of range or loses line of sight.
+--
+-- It had no test, which is why a lot was once written to build a second release path beside it.
+-- Two things to know if this ever goes red:
+--
+--   * the guard is `lastJammerUpdate > 0`, so a test whose clock still reads 0 when it jams can
+--     never release and will look like a defect that is not there;
+--   * the release rides on the HARM scan, so a site that is dark is not released -- it is not
+--     scanning, and goLive() sets weapon free on the way back up anyway.
+
+local function lastROE(samSite)
+	local last
+	for _, call in ipairs(samSite:getDCSRepresentation().__controllerCalls or {}) do
+		if call.id == AI.Option.Air.id.ROE then
+			last = call.value
+		end
+	end
+	return last
+end
+
+function TestSkynetIADSAbstractRadarElement:testAJammedSiteIsReleasedTenSecondsAfterTheJammerStops()
+	self.samSiteName = "SAM-SA-6"
+	self:setUp()
+	dcsStub.advanceClock(100) -- a mission is never at t=0 when a jammer acts, and the guard is > 0
+
+	self.samSite:jam(100) -- a probability no roll can beat: certainly jammed
+	luaunit.assertEquals(lastROE(self.samSite), AI.Option.Air.val.ROE.WEAPON_HOLD)
+
+	-- the jammer says nothing more, as if it had just been shot down
+	dcsStub.advanceClock(4)
+	SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self.samSite)
+	luaunit.assertEquals(
+		lastROE(self.samSite),
+		AI.Option.Air.val.ROE.WEAPON_HOLD,
+		"four seconds in, the site is still held: the timeout is ten"
+	)
+
+	dcsStub.advanceClock(8)
+	SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self.samSite)
+	luaunit.assertEquals(
+		lastROE(self.samSite),
+		AI.Option.Air.val.ROE.WEAPON_FREE,
+		"past ten seconds with no word from the jammer, the site is handed back"
+	)
+end
+
+--- And it is handed back once, not on every scan afterwards: lastJammerUpdate is cleared, which is
+--- what stops a battery being told it is free sixty times a minute for the rest of the mission.
+function TestSkynetIADSAbstractRadarElement:testTheReleaseHappensOnceNotOnEveryScan()
+	self.samSiteName = "SAM-SA-6"
+	self:setUp()
+	dcsStub.advanceClock(100)
+
+	self.samSite:jam(100)
+	dcsStub.advanceClock(12)
+	SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self.samSite)
+	local callsAfterRelease = #self.samSite:getDCSRepresentation().__controllerCalls
+
+	for _ = 1, 5 do
+		dcsStub.advanceClock(2)
+		SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self.samSite)
+	end
+
+	luaunit.assertEquals(#self.samSite:getDCSRepresentation().__controllerCalls, callsAfterRelease)
+	luaunit.assertEquals(self.samSite.lastJammerUpdate, 0)
+end
+
 os.exit(luaunit.LuaUnit.run())

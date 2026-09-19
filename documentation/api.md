@@ -593,6 +593,11 @@ code, otherwise a background task will keep on jamming:
 jammer:masterArmSafe()
 ```
 
+A battery stops being jammed about **ten seconds** after the jammer stops jamming it — whether the
+emitter is shot down, switched off with `masterArmSafe()`, flown beyond its effective distance, or
+loses line of sight to every radar of the battery. It is then handed back to whatever was directing
+it. A battery that is dark at that moment is released when it next comes up.
+
 Will add jammer on / off to the radio menu:
 
 ```lua

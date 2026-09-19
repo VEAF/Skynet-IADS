@@ -296,3 +296,21 @@ Until that release is cut, the build date in the artifact's first line remains t
   enrolment it was written to support was commented out in December 2023, ten months after it was
   added, leaving the line behind. Both are gone. `SkynetIADS:onEvent()` is still registered as a world event handler, so the next
   event feature has its place.
+- A battery with more than one radar was jammed once per radar instead of once per battery: each
+  call rolled the dice again and overwrote the previous one, so whichever radar happened to come
+  last decided. No mission behaved differently — the radars of one group are tens of metres apart,
+  so the rolls were on the same odds — but a battery is now one decision per cycle, taken against
+  the nearest radar the jammer can actually see.
+- `SkynetIADS:addJammer()` is **removed**. It raised *table expected, got nil* on every call ever
+  made to it, taking the mission's setup script down with it, and nothing anywhere read what it
+  tried to store. Attach a jammer to a network the documented way, by handing the network to the
+  constructor — `SkynetIADSJammer:create(Unit.getByName("F-4 AI"), redIADS)` — and a second network
+  with `jammer:addIADS(blueIADS)`. The source says so where the method used to be.
+- Calling `redIADS:addRadioMenu()` twice built the whole F10 menu twice, and left the first copy
+  beyond the reach of `removeRadioMenu()` for the rest of the mission. A mission that re-runs its
+  setup on a respawn did exactly that. The second call now does nothing; removing the menu and
+  adding it again still works.
+- Documented, rather than changed: a jammed battery is handed back about ten seconds after the
+  jammer stops jamming it — shot down, switched off, out of range, or line of sight lost. That has
+  always worked, through a timeout on the anti-radiation-missile scan every live battery runs, but
+  no test covered it and `documentation/api.md` never mentioned it. Both now do.

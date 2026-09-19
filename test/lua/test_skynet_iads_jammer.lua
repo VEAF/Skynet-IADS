@@ -420,4 +420,66 @@ function TestSkynetIADSJammer:testRemovingTheRadioMenuTakesItsCommandsWithIt()
 	luaunit.assertEquals(#dcsStub.radioItems, 0)
 end
 
+-- ---- FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER ------------------------------------------------
+
+--- Builds a fake SAM site with one radar per entry in `distances`, recording every jam() call made
+--- on it. The distances are per radar, in nautical miles.
+local function fakeSite(distances, natoName)
+	local site = { jamCalls = {}, natoName = natoName or "SA-6" }
+	local radars = {}
+	for i = 1, #distances do
+		radars[i] = { __distance = distances[i] }
+	end
+	function site:getRadars()
+		return radars
+	end
+	function site:getNatoName()
+		return self.natoName
+	end
+	function site:getDCSName()
+		return "fake-site"
+	end
+	function site:jam(probability)
+		table.insert(self.jamCalls, probability)
+	end
+	return site
+end
+
+--- Points the jammer at one fake site, with line of sight to every radar unless `blind`.
+function TestSkynetIADSJammer:armAgainst(site, blind)
+	function self.mockIADS:getActiveSAMSites()
+		return { site }
+	end
+	function self.jammer:getDistanceNMToRadarUnit(radar)
+		return radar.__distance
+	end
+	function self.jammer:hasLineOfSightToRadar(_)
+		return not blind
+	end
+end
+
+--- Ticket 04. A site is one decision per cycle, not one per radar: jam() used to be called once
+--- for every visible radar, each call taking its own roll and overwriting the previous one's ROE.
+function TestSkynetIADSJammer:testASiteIsJammedOncePerCycleWhateverItsRadarCount()
+	local site = fakeSite({ 30.0, 30.4 })
+	self:armAgainst(site)
+
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(#site.jamCalls, 1, "two radars, one decision")
+end
+
+--- Ticket 04. Of several visible radars the nearest is the one the jammer works against, rather
+--- than whichever getRadars() happened to return last. Within one group the difference is
+--- fractions of a mile, so this is about the rule being defensible, not about the number moving.
+function TestSkynetIADSJammer:testTheNearestVisibleRadarSetsTheDistance()
+	local site = fakeSite({ 40.0, 12.0, 25.0 })
+	self:armAgainst(site)
+
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(#site.jamCalls, 1)
+	luaunit.assertAlmostEquals(site.jamCalls[1], self.jammer:getSuccessProbability(12.0, "SA-6"), 0.001)
+end
+
 os.exit(luaunit.LuaUnit.run())

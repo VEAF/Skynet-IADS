@@ -71,6 +71,13 @@ project's own (every class is a bare global — DCS has no module system, and th
 concatenated, not required); `stylua.toml` excludes the vendored `test/lua/luaunit.lua` via
 `.styluaignore`.
 
+Run both gates the way CI does with `build-tools/lint.sh` (or one of them:
+`build-tools/lint.sh luacheck`). On a Windows checkout it is the only thing that works without
+fiddling: a luarocks `luacheck` often sits in a tree for a newer Lua than the interpreter that has
+to run it and dies before checking anything, and `core.autocrlf=true` makes `stylua --check` flag
+every file for line endings alone. The script works around both and exits non-zero on a real
+finding.
+
 `.luacheckrc` also pins a **ratchet**: warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code
 instead of extending it — it exists to erode, never to grow.

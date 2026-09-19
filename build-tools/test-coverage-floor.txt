@@ -14,8 +14,18 @@
 # the SkynetIADS object, the enrolment failure paths and the radio menu.
 # 86 -> 91: ticket 06 took the long tail -- the jammer, the HARM decision, how a battery
 # learns its own range, the geometry helpers. That carries the lot past its 90% target.
+# 91 -> 92: FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER put the first tests on
+# evaluateIfTargetsContainHARMs -- the two-second scan that hands a jammed battery back ten
+# seconds after the jammer goes quiet -- and removed SkynetIADS:addJammer(), one of the lines
+# nothing could ever cover.
+#
+# A warning paid for in that lot: luacov ADDS to an existing luacov.stats.out, so measuring twice
+# without deleting it reports the union of both runs, counting lines the first covered that the
+# second no longer has. A floor was briefly raised on a figure produced that way. run.lua now
+# removes the stale file before it starts; a number that cannot be reproduced twice running is
+# not a measurement.
 #
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 #                 lua5.1 build-tools/report-test-coverage.lua
-91
+92

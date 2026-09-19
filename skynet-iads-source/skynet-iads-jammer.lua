@@ -107,6 +107,23 @@ do
 		)
 	end
 
+	-- I try to emulate the system as it would work in real life, so a jammer can only jam a SAM site if has line of sight to at least one radar in the group
+	-- Of the radars it can see, the nearest is the one it works against. Returns nil when it can see none.
+	function SkynetIADSJammer:getDistanceToNearestVisibleRadar(samSite)
+		local nearest = nil
+		local radars = samSite:getRadars()
+		for i = 1, #radars do
+			local radar = radars[i]
+			if self:hasLineOfSightToRadar(radar) then
+				local distance = self:getDistanceNMToRadarUnit(radar)
+				if nearest == nil or distance < nearest then
+					nearest = distance
+				end
+			end
+		end
+		return nearest
+	end
+
 	function SkynetIADSJammer.runCycle(self)
 		if self.emitter:isExist() == false then
 			self:masterArmSafe()
@@ -118,19 +135,10 @@ do
 			local samSites = iads:getActiveSAMSites()
 			for j = 1, #samSites do
 				local samSite = samSites[j]
-				local radars = samSite:getRadars()
-				local hasLOS = false
-				local distance = 0
 				local natoName = samSite:getNatoName()
-				for l = 1, #radars do
-					local radar = radars[l]
-					distance = self:getDistanceNMToRadarUnit(radar)
-					-- I try to emulate the system as it would work in real life, so a jammer can only jam a SAM site if has line of sight to at least one radar in the group
-					if
-						self:isKnownRadarEmitter(natoName)
-						and self:hasLineOfSightToRadar(radar)
-						and distance <= self.maximumEffectiveDistanceNM
-					then
+				if self:isKnownRadarEmitter(natoName) then
+					local distance = self:getDistanceToNearestVisibleRadar(samSite)
+					if distance ~= nil and distance <= self.maximumEffectiveDistanceNM then
 						if iads:getDebugSettings().jammerProbability then
 							iads:printOutput("JAMMER: Distance: " .. distance)
 						end

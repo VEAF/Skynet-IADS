@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts keep LF whatever the checkout does: a CRLF shebang is not executable.
+*.sh text eol=lf

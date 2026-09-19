@@ -14,10 +14,18 @@ local filter = arg[1]
 -- these separate processes add up to a single report; luacov also wraps os.exit, which is how
 -- a suite always ends through luaunit. Unset, the run below is exactly what it was before,
 -- with no debug hook installed.
+--
+-- That merging is also a trap between two runs: luacov adds to whatever luacov.stats.out it
+-- finds, so a second run reports the union of both -- including lines of code that the first run
+-- covered and that no longer exist. It reads as a rise. It cost a coverage floor being raised to
+-- a figure the suite had never actually reached, caught by CI measuring 91.01% where this
+-- machine claimed 92.01%. So the stale file goes before anything runs.
 local coverage = os.getenv("SKYNET_TEST_COVERAGE")
 local coverageFlag = ""
 if coverage and coverage ~= "" and coverage ~= "0" then
 	coverageFlag = " -lluacov"
+	os.remove("luacov.stats.out")
+	os.remove("luacov.report.out")
 end
 
 local function listSuites()

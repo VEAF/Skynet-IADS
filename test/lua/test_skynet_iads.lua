@@ -25,9 +25,8 @@
 --- never left dcs.log, and the line every birth event wrote. FIX-SETUP-WARNINGS-AND-LOG-NOISE fixed
 --- both, and those four now assert the behaviour rather than record it.
 ---
---- One characterisation test is left, on addRadioMenu() and marked PINS A DEFECT where it sits. It
---- stays because the defect needs somebody to decide what DCS should show a player, not because the
---- behaviour is endorsed.
+--- FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER took the fifth and last of them, on addRadioMenu().
+--- There is no characterisation test left in this file.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
@@ -480,18 +479,15 @@ function TestSkynetIADS:testRemoveRadioMenuTakesTheSubmenuAndItsCommandsAway()
 	luaunit.assertEquals(#dcsStub.radioItems, 0, "removing a submenu removes what is under it")
 end
 
---- PINS A DEFECT. addRadioMenu() has no idempotence guard: a second call issues the whole set of
---- menu calls again -- another submenu with the same title, another four commands -- and
---- overwrites self.radioMenu with the second path. Nothing in Skynet prevents it, and a mission
---- that re-runs its setup (a respawn script, a reload of the IADS configuration) does exactly
---- this.
+--- A second addRadioMenu() issues nothing. A mission that re-runs its setup -- a respawn script,
+--- a reload of the IADS configuration -- used to get the whole set of menu calls again, and
+--- self.radioMenu overwritten with the second path, which left the first submenu referenced
+--- nowhere and beyond the reach of removeRadioMenu() for the rest of the mission.
 ---
---- What DCS then shows a player is NOT asserted here. Both submenus are built with the same name,
---- so they carry the same path, and whether DCS collapses them, replaces the first or shows two
---- is behaviour this repository has not verified -- see the note in dcs-stub.lua. That
---- uncertainty is the point: the caller cannot reason about it either, which is why the guard
---- belongs in addRadioMenu() rather than in a mission maker's head.
-function TestSkynetIADS:testAddRadioMenuTwiceBuildsTheWholeMenuAgain()
+--- What DCS shows a player after two calls is still not established -- both submenus carry the
+--- same name and therefore the same path, see the note in dcs-stub.lua. The guard means nobody
+--- has to know: the question stops being reachable.
+function TestSkynetIADS:testASecondAddRadioMenuIssuesNothing()
 	local iads = self:buildNetwork()
 	dcsStub.radioItems = {}
 	iads:addRadioMenu()
@@ -499,10 +495,22 @@ function TestSkynetIADS:testAddRadioMenuTwiceBuildsTheWholeMenuAgain()
 	local firstMenuPath = iads.radioMenu
 
 	iads:addRadioMenu()
-	luaunit.assertEquals(#dcsStub.radioItems, 10, "a second call re-issues every menu call")
-	luaunit.assertNotIs(iads.radioMenu, firstMenuPath, "and the IADS now points at the second one")
-	-- the two submenus are indistinguishable by the only handle DCS gives back
-	luaunit.assertEquals(iads.radioMenu, firstMenuPath)
+
+	luaunit.assertEquals(#dcsStub.radioItems, 5, "the second call issues nothing")
+	luaunit.assertIs(iads.radioMenu, firstMenuPath, "and the IADS still points at the first menu")
+end
+
+--- Remove then add again works: the guard is about a menu that exists, not a menu that once did.
+function TestSkynetIADS:testTheMenuCanBeRemovedAndAddedAgain()
+	local iads = self:buildNetwork()
+	dcsStub.radioItems = {}
+	iads:addRadioMenu()
+	iads:removeRadioMenu()
+	luaunit.assertEquals(#dcsStub.radioItems, 0)
+
+	iads:addRadioMenu()
+
+	luaunit.assertEquals(#dcsStub.radioItems, 5, "the menu comes back")
 end
 
 function TestSkynetIADS:testUpdateDisplayIgnoresASettingItDoesNotKnow()
