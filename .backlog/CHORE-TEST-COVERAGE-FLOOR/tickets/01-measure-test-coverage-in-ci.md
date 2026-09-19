@@ -1,6 +1,6 @@
 # 01 — measure test coverage in CI, and publish the number
 
-Status: ⬜ ready
+Status: 🔄 in-progress — on `feature/measure-test-coverage-in-ci`
 
 The suite already runs in CI and tells you pass or fail. This ticket makes it also tell you **how
 much of the source it ran**. No threshold yet — ticket 02 adds the gate. Splitting the two keeps
@@ -35,7 +35,7 @@ numbers — the tests are not the thing being measured.
 - Unset, nothing changes. The plain run stays exactly what it is today, hook-free.
 
 `luacov` merges into an existing `luacov.stats.out` rather than overwriting it, which is what makes
-23 separate child processes add up to one report. It also wraps `os.exit`, which every suite calls
+18 separate child processes add up to one report. It also wraps `os.exit`, which every suite calls
 through `luaunit`, so the stats of a suite are written even on a failing exit code. **Check both of
 those on the branch** rather than trusting this paragraph — a silent merge failure looks exactly
 like low test coverage.
@@ -83,12 +83,30 @@ already ships `luacov`, so a developer on Windows needs no extra install:
     SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
     lua5.1 build-tools/report-test-coverage.lua
 
+**7. A test that the loader still matches the build list.** Added while building the rest, because
+the denominator has a hole this ticket would otherwise promise away: **luacov only knows about files
+something executed.** A source added to `build-tools/listToMerge.txt` but not to
+`test/lua/skynet-loader.lua`'s `ORDER` is never loaded by the suite, so it is not tested *and* not
+counted — the percentage does not move, and nothing anywhere says a file is missing.
+
+The loader's comment already claims `ORDER` is verbatim from `listToMerge.txt`; nothing enforced it.
+`test/lua/test_harness_smoke.lua` — which is where the loader's own tests live — now reads the build
+list and compares. `highdigitsams/` is the one documented omission and is skipped by name, so that
+any *other* subdirectory appearing in the list fails the test instead of being skipped quietly.
+
+`includeuntestedfiles` was tried first and rejected: the loader reaches the sources through
+`test/lua/../../skynet-iads-source/`, luacov does not normalise that against `skynet-iads-source/`,
+and every file ends up counted twice — once with its hits and once at 0%. It reported 35.35%.
+
 ## Watch out for
 
 - The word. `test coverage` everywhere, never a bare `coverage` — in this repository that is what an
   EWR does to a battery. Name the job, the files and the environment variable accordingly.
 - Do not add `highdigitsams/` to `test/lua/skynet-loader.lua`. Its omission from `ORDER` is
   deliberate and commented; loading it would add ~300 data lines scored 100%.
+- `stylua --check` reports eleven pre-existing source files as unformatted on a Windows checkout
+  with `core.autocrlf=true`. That is the line endings, not the branch: the same files are clean when
+  checked with Unix endings, which is what CI has.
 
 ## Definition of done
 

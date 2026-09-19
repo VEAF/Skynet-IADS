@@ -1,0 +1,28 @@
+-- luacov configuration — what "test coverage" is measured against in this repository.
+--
+-- Beware the word: in Skynet, "coverage" is what an early warning radar does to a SAM site
+-- (CONTEXT.md). This file is about *test* coverage, and nothing else.
+--
+-- Run it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+--               lua5.1 build-tools/report-test-coverage.lua
+
+return {
+	-- Only the shipped sources are measured. The suites, luaunit and the DCS stub are the
+	-- instrument, not the thing being measured.
+	include = { "skynet%-iads%-source" },
+
+	-- Pure data: nested tables of SAM types, radar names and NATO designations, no branch and
+	-- no function. luacov scores every line of a table constructor as executed the moment the
+	-- file loads, so counting them would hand the project ~500 lines at 100% and turn any floor
+	-- into a formality — skynet-iads-supported-types.lua alone is 493 lines and 17 points.
+	--
+	-- The second pattern is highdigitsams/skynet-iads-high-digit-sams-suported-types.lua, whose
+	-- name carries an upstream typo ("suported", one p). Matched as spelled: the file is named
+	-- that way in build-tools/listToMerge.txt and renaming it is not this measurement's business.
+	exclude = { "supported%-types$", "suported%-types$" },
+
+	-- The report is produced by build-tools/report-test-coverage.lua, after every suite has run
+	-- and merged its counts, never by a child process on its way out.
+	runreport = false,
+	deletestats = false,
+}

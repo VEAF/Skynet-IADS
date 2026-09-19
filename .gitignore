@@ -14,5 +14,9 @@ Thumbs.db
 # MkDocs build output — published to the gh-pages branch by CI, not committed here.
 /site/
 
+# Test coverage — written by luacov into the directory the suite was run from.
+/luacov.stats.out
+/luacov.report.out
+
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json

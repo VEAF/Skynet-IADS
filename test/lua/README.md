@@ -27,6 +27,34 @@ cmd.exe takes the quoted path as-is:
 
     "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
 
+## Test coverage
+
+How much of `skynet-iads-source/` the suite actually executes. Beware the word: in Skynet,
+*coverage* is what an early warning radar does to a SAM site — this is **test**
+coverage, and the two never travel alone.
+
+Run the suite with the hook, then report. Both commands run from the repository
+root, because that is where `.luacov` and the stats file live:
+
+    SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+    lua5.1 build-tools/report-test-coverage.lua
+
+In PowerShell, with the Lua for Windows binary — which already ships `luacov`, so
+there is nothing to install:
+
+    $env:SKYNET_TEST_COVERAGE = "1"
+    & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+    & "C:\Program Files (x86)\Lua\5.1\lua.exe" build-tools\report-test-coverage.lua
+    Remove-Item Env:\SKYNET_TEST_COVERAGE
+
+`SKYNET_TEST_COVERAGE` unset — the normal case — runs the suite with no debug hook
+installed, exactly as before.
+
+The report prints a per-file summary, worst first, and the total. The per-line
+detail lands in `luacov.report.out`, where a `****0` marks a line the suite never
+ran. What counts and what does not is in `.luacov` at the repository root, with the
+reasons; the same two commands run in CI on every pull request.
+
 ## Ported suites
 
 These `unit-tests/` suites now also run standalone (their `.miz` copies are kept):
