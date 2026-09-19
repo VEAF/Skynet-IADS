@@ -12,9 +12,11 @@ local EWR = "SKY-Z01-EWR-01"
 local SAM = "SKY-Z01-SA6-01"
 local TARGET = "SKY-AIR-F18-01"
 
---- The target's leg, as a bearing and distance from the EWR. Both ends are chosen so the
---- aircraft is outside detection range at spawn and flies into it, and so the leg outlasts the
---- test -- AI behaviour at a final waypoint is its own rabbit hole.
+--- The target's leg, as a bearing and distance from the EWR. The EWR sees the target almost
+--- immediately -- a 1L13 reaches well past the 60 km start -- so the wait is really for the
+--- target to close into the SAM's kill zone, which is what brings the site live. Both ends are
+--- also chosen so the leg outlasts the test: AI behaviour at a final waypoint is its own rabbit
+--- hole.
 local INBOUND_BEARING = 270      -- degrees, clockwise from north: due west of the EWR
 local START_RANGE = 60000        -- metres out
 local END_RANGE = 20000          -- metres past, on the far side
@@ -40,6 +42,11 @@ end
 function TestDetection:tearDown()
   if self.iads then
     self.iads:deactivate()
+    -- SkynetIADS:create registers a world event handler that deactivate() does not remove, so
+    -- a scenario that builds a fresh IADS per test has to take it out itself or they pile up
+    -- across re-runs.
+    world.removeEventHandler(self.iads)
+    self.iads = nil
   end
   for _, name in ipairs({ EWR, SAM, TARGET }) do
     InsimTestTools.destroyIfLive(name)
@@ -73,7 +80,7 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
   })
 
   -- Detection, then the IADS's own evaluation cycle, then the SAM coming up.
-  waitFor(function() return sam:isActive() end, 300)
+  waitFor(function() return sam:isActive() end, 450)
   luaunit.assertTrue(sam:isActive())
 end
 

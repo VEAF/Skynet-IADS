@@ -168,6 +168,10 @@ end
 function InsimTestTools.addFromMission(groupName)
   local data, countryId, kind = InsimTestTools.missionGroupData(groupName)
 
+  -- Fixtures are authored late-activated so a normal mission start leaves them dormant. An
+  -- added copy must not inherit that: Skynet's prefix discovery skips units that are not active.
+  data.lateActivation = nil
+
   if kind == "static" then
     local unit = data.units and data.units[1]
     assert(unit, "addFromMission: static '" .. groupName .. "' has no unit")
@@ -225,6 +229,11 @@ function InsimTestTools.addAirFromMission(groupName, opts)
     "addAirFromMission: opts.speed is metres per second, not knots (200 m/s is about 390 kt)")
 
   local data, countryId, kind = InsimTestTools.missionGroupData(groupName)
+
+  -- Fixtures are authored late-activated so a normal mission start leaves them dormant. An
+  -- added copy must not inherit that: Skynet's prefix discovery skips units that are not active.
+  data.lateActivation = nil
+
   assert(kind == "plane" or kind == "helicopter",
     "addAirFromMission: '" .. groupName .. "' is a " .. kind .. " group, not an air group")
 

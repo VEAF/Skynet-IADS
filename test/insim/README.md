@@ -163,6 +163,7 @@ setUp     removeJunkInZone(ZONE)        -- clear wrecks from the last run
           addFromMission(...)           -- replaces anything still live
 tearDown  destroyIfLive(...)            -- leaves no wreck behind
           iads:deactivate()
+          world.removeEventHandler(iads) -- deactivate() does not; they pile up across re-runs
 ```
 
 Measured DCS behaviour, which is why it is shaped this way:
