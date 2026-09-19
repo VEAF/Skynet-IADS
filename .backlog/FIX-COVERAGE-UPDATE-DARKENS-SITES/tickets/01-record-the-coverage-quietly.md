@@ -1,6 +1,6 @@
 # 01 — record the coverage quietly, and tell only what changed
 
-Status: 🔄 in-progress — `fix/coverage-update-darkens-sites`
+Status: ✅ done — merged in PR #19
 
 ## What to build
 

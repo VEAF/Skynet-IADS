@@ -1,6 +1,6 @@
 # FIX-COVERAGE-UPDATE-DARKENS-SITES — declaring that a radar covers a battery switches the battery off
 
-Status: 🔄 in-progress — `fix/coverage-update-darkens-sites`
+Status: ✅ done — merged in PR #19
 
 Origin: found on 2026-09-19 while instructing `FIX-STALE-HARM-SILENCE` ticket 02, by tracing which
 step of a bulk re-add darkened a designated site. It turned out not to be the step under review:
@@ -79,7 +79,7 @@ two `*ByPrefix` calls that go through them. VEAF's helper enrols groups this way
 
 | # | Ticket | Status |
 |---|---|---|
-| 01 | [record the coverage quietly, and tell only what changed](tickets/01-record-the-coverage-quietly.md) | 🔄 |
+| 01 | [record the coverage quietly, and tell only what changed](tickets/01-record-the-coverage-quietly.md) | ✅ |
 
 ## How this is verified
 
