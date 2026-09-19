@@ -133,6 +133,11 @@ moved, so the move that mattered measured zero and was missed. `markCoverageUpda
 scenario kept in readable form beside it as `demo-missions/skynet-insim-last-line-of-defence.lua`.
 Every run below was flown from that file as the mission loads it — nothing hand-injected.
 
+📋 **Full report: [in-sim-test-report-2026-09-19.md](in-sim-test-report-2026-09-19.md)** — the
+montage and why each distance is what it is, the protocol, every timing, and, just as much to the
+point, **what the runs do not cover** (HARM silence, a site out of ammunition, a mobile battery,
+one map and one battery type, a single radial track). The summary below is the short form.
+
 ### What was measured
 
 **Run 1, the last line of defense.** A battery the network held dark lit up on proximity alone and

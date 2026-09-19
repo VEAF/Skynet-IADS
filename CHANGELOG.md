@@ -148,11 +148,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   out of its own detection range. Its scenario is kept in readable form next to it as
   `skynet-insim-last-line-of-defence.lua`.
 
-  Both were measured on 2026-09-19. A battery held dark lit up on proximity with no radar contact
-  anywhere, stayed in the network while lit, and fell silent 45 s after the intruder left its
-  radius -- to the second, on two runs with different drawn radii. The covered battery was handed
-  back the moment its AWACS crossed its own range. That is what the standalone suite could not
-  show: that the cycle really calls this code.
+  Both were measured in DCS 2.9.29.27468 on 2026-09-19. A battery held dark lit up on proximity
+  with no radar contact anywhere, stayed in the network while lit, and fell silent 45 s after the
+  intruder left its radius -- to the second, on two runs whose drawn radii differed (10.9 km and
+  14.1 km), which also shows the radius is drawn per site and stable: one value across 107 samples.
+  The covered battery was handed back at 211.0 km on both runs. That is what the standalone suite
+  could not show: that the cycle really calls this code. The timings, the montage and the limits of
+  what was covered are written up in
+  [`.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md`](.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md).
 
 ### Changed
 
