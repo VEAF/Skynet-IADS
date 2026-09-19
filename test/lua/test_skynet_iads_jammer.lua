@@ -60,6 +60,16 @@ function TestSkynetIADSJammer:testSetupJammerAndRunCycle()
 		calledJam = true
 	end
 
+	-- a real SAM site always answers these two; the jammer asks before handing a site back
+	function mockSAM:isDestroyed()
+		return false
+	end
+
+	function mockSAM:isActive()
+		return true
+	end
+	function mockSAM:stopJamming() end
+
 	function self.mockIADS:getActiveSAMSites()
 		return { mockSAM }
 	end
@@ -249,6 +259,13 @@ function TestSkynetIADSJammer:testABatteryWithNoLineOfSightIsNotJammed()
 	function mockSAM:jam(_)
 		jammed = jammed + 1
 	end
+	function mockSAM:isDestroyed()
+		return false
+	end
+	function mockSAM:isActive()
+		return true
+	end
+	function mockSAM:stopJamming() end
 	function self.mockIADS:getActiveSAMSites()
 		return { mockSAM }
 	end
@@ -282,6 +299,13 @@ function TestSkynetIADSJammer:testABatteryBeyondTheEffectiveDistanceIsNotJammed(
 	function mockSAM:jam(_)
 		jammed = jammed + 1
 	end
+	function mockSAM:isDestroyed()
+		return false
+	end
+	function mockSAM:isActive()
+		return true
+	end
+	function mockSAM:stopJamming() end
 	function self.mockIADS:getActiveSAMSites()
 		return { mockSAM }
 	end
@@ -418,6 +442,202 @@ function TestSkynetIADSJammer:testRemovingTheRadioMenuTakesItsCommandsWithIt()
 	luaunit.assertEquals(#dcsStub.radioItems, 3)
 	self.jammer:removeRadioMenu()
 	luaunit.assertEquals(#dcsStub.radioItems, 0)
+end
+
+-- ---- FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER ------------------------------------------------
+--
+-- A jammer writes a site's ROE on every cycle. The defect these tests cover is what happens when
+-- the cycle stops reaching a site: before this lot, the last state written stayed, so a site put
+-- on WEAPON_HOLD by a jammer that was then shot down held fire until its next goLive() -- which,
+-- on an autonomous site, never comes.
+
+--- Builds a fake SAM site with `radarCount` radars at the given distances, recording every jam()
+--- and stopJamming() call made on it. The distances are per radar, in nautical miles.
+local function fakeSite(distances, natoName)
+	local site = { jamCalls = {}, releases = 0, natoName = natoName or "SA-6", destroyed = false, active = true }
+	local radars = {}
+	for i = 1, #distances do
+		radars[i] = { __distance = distances[i] }
+	end
+	function site:getRadars()
+		return radars
+	end
+	function site:getNatoName()
+		return self.natoName
+	end
+	function site:getDCSName()
+		return "fake-site"
+	end
+	function site:isDestroyed()
+		return self.destroyed
+	end
+	function site:isActive()
+		return self.active
+	end
+	function site:jam(probability)
+		table.insert(self.jamCalls, probability)
+	end
+	function site:stopJamming()
+		self.releases = self.releases + 1
+	end
+	return site
+end
+
+--- Points the jammer at one fake site, with line of sight to every radar unless `blind`.
+function TestSkynetIADSJammer:armAgainst(site, blind)
+	function self.mockIADS:getActiveSAMSites()
+		return { site }
+	end
+	function self.jammer:getDistanceNMToRadarUnit(radar)
+		return radar.__distance
+	end
+	function self.jammer:hasLineOfSightToRadar(_)
+		return not blind
+	end
+end
+
+--- Ticket 04. A site is one decision per cycle, not one per radar: jam() used to be called once
+--- for every visible radar, each call taking its own roll and overwriting the previous one's ROE.
+function TestSkynetIADSJammer:testASiteIsJammedOncePerCycleWhateverItsRadarCount()
+	local site = fakeSite({ 30.0, 30.4 })
+	self:armAgainst(site)
+
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(#site.jamCalls, 1, "two radars, one decision")
+end
+
+--- Ticket 04. Of several visible radars the nearest is the one the jammer works against, rather
+--- than whichever getRadars() happened to return last. Within one group the difference is
+--- fractions of a mile, so this is about the rule being defensible, not about the number moving.
+function TestSkynetIADSJammer:testTheNearestVisibleRadarSetsTheDistance()
+	local site = fakeSite({ 40.0, 12.0, 25.0 })
+	self:armAgainst(site)
+
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(#site.jamCalls, 1)
+	luaunit.assertAlmostEquals(site.jamCalls[1], self.jammer:getSuccessProbability(12.0, "SA-6"), 0.001)
+end
+
+--- Ticket 01, and the reason for the lot. The emitter is destroyed between two cycles; the site it
+--- was holding has to be handed back rather than left on WEAPON_HOLD for good.
+function TestSkynetIADSJammer:testADestroyedEmitterReleasesTheSitesItWasHolding()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer:masterArmOn()
+	self.jammer.runCycle(self.jammer)
+	luaunit.assertEquals(#site.jamCalls, 1)
+	luaunit.assertEquals(site.releases, 0, "nothing to release while it is being jammed")
+
+	self.emitter:__destroy()
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(site.releases, 1, "the site is handed back when the emitter dies")
+end
+
+--- Ticket 01. Same release, reached by flying out of maximumEffectiveDistanceNM rather than by
+--- dying. The jammer is alive and the cycle still runs -- it simply no longer reaches this site.
+function TestSkynetIADSJammer:testFlyingOutOfRangeReleasesTheSite()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer.runCycle(self.jammer)
+	luaunit.assertEquals(#site.jamCalls, 1)
+
+	self.jammer:setMaximumEffectiveDistance(10)
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(#site.jamCalls, 1, "and it is not jammed again")
+	luaunit.assertEquals(site.releases, 1)
+end
+
+--- Ticket 01. Same release, reached by losing line of sight -- a ridge coming between the jammer
+--- and every radar of the site.
+function TestSkynetIADSJammer:testLosingLineOfSightReleasesTheSite()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer.runCycle(self.jammer)
+	luaunit.assertEquals(#site.jamCalls, 1)
+
+	self:armAgainst(site, true)
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(site.releases, 1)
+end
+
+--- Ticket 01. Master Arm Safe from the F10 menu behaves like a destroyed emitter: a player who
+--- switches the jammer off gets the batteries back, rather than leaving them held by a jammer that
+--- has stopped jamming.
+function TestSkynetIADSJammer:testMasterArmSafeReleasesWhatTheJammerWasHolding()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer:masterArmOn()
+	self.jammer.runCycle(self.jammer)
+
+	self.jammer:masterArmSafe()
+
+	luaunit.assertEquals(site.releases, 1)
+end
+
+--- Ticket 01. A site is released once, not on every cycle that follows: the jammer holds a set,
+--- and a site leaves it when it is handed back.
+function TestSkynetIADSJammer:testASiteIsReleasedOnceNotOnEveryCycleAfterwards()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer.runCycle(self.jammer)
+
+	self:armAgainst(site, true)
+	for _ = 1, 5 do
+		self.jammer.runCycle(self.jammer)
+	end
+
+	luaunit.assertEquals(site.releases, 1)
+end
+
+--- Ticket 01. A site that has gone dark leaves getActiveSAMSites(), which would otherwise read as
+--- "no longer jammed" and send a release at it. It is left alone: goLive() sets weapon free on the
+--- way back up, and a dark site is not shooting in the meantime. It also keeps this away from the
+--- controller of a site that went dark under HARM attack, where goDark() called setOnOff(false) on
+--- purpose -- reaching for that controller is exactly what that code is avoiding.
+function TestSkynetIADSJammer:testASiteThatWentDarkIsLeftToGoLiveOnItsOwn()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer.runCycle(self.jammer)
+	luaunit.assertEquals(#site.jamCalls, 1)
+
+	site.active = false
+	function self.mockIADS:getActiveSAMSites()
+		return {}
+	end
+	self.jammer.runCycle(self.jammer)
+
+	luaunit.assertEquals(site.releases, 0, "goLive() will do it")
+end
+
+--- Ticket 01. A site the jammer never held is never released. Handing WEAPON_FREE to a battery
+--- this jammer had nothing to do with would override whatever else in Skynet had set it.
+function TestSkynetIADSJammer:testASiteThatWasNeverJammedIsNeverReleased()
+	local site = fakeSite({ 30.0 }, "SA-99")
+	self:armAgainst(site)
+
+	self.jammer.runCycle(self.jammer)
+	self.jammer:masterArmSafe()
+
+	luaunit.assertEquals(#site.jamCalls, 0, "an unknown type is not jammable")
+	luaunit.assertEquals(site.releases, 0)
+end
+
+--- Ticket 01. A site destroyed while it was being held is not released: stopJamming() would reach
+--- for the controller of a dead group.
+function TestSkynetIADSJammer:testADestroyedSiteIsNotReleased()
+	local site = fakeSite({ 30.0 })
+	self:armAgainst(site)
+	self.jammer.runCycle(self.jammer)
+
+	site.destroyed = true
+	self.jammer:masterArmSafe()
+
+	luaunit.assertEquals(site.releases, 0)
 end
 
 os.exit(luaunit.LuaUnit.run())

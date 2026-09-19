@@ -224,9 +224,13 @@ do
 		end
 	end
 
-	function SkynetIADS:addJammer(jammer)
-		table.insert(self.jammers, jammer)
-	end
+	-- SkynetIADS:addJammer() was removed in FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER. It inserted into
+	-- self.jammers, a field create() never initialised, so every call raised "table expected, got
+	-- nil" and took the mission's setup script down with it -- and nothing anywhere read that field,
+	-- so making it succeed would only have meant a registration that did nothing. A jammer is
+	-- attached to a network by handing the network to its constructor:
+	--     jammer = SkynetIADSJammer:create(Unit.getByName("F-4 AI"), redIADS)
+	-- and a second network with jammer:addIADS(blueIADS). See documentation/api.md.
 
 	function SkynetIADS:getCoalition()
 		return self.coalitionID
@@ -985,6 +989,12 @@ do
 	end
 
 	function SkynetIADS:addRadioMenu()
+		--a second call would issue the whole set of menu calls again and overwrite self.radioMenu
+		--with the second path, leaving the first submenu referenced nowhere and out of
+		--removeRadioMenu()'s reach. A mission that re-runs its setup on a respawn does exactly that.
+		if self.radioMenu ~= nil then
+			return
+		end
 		self.radioMenu = missionCommands.addSubMenu("SKYNET IADS " .. self:getCoalitionString())
 		missionCommands.addCommand(
 			"show IADS Status",
@@ -1014,6 +1024,9 @@ do
 
 	function SkynetIADS:removeRadioMenu()
 		missionCommands.removeItem(self.radioMenu)
+		--cleared so addRadioMenu() can issue the menu again: the guard there is about a menu that
+		--exists, not one that once did
+		self.radioMenu = nil
 	end
 
 	function SkynetIADS.updateDisplay(params)

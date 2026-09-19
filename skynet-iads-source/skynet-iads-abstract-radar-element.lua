@@ -849,6 +849,20 @@ do
 		end
 	end
 
+	-- The other half of jam(): a jammer that stops jamming this element calls this to hand it back.
+	-- Nothing else clears the weapon hold jam() writes -- goLive() would, but it only runs on an
+	-- element that was dark, so an autonomous one would hold fire for the rest of the mission.
+	function SkynetIADSAbstractRadarElement:stopJamming()
+		if self:isDestroyed() == false then
+			self:getController():setOption(AI.Option.Air.id.ROE, AI.Option.Air.val.ROE.WEAPON_FREE)
+			if self.iads:getDebugSettings().jammerProbability then
+				self.iads:printOutputToLog(
+					"JAMMER: " .. self:getDescription() .. ": no longer jammed, setting to weapon free"
+				)
+			end
+		end
+	end
+
 	function SkynetIADSAbstractRadarElement:scanForHarms()
 		self:stopScanningForHARMs()
 		self.harmScanID = SkynetIADSUtils.scheduleFunction(

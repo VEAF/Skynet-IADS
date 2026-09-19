@@ -89,11 +89,6 @@ decision for VEAF, not a side effect of a test-coverage ticket.
 which means Lua 5.2 and later. DCS and this runner are both 5.1, so the shim cannot execute here.
 It is not dead: it is what keeps the file loadable under a newer interpreter.
 
-**`SkynetIADS:addJammer()` — 1 line, and it cannot be called.** `self.jammers` is never
-initialised in `create()`, so the call throws, and nothing anywhere reads that field. Reported as
-a defect rather than tested: making it work needs someone to decide what a registered jammer is
-for, which is a design question and not a missing test.
-
 ## Ported suites
 
 These `unit-tests/` suites now also run standalone (their `.miz` copies are kept):

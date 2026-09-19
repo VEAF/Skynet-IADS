@@ -14,8 +14,11 @@
 # the SkynetIADS object, the enrolment failure paths and the radio menu.
 # 86 -> 91: ticket 06 took the long tail -- the jammer, the HARM decision, how a battery
 # learns its own range, the geometry helpers. That carries the lot past its 90% target.
+# 91 -> 92: FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER covered the jammer's release path -- the
+# sites it hands back when it stops jamming them -- and removed SkynetIADS:addJammer(), which
+# was one of the lines nothing could ever cover.
 #
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 #                 lua5.1 build-tools/report-test-coverage.lua
-91
+92
