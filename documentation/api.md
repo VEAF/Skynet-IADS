@@ -652,12 +652,20 @@ iadsDebug.contacts = true
 iadsDebug.jammerProbability = true
 ```
 
+Setup mistakes — a group or unit name that is not in the mission, an element belonging to the other
+coalition, a group Skynet has no SAM data for — are shown on screen prefixed `WARNING:`, and are
+always written to `dcs.log` whatever this is set to. It is **on by default**, so a mission that
+knows about its own warnings and does not want them on players' screens turns it off:
+
+```lua
+iadsDebug.warnings = false
+```
+
 Output to dcs.log:
 
 ```lua
 iadsDebug.addedEWRadar = true
 iadsDebug.addedSAMSite = true
-iadsDebug.warnings = true
 iadsDebug.radarWentLive = true
 iadsDebug.radarWentDark = true
 iadsDebug.harmDefence = true

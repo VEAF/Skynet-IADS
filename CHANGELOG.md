@@ -269,3 +269,30 @@ Until that release is cut, the build date in the artifact's first line remains t
   `self.samSites` or `self.earlyWarningRadars` changes, after the insert rather than before; it does
   nothing when no connector exists, and the documented setup registers its `SET_GROUP` last, so
   enrolling a whole mission still costs nothing.
+- **Setup mistakes are shown on screen again, and every existing mission will see them.** Four
+  messages — a group name that is not in the mission, a unit name that is not in the mission, an
+  element belonging to the other coalition, and a group Skynet has no SAM data for — wrote one line
+  to `dcs.log` and stopped there. The first is the most common setup mistake there is, a typo in a
+  name, and its only symptom in game was a battery that never appeared, which reads as a Skynet bug
+  rather than a typo.
+
+  All four used to be shown on screen. The logging refactor of November 2020 (`9437df1`, *"moved
+  output to dcs.log console for multiple log events"*) moved them to the log along with the two
+  "added to IADS" lines, and left the *"this is a warning"* flag behind in a call that has no
+  argument for it — which is why the source looks like a mistake rather than a decision. So this
+  reverses a deliberate choice of walder's rather than repairing an accident, and VEAF takes it:
+  a mission maker does not read `dcs.log`, and these four are the mistakes they can still fix while
+  they are in the mission editor.
+
+  The messages now reach the players prefixed `WARNING:` and still leave their line in the log.
+  Expect a mission that has quietly carried one of them for years to start announcing it the first
+  time it loads this build — that is the point. The escape hatch is
+  `redIADS:getDebugSettings().warnings = false`, which silences the screen copy and keeps the log;
+  `documentation/api.md` had that setting filed under log output and now says what it does.
+- A line saying `New Object Spawned` was written to `dcs.log` for **every** unit that appeared —
+  spawned groups, respawns, and a player taking a slot — once per network, so twice in a mission
+  running a red and a blue one. It named nothing, nobody could act on it, and it was the one Skynet
+  line written without the `SKYNET:` prefix, so it could not even be filtered out of a log. The
+  enrolment it was written to support was commented out in December 2023, ten months after it was
+  added, leaving the line behind. Both are gone. `SkynetIADS:onEvent()` is still registered as a world event handler, so the next
+  event feature has its place.

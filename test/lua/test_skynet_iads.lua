@@ -21,10 +21,13 @@
 --- and never by reaching into self.samSites: a getter test that builds its own table proves the
 --- table.
 ---
---- Three tests below pin behaviour that is very probably wrong, and say so where they do. They
---- are characterisation tests: they record what the code does today so that changing it is a
---- decision somebody takes on purpose, not an accident. If one of them goes red because the
---- behaviour was fixed, the fix is right and the test is what needs updating.
+--- Four tests here used to pin behaviour that was wrong and said so: the three setup warnings that
+--- never left dcs.log, and the line every birth event wrote. FIX-SETUP-WARNINGS-AND-LOG-NOISE fixed
+--- both, and those four now assert the behaviour rather than record it.
+---
+--- One characterisation test is left, on addRadioMenu() and marked PINS A DEFECT where it sits. It
+--- stays because the defect needs somebody to decide what DCS should show a player, not because the
+--- behaviour is endorsed.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
@@ -343,15 +346,12 @@ function TestSkynetIADS:testAddEarlyWarningRadarEnrolsTheUnitAndHandsItBack()
 	luaunit.assertEquals(#iads:getEarlyWarningRadars(), 3)
 end
 
---- A name that is not in the mission enrols nothing and says so in dcs.log.
+--- A name that is not in the mission enrols nothing, says so in dcs.log, and warns the players.
 ---
---- PINS A DEFECT. The message is built as a warning -- the call passes `true` as a second
---- argument -- but it goes to printOutputToLog(), which takes one argument and drops it. The
---- author meant printOutput(msg, true), which prefixes "WARNING: " and is gated by the
---- `warnings` debug setting that is on by default precisely so a mission maker sees this. As
---- written nothing reaches the screen, and the only trace is one line in a log nobody opens
---- until something is already wrong. Asserted as it behaves today; if this goes red because the
---- warning now reaches the players, the fix is right and this test is what to update.
+--- Both copies, on purpose: the log line is what the skynet-runtime-debug skill greps for, and
+--- the screen warning is what reaches the person who can fix it while they are still in the
+--- mission editor loop. "WARNING: " belongs to the screen copy only -- on a log line already
+--- prefixed "SKYNET: " it buys nothing.
 function TestSkynetIADS:testAddingASAMSiteThatIsNotInTheMissionEnrolsNothing()
 	local iads = self:buildNetwork()
 	local printed = capture(function()
@@ -361,10 +361,13 @@ function TestSkynetIADS:testAddingASAMSiteThatIsNotInTheMissionEnrolsNothing()
 	luaunit.assertEquals(#printed.log, 1)
 	luaunit.assertStrContains(printed.log[1], "typo-in-the-mission-editor")
 	luaunit.assertStrContains(printed.log[1], "does not exist")
-	luaunit.assertEquals(#printed.screen, 0, "see the note above: the warning never reaches a player")
+	luaunit.assertNotStrContains(printed.log[1], "WARNING")
+	luaunit.assertEquals(#printed.screen, 1)
+	luaunit.assertStrContains(printed.screen[1], "WARNING: ")
+	luaunit.assertStrContains(printed.screen[1], "typo-in-the-mission-editor")
 end
 
---- Same defect, same note.
+--- Same promise for an early warning radar: both copies, prefix on the screen one only.
 function TestSkynetIADS:testAddingAnEarlyWarningRadarThatIsNotInTheMissionEnrolsNothing()
 	local iads = self:buildNetwork()
 	local printed = capture(function()
@@ -373,7 +376,24 @@ function TestSkynetIADS:testAddingAnEarlyWarningRadarThatIsNotInTheMissionEnrols
 	luaunit.assertEquals(#iads:getEarlyWarningRadars(), 2, "nothing was enrolled")
 	luaunit.assertEquals(#printed.log, 1)
 	luaunit.assertStrContains(printed.log[1], "does not exist")
-	luaunit.assertEquals(#printed.screen, 0)
+	luaunit.assertNotStrContains(printed.log[1], "WARNING")
+	luaunit.assertEquals(#printed.screen, 1)
+	luaunit.assertStrContains(printed.screen[1], "WARNING: ")
+	luaunit.assertStrContains(printed.screen[1], "typo-in-the-mission-editor")
+end
+
+--- The escape hatch: a mission that knows about its own warnings turns them off and keeps the
+--- log. `warnings` is on by default, so this is the only way out of the screen copy.
+function TestSkynetIADS:testTheWarningsSettingSilencesTheScreenCopyAndKeepsTheLog()
+	local iads = self:buildNetwork()
+	iads:getDebugSettings().warnings = false
+	local printed = capture(function()
+		iads:addSAMSite("typo-in-the-mission-editor")
+		iads:addEarlyWarningRadar("typo-in-the-mission-editor")
+		iads:setCoalition(dcsStub.makeUnit({ name = "blue-intruder", coalition = BLUE }))
+	end)
+	luaunit.assertEquals(#printed.screen, 0, "the setting silences what a player sees")
+	luaunit.assertEquals(#printed.log, 3, "and leaves every line in dcs.log")
 end
 
 --- A group Skynet has no SAM data for is rejected and cleaned up rather than enrolled half-built.
@@ -393,6 +413,10 @@ function TestSkynetIADS:testAGroupSkynetHasNoSAMDataForIsRejected()
 	luaunit.assertEquals(#printed.log, 1)
 	luaunit.assertStrContains(printed.log[1], "can not handle")
 	luaunit.assertStrContains(printed.log[1], "RED-SAM-not-really")
+	luaunit.assertNotStrContains(printed.log[1], "WARNING")
+	luaunit.assertEquals(#printed.screen, 1, "a prefix pointed at a truck convoy is a setup mistake too")
+	luaunit.assertStrContains(printed.screen[1], "WARNING: ")
+	luaunit.assertStrContains(printed.screen[1], "RED-SAM-not-really")
 end
 
 -- ---- the radio menu --------------------------------------------------------------------
@@ -555,9 +579,8 @@ function TestSkynetIADS:testSetupSAMSitesAndThenActivateActivatesAndSaysItIsDepr
 	)
 end
 
---- A mission that points a red IADS at a blue group says so in the log. This is the second most
---- likely setup mistake after a mistyped name, and the same note applies as above: it never
---- reaches a player, because the `true` passed here is dropped by printOutputToLog().
+--- A mission that points a red IADS at a blue group says so in the log and on screen. This is the
+--- second most likely setup mistake after a mistyped name.
 function TestSkynetIADS:testAnElementOfTheWrongCoalitionIsReported()
 	local iads = self:buildNetwork()
 	local printed = capture(function()
@@ -566,8 +589,11 @@ function TestSkynetIADS:testAnElementOfTheWrongCoalitionIsReported()
 	luaunit.assertEquals(#printed.log, 1)
 	luaunit.assertStrContains(printed.log[1], "blue-intruder")
 	luaunit.assertStrContains(printed.log[1], "different coalition")
+	luaunit.assertNotStrContains(printed.log[1], "WARNING")
 	luaunit.assertEquals(iads:getCoalition(), RED, "and the IADS keeps the side it already had")
-	luaunit.assertEquals(#printed.screen, 0)
+	luaunit.assertEquals(#printed.screen, 1)
+	luaunit.assertStrContains(printed.screen[1], "WARNING: ")
+	luaunit.assertStrContains(printed.screen[1], "blue-intruder")
 end
 
 --- The two debug settings a mission turns on while wiring a network up, to check that what it
@@ -618,18 +644,19 @@ function TestSkynetIADS:testANetworkWithNoCommandCentreIsUsable()
 end
 -- ---- events -----------------------------------------------------------------------------
 
---- PINS A DEFECT. onEvent() does nothing with a birth event except write "New Object Spawned" to
---- dcs.log -- the enrolment it was meant to do is commented out in the source. The line carries no
---- SKYNET prefix, so the grep the skynet-runtime-debug skill uses to pick Skynet's lines out of a
---- log cannot even filter it away, and a mission running a red and a blue network writes two of
---- them for every unit that spawns, player slots included. Asserted as it behaves today.
-function TestSkynetIADS:testABirthEventOnlyWritesALineToTheLog()
+--- A birth event is not something Skynet acts on. It used to write one unprefixed line per unit
+--- that appeared, player slots included, naming nothing and telling nobody anything.
+---
+--- The second half is the one worth keeping: enrolling a group on birth is the idea that was
+--- commented out in the source, and someone may revive it. If they do, this goes red.
+function TestSkynetIADS:testABirthEventWritesNothingAndEnrolsNothing()
 	local iads = self:buildNetwork()
 	local before = #iads:getSAMSites()
 	local printed = capture(function()
 		iads:onEvent({ id = world.event.S_EVENT_BIRTH })
 	end)
-	luaunit.assertEquals(printed.log, { "New Object Spawned" })
+	luaunit.assertEquals(#printed.log, 0)
+	luaunit.assertEquals(#printed.screen, 0)
 	luaunit.assertEquals(#iads:getSAMSites(), before, "nothing is enrolled by a birth event")
 end
 
