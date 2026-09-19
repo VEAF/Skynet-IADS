@@ -305,11 +305,17 @@ do
 		end
 		ewRadar:setupElements()
 		ewRadar:setCachedTargetsMaxAge(self:getCachedTargetsMaxAge())
+		-- setActAsEW(true) is a state change, so it ends in informChildrenOfStateChange() -> every
+		-- child setToCorrectAutonomousState() -> goDark(). It has to run while this radar still has
+		-- no children, or joining the mission would switch off every battery it covers, including one
+		-- lit by designation. Building the coverage afterwards also means the radar already acts as
+		-- EW when buildRadarCoverageForEarlyWarningRadar() asks who is now covered -- until it does,
+		-- it is not a valid parent, so the answer would be that nothing changed.
+		ewRadar:setActAsEW(true)
 		-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
 		if self.ewRadarScanMistTaskID ~= nil then
 			self:buildRadarCoverageForEarlyWarningRadar(ewRadar)
 		end
-		ewRadar:setActAsEW(true)
 		ewRadar:setToCorrectAutonomousState()
 		ewRadar:goLive()
 		table.insert(self.earlyWarningRadars, ewRadar)
@@ -730,25 +736,56 @@ do
 		end
 	end
 
+	--- Records that parent covers child. Deliberately quiet: the caller decides who is told about it.
+	--
+	-- This used to go through addParentRadar(), which ends in informChildrenOfStateChange() ->
+	-- resetAutonomousState() -> goDark(), so writing down a fact of geometry switched a radar off.
+	-- buildRadarCoverage() notifies every SAM site once at the end of its own rebuild, and the two
+	-- incremental entry points below notify what they changed.
 	function SkynetIADS:buildRadarAssociation(parent, child)
-		--chilren should only be SAM sites not EW radars
+		--only SAM sites are children, and only SAM sites have parent radars: EW radars are neither
 		if getmetatable(child) == SkynetIADSSamSite then
 			parent:addChildRadar(child)
+			child:addParentRadarWithoutStateChange(parent)
 		end
-		--Only SAM Sites should have parent Radars, not EW Radars
-		if getmetatable(child) == SkynetIADSSamSite then
-			child:addParentRadar(parent)
+	end
+
+	--- Has this site's autonomy actually changed? Then correct it; otherwise leave it alone.
+	--
+	-- setToCorrectAutonomousState() on a covered site means resetAutonomousState() and therefore
+	-- goDark(), and goDark()'s own guards protect a site that has acquired a track or has missiles in
+	-- flight, but not one that has just gone live on designation and not yet locked on (see 3a94937
+	-- for what that looks like in game: launchers up, slew onto the target, back to travel state, and
+	-- no shot). A site is autonomous exactly when no valid parent covers it, so the two disagreeing
+	-- is what "this site's situation changed" means.
+	--
+	-- Note this is the *autonomy* that is compared, not the parent list: a site that gains a second
+	-- parent while keeping its first has not changed sides, and switching it off over that would be
+	-- the very defect above.
+	function SkynetIADS:updateAutonomousStateIfChanged(samSite)
+		if samSite:hasValidParentRadar() == samSite:getAutonomousState() then
+			samSite:setToCorrectAutonomousState()
 		end
 	end
 
 	function SkynetIADS:buildRadarCoverageForSAMSite(samSite)
 		self:buildRadarCoverageForAbstractRadarElement(samSite)
 		self:addSingleRadarToCommandCenters(samSite)
+		--the site that just joined is the only one whose own autonomy can have changed: it does not
+		--act as EW, so it is not a valid parent for anybody else
+		self:updateAutonomousStateIfChanged(samSite)
 	end
 
 	function SkynetIADS:buildRadarCoverageForEarlyWarningRadar(ewRadar)
 		self:buildRadarCoverageForAbstractRadarElement(ewRadar)
 		self:addSingleRadarToCommandCenters(ewRadar)
+		--the sites this radar now covers are the ones whose answer can have changed. They are read
+		--off the argument, not off self.earlyWarningRadars: addEarlyWarningRadar() inserts the radar
+		--into that list only after this has run, so it is not in getAbstracRadarElements() yet.
+		local coveredSites = ewRadar:getChildRadars()
+		for i = 1, #coveredSites do
+			self:updateAutonomousStateIfChanged(coveredSites[i])
+		end
 	end
 
 	-- Coverage refresh ----------------------------------------------------------------------------
@@ -831,12 +868,7 @@ do
 
 		local samSites = self:getSAMSites()
 		for i = 1, #samSites do
-			local samSite = samSites[i]
-			--a site is autonomous exactly when no valid parent covers it, so the two disagreeing is
-			--what "this site's situation changed" means
-			if samSite:hasValidParentRadar() == samSite:getAutonomousState() then
-				samSite:setToCorrectAutonomousState()
-			end
+			self:updateAutonomousStateIfChanged(samSites[i])
 		end
 	end
 
