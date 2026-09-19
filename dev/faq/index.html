@@ -474,6 +474,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-does-a-sam-site-not-react-to-an-aircraft-right-above-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why does a SAM site not react to an aircraft right above it?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-covered-mean-the-ew-radar-is-feeding-that-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does "covered" mean the EW radar is feeding that site?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#are-there-known-bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -585,6 +607,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-does-a-sam-site-not-react-to-an-aircraft-right-above-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why does a SAM site not react to an aircraft right above it?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-covered-mean-the-ew-radar-is-feeding-that-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does "covered" mean the EW radar is feeding that site?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#are-there-known-bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -664,6 +708,20 @@ options a mission designer provides, Skynet will turn a SAM site on or off.</p>
 If a SAM site or EW radar detects an inbound HARM it just turns off its radar as in real life. The
 HARM as it is programmed in DCS will try and glide in to the last known position, mostly resulting
 in misses by 50-100 meters.</p>
+<h2 id="why-does-a-sam-site-not-react-to-an-aircraft-right-above-it">Why does a SAM site not react to an aircraft right above it?</h2>
+<p>Because a site under network control has its radar switched off, and is therefore blind. It lights
+up when an EW radar <strong>that covers it</strong> hands it a contact — nothing else. Fly under the EW radars'
+horizon and no battery reacts, whatever the distance.</p>
+<p>The corollary surprises people the other way round: <strong>destroy the EW radars and the remaining sites
+become more aggressive</strong>, because they revert to the DCS AI, which turns everything on and engages.</p>
+<p>This is softened by the <a href="../api/#last-line-of-defense">last line of defense</a>: a dark site keeps a
+short virtual detection radius of its own, so an aircraft flying over it wakes it even when no radar
+anywhere holds a contact. It is on by default and can be switched off.</p>
+<h2 id="does-covered-mean-the-ew-radar-is-feeding-that-site">Does "covered" mean the EW radar is feeding that site?</h2>
+<p>No. Coverage is a flat 2D distance between the EW radar and the battery, compared against the EW
+radar's detection range — no horizon, no terrain, no altitude. It says the EW radar is <strong>near</strong> the
+battery, never that it is actually feeding it anything. A single long-range radar can list a dozen
+batteries as covered while detecting nothing at all.</p>
 <h2 id="are-there-known-bugs">Are there known bugs?</h2>
 <p>Yes, when placing multi-unit SAM sites (e.g. SA-3, Patriot..) make sure the first unit you place is
 the search radar. If you add any other element as the first unit, Skynet will not be able to read

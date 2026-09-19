@@ -416,6 +416,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last line of defense
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Last line of defense">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reporting-a-contact-from-outside-skynet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting a contact from outside Skynet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage refresh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#adding-a-command-center" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -905,6 +944,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last line of defense
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Last line of defense">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reporting-a-contact-from-outside-skynet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting a contact from outside Skynet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage refresh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#adding-a-command-center" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1362,6 +1440,55 @@ will continue running, resulting in unexpected behaviour:</p>
 SAM sites off or on according to targets it has detected:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">setUpdateInterval</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="last-line-of-defense">Last line of defense</h2>
+<p>A SAM site under network control has its radar switched off, so it is <strong>blind</strong>: the only thing that
+can bring it back to life is an early warning radar that covers it and is holding the target. Fly
+under the EW radars' horizon and no battery reacts, whatever the distance — proximity to the site is
+an input nowhere in the cycle, because the only sensor that could measure it is the one that was
+just switched off.</p>
+<p>The last line of defense fixes that. A site held dark keeps a short <strong>virtual</strong> detection radius of
+its own — Skynet's, no DCS radar involved — and a hostile aircraft inside it makes the site go live
+with no radar contact anywhere. It is <strong>on by default</strong>.</p>
+<p>The honest limit, which is deliberate: a short-range piece can light up for an aircraft it cannot
+reach, because the radius ignores the firing envelope. Requiring the kill zone would mean a Shilka,
+useful range about 2.5 km, never waking inside a 10–15 km radius — and short-range pieces are
+exactly what a last line of defense is for.</p>
+<p>Switch it off for a mission that wants a purist IADS:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">setLastLineOfDefence</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+</code></pre></div>
+<p>Set the bounds, in metres, of the radius. Each site draws its own radius once, between these two
+values, and keeps it for the whole mission — so a pilot cannot learn the exact distance, and a site
+does not blink for an aircraft loitering near the mean. Changing the bounds makes every site draw
+again:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">setLastLineOfDefenceRadius</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="mi">15000</span><span class="p">)</span>
+</code></pre></div>
+<p>Set how long, in seconds, a site stays live after the last contact reported to it. Without this a
+fast pass lights the site for a single cycle and a racetrack makes it flicker:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">setLastLineOfDefencePersistence</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+</code></pre></div>
+<p>A site silenced to evade an anti-radiation missile, out of ammunition, without power or destroyed
+does <strong>not</strong> wake on proximity, and the site's own <a href="#add-go-live-constraints">go live constraints</a>
+are still honoured.</p>
+<h3 id="reporting-a-contact-from-outside-skynet">Reporting a contact from outside Skynet</h3>
+<p><code>reportContact</code> is the public entry point the last line of defense itself uses. Call it to wake a
+SAM site on a DCS unit, as if something had reported that aircraft to the network — a spotter, a
+JTAC, any script of your own:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">reportContact</span><span class="p">(</span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Intruder'</span><span class="p">),</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-6'</span><span class="p">))</span>
+</code></pre></div>
+<p>Unlike the normal path it does not require the target to be inside the site's firing envelope: the
+site lights up because something told it the aircraft is there, not because it can hit it. Every
+other guard still applies, and the site is held live by the persistence above. It answers whether
+the site is live after the call.</p>
+<h2 id="coverage-refresh">Coverage refresh</h2>
+<p>Which battery sits under which radar is geometry, and geometry changes when something moves. Skynet
+re-evaluates the coverage of every element that has travelled more than 10 NM since the last sweep,
+by default every 10 seconds. This is what makes an AWACS in transit lose the batteries it left
+behind — they become autonomous, exactly as if it had been shot down — and a mobile SAM site's
+parents follow it as it drives.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">setCoverageRefreshInterval</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+<p>An interval of <code>0</code> stops the sweep. Killing an early warning radar still frees its batteries
+immediately, without waiting for the next sweep.</p>
 <h2 id="adding-a-command-center">Adding a command center</h2>
 <p>The command center represents the place where information is collected and analysed. If it is
 destroyed the IADS disintegrates.</p>
