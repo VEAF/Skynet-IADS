@@ -217,6 +217,8 @@ function InsimTestTools.addAirFromMission(groupName, opts)
     "addAirFromMission: opts.from needs x (north) and y (east)")
   assert(type(opts.to) == "table" and opts.to.x and opts.to.y,
     "addAirFromMission: opts.to needs x (north) and y (east)")
+  assert(opts.from.x ~= opts.to.x or opts.from.y ~= opts.to.y,
+    "addAirFromMission: opts.from and opts.to are the same point -- the leg has no direction")
   assert(type(opts.altitude) == "number" and opts.altitude > 0,
     "addAirFromMission: opts.altitude must be a positive number of metres")
   assert(type(opts.speed) == "number" and opts.speed >= 20 and opts.speed <= 600,
