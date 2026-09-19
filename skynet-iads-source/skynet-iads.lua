@@ -281,6 +281,7 @@ do
 				self:addEarlyWarningRadar(unitName)
 			end
 		end
+		self:rebuildRadarCoverageAfterBulkReAdd()
 		return self:createTableDelegator(self.earlyWarningRadars)
 	end
 
@@ -352,7 +353,28 @@ do
 				end
 			end
 		end
+		self:rebuildRadarCoverageAfterBulkReAdd()
 		return self:createTableDelegator(self.samSites)
+	end
+
+	--- Unwires the elements a *ByPrefix call discarded, by rebuilding the whole coverage graph.
+	--
+	-- Those two functions replace an entire list, and nothing else removes an association: the
+	-- per-element rebuild in addSAMSite() / addEarlyWarningRadar() only ever adds, and
+	-- refreshRadarCoverage() walks getAbstracRadarElements(), which reads the current lists — a
+	-- discarded object is in neither, so it is never visited and stays wired in forever. A discarded
+	-- EW radar still passes every test a parent is given (its DCS unit exists, it has power, a
+	-- connection node, it acts as EW), so the battery believes it is covered by a radar the IADS no
+	-- longer polls, and stays dark under nobody's watch. A discarded SAM site stays a child of its
+	-- EW radar and keeps driving the controller of the DCS group the live site also owns.
+	--
+	-- buildRadarCoverage() is the only code that purges, and it purges all three holders. It is
+	-- guarded exactly as the incremental rebuild is: before activate() there is no coverage to
+	-- rebuild, and activate() will do it once.
+	function SkynetIADS:rebuildRadarCoverageAfterBulkReAdd()
+		if self.ewRadarScanMistTaskID ~= nil then
+			self:buildRadarCoverage()
+		end
 	end
 
 	function SkynetIADS:getSAMSitesByPrefix(prefix)

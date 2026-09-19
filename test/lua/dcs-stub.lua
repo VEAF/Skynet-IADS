@@ -268,6 +268,15 @@ function dcsStub.makeUnit(spec)
 	function u:getDesc()
 		return spec.desc or {}
 	end
+	-- DCS Unit.isActive(). SkynetIADS:addSAMSitesByPrefix() reads it on a group's first unit to
+	-- skip a late-activation group that is in the mission but whose trigger has not fired yet —
+	-- real DCS answers false for those. Fixtures are activated unless a spec says otherwise.
+	function u:isActive()
+		if spec.isActive == nil then
+			return true
+		end
+		return spec.isActive
+	end
 	function u:getCoalition()
 		return spec.coalition
 	end

@@ -148,6 +148,32 @@ function F.earlyWarningRadarUnit(name, opts)
 	})
 end
 
+--- The same EW radar, but inside a group of its own.
+---
+--- In DCS every unit belongs to a group, and `SkynetIADSUtils.getUnitNames()` enumerates units
+--- *through* groups — so a bare unit, which is what `F.earlyWarningRadarUnit` registers, is
+--- invisible to `SkynetIADS:addEarlyWarningRadarsByPrefix()`. Any test that drives prefix discovery
+--- needs this one; `unitName` is what the prefix is matched against.
+function F.earlyWarningRadarGroup(groupName, unitName, opts)
+	opts = opts or {}
+	dcsStub.makeGroup({
+		name = groupName,
+		coalition = opts.coalition,
+		category = Group.Category.GROUND,
+		units = {
+			{
+				name = unitName,
+				type = "1L13 EWR",
+				pos = opts.pos or { x = 0, y = 0, z = 0 },
+				coalition = opts.coalition,
+				desc = { category = Unit.Category.GROUND_UNIT },
+				sensors = searchRadarSensors(),
+			},
+		},
+	})
+	return dcsStub.world[unitName]
+end
+
 function F.connectionNodeUnit(name)
 	-- makeUnit self-registers into dcsStub.world (name given), like makeStatic below.
 	return dcsStub.makeUnit({ name = name, type = "Ural-375", pos = { x = 0, y = 0, z = 0 } })
