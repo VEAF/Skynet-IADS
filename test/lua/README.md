@@ -57,7 +57,7 @@ the doors a mission uses (network designation, the last line of defense,
 `reportContact`; a battery going autonomous when its radar leaves the IADS) and
 only then assert state.
 
-`test_skynet_iads_coverage_update_notification.lua` (5 tests) came with
+`test_skynet_iads_coverage_update_notification.lua` (9 tests) came with
 `FIX-COVERAGE-UPDATE-DARKENS-SITES`, for the extinction order that recording a
 radar's coverage used to carry. Its leading test lights a battery through a real
 `evaluateContacts()` cycle and then adds a radar to the running IADS, so it fails

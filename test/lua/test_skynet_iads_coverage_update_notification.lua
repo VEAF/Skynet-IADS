@@ -239,6 +239,48 @@ function TestSkynetIADSCoverageUpdateNotification:testEnrollingASiteRefreshesThe
 	luaunit.assertEquals(heldGroups["SAM-late"], true)
 end
 
+--buildRadarCoverageForSAMSite() is public, and documented as the runtime entry point for a single
+--site: the legacy in-sim suite calls it directly on a site that is already enrolled
+--(unit-tests/test-skynet-iads.lua). On that site isAutonomous means something, so the guard is what
+--has to decide -- and it has to decide both ways. First: a site whose coverage really did appear.
+function TestSkynetIADSCoverageUpdateNotification:testRebuildingOneSiteThroughThePublicDoorUpdatesItsAutonomy()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+
+	--nothing is rebuilt while the IADS is not scanning, so the site is enrolled uncovered
+	F.samGroup("SA-2", "SAM-SA-2", { pos = { x = 0, y = 0, z = 0 }, coalition = RED })
+	local samSite = iads:addSAMSite("SAM-SA-2")
+	function samSite:getDetectedTargets()
+		return {}
+	end
+	F.earlyWarningRadarUnit("EW-north", { pos = { x = 60000, y = 0, z = 0 }, coalition = RED })
+	local ewRadar = iads:addEarlyWarningRadar("EW-north")
+	function ewRadar:getDetectedTargets()
+		return {}
+	end
+	luaunit.assertEquals(samSite:getAutonomousState(), true)
+
+	iads:buildRadarCoverageForSAMSite(samSite)
+
+	luaunit.assertEquals(#samSite:getParentRadars(), 1)
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+end
+
+--and the other way: a site whose coverage did not change is left alone, emitter included. Without
+--the guard this door is the defect the lot is about, reached by hand instead of by addSAMSite().
+function TestSkynetIADSCoverageUpdateNotification:testRebuildingOneSiteThroughThePublicDoorLeavesALitSiteAlone()
+	local iads, samSite = self:buildDesignatedNetwork()
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), true)
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+
+	iads:buildRadarCoverageForSAMSite(samSite)
+
+	luaunit.assertEquals(samSite:isActive(), true)
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+end
+
 --- Counts informChildrenOfStateChange() on every radar element for the duration of fn().
 local function countStateChangeNotifications(fn)
 	local real = SkynetIADSAbstractRadarElement.informChildrenOfStateChange

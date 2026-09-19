@@ -211,3 +211,17 @@ Until that release is cut, the build date in the artifact's first line remains t
   moved. `addParentRadar()` is unchanged and still public. Covered by
   `test/lua/test_skynet_iads_coverage_update_notification.lua`, whose leading test drives a real
   `evaluateContacts()` cycle rather than counting calls.
+- A battery enrolled on a running IADS with no valid radar covering it stayed dark for the rest of
+  the mission instead of being handed back to the DCS AI. Found by reviewing the fix above, which
+  introduced it: the "only act when the autonomy has actually changed" test reads `isAutonomous`,
+  and on a site `addSAMSite()` has just built that field is the constructor's default — it says
+  `true` although `goAutonomous()` has never run, so the comparison weighed a value that never meant
+  anything and skipped. It was reached whenever the only element in range was no use to the battery,
+  a neighbouring SAM site not acting as EW being the ordinary case, and nothing came back for it
+  afterwards: the last line of defense skips an autonomous DCS-AI site, the contact cycle never
+  offers it anything because it is no usable radar's child, and the coverage sweep carries the same
+  test. The state is now applied unconditionally to the site that has just joined, the way
+  `activate()` applies it to every site — the site is one statement old and dark, so there is no
+  designation to lose. The same call also used to refresh the MOOSE A2A dispatcher connector, at the
+  end of `informChildrenOfStateChange()`; a mission using `addMooseSetGroup()` went on dispatching
+  from the list it held before the battery joined, so the refresh is now asked for explicitly.
