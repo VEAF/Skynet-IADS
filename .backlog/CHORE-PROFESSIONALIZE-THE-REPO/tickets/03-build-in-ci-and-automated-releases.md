@@ -1,6 +1,6 @@
 # 03 — Rebuild the build on the CTLD model, and release automatically
 
-Status: ⬜ ready
+Status: ✅ done
 
 The ticket with the most leverage in this lot. Without a release, every consumer copies a file by
 hand and nobody knows which version they hold — which is exactly what happened: the artifact
@@ -58,7 +58,11 @@ raises.
 
 ## Release
 
-On a merge to `master`, or on a tag:
+David, 2026-09-19: **tag-triggered only**, not on every merge to `master` — so a pre-release tag
+(`v3.5.0-rc1`) can be cut without it ever being the tip of `master`, as on CTLD. A tag not shaped
+like a plain `vX.Y.Z` publishes as a GitHub pre-release.
+
+On a tag:
 
 - build the artifact;
 - attach it to a GitHub release, named by version;

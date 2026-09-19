@@ -2,5 +2,8 @@
 /demo-missions/spikes/
 /.superpowers/
 
+# Built by build-tools/build-compiled-script.ps1 — rebuilt by CI, never hand-edited.
+/demo-missions/skynet-iads-compiled.lua
+
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json

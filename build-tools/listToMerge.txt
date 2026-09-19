@@ -1,0 +1,41 @@
+# Source files to concatenate into the shipped artifact, one per line, in load order.
+# Blank lines and lines starting with '#' are ignored. Paths are relative to
+# skynet-iads-source/.
+#
+# The order matters: several files call inheritsFrom() or otherwise reference another
+# class at the top level, which runs immediately when the chunk loads — unlike a
+# function body, which only runs later, once everything is already loaded. Getting this
+# wrong fails silently: the class table exists but is missing its parent's methods.
+
+# Leaf utilities and data — nothing here depends on another file in this list.
+skynet-iads-utils.lua
+skynet-iads-supported-types.lua
+highdigitsams/skynet-iads-high-digit-sams-suported-types.lua
+skynet-iads-logger.lua
+
+# The network object and its helpers. They only reach into other classes from inside
+# function bodies, so they can sit ahead of the classes they use.
+skynet-iads.lua
+skynet-mooose-a2a-dispatcher-connector.lua
+skynet-iads-table-delegator.lua
+
+# inheritsFrom() is defined in the wrapper below; every class after this point calls it
+# at load time against one of these three as its parent.
+skynet-iads-abstract-dcs-object-wrapper.lua
+skynet-iads-abstract-element.lua
+skynet-iads-abstract-radar-element.lua
+
+# Concrete radar elements, all inheriting from SkynetIADSAbstractRadarElement above.
+skynet-iads-awacs-radar.lua
+skynet-iads-command-center.lua
+skynet-iads-contact.lua
+skynet-iads-early-warning-radar.lua
+skynet-iads-jammer.lua
+
+# SkynetIADSSAMSearchRadar inherits from AbstractDCSObjectWrapper directly; the tracking
+# radar and the launcher below inherit from it in turn, so it has to come first of the three.
+skynet-iads-sam-search-radar.lua
+skynet-iads-sam-site.lua
+skynet-iads-sam-tracking-radar.lua
+skynet-iads-sam-launcher.lua
+skynet-iads-harm-detection.lua
