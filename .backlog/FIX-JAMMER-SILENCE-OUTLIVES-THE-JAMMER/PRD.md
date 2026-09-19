@@ -3,7 +3,7 @@
 > The lot ID keeps the claim it was opened on, which was wrong. Renaming the directory would break
 > every link to it; the correction is below and in ticket 01.
 
-Status: ⬜ ready
+Status: ✅ done — merged as [PR #27](https://github.com/VEAF/Skynet-IADS/pull/27)
 
 Origin: opened on 2026-09-19 while explaining what `FIX-SETUP-WARNINGS-AND-LOG-NOISE` deliberately
 left out. Three of the four tickets were already recorded as *found on the way, not fixed*. The

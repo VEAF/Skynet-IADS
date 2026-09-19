@@ -1,6 +1,6 @@
 # 04 — one `jam()` per radar, where one per site is meant
 
-Status: ⬜ ready
+Status: ✅ done
 
 ```lua
 for l = 1, #radars do

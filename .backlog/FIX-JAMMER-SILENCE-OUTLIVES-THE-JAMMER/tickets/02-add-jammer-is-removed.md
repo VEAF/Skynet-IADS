@@ -1,6 +1,6 @@
 # 02 — `addJammer()` cannot be called, and is removed
 
-Status: ⬜ ready
+Status: ✅ done
 
 ```lua
 function SkynetIADS:addJammer(jammer)

@@ -1,6 +1,6 @@
 # 03 — `addRadioMenu()` issues its menu twice
 
-Status: ⬜ ready
+Status: ✅ done
 
 ```lua
 function SkynetIADS:addRadioMenu()
