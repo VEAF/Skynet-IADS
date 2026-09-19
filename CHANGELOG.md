@@ -47,3 +47,7 @@ Until that release is cut, the build date in the artifact's first line remains t
   takes the version as a **mandatory** argument and resolves its paths relative to `build-tools/`;
   and the root `README.md` is **generated** from `skynet-iads-source/README_source.md`, so editing
   it is lost. Corrected in `CLAUDE.md`, the `release` skill and the backlog.
+
+  Two of those are now scheduled to disappear: the build is being redone on the CTLD model, and the
+  README is coming out of it — it becomes a short hand-written door, and the documentation is what
+  gets generated.

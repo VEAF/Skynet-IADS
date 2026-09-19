@@ -103,6 +103,12 @@ The table of contents comes from `build-tools/bin/gh-md-toc.exe`, which **needs 
 and is a Windows binary, so it will not run on a Linux CI runner as it stands. On failure the build
 now bails rather than silently replacing the table of contents with a blank line.
 
+This is on its way out. The build is being redone on the model of VEAF's other two repositories — a
+commented merge manifest instead of a hard-coded list, paths resolved from the script, the version
+read from one place — and the README is coming out of it: it becomes a short hand-written page
+pointing at a published documentation site, which is what gets generated instead. See
+`.backlog/CHORE-PROFESSIONALIZE-THE-REPO`, tickets 03 and 06.
+
 ## Versioning
 
 [Semantic versioning](https://semver.org/). A change to what a mission sees at runtime is at least a

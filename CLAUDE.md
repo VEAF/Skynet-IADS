@@ -39,6 +39,11 @@ cd build-tools && pwsh -File ./build-compiled-script.ps1 3.5.0
 The table-of-contents step calls `bin/gh-md-toc.exe`, which needs network access and is a Windows
 binary — worth knowing before assuming the build runs anywhere.
 
+**Both of those are transitional.** `CHORE-PROFESSIONALIZE-THE-REPO` tickets 03 and 06 rebuild the
+build on the CTLD model — a commented merge manifest, paths resolved from the script, the version
+read from one place — and take the README out of it: it becomes a short hand-written door, and the
+*documentation* is what gets generated.
+
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under
 `src/scripts/community/`. A change here reaches missions only once that repository re-vendors it,

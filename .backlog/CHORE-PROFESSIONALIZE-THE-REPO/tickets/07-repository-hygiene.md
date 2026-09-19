@@ -21,7 +21,9 @@ the same trap.
 
 ## `.gitignore` is three lines
 
-`.DS_STORE`, `/demo-missions/spikes/`, `/.superpowers/`. Add what the project actually produces:
+`.DS_STORE`, `/demo-missions/spikes/`, `/.superpowers/`. Add what the project actually produces —
+including the built artifact, if [ticket 03](03-build-in-ci-and-automated-releases.md) stops
+committing it:
 build output, editor directories, and whatever a test run can leave behind. If you are tempted by
 nested `.gitignore` files, do not — on the VMCT side a root rule ignoring every subdirectory
 `.gitignore` made three of them invisible for months. Put the rules at the root and check with
