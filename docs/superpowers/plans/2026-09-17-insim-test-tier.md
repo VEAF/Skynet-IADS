@@ -1944,19 +1944,19 @@ return [[D:\Projects\DcsLua\Skynet-IADS]]
 In the Mission Editor:
 1. New mission, **Caucasus**.
 2. Add one **Neutral Game Master** slot (neutral so it sees both coalitions).
-3. Draw a **circular** trigger zone as the scenario's arena, e.g. `FIXTURE-Detection-ZONE`, wide
+3. Draw a **circular** trigger zone as the scenario's arena, e.g. `SKY-Z01`, wide
    enough to cover the ground fixtures plus where their debris will scatter. `setUp` clears
    wrecks across this zone, so it must not reach a neighbouring scenario's fixtures. It must be
    circular: `removeJunkInZone` reads the zone's radius, and a quad zone can report 0.
 4. Inside that zone, place the **ground** fixtures, all **Late Activation**:
-   - a red **1L13 EWR** group, named `FIXTURE-Detection-EWR`
-   - a red **SA-6 Kub** site (`Kub 1S91 str` + 2× `Kub 2P25 ln`), named `FIXTURE-Detection-SAM`
+   - a red **1L13 EWR** group, named `SKY-Z01-EWR-01`
+   - a red **SA-6 Kub** site (`Kub 1S91 str` + 2× `Kub 2P25 ln`), named `SKY-Z01-SA6-01`
 
    These are added exactly where you place them, so position them for the test: the EWR needs
    line of sight to where the target will fly. A valley between them fails the scenario for
    reasons that have nothing to do with Skynet.
 5. Place the **air** fixture anywhere convenient — a corner of the map is fine — named
-   `FIXTURE-Detection-Target`, **Late Activation**, and authored as:
+   `SKY-AIR-F18-01`, **Late Activation**, and authored as:
    - **In Air** start with a **single** turning point. Not a ramp or runway start: a ground start
      carries an `airdromeId` on its first waypoint, which is meaningless once the scenario places
      the group somewhere else.
@@ -1984,22 +1984,29 @@ dofile(repo .. "/test/insim/runner/init.lua")
 No coordinates are recorded anywhere. A scenario reads a group's position out of the mission
 itself at runtime, so the Mission Editor is the only place a position exists.
 
-What matters instead is naming. Use `FIXTURE-<Scenario>-<Role>`, so each scenario owns a prefix:
+**There is no naming convention to obey.** This mission exists only to be tested against, so
+every group in it is a fixture; nothing has to be distinguished from anything else. The single
+hard rule is that **the names in the scenario's Lua match the names in the `.miz` exactly**,
+case included. A mismatch surfaces as `missionGroupData: no group named '...'` — loud, and the
+first thing the diagnostic table below sends you to check.
+
+The scheme in use keys ground fixtures to their arena and leaves air assets free:
 
 ```
-FIXTURE-Detection-EWR
-FIXTURE-Detection-SAM
-FIXTURE-Detection-Target
+SKY-Z01              the arena zone (circular)
+SKY-Z01-EWR-01       ground, inside that zone
+SKY-Z01-SA6-01       ground, inside that zone
+SKY-AIR-F18-01       air, parked anywhere — belongs to no zone
 ```
 
-That prefix is what keeps Skynet's own `addEarlyWarningRadarsByPrefix` /
-`addSAMSitesByPrefix` scoped to one scenario's fixtures, and it is why no separate name-scoping
-layer is needed.
+Air assets being zone-independent is the right shape, not an oversight: `addAirFromMission`
+relocates them, so their editor position is meaningless and a zone would only mislead. It also
+means one airframe template can serve several scenarios, each supplying its own `from`/`to`.
 
-The literal prefix does not matter — `TEST-Detection-*` works as well as `FIXTURE-Detection-*`.
-What matters is that it is unique per scenario and that the scenario's own constants match it
-exactly, including case. A mismatch surfaces as `missionGroupData: no group named '...'`, which
-is at least a loud failure.
+One trap worth avoiding when picking prefixes: Skynet's `addSAMSitesByPrefix` and
+`addEarlyWarningRadarsByPrefix` match on a string prefix, so passing `"SKY-Z01"` would sweep up
+the EWR *and* the SAM. Keep the prefixes you hand Skynet disjoint — `SKY-Z01-EWR` and
+`SKY-Z01-SA6` are, which is why this scheme works.
 
 - [ ] **Step 5: Confirm `env.mission` before writing a scenario**
 
@@ -2012,8 +2019,8 @@ It needs no `io`/`os`/`lfs`, so it works even if Step 1 has not been applied.
 
 ```lua
 do
-  local PREFIX = "FIXTURE"
-  local ZONE   = "FIXTURE-Detection-ZONE"
+  local PREFIX = "SKY"
+  local ZONE   = "SKY-Z01"
 
   local function say(text)
     env.info("SKYNET_PROBE: " .. text)
@@ -2164,7 +2171,7 @@ nothing to regenerate: a scenario reads a group's own definition out of `env.mis
 and adds it where the Mission Editor put it.
 
 ```lua
-InsimTestTools.addFromMission("FIXTURE-Detection-SAM")
+InsimTestTools.addFromMission("SKY-Z01-SA6-01")
 ```
 
 Name them `FIXTURE-<Scenario>-<Role>` so each scenario owns a prefix — that is what scopes
@@ -2222,9 +2229,9 @@ Skip straight from Task 9 to Task 11.
 - Produces: a scenario file returning `{ name = "Detection", suite = <table> }`
 
 Fixtures are read from the mission by name — there is no fixture file and no anchor table. The
-Mission Editor must contain a circular zone `FIXTURE-Detection-ZONE` and three late-activated
-groups named `FIXTURE-Detection-EWR`,
-`FIXTURE-Detection-SAM` and `FIXTURE-Detection-Target`.
+Mission Editor must contain a circular zone `SKY-Z01` and three late-activated
+groups named `SKY-Z01-EWR-01`,
+`SKY-Z01-SA6-01` and `SKY-AIR-F18-01`.
 
 This is the deliverable that proves the tier: it adds fixtures, waits for genuine DCS radar
 detection, and asserts the IADS reacts. A synchronous placeholder would exercise none of the
@@ -2244,10 +2251,10 @@ Create `test/insim/scenarios/scenario_detection.lua`:
 --- knows where they are: position lives in the Mission Editor and nowhere else.
 
 local SCENARIO = "Detection"
-local ZONE = "FIXTURE-Detection-ZONE"
-local EWR = "FIXTURE-Detection-EWR"
-local SAM = "FIXTURE-Detection-SAM"
-local TARGET = "FIXTURE-Detection-Target"
+local ZONE = "SKY-Z01"
+local EWR = "SKY-Z01-EWR-01"
+local SAM = "SKY-Z01-SA6-01"
+local TARGET = "SKY-AIR-F18-01"
 
 --- The target's leg, as a bearing and distance from the EWR. Both ends are chosen so the
 --- aircraft is outside detection range at spawn and flies into it, and so the leg outlasts the
