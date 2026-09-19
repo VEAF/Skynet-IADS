@@ -225,3 +225,12 @@ Until that release is cut, the build date in the artifact's first line remains t
   designation to lose. The same call also used to refresh the MOOSE A2A dispatcher connector, at the
   end of `informChildrenOfStateChange()`; a mission using `addMooseSetGroup()` went on dispatching
   from the list it held before the battery joined, so the refresh is now asked for explicitly.
+- An early warning radar added while a mission runs never reached MOOSE's A2A dispatcher.
+  `addEarlyWarningRadar()` puts the radar into `self.earlyWarningRadars` at the very end, after
+  everything that could have refreshed the connector has run, so the radar entered the `SET_GROUP`
+  only by accident — if a battery happened to be enrolled after it. MOOSE scrambles interceptors on
+  what that set detects, so the radar was watching for an IADS that could not act on it. Longstanding,
+  found while measuring the entry above. The refresh is now a single method called wherever
+  `self.samSites` or `self.earlyWarningRadars` changes, after the insert rather than before; it does
+  nothing when no connector exists, and the documented setup registers its `SET_GROUP` last, so
+  enrolling a whole mission still costs nothing.

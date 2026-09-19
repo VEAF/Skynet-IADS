@@ -79,6 +79,28 @@ when it announces itself, and it is already a valid parent when the rebuild asks
 moved. Nothing else in `addEarlyWarningRadar()` moves — `isInRadarDetectionRangeOf()` is pure
 geometry and `goLive()` guards on power, ammo and HARM silence only.
 
+## What the review found afterwards
+
+Two defects the suite did not see, both caught by `/pr-code-review` on the diff:
+
+1. **A battery enrolled out of valid coverage stayed dark for good.** The "has the autonomy
+   changed?" test reads `isAutonomous`, and on a site `addSAMSite()` has just built that is the
+   constructor's default — `true` although `goAutonomous()` has never run. So the comparison weighed
+   a value that never meant anything and skipped, and a battery whose only neighbour in range was
+   another SAM site (not acting as EW, so not a valid parent) was never handed back to the DCS AI.
+   The state is applied unconditionally to the site that has just joined, the way `activate()`
+   applies it to every site. The first version of the test asserted `getAutonomousState()`, which
+   reads `true` either way; it asserts emission now.
+2. **The MOOSE A2A dispatcher stopped being refreshed** on `addSAMSite()` — it used to happen at
+   the end of `informChildrenOfStateChange()`. Measuring that turned up a longstanding one as well:
+   an early warning radar added at runtime never reached the connector at all, because it joins
+   `self.earlyWarningRadars` after everything that could refresh it. Both close with one
+   `refreshMooseConnector()` called wherever those lists change.
+
+A third suspicion did not survive: `refreshRadarCoverage()` does not need the refresh. The
+connector's list depends on list membership, power, connection node and destruction — never on
+position — so a sweep cannot change it.
+
 ## Definition of done
 
 Tests in `test/lua/`, in that order of importance:
