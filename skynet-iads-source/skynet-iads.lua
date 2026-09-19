@@ -427,6 +427,19 @@ do
 			-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
 			if self.ewRadarScanMistTaskID ~= nil then
 				self:buildRadarCoverageForSAMSite(samSite)
+				-- and then applied unconditionally, which the rebuild's own guard cannot do: a site
+				-- one statement old has never had its autonomous state applied at all, isAutonomous
+				-- is the constructor's default, so "has the answer changed?" reads a value that
+				-- never meant anything. Left to the guard, a battery whose only neighbours are no
+				-- use to it -- another SAM site, which does not act as EW and so is not a valid
+				-- parent -- would stay dark for the rest of the mission instead of being handed back
+				-- to the DCS AI. Nothing can be lost by applying it here: the site is dark, and
+				-- there is no designation yet to switch off. activate() does exactly this for every
+				-- site, through buildRadarCoverage().
+				samSite:setToCorrectAutonomousState()
+				-- MOOSE's A2A dispatcher works from the list the connector last handed it, and
+				-- recording the coverage no longer refreshes that as a side effect.
+				self:getMooseConnector():update()
 			end
 			return samSite
 		end

@@ -156,6 +156,87 @@ function TestSkynetIADSCoverageUpdateNotification:testSiteAddedUnderAnExistingRa
 	end
 	luaunit.assertEquals(#alone:getParentRadars(), 0)
 	luaunit.assertEquals(alone:getAutonomousState(), true)
+	--and the state was actually applied, not merely left at the constructor's default: autonomous
+	--means handed back to the DCS AI, which lights the site up. Asserting getAutonomousState() alone
+	--proves nothing -- it reads true either way.
+	luaunit.assertEquals(alone:isActive(), true)
+end
+
+--a battery enrolled where the only elements in range are no use to it -- another SAM site, which is
+--not acting as EW and so is not a valid parent -- is abandoned, and an abandoned battery belongs to
+--the DCS AI. It has to be told so: a site that has just been built has never had its autonomous
+--state applied, `isAutonomous` is the constructor's default, so "has the answer changed?" cannot
+--tell and would leave the site dark for the rest of the mission.
+function TestSkynetIADSCoverageUpdateNotification:testSiteAddedWithOnlyInvalidParentsIsHandedToTheDCSAI()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+
+	--the IADS has an EW radar, but it is on the other side of the map
+	F.earlyWarningRadarUnit("EW-far", { pos = { x = OUT_OF_RANGE, y = 0, z = 0 }, coalition = RED })
+	local ewRadar = iads:addEarlyWarningRadar("EW-far")
+	function ewRadar:getDetectedTargets()
+		return {}
+	end
+	F.samGroup("SA-2", "SAM-neighbour", { pos = { x = 0, y = 0, z = 0 }, coalition = RED })
+	local neighbour = iads:addSAMSite("SAM-neighbour")
+	function neighbour:getDetectedTargets()
+		return {}
+	end
+	iads:activate()
+
+	--20 km from the neighbour, so it is inside its radar range and becomes its child -- but the
+	--neighbour does not act as EW, so it is not a valid parent
+	F.samGroup("SA-2", "SAM-new", { pos = { x = 20000, y = 0, z = 0 }, coalition = RED })
+	local newSite = iads:addSAMSite("SAM-new")
+	function newSite:getDetectedTargets()
+		return {}
+	end
+
+	luaunit.assertEquals(#newSite:getParentRadars(), 1)
+	luaunit.assertEquals(newSite:hasValidParentRadar(), false)
+	luaunit.assertEquals(newSite:getAutonomousState(), true)
+	luaunit.assertEquals(newSite:isActive(), true)
+end
+
+--the IADS feeds MOOSE's A2A dispatcher the groups it currently holds, and the only thing that
+--refreshes that list is getMooseConnector():update(). Enrolling a battery used to reach it as a
+--side effect of informChildrenOfStateChange(); now that the coverage is recorded quietly, the
+--refresh has to be asked for, or the dispatcher goes on working from the list it had before.
+function TestSkynetIADSCoverageUpdateNotification:testEnrollingASiteRefreshesTheMooseSetGroups()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+
+	--the connector reads each EW radar's *group* name, so this one needs a group of its own
+	F.earlyWarningRadarGroup("EW-group", "EW-north", { pos = { x = 0, y = 0, z = 0 }, coalition = RED })
+	local ewRadar = iads:addEarlyWarningRadar("EW-north")
+	function ewRadar:getDetectedTargets()
+		return {}
+	end
+	iads:activate()
+
+	--a stand-in for MOOSE's SET_GROUP: it only has to remember what it was last handed
+	local heldGroups = {}
+	local mooseSetGroup = {}
+	function mooseSetGroup:RemoveGroupsByName(groupNames)
+		for i = 1, #groupNames do
+			heldGroups[groupNames[i]] = nil
+		end
+	end
+	function mooseSetGroup:AddGroupsByName(groupNames)
+		for i = 1, #groupNames do
+			heldGroups[groupNames[i]] = true
+		end
+	end
+	iads:addMooseSetGroup(mooseSetGroup)
+	luaunit.assertNil(heldGroups["SAM-late"])
+
+	F.samGroup("SA-2", "SAM-late", { pos = { x = 60000, y = 0, z = 0 }, coalition = RED })
+	local late = iads:addSAMSite("SAM-late")
+	function late:getDetectedTargets()
+		return {}
+	end
+
+	luaunit.assertEquals(heldGroups["SAM-late"], true)
 end
 
 --- Counts informChildrenOfStateChange() on every radar element for the duration of fn().

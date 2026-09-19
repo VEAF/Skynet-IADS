@@ -402,6 +402,17 @@ function dcsStub.makeGroup(groupSpec)
 	g.__coalition = groupSpec.coalition
 	g.__groupCategory = groupSpec.category
 	table.insert(dcsStub.groups, g)
+	-- In DCS every unit belongs to a group and answers Unit.getGroup(). Skynet's MOOSE connector
+	-- reads an EW radar's *group* name that way (SkynetMooseA2ADispatcherConnector
+	-- :getEarlyWarningRadarGroupNames), so a unit built here has to answer it -- a bare unit from
+	-- makeUnit() still does not, which matches nothing in DCS but keeps the fixtures that predate
+	-- this call unchanged.
+	for i = 1, #units do
+		local unit = units[i]
+		function unit:getGroup()
+			return g
+		end
+	end
 	-- A real DCS Group carries its class; Skynet tells a Group from a Unit/Static
 	-- via getmetatable(rep) == Group (SkynetIADSAbstractDCSObjectWrapper:create's
 	-- getTypeName guard, SkynetIADSAbstractRadarElement:getUnitsToAnalyse). Group
