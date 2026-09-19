@@ -1,6 +1,6 @@
 # 01 — record the coverage quietly, and tell only what changed
 
-Status: ⬜ ready
+Status: 🔄 in-progress — `fix/coverage-update-darkens-sites`
 
 ## What to build
 
@@ -54,6 +54,30 @@ still covered keeps burning, and a battery whose coverage really did change is c
   symmetrical and it is easy to write one as if it were the other.
 - **`activate()` must not change at all.** It is the hottest path in the project and it cannot be
   checked in DCS from here. A test that pins its notification count is what keeps that honest.
+
+## What this ticket did not foresee — a third change was needed
+
+The two changes above leave the behaviour test red, and the trace says why:
+
+```
+goDark <- resetAutonomousState <- setToCorrectAutonomousState
+       <- informChildrenOfStateChange <- setActAsEW
+       <- addEarlyWarningRadar  (skynet-iads.lua:312)
+```
+
+`setActAsEW(true)` is itself a state change, so it informs the radar's children — and
+`addEarlyWarningRadar()` runs it *after* `buildRadarCoverageForEarlyWarningRadar()` has just
+given it some. So the radar joining the mission darkened everything it had picked up, by a second
+route, and change 1 alone only removed the first.
+
+The same ordering made change 2 a no-op on that path: at the moment the coverage is built the
+radar does not act as EW yet, so it is not a valid parent, so `hasValidParentRadar()` answers that
+nothing changed for anybody.
+
+Both go away by setting `actAsEW` **before** building the coverage: the radar then has no children
+when it announces itself, and it is already a valid parent when the rebuild asks whose autonomy
+moved. Nothing else in `addEarlyWarningRadar()` moves — `isInRadarDetectionRangeOf()` is pure
+geometry and `goLive()` guards on power, ammo and HARM silence only.
 
 ## Definition of done
 

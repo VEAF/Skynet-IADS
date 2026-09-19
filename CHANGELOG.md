@@ -190,3 +190,24 @@ Until that release is cut, the build date in the artifact's first line remains t
   under the same "only if the IADS is running" guard the incremental rebuild already carries.
   Found while checking the premise of the fix above; covered by
   `test/lua/test_skynet_iads_bulk_re_add.lua`.
+- Declaring that a radar covers a battery switched the battery off. `buildRadarAssociation()`
+  recorded the link through `addParentRadar()`, which ends in `informChildrenOfStateChange()` ->
+  `resetAutonomousState()` -> `goDark()` — so writing down a fact of geometry handed an extinction
+  order to every battery in range. `goDark()`'s own guards protect a site that has acquired a track
+  or has missiles in flight, but not one that has just gone live on network designation and not yet
+  locked on, which is exactly the symptom commit `3a94937` is about: launchers raised, slew onto the
+  target, back to travel state, no shot. In game this is reached by adding an early warning radar or
+  a SAM site to a running mission, including the `*ByPrefix` calls VEAF's helper uses, and the gap
+  lasts until the next contact cycle — 5 s by default, long enough for a fast pass to be over. The
+  same oversight did the work N², at 250 notifications per `activate()` on three EW radars and ten
+  SAM sites where 10 are needed. `buildRadarAssociation()` now uses
+  `addParentRadarWithoutStateChange()`, added by the last line of defense for this very hazard and
+  applied then to `refreshRadarCoverage()` only, and the two incremental entry points notify what
+  actually changed, under the criterion `refreshRadarCoverage()` already uses: a site's state is
+  touched only when its autonomy has really changed. `addEarlyWarningRadar()` also sets `actAsEW`
+  before building the coverage rather than after — `setActAsEW(true)` is itself a state change, so
+  running it after the rebuild darkened the batteries the radar had just picked up, and running it
+  before means the radar already counts as a valid parent when the rebuild asks whose autonomy
+  moved. `addParentRadar()` is unchanged and still public. Covered by
+  `test/lua/test_skynet_iads_coverage_update_notification.lua`, whose leading test drives a real
+  `evaluateContacts()` cycle rather than counting calls.
