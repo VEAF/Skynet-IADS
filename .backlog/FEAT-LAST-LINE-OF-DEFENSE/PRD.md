@@ -1,0 +1,104 @@
+# FEAT-LAST-LINE-OF-DEFENSE — a dark site can notice what flies over it, and coverage follows what moves
+
+Status: ⬜ ready
+
+Origin: The Reaper, 2026-09-17, on a VEAF mission built with veaf-tools:
+
+> *"J'ai configuré Skynet sur une mission avec les outils VEAF. J'ai un problème, quand il y a des
+> EWR rouge à portée, les SAM ne s'allument pas même si on est à portée voire très proche. Quand il
+> n'y a plus d'EWR rouge, les SAM deviennent autonomes et actifs."*
+
+Diagnosed from his `dcs.log` and the code, settled with Flogas and the historical IADS developers on
+2026-09-19, then grilled on the design the same day. The VMCT half of the work — a helper cleanup,
+the documentation and the vendoring — is in that repository's `FIX-SKYNET-HELPER-AND-VENDORING`.
+
+## What is wrong
+
+A SAM covered by one live EWR is pulled under network control: `setToCorrectAutonomousState` →
+`resetAutonomousState` → `goDark()` → `enableEmission(false)`. **The site is then blind.** Its only
+route back to life is `SkynetIADS.evaluateContacts`: an EWR **that covers this site** must hold the
+target, and the target must pass the site's `isTargetInRange`. When the first half fails, the second
+is never evaluated — proximity to the site is not an input anywhere in the cycle, because the only
+sensor that could measure it is the one that was just switched off.
+
+Lose every covering EWR and `goAutonomous()` hands the site back to the DCS AI, which lights up and
+engages. Hence the inversion: killing the EWRs makes the batteries *more* dangerous.
+
+And "covered" is weaker than it sounds. Coverage is a flat 2D distance between the EWR's radar and
+the battery's, compared against the EWR's detection range — no horizon, no terrain, no altitude. It
+says the EWR is **near** the battery, never that it is **feeding** it. One 55G6 listed 18 batteries
+under its coverage in the reported log; three A-50s listed 16, 2 and 0 while detecting nothing at
+all.
+
+### Measured on the reporting log, 24 minutes of 5 s cycles
+
+| measure | value |
+|---|---|
+| SAM status lines `ACTIVE:false / AUTONOMOUS:false` | 7 933 |
+| SAM status lines `ACTIVE:true / AUTONOMOUS:false` | **0** |
+| SAM status lines `ACTIVE:true / AUTONOMOUS:true` | 30 |
+| `GOING LIVE` after coverage was built | only the 2 sites with no EWR parent |
+
+Every network SAM went live once at startup — before coverage existed — then `GOING DARK`, then
+never again.
+
+**Stated honestly**: the closest contact to any network EWR in that log is 51.85 NM, so the
+reporter's own close pass is *not* in this log. The mechanism is proven from the code.
+
+## What was decided
+
+Three shapes were weighed. **B**, waking on the whole kill zone, cancels the IADS for long-range
+systems — a SA-10 would light up at 75 km. **C**, reverting the 2022 VEAF change that stopped
+forcing large systems into EW watch, makes SEAD trivial. **A** was chosen: a *last line of defense*.
+
+A site held dark keeps a short **virtual** detection radius of its own — Skynet's, no DCS radar
+involved — and a hostile aircraft inside it makes the site go live with no radar contact anywhere.
+
+The design was then grilled. What came out:
+
+| Point | Decision |
+|---|---|
+| Radius | 10–15 km, **drawn once per site** at build time. Drawn per cycle, an aircraft loitering near the mean makes the site blink every 5 s |
+| Distance | **2D**, as Skynet measures everything else |
+| Persistence | The site stays lit **45 s** after the last pass, then falls silent on the normal cycle. Without it a fast pass lights the site for one cycle and nothing more |
+| Filtering | **None** — no altitude ceiling, no aircraft-type list. Known and accepted trade-off: a short-range piece can light up for an aircraft it cannot reach, because the radius deliberately ignores the firing envelope. Requiring the kill zone would mean a Shilka, useful range ~2.5 km, never wakes inside a 10–15 km radius — and short-range pieces are the whole point |
+| Default | **On**. Off means nobody finds it and the same report returns in six months. It changes existing missions; the PR body says so |
+| Settings scope | Global to both coalitions for now; per network only if someone needs it |
+| Public entry point | The wake-up is exposed as a **public API of this project**, used by this feature first, because VEAF's spotter network must wake a site from outside Skynet and the alternative is external code writing into internal state every cycle |
+
+## Tickets
+
+| # | Ticket |
+|---|---|
+| 01 | [Last line of defense: a dark site wakes on close proximity](tickets/01-last-line-of-defense.md) |
+| 02 | [Refresh radar coverage for whatever moves](tickets/02-refresh-coverage-for-what-moves.md) |
+
+## How this is verified
+
+**Not by unit tests alone.** The failure mode that matters here is a wake-up that is perfectly
+tested and never called by the cycle — four bugs of this family already shipped green on the VEAF
+side and were found in flight, because the tests called the handler and never what wires it.
+
+So: a test mission under `demo-missions/`, with a SAM and a deliberately badly placed EWR, driven
+through VEAF's DCS bridge. The check must be able to fail both ways — the site lights up when the
+target crosses the radius, **and** falls silent once the persistence has run out. Note that the
+bridge has to be injected into a mission that carries no `veaf-scripts.lua`, so the usual VEAF
+injection path does not apply.
+
+This also answers the open question at the end of `docs/evolutions.md`, which asks whether an MCP
+exists to talk to a running DCS mission. It does: VEAF's `dcs-bridge`.
+
+## Definition of done
+
+- A dark site goes live when a hostile aircraft enters its drawn radius, and falls silent 45 s after
+  the last pass.
+- The radius is stable for a given site across a mission.
+- Coverage follows what moves: an AWACS in transit loses the batteries it left behind, a mobile SAM
+  site's parents follow it, and a live site whose parents did not change is never sent dark by a
+  sweep.
+- **A site silenced to evade an anti-radiation missile does not wake on proximity.** `goLive()`
+  already guards on `harmSilenceID == nil`, but this becomes an explicit test: the last line of
+  defense must not cancel HARM evasion, which is the subtlest behaviour in this project. Same for a
+  site out of ammunition — it would light up for nothing and be killed for it.
+- The public entry point exists, is documented in the README, and this feature is its first caller.
+- `lua5.1 test/lua/run.lua` green; the in-sim check run and reported.
