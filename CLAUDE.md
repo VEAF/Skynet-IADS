@@ -91,6 +91,11 @@ instead of extending it — it exists to erode, never to grow.
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - Work on `feature/*` or `fix/*` cut from `develop`. Never commit directly to `develop` or `master`.
+- **One exception**: a change confined to `.backlog/` — a new lot, a status change, an index line —
+  goes straight to `develop`. David's call, 2026-09-19: a pull request whose entire diff is the
+  tracker costs a review cycle and protects nothing CI can check. The moment a change touches
+  `skynet-iads-source/`, `test/`, `documentation/`, `CHANGELOG.md` or the build, it goes through a
+  branch and a pull request — including a one-line change.
 - One branch and one pull request per lot, not per ticket. Conventional Commits, in English.
 - Branches are deleted on merge.
 
