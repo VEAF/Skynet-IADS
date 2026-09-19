@@ -1791,6 +1791,10 @@ it will start jamming it:</p>
 code, otherwise a background task will keep on jamming:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">masterArmSafe</span><span class="p">()</span>
 </code></pre></div>
+<p>A battery stops being jammed about <strong>ten seconds</strong> after the jammer stops jamming it — whether the
+emitter is shot down, switched off with <code>masterArmSafe()</code>, flown beyond its effective distance, or
+loses line of sight to every radar of the battery. It is then handed back to whatever was directing
+it. A battery that is dark at that moment is released when it next comes up.</p>
 <p>Will add jammer on / off to the radio menu:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">addRadioMenu</span><span class="p">()</span>
 </code></pre></div>
