@@ -126,7 +126,7 @@ a failed assertion.
 
 ```lua
 function TestSamGoesDark:testGoesDarkUnderHarm()
-  local sam = self.iads:getSAMSiteByGroupName(self:scoped("SAM-1"))
+  local sam = self.iads:getSAMSiteByGroupName("FIXTURE-SamGoesDark-SAM")
   waitFor(function() return sam:isActive() end, 60)
   fireHarmAt(sam)
   waitFor(function() return not sam:isActive() end, 60)
@@ -143,38 +143,53 @@ Every wait is bounded, and each test carries an overall budget, so a hung test f
 than wedging the mission. Timeouts are generous by policy: live detection timing is
 non-deterministic, and any scenario needing tight timing is the wrong scenario for this tier.
 
-### Fixtures: authored in the editor, stored as text, added at runtime
+### Fixtures: authored in the editor, read from the mission at runtime
 
 ```
 Mission Editor (occasionally, by hand)
-  place assets at correct Caucasus coordinates, tick Late Activation, save skynet-insim.miz
-
-Offline extractor (test/insim/tools/extract-fixtures.lua, plain Lua 5.1, no DCS)
-  read that .miz's `mission` file  →  test/insim/fixtures/generated/*.lua  (committed, diffable)
+  place assets where the scenario needs them, tick Late Activation, save skynet-insim.miz
 
 Runtime (every F10 run)
-  setUp adds from the generated table  →  fresh units
+  setUp reads the group's own table out of env.mission by name, then adds it
 ```
 
-The Mission Editor is the source of truth for placement: hand-authoring coordinates is
-error-prone and loses the map as a browsable view of the fixture world. A `.miz`'s `mission`
-file is plain Lua, so extraction runs offline on the same Lua 5.1 interpreter `test/lua`
-already uses — no in-sim step, no mist, no Mission Editor session needed to extract.
+The Mission Editor is the source of truth, and nothing is copied out of it. `env.mission` is
+the whole mission table, available to any mission script — it is how mist builds its database
+without touching the filesystem. So a scenario asks for an editor-placed group by name and
+hands its definition straight to `coalition.addGroup`.
 
-Fixtures are stored as **templates plus a placement**: unit types, counts, headings and offsets
-relative to the site origin are map-independent and reusable, while only the anchor coordinate
-is Caucasus-specific. A unit entry carries only what the `.miz`'s own tables carry:
+That keeps re-adding as the isolation primitive (see below) while removing everything that used
+to stand between the editor and the runtime: no extraction step, no generated fixture files, no
+separate anchor table, and no offset arithmetic. Position is not modelled at all — it is
+wherever you put the asset.
 
 ```lua
-{ type = "Kub 1S91 str", dx = 0, dy = 0, heading = 2.827, skill = "Excellent" }
+InsimTestTools.missionGroupData("FIXTURE-Detection-SAM")   -- the ME-authored table, as authored
 ```
 
-The extractor computes `dx`/`dy` relative to each site's first unit, so the compositions Skynet
-was built against can be harvested out of `unit-tests/skynet-unit-tests.miz` (Persian Gulf) and
-re-anchored on Caucasus.
+Scenario fixtures are named by convention, `FIXTURE-<Scenario>-<Role>`, which gives each
+scenario a prefix of its own. That is what keeps Skynet's own prefix-based discovery scoped to
+one scenario's fixtures, so no separate name-scoping layer is needed.
+
+Late activation means a normal run never activates the editor-placed originals; they exist to be
+read by name and to give a map view of the fixture world. The one exception is an asset class
+that fails the fixture-fidelity check below, which falls back to being activated directly.
+
+**Reviewing a mission change.** A `.miz` is a zip whose `mission` entry is plain Lua, so git can
+diff it directly rather than treating it as an opaque blob:
+
+```
+# .gitattributes (committed)
+*.miz diff=miz
+
+# once per clone, in git config (not committed)
+git config diff.miz.textconv "unzip -p"
+```
+
+`git diff skynet-insim.miz` then shows the mission text — units, coordinates, zones, triggers.
 
 **Axis conventions.** Three different things in DCS are spelled `x`/`y`/`z`, and mixing them up
-silently produces units in the wrong place or facing the wrong way:
+silently puts things in the wrong place:
 
 | | `x` | `y` | `z` |
 |---|---|---|---|
@@ -182,17 +197,12 @@ silently produces units in the wrong place or facing the wrong way:
 | `Vec2` — and mission-file unit tables | north | **east** | — |
 | `getPosition()` `.x`/`.y`/`.z` | forward | up | right |
 
-`Vec2.x == Vec3.x`, `Vec2.y == Vec3.z`. Fixture offsets are Vec2/mission-table, so `dy` is an
-**east** offset, not altitude and not north. `getPosition()`'s `.x`/`.y`/`.z` are orientation
-*unit vectors*, not coordinates at all — position lives in its `.p`. Heading comes from the
-forward vector, `math.atan2(pos.x.z, pos.x.x)`; the mission file stores `heading` directly as a
-scalar, so the extractor needs no such conversion, but the fixture-fidelity check does if it
-compares an added unit's live facing against its editor-placed original.
-
-The late-activated units in `skynet-insim.miz` are not activated by a normal run: they exist to
-be read by the extractor and to give a map view of the fixture world. The one exception is an
-asset class that fails the fixture-fidelity check below, which falls back to being activated
-directly.
+`Vec2.x == Vec3.x`, `Vec2.y == Vec3.z`. Reading fixtures from the mission means no scenario does
+coordinate arithmetic by default, which removes the most likely way to get this wrong. It still
+matters in two places: `removeJunkAround` converts an anchor to both a Vec2 and a Vec3, and any
+later scheme that randomises placement inside a trigger zone will be writing mission-table
+coordinates. `getPosition()`'s `.x`/`.y`/`.z` are orientation *unit vectors*, not coordinates —
+position lives in its `.p`, and heading is `math.atan2(pos.x.z, pos.x.x)`.
 
 ### Isolation: removeJunk for the exploded, re-add for the live
 
@@ -323,22 +333,20 @@ test/insim/
   runner/wait.lua               waitFor / waitSeconds
   runner/report.lua             outText + env.info + results file
   tools/insim-test-tools.lua    toolbox: pure-Lua helpers (deepCopy, serialize) and
-                                DCS-world helpers (addOrReplace, name scoping)
-  tools/extract-fixtures.lua    offline entry point, plain Lua 5.1, no DCS API
-  fixtures/generated/*.lua      extracted templates (committed)
-  fixtures/placements.lua       Caucasus anchor coordinates, one region per scenario
+                                DCS-world helpers (missionGroupData, add, destroy, removeJunk)
   scenarios/scenario_*.lua      suites: luaunit assertions, coroutine bodies
-  results/                      gitignored
+  results/                      contents gitignored, .gitkeep tracked
   README.md
   skynet-insim.miz              Caucasus, Neutral GM slot, bootstrap, late-activated fixtures
 ```
 
 `insim-test-tools.lua` holds helpers this tier needs that neither Skynet source nor luaunit
 provides. Scope rules, so it does not become a junk drawer: nothing Skynet-specific (that
-belongs in scenarios or fixtures); check `SkynetIADSUtils` before adding math, since `test/lua`
-already covers it; split past roughly 300 lines. `extract-fixtures.lua` is separate because it
-runs under a different interpreter outside DCS — an environment boundary, not a filing
-preference.
+belongs in scenarios); check `SkynetIADSUtils` before adding math, since `test/lua` already
+covers it; split past roughly 300 lines.
+
+There is no `fixtures/` directory. Fixtures are the editor-placed groups in the `.miz`, read by
+name from `env.mission` at runtime.
 
 ## Deliverable
 
@@ -351,21 +359,19 @@ it would exercise none of the adding, coroutine-waiting, timeout or isolation ma
 ## To verify during implementation
 
 None of these are design forks. Each is either already covered by a fallback or affects only
-how much fixture work is needed.
+how much work the fixtures need.
 
-1. **Fixture fidelity** — first step. Does a group added from an extracted table behave
-   identically to its editor-placed original as far as Skynet can tell: types resolve, radar
+1. **Fixture fidelity** — first step. Does a group re-added from its own `env.mission` table behave
+   identically to the editor-placed original as far as Skynet can tell: types resolve, radar
    emits, detection works, `coldAtStart` honored? If an asset class fails, it falls back to a
    late-activated editor-placed group and its scenarios accept one destructive run per mission
    session.
 2. **`lfs.writedir()` availability** in the mission environment post-unsanitize. It is the only
    path-resolution mechanism, the environment-variable fallback having been dropped by choice.
 3. **`coalition.addGroup` country and category enum correctness** for these ground groups.
-4. **Re-anchoring** — whether group tables extracted from the Persian Gulf `.miz` land cleanly
-   on Caucasus or need per-site coordinate fixups.
-5. **`removeJunk` stability.** It has a history of client CTDs a few seconds after clearing
+4. **`removeJunk` stability.** It has a history of client CTDs a few seconds after clearing
    nearby wrecks, with a fix referenced around December 2024. Working in single player; the
    multiplayer blast radius is nil for this tier.
-6. **Partially exploded groups.** Behaviour is known for groups whose units have *all*
+5. **Partially exploded groups.** Behaviour is known for groups whose units have *all*
    exploded. A group with some units live and some exploded is the case `forEachLiveGroup`
    guards, and the state a mid-scenario assertion will most often observe.

@@ -67,18 +67,15 @@ cumulative. If a task's count comes out lower, something was mistranscribed.
 |---|---|
 | `test/common/skynet-loader.lua` | Moved from `test/lua/`. Dependency-ordered source loading; gains `setRoot()` |
 | `test/common/luaunit.lua` | Moved from `test/lua/`. Assertions for both tiers |
-| `test/insim/tools/insim-test-tools.lua` | Pure-Lua helpers (`deepCopy`, `serialize`) + DCS-world helpers (`addOrReplace`, `removeJunkAround`, `scopedName`) |
-| `test/insim/tools/extract-fixtures.lua` | Offline entry point: `.miz` `mission` table → fixture templates |
+| `test/insim/tools/insim-test-tools.lua` | Pure-Lua helpers (`deepCopy`, `serialize`) + DCS-world helpers (`missionGroupData`, `addFromMission`, `destroyIfLive`, `removeJunkAround`) |
 | `test/insim/runner/wait.lua` | `waitFor` / `waitSeconds` coroutine primitives |
 | `test/insim/runner/runner.lua` | Coroutine phase scheduler, timeouts, result collection |
 | `test/insim/runner/report.lua` | Result formatting → `outText`, `env.info`, results file |
 | `test/insim/runner/init.lua` | Preflight, source loading, suite discovery, F10 menu |
-| `test/insim/fixtures/placements.lua` | Caucasus anchors, one per scenario |
-| `test/insim/fixtures/generated/*.lua` | Extractor output (committed) |
+| `test/insim/skynet-insim.miz` | Caucasus mission: GM slot, bootstrap, late-activated FIXTURE-* groups |
 | `test/insim/scenarios/scenario_detection.lua` | The proving scenario |
 | `test/insim/README.md` | MissionScripting edit, revert path, config file, how to run |
 | `test/lua/test_insim_tools.lua` | Offline tests for the pure-Lua tool helpers |
-| `test/lua/test_insim_extractor.lua` | Offline tests for the extractor |
 | `test/lua/test_insim_runner.lua` | Offline tests for wait/runner/report against `dcs-stub` |
 
 Offline tests for `test/insim` code live in `test/lua/` deliberately: `test/lua/run.lua`
@@ -365,7 +362,7 @@ provides.
 Two halves, deliberately in one file while it stays small:
   * pure Lua      -- deepCopy, serialize. Usable in-sim and offline, and unit-tested offline
                      by test/lua/test_insim_tools.lua.
-  * DCS-world     -- addOrReplace, removeJunkAround, scopedName. Need a running sim.
+  * DCS-world     -- missionGroupData, addFromMission, destroyIfLive, removeJunkAround. Need a running sim.
 
 Scope rules: nothing Skynet-specific (that belongs in scenarios or fixtures); check
 SkynetIADSUtils before adding arithmetic, since test/lua already covers it; split this file
@@ -459,299 +456,20 @@ git commit -m "feat: add deepCopy and stable serialize for insim fixtures"
 
 ---
 
-### Task 3: Offline fixture extractor
+### Task 3: ~~Offline fixture extractor~~ — SUPERSEDED
 
-**Executor:** Sonnet · **Verification:** lua5.1
+**Built, then deleted.** This task produced `test/insim/tools/extract-fixtures.lua` and its
+11-test suite, which read a `.miz`'s `mission` table offline and emitted position-independent
+fixture templates.
 
-**Files:**
-- Create: `test/insim/tools/extract-fixtures.lua`
-- Create: `test/lua/test_insim_extractor.lua`
+It was removed when fixtures moved to `env.mission`: a scenario now reads a group's own
+definition in-sim by name, so there is nothing to extract and no generated file to commit. The
+extractor was also the wrong tool for reviewing mission changes, because it deliberately
+stripped absolute coordinates — and in the current model position *is* the fixture. Mission
+diffs are handled by a git textconv instead (`.gitattributes` + `git config diff.miz.textconv`).
 
-**Interfaces:**
-- Consumes: `InsimTestTools.serialize` and `InsimTestTools.deepCopy` from Task 2
-- Produces: global table `InsimExtractor` with
-  - `InsimExtractor.templateFromGroup(groupTable)` → `{ name = <string>, task = <string>,
-    units = { { type=, dx=, dy=, heading=, skill= }, ... } }` — `dx`/`dy` are mission-table
-    (Vec2) offsets from the group's first unit
-  - `InsimExtractor.templateFromStatic(staticTable)` → `{ name=, type=, category=, heading= }`
-  - `InsimExtractor.fixtureFileText(templatesByName)` → full Lua file text, `return`ing a table
-  - `InsimExtractor.groupsFromMissionTable(mission, prefix)` → array of matching group tables
-
-The extractor reads a `mission` table, not a `.miz`. Unzipping is a separate manual step
-(documented in Task 9's README), which keeps the extractor pure and testable.
-
-- [ ] **Step 1: Write the failing tests**
-
-Create `test/lua/test_insim_extractor.lua`:
-
-```lua
---- Offline tests for test/insim/tools/extract-fixtures.lua. Input is a synthetic `mission`
---- table shaped exactly like the one inside a .miz, so no DCS and no .miz are needed.
-local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/../insim/tools/insim-test-tools.lua")
-dofile(base .. "/../insim/tools/extract-fixtures.lua")
-
-TestInsimExtractor = {}
-
---- Three units 20m apart on the x (north) axis -- the shape real .miz group tables have.
-local function sampleGroup()
-  return {
-    name = "SAM-Kub-1",
-    task = "Ground Nothing",
-    x = 25781.5,
-    y = -239472.0,
-    units = {
-      { type = "Kub 1S91 str", name = "SAM-Kub-1-1", x = 25781.5, y = -239472.0,
-        heading = 2.827, skill = "Excellent", playerCanDrive = false },
-      { type = "Kub 2P25 ln", name = "SAM-Kub-1-2", x = 25761.5, y = -239472.0,
-        heading = 2.827, skill = "Excellent", playerCanDrive = false },
-      { type = "Kub 2P25 ln", name = "SAM-Kub-1-3", x = 25741.5, y = -239452.0,
-        heading = 1.5, skill = "Average", playerCanDrive = false },
-    },
-  }
-end
-
-function TestInsimExtractor:testFirstUnitIsTheOrigin()
-  local template = InsimExtractor.templateFromGroup(sampleGroup())
-  luaunit.assertEquals(template.units[1].dx, 0)
-  luaunit.assertEquals(template.units[1].dy, 0)
-end
-
-function TestInsimExtractor:testOffsetsAreRelativeToTheFirstUnit()
-  local template = InsimExtractor.templateFromGroup(sampleGroup())
-  -- unit 2: x 25761.5 - 25781.5 = -20 north; y unchanged
-  luaunit.assertEquals(template.units[2].dx, -20)
-  luaunit.assertEquals(template.units[2].dy, 0)
-  -- unit 3: x -40 north, y -239452.0 - -239472.0 = +20 east
-  luaunit.assertEquals(template.units[3].dx, -40)
-  luaunit.assertEquals(template.units[3].dy, 20)
-end
-
-function TestInsimExtractor:testTemplateCarriesNoAbsoluteCoordinates()
-  local template = InsimExtractor.templateFromGroup(sampleGroup())
-  luaunit.assertNil(template.x)
-  luaunit.assertNil(template.y)
-  for _, unit in ipairs(template.units) do
-    luaunit.assertNil(unit.x)
-    luaunit.assertNil(unit.y)
-    luaunit.assertNil(unit.name)  -- names are scoped per scenario at add time
-  end
-end
-
-function TestInsimExtractor:testTemplateKeepsTypeHeadingAndSkill()
-  local template = InsimExtractor.templateFromGroup(sampleGroup())
-  luaunit.assertEquals(template.units[1].type, "Kub 1S91 str")
-  luaunit.assertEquals(template.units[1].heading, 2.827)
-  luaunit.assertEquals(template.units[1].skill, "Excellent")
-  luaunit.assertEquals(template.units[3].skill, "Average")
-  luaunit.assertEquals(template.task, "Ground Nothing")
-end
-
-function TestInsimExtractor:testStaticTemplateKeepsTypeCategoryAndHeading()
-  local template = InsimExtractor.templateFromStatic({
-    name = "Static MBT-1",
-    x = 24985.4,
-    y = -240039.7,
-    units = { { type = "M-60", category = "Armor", heading = 4.468, name = "Static MBT-1-1" } },
-  })
-  luaunit.assertEquals(template.type, "M-60")
-  luaunit.assertEquals(template.category, "Armor")
-  luaunit.assertEquals(template.heading, 4.468)
-  luaunit.assertNil(template.x)
-end
-
-function TestInsimExtractor:testGroupsFromMissionTableFindsByPrefixAcrossCountries()
-  local mission = {
-    coalition = {
-      red = {
-        country = {
-          { name = "CJTF Red",
-            vehicle = { group = { sampleGroup(), { name = "Convoy-1", units = {} } } } },
-        },
-      },
-      blue = {
-        country = {
-          { name = "USA", vehicle = { group = { { name = "SAM-Blue-1", units = {} } } } },
-        },
-      },
-    },
-  }
-  local found = InsimExtractor.groupsFromMissionTable(mission, "SAM-Kub")
-  luaunit.assertEquals(#found, 1)
-  luaunit.assertEquals(found[1].name, "SAM-Kub-1")
-end
-
-function TestInsimExtractor:testFixtureFileTextLoadsBackAsATableOfTemplates()
-  local text = InsimExtractor.fixtureFileText({
-    kub = InsimExtractor.templateFromGroup(sampleGroup()),
-  })
-  local chunk, err = loadstring(text)
-  luaunit.assertNotNil(chunk, tostring(err) .. "\n" .. text)
-  local fixtures = chunk()
-  luaunit.assertEquals(fixtures.kub.units[2].dx, -20)
-end
-
-function TestInsimExtractor:testFixtureFileTextIsStableAcrossRuns()
-  local group = sampleGroup()
-  local first = InsimExtractor.fixtureFileText({ kub = InsimExtractor.templateFromGroup(group) })
-  local second = InsimExtractor.fixtureFileText({ kub = InsimExtractor.templateFromGroup(group) })
-  luaunit.assertEquals(first, second)
-end
-
-os.exit(luaunit.LuaUnit.run())
-```
-
-- [ ] **Step 2: Run it to verify it fails**
-
-Run: `& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\test_insim_extractor.lua`
-Expected: FAIL — cannot open `extract-fixtures.lua`
-
-- [ ] **Step 3: Implement the extractor**
-
-Create `test/insim/tools/extract-fixtures.lua`:
-
-```lua
-do
-
---[[
-InsimExtractor -- turns the `mission` table inside a .miz into fixture templates.
-
-Runs OUTSIDE DCS, on the same stock Lua 5.1 that test/lua uses. It never touches the DCS API,
-which is what makes it unit-testable.
-
-Templates are position-independent: unit types, headings, skills and offsets from the group's
-first unit. Absolute coordinates live in fixtures/placements.lua instead, so a composition can
-be re-anchored anywhere. Offsets are mission-table (Vec2) values: dx is NORTH, dy is EAST.
-
-Usage:
-  unzip -o mission.miz mission          -- by hand; see test/insim/README.md
-  lua5.1 extract-fixtures.lua mission SAM-Kub > fixtures/generated/sam-kub.lua
-]]
-
-InsimExtractor = {}
-
---- One group table -> a position-independent template.
-function InsimExtractor.templateFromGroup(group)
-  assert(type(group) == "table", "templateFromGroup: group must be a table")
-  assert(type(group.units) == "table" and group.units[1],
-    "templateFromGroup: group '" .. tostring(group.name) .. "' has no units")
-
-  local origin = group.units[1]
-  local template = { name = group.name, task = group.task, units = {} }
-
-  for i, unit in ipairs(group.units) do
-    template.units[i] = {
-      type = unit.type,
-      dx = unit.x - origin.x,
-      dy = unit.y - origin.y,
-      heading = unit.heading,
-      skill = unit.skill,
-    }
-  end
-
-  return template
-end
-
---- One static group table -> a template. Statics are a single unit carrying a category.
-function InsimExtractor.templateFromStatic(staticGroup)
-  assert(type(staticGroup) == "table", "templateFromStatic: argument must be a table")
-  local unit = staticGroup.units and staticGroup.units[1]
-  assert(unit, "templateFromStatic: '" .. tostring(staticGroup.name) .. "' has no unit")
-  return {
-    name = staticGroup.name,
-    type = unit.type,
-    category = unit.category,
-    heading = unit.heading,
-  }
-end
-
---- Every vehicle/static group whose name starts with `prefix`, in any coalition or country.
-function InsimExtractor.groupsFromMissionTable(mission, prefix)
-  assert(type(mission) == "table", "groupsFromMissionTable: mission must be a table")
-  assert(type(prefix) == "string", "groupsFromMissionTable: prefix must be a string")
-
-  local found = {}
-  local coalitions = mission.coalition or {}
-
-  for _, coalition in pairs(coalitions) do
-    for _, country in pairs(coalition.country or {}) do
-      for _, category in pairs({ country.vehicle, country.static }) do
-        for _, group in pairs((category or {}).group or {}) do
-          if type(group.name) == "string" and group.name:sub(1, #prefix) == prefix then
-            found[#found + 1] = group
-          end
-        end
-      end
-    end
-  end
-
-  table.sort(found, function(a, b) return a.name < b.name end)
-  return found
-end
-
---- Distinguishes a static group from a vehicle group. Mission files mark statics by carrying a
---- `category` on the unit ("Armor", "Fortifications", ...); vehicle and aircraft units never
---- do. Measured across two independent missions in this project: 156 static units carry
---- `category`, zero vehicle or plane units do.
-function InsimExtractor.isStaticGroup(group)
-  local unit = type(group) == "table" and group.units and group.units[1]
-  return unit ~= nil and unit.category ~= nil
-end
-
---- A committed fixture file: a Lua chunk returning { <key> = <template>, ... }.
-function InsimExtractor.fixtureFileText(templatesByName)
-  local lines = {
-    "--- GENERATED by test/insim/tools/extract-fixtures.lua -- do not edit by hand.",
-    "--- Offsets are mission-table (Vec2): dx is NORTH, dy is EAST.",
-    "return " .. InsimTestTools.serialize(templatesByName),
-    "",
-  }
-  return table.concat(lines, "\n")
-end
-
-end
-
---- Command-line entry point. Silent when dofile'd by a test (arg is nil then).
-if arg and arg[0] and arg[0]:find("extract%-fixtures") and arg[1] then
-  local missionPath, prefix = arg[1], arg[2]
-  assert(prefix, "usage: lua5.1 extract-fixtures.lua <mission-file> <group-name-prefix>")
-
-  local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-  dofile(base .. "/insim-test-tools.lua")
-
-  local chunk = assert(loadfile(missionPath))
-  -- A .miz's `mission` file is a Lua chunk assigning the global `mission`.
-  chunk()
-  assert(type(mission) == "table", "no global `mission` table after loading " .. missionPath)
-
-  local templates = {}
-  for _, group in ipairs(InsimExtractor.groupsFromMissionTable(mission, prefix)) do
-    local isStatic = InsimExtractor.isStaticGroup(group)
-    templates[group.name] = isStatic
-      and InsimExtractor.templateFromStatic(group)
-      or InsimExtractor.templateFromGroup(group)
-  end
-
-  io.write(InsimExtractor.fixtureFileText(templates))
-end
-```
-
-- [ ] **Step 4: Run the tests to verify they pass**
-
-Run: `& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\test_insim_extractor.lua`
-Expected: PASS, 8 tests
-
-- [ ] **Step 5: Run the full suite and commit**
-
-```bash
-& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
-git add test/insim/tools/extract-fixtures.lua test/lua/test_insim_extractor.lua
-git commit -m "feat: add offline .miz fixture extractor
-
-Reads a mission table and emits position-independent templates, so fixture
-compositions are authored in the Mission Editor but stored as diffable Lua."
-```
+The work is in git history; see commits `6e47a0e` and `05e51eb`, and the spec section
+"Fixtures: authored in the editor, read from the mission at runtime".
 
 ---
 
@@ -1794,7 +1512,8 @@ git commit -m "feat: add insim result reporting to screen, log and file"
 
 ---
 
-### Task 7: DCS-world helpers — `addOrReplace`, `removeJunkAround`, `scopedName`
+### Task 7: DCS-world helpers — mission fixtures, destroy, removeJunk
+> **Revised after Tasks 1-8 shipped.** The template-based helpers this task originally built> (`scopedName`, `addGroupFromTemplate`, `addStaticFromTemplate`) were replaced by> `missionGroupData` and `addFromMission`, which read an editor-placed group's own definition> out of `env.mission`. The code below is the superseded version, kept as the record of what> Tasks 1-8 delivered; the shipped file is authoritative. See commit `c300d12` and the spec's> "Fixtures: authored in the editor, read from the mission at runtime".
 
 **Executor:** Opus · **Verification:** needs DCS (Task 9 must land first to run it)
 
@@ -2193,7 +1912,6 @@ everything after it depends on this being done.
 - Create: `test/insim/skynet-insim.miz` (Mission Editor)
 - Create: `%USERPROFILE%\Saved Games\DCS\Config\skynet-insim.lua` (one line, not in the repo)
 - Create: `test/insim/README.md`
-- Create: `test/insim/fixtures/placements.lua`
 - Modify: `.gitignore`
 
 - [ ] **Step 1: Unlock the mission scripting environment**
@@ -2246,25 +1964,29 @@ dofile(repo .. "/test/insim/runner/init.lua")
 
 5. Save as `test/insim/skynet-insim.miz`.
 
-- [ ] **Step 4: Record the anchors**
+- [ ] **Step 4: Name the fixtures by convention**
 
-Read each fixture's coordinates off the Mission Editor (F10 map, unit properties) and create
-`test/insim/fixtures/placements.lua`:
+No coordinates are recorded anywhere. A scenario reads a group's position out of the mission
+itself at runtime, so the Mission Editor is the only place a position exists.
 
-```lua
---- Caucasus anchors, one well-separated region per scenario.
---- Mission-table coordinates: x is NORTH, y is EAST.
---- Separation matters: setUp clears wrecks in a sphere around its own anchor, and that sphere
---- must not reach another scenario's fixtures.
-return {
-  detection = {
-    radius = 3000,                    -- the removeJunk sphere for this scenario
-    ewr = { x = 0, y = 0 },           -- REPLACE with the real Caucasus coordinates
-    sam = { x = 0, y = 0 },           -- REPLACE
-    target = { x = 0, y = 0 },        -- REPLACE: aircraft start point, ~40km from the EWR
-  },
-}
+What matters instead is naming. Use `FIXTURE-<Scenario>-<Role>`, so each scenario owns a prefix:
+
 ```
+FIXTURE-Detection-EWR
+FIXTURE-Detection-SAM
+FIXTURE-Detection-Target
+```
+
+That prefix is what keeps Skynet's own `addEarlyWarningRadarsByPrefix` /
+`addSAMSitesByPrefix` scoped to one scenario's fixtures, and it is why no separate name-scoping
+layer is needed.
+
+Two placement rules, both geometric rather than recorded:
+
+- **Separate scenarios in space.** `setUp` clears wrecks in a sphere around its own fixtures; that
+  sphere must not reach another scenario's. Keep scenarios kilometres apart.
+- **Put the target within detection range** of the EWR, with line of sight. On Caucasus, a valley
+  between them will fail the detection scenario for reasons that have nothing to do with Skynet.
 
 - [ ] **Step 5: Verify the preflight and menu**
 
@@ -2359,69 +2081,53 @@ Isolation, per the design:
 - Adding a name that is already live replaces it; a wreck is not replaced, which is why
   `removeJunkAround` runs in `setUp`.
 
-## Regenerating fixtures
+## Fixtures
 
-Fixtures are authored in the Mission Editor and stored as position-independent Lua. To
-regenerate after changing the mission:
+Fixtures are the late-activated groups in `skynet-insim.miz`. There is no fixture file and
+nothing to regenerate: a scenario reads a group's own definition out of `env.mission` by name
+and adds it where the Mission Editor put it.
 
-```bash
-cd test/insim
-unzip -o skynet-insim.miz mission
-lua5.1 tools/extract-fixtures.lua mission FIXTURE- > fixtures/generated/fixtures.lua
-rm mission
+```lua
+InsimTestTools.addFromMission("FIXTURE-Detection-SAM")
 ```
 
-Anchors live separately in `fixtures/placements.lua` — templates carry only composition
-(types, headings, skills, and offsets from the first unit), so one template can be re-anchored
-anywhere.
+Name them `FIXTURE-<Scenario>-<Role>` so each scenario owns a prefix — that is what scopes
+Skynet's prefix-based discovery to one scenario's fixtures.
+
+To add a fixture: open the mission, place the asset, tick Late Activation, save. Nothing else.
+
+## Reviewing a mission change
+
+A `.miz` is a zip whose `mission` entry is plain Lua, so git can diff it instead of treating it
+as an opaque blob. `.gitattributes` already declares the driver; enable it once per clone:
+
+```bash
+git config diff.miz.textconv "unzip -p"
+```
+
+`git diff test/insim/skynet-insim.miz` then shows the mission text — units, coordinates, zones
+and triggers.
 ````
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add test/insim/skynet-insim.miz test/insim/README.md test/insim/fixtures/placements.lua .gitignore
-git commit -m "feat: add the insim test mission, setup docs and Caucasus anchors"
+git add test/insim/skynet-insim.miz test/insim/README.md
+git commit -m "feat: add the insim test mission and setup docs"
 ```
 
 ---
 
-### Task 10: Generate the fixture file from the real mission
+### Task 10: ~~Generate the fixture file from the real mission~~ — SUPERSEDED
 
-**Executor:** Sonnet (after the human step) · **Verification:** lua5.1
+**This task no longer exists.** Fixtures are not extracted. A scenario reads a group's own
+definition out of `env.mission` by name at runtime, so there is nothing to generate and no
+generated file to commit.
 
-**Files:**
-- Create: `test/insim/fixtures/generated/fixtures.lua`
+Task 3's extractor and its tests were deleted along with this task. See the spec's "Fixtures:
+authored in the editor, read from the mission at runtime".
 
-**Interfaces:**
-- Consumes: `InsimExtractor` (Task 3) and `test/insim/skynet-insim.miz` (Task 9)
-- Produces: `test/insim/fixtures/generated/fixtures.lua` returning
-  `{ ["FIXTURE-EWR"] = <template>, ["FIXTURE-SAM-Kub"] = <template> }`
-
-- [ ] **Step 1: Extract**
-
-```bash
-cd test/insim
-unzip -o skynet-insim.miz mission
-lua5.1 tools/extract-fixtures.lua mission FIXTURE- > fixtures/generated/fixtures.lua
-rm mission
-```
-
-- [ ] **Step 2: Check the output by eye**
-
-Open `fixtures/generated/fixtures.lua`. Expected: two templates; the EWR has one unit with
-`dx = 0, dy = 0`; the Kub site has three units whose `dx`/`dy` are small (tens of metres) and
-whose first unit is at the origin. **No absolute coordinates and no `name` keys on units.**
-
-If absolute coordinates appear, the extractor regressed — Task 3's
-`testTemplateCarriesNoAbsoluteCoordinates` covers exactly that; run it.
-
-- [ ] **Step 3: Confirm it loads and commit**
-
-```bash
-& "C:\Program Files (x86)\Lua\5.1\lua.exe" -e "local f = assert(loadfile('test/insim/fixtures/generated/fixtures.lua'))() ; print('templates:', (next(f) and 'ok' or 'EMPTY'))"
-git add test/insim/fixtures/generated/fixtures.lua
-git commit -m "feat: add extracted Caucasus fixture templates"
-```
+Skip straight from Task 9 to Task 11.
 
 ---
 
@@ -2433,10 +2139,14 @@ git commit -m "feat: add extracted Caucasus fixture templates"
 - Create: `test/insim/scenarios/scenario_detection.lua`
 
 **Interfaces:**
-- Consumes: `InsimTestTools` (Tasks 2, 7), `waitFor`/`waitSeconds` (Task 4),
-  `fixtures/generated/fixtures.lua` (Task 10), `fixtures/placements.lua` (Task 9),
-  `SkynetIADS` from the loaded source
+- Consumes: `InsimTestTools.addFromMission` / `missionGroupData` / `destroyIfLive` /
+  `removeJunkAround` (Tasks 2, 7), `waitFor` (Task 4), the fixtures placed in
+  `skynet-insim.miz` (Task 9), `SkynetIADS` from the loaded source
 - Produces: a scenario file returning `{ name = "Detection", suite = <table> }`
+
+Fixtures are read from the mission by name — there is no fixture file and no anchor table. The
+Mission Editor must contain three late-activated groups named `FIXTURE-Detection-EWR`,
+`FIXTURE-Detection-SAM` and `FIXTURE-Detection-Target`.
 
 This is the deliverable that proves the tier: it adds fixtures, waits for genuine DCS radar
 detection, and asserts the IADS reacts. A synchronous placeholder would exercise none of the
@@ -2451,54 +2161,56 @@ Create `test/insim/scenarios/scenario_detection.lua`:
 ---
 --- Deliberately time-dependent. Detection is not instant and not deterministic, so every wait
 --- is generous; a scenario needing tight timing is the wrong scenario for this tier.
-
-local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-local fixtures = assert(loadfile(base .. "/../fixtures/generated/fixtures.lua"))()
-local placements = assert(loadfile(base .. "/../fixtures/placements.lua"))()
+---
+--- Fixtures are the late-activated groups of the same names in skynet-insim.miz. Nothing here
+--- knows where they are: position lives in the Mission Editor and nowhere else.
 
 local SCENARIO = "Detection"
-local PLACEMENT = placements.detection
-local RED = country.id.CJTF_RED
+local EWR = "FIXTURE-Detection-EWR"
+local SAM = "FIXTURE-Detection-SAM"
+local TARGET = "FIXTURE-Detection-Target"
+
+--- Wide enough to cover a site's footprint plus debris scatter, and far short of the distance
+--- to any other scenario's fixtures.
+local JUNK_RADIUS = 2000
 
 local TestDetection = {}
 
-local function scoped(name)
-  return InsimTestTools.scopedName(SCENARIO, name)
+--- Clears the wrecks a previous run left around a fixture. Re-adding replaces a LIVE group but
+--- does NOT clear a wreck, so this has to happen first.
+local function clearAround(groupName)
+  local data = InsimTestTools.missionGroupData(groupName)
+  InsimTestTools.removeJunkAround({ x = data.x, y = data.y }, JUNK_RADIUS)
 end
 
 function TestDetection:setUp()
-  -- Clear wrecks from any previous run first: adding a name replaces a LIVE entity, but not a
-  -- wreck. This also covers runs that crashed or were re-triggered mid-scenario.
-  InsimTestTools.removeJunkAround(PLACEMENT.ewr, PLACEMENT.radius)
-  InsimTestTools.removeJunkAround(PLACEMENT.sam, PLACEMENT.radius)
+  for _, name in ipairs({ EWR, SAM, TARGET }) do
+    clearAround(name)
+  end
 
-  self.ewrName = InsimTestTools.addGroupFromTemplate(
-    fixtures["FIXTURE-EWR"], scoped("EWR"), PLACEMENT.ewr, RED)
-  self.samName = InsimTestTools.addGroupFromTemplate(
-    fixtures["FIXTURE-SAM-Kub"], scoped("SAM"), PLACEMENT.sam, RED)
+  InsimTestTools.addFromMission(EWR)
+  InsimTestTools.addFromMission(SAM)
 
-  self.iads = SkynetIADS:create(scoped("iads"))
-  self.iads:addEarlyWarningRadarsByPrefix(scoped("EWR"))
-  self.iads:addSAMSitesByPrefix(scoped("SAM"))
+  self.iads = SkynetIADS:create("insim_" .. SCENARIO)
+  self.iads:addEarlyWarningRadarsByPrefix(EWR)
+  self.iads:addSAMSitesByPrefix(SAM)
   self.iads:activate()
-
-  self.tracked = { self.ewrName, self.samName }
 end
 
 function TestDetection:tearDown()
   if self.iads then
     self.iads:deactivate()
   end
-  for _, name in ipairs(self.tracked or {}) do
+  for _, name in ipairs({ EWR, SAM, TARGET }) do
     InsimTestTools.destroyIfLive(name)
   end
 end
 
 --- The fixtures exist and Skynet found them. Synchronous, and the cheapest failure to diagnose
---- if the whole thing is broken.
+--- if everything is broken.
 function TestDetection:testFixturesAreAddedAndJoinTheIADS()
-  luaunit.assertNotNil(Group.getByName(self.ewrName), "EWR group was not added")
-  luaunit.assertNotNil(Group.getByName(self.samName), "SAM group was not added")
+  luaunit.assertNotNil(Group.getByName(EWR), "the EWR group was not added")
+  luaunit.assertNotNil(Group.getByName(SAM), "the SAM group was not added")
   luaunit.assertEquals(#self.iads:getEarlyWarningRadars(), 1)
   luaunit.assertEquals(#self.iads:getSAMSites(), 1)
 end
@@ -2506,14 +2218,11 @@ end
 --- The time-dependent one. The SAM starts dark; a live EWR detecting the target is what brings
 --- it up, and that takes simulated seconds.
 function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
-  local sam = self.iads:getSAMSiteByGroupName(self.samName)
+  local sam = self.iads:getSAMSiteByGroupName(SAM)
   luaunit.assertNotNil(sam, "the SAM site did not join the IADS")
   luaunit.assertFalse(sam:isActive(), "the SAM should start dark")
 
-  local target = InsimTestTools.addGroupFromTemplate(
-    { task = "Ground Nothing", units = { { type = "M-1 Abrams", dx = 0, dy = 0 } } },
-    scoped("TARGET"), PLACEMENT.target, country.id.USA)
-  self.tracked[#self.tracked + 1] = target
+  InsimTestTools.addFromMission(TARGET)
 
   -- Detection, then the IADS's own evaluation cycle, then the SAM coming up.
   waitFor(function() return sam:isActive() end, 300)
@@ -2530,16 +2239,16 @@ Expected on screen: `Skynet insim: 2 passed, 0 failed` and `ALL PASSED`.
 
 - [ ] **Step 3: Diagnose from the map if it fails**
 
-This is why Game Master is the recommended slot. Read `dcs-log` lines tagged `SKYNET_INSIM`
-first, then check on the map:
+This is why Game Master is the recommended slot. Read the `dcs.log` lines tagged
+`SKYNET_INSIM` first, then look at the map:
 
 | Symptom | Likely cause |
 |---|---|
-| `EWR group was not added` | Enum or template problem — verification item 3. Check `country.id.CJTF_RED` and `Group.Category.GROUND`, and that the template's unit `type` strings match the Mission Editor's |
-| Fixtures appear in the wrong place, or in the sea | Axis convention — `dy` is **east**, not north or altitude. Check `placements.lua` against the Mission Editor coordinates |
-| Groups added but `getEarlyWarningRadars()` is 0 | Prefix mismatch: `addEarlyWarningRadarsByPrefix` must match the scoped name `insim_Detection_EWR` |
-| `waitFor timed out` on the SAM going live | Target too far for detection, or the SAM has no line of sight. Move `PLACEMENT.target` closer, or raise the timeout — but confirm on the map that the EWR really sees it first |
-| Fixtures land whole but a rerun shows wrecks | `removeJunkAround` radius too small, or the anchor is wrong |
+| `missionGroupData: no group named '...'` | The Mission Editor group is missing or misspelled. Names must match exactly, including case |
+| `the EWR group was not added` | `coalition.addGroup` rejected the mission's own table — the country id or category read from `env.mission` is wrong. Log `countryId` and the group's unit types |
+| Groups added but `getEarlyWarningRadars()` is 0 | Prefix mismatch: `addEarlyWarningRadarsByPrefix(EWR)` must match the group name |
+| `waitFor timed out` on the SAM going live | Target out of detection range, or no line of sight. Confirm on the map that the EWR really sees it before raising the timeout |
+| Fixtures land whole but a rerun shows wrecks | `JUNK_RADIUS` too small for the site's footprint plus scatter |
 
 - [ ] **Step 4: Verify the re-run loop**
 
@@ -2555,9 +2264,10 @@ replacement and wreck clearing together.
 git add test/insim/scenarios/scenario_detection.lua
 git commit -m "feat: add the insim detection scenario
 
-Adds an EWR, a SAM site and a target, waits for genuine DCS radar detection, and
-asserts the IADS brings the site live. Proves adding, coroutine waiting,
-timeouts, isolation and reporting in one scenario."
+Adds an EWR, a SAM site and a target from the mission's own definitions, waits
+for genuine DCS radar detection, and asserts the IADS brings the site live.
+Proves adding, coroutine waiting, timeouts, isolation and reporting in one
+scenario."
 ```
 
 ---
@@ -2592,5 +2302,5 @@ Task 11.
 **Type consistency.** `InsimRunner.results` shape is produced in Task 5 and consumed in Task 6;
 `{ name, suite }` is produced in Task 11 and consumed in Task 8; templates are produced in Task 3
 and consumed in Task 7; `anchor` is `{ x = north, y = east }` in Tasks 7, 9 and 11;
-`InsimTestTools.scopedName` is defined in Task 7 and used in Task 11. `isActive()` is the real
+Task 7 supplies `missionGroupData`/`addFromMission`, consumed by Task 11. `isActive()` is the real
 emission accessor — `isRadarEmitting()` does not exist in the source.
