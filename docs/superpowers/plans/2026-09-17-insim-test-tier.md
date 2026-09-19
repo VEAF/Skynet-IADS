@@ -72,7 +72,7 @@ cumulative. If a task's count comes out lower, something was mistranscribed.
 | `test/insim/runner/runner.lua` | Coroutine phase scheduler, timeouts, result collection |
 | `test/insim/runner/report.lua` | Result formatting → `outText`, `env.info`, results file |
 | `test/insim/runner/init.lua` | Preflight, source loading, suite discovery, F10 menu |
-| `test/insim/skynet-insim.miz` | Caucasus mission: GM slot, bootstrap, late-activated FIXTURE-* groups |
+| `test/insim/skynet-insim.miz` | Caucasus mission: GM slot, bootstrap, late-activated fixture groups, arena zones |
 | `test/insim/scenarios/scenario_detection.lua` | The proving scenario |
 | `test/insim/README.md` | MissionScripting edit, revert path, config file, how to run |
 | `test/lua/test_insim_tools.lua` | Offline tests for the pure-Lua tool helpers |
@@ -2174,8 +2174,9 @@ and adds it where the Mission Editor put it.
 InsimTestTools.addFromMission("SKY-Z01-SA6-01")
 ```
 
-Name them `FIXTURE-<Scenario>-<Role>` so each scenario owns a prefix — that is what scopes
-Skynet's prefix-based discovery to one scenario's fixtures.
+Names are free-form; the only rule is that a scenario's Lua matches the `.miz` exactly. Keep the
+prefixes handed to `addSAMSitesByPrefix` / `addEarlyWarningRadarsByPrefix` disjoint, or one will
+sweep up the other's groups.
 
 To add a fixture: open the mission, place the asset, tick Late Activation, save. Nothing else.
 
