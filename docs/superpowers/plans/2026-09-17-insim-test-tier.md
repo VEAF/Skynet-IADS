@@ -1912,7 +1912,6 @@ everything after it depends on this being done.
 - Create: `test/insim/skynet-insim.miz` (Mission Editor)
 - Create: `%USERPROFILE%\Saved Games\DCS\Config\skynet-insim.lua` (one line, not in the repo)
 - Create: `test/insim/README.md`
-- Modify: `.gitignore`
 
 - [ ] **Step 1: Unlock the mission scripting environment**
 
@@ -1945,12 +1944,28 @@ return [[D:\Projects\DcsLua\Skynet-IADS]]
 In the Mission Editor:
 1. New mission, **Caucasus**.
 2. Add one **Neutral Game Master** slot (neutral so it sees both coalitions).
-3. Place the fixture assets the first scenario needs, all **Late Activation**:
-   - a red **1L13 EWR** group, named `FIXTURE-EWR`
-   - a red **SA-6 Kub** site (`Kub 1S91 str` + 2× `Kub 2P25 ln`), named `FIXTURE-SAM-Kub`
-   These are read by the extractor and give a map view of the fixture world; a normal run never
-   activates them.
-4. Add a trigger: **MISSION START**, no condition, action **DO SCRIPT**, with exactly:
+3. Draw a **circular** trigger zone as the scenario's arena, e.g. `FIXTURE-Detection-ZONE`, wide
+   enough to cover the ground fixtures plus where their debris will scatter. `setUp` clears
+   wrecks across this zone, so it must not reach a neighbouring scenario's fixtures. It must be
+   circular: `removeJunkInZone` reads the zone's radius, and a quad zone can report 0.
+4. Inside that zone, place the **ground** fixtures, all **Late Activation**:
+   - a red **1L13 EWR** group, named `FIXTURE-Detection-EWR`
+   - a red **SA-6 Kub** site (`Kub 1S91 str` + 2× `Kub 2P25 ln`), named `FIXTURE-Detection-SAM`
+
+   These are added exactly where you place them, so position them for the test: the EWR needs
+   line of sight to where the target will fly. A valley between them fails the scenario for
+   reasons that have nothing to do with Skynet.
+5. Place the **air** fixture anywhere convenient — a corner of the map is fine — named
+   `FIXTURE-Detection-Target`, **Late Activation**, and authored as:
+   - **In Air** start with a **single** turning point. Not a ramp or runway start: a ground start
+     carries an `airdromeId` on its first waypoint, which is meaningless once the scenario places
+     the group somewhere else.
+   - Task **Nothing**, so it flies its leg passively instead of deciding to do something.
+
+   Its own coordinates, altitude and waypoint are ignored. The scenario supplies `from`, `to`,
+   `altitude` and `speed`; the editor group contributes only the airframes, count, skill and
+   country.
+6. Add a trigger: **MISSION START**, no condition, action **DO SCRIPT**, with exactly:
 
 ```lua
 local cfg = loadfile(lfs.writedir() .. "Config/skynet-insim.lua")
@@ -1962,7 +1977,7 @@ end
 dofile(repo .. "/test/insim/runner/init.lua")
 ```
 
-5. Save as `test/insim/skynet-insim.miz`.
+7. Save as `test/insim/skynet-insim.miz`.
 
 - [ ] **Step 4: Name the fixtures by convention**
 
@@ -1981,17 +1996,75 @@ That prefix is what keeps Skynet's own `addEarlyWarningRadarsByPrefix` /
 `addSAMSitesByPrefix` scoped to one scenario's fixtures, and it is why no separate name-scoping
 layer is needed.
 
-Three placement rules, all geometric rather than recorded:
+The literal prefix does not matter — `TEST-Detection-*` works as well as `FIXTURE-Detection-*`.
+What matters is that it is unique per scenario and that the scenario's own constants match it
+exactly, including case. A mismatch surfaces as `missionGroupData: no group named '...'`, which
+is at least a loud failure.
 
-- **Author the arena zone as a CIRCLE, not a quad.** `removeJunkInZone` reads the zone's radius,
-  and a quad-point zone can report a radius of 0 — which fails with a message pointing at the
-  wrong function.
-- **Separate scenarios in space.** `setUp` clears wrecks in a sphere around its own fixtures; that
-  sphere must not reach another scenario's. Keep scenarios kilometres apart.
-- **Put the target within detection range** of the EWR, with line of sight. On Caucasus, a valley
-  between them will fail the detection scenario for reasons that have nothing to do with Skynet.
+- [ ] **Step 5: Confirm `env.mission` before writing a scenario**
 
-- [ ] **Step 5: Verify the preflight and menu**
+Everything about fixtures rests on `env.mission` being populated and shaped as expected. Confirm
+it once, before debugging a scenario against an unverified assumption. Add a second **MISSION
+START → DO SCRIPT** action containing the probe below, run the mission, then read the on-screen
+text or grep `dcs.log` for `SKYNET_PROBE`. Remove the action afterwards.
+
+It needs no `io`/`os`/`lfs`, so it works even if Step 1 has not been applied.
+
+```lua
+do
+  local PREFIX = "FIXTURE"
+  local ZONE   = "FIXTURE-Detection-ZONE"
+
+  local function say(text)
+    env.info("SKYNET_PROBE: " .. text)
+    trigger.action.outText(text, 60)
+  end
+
+  if type(env.mission) ~= "table" then
+    say("env.mission is NOT available (got " .. type(env.mission) .. ")")
+    return
+  end
+
+  local lines = { "env.mission OK | theatre=" .. tostring(env.mission.theatre) }
+
+  for sideName, side in pairs(env.mission.coalition or {}) do
+    for _, country in pairs(side.country or {}) do
+      for _, kind in ipairs({ "vehicle", "static", "plane", "helicopter" }) do
+        for _, g in pairs((country[kind] or {}).group or {}) do
+          if type(g.name) == "string" and g.name:sub(1, #PREFIX) == PREFIX then
+            lines[#lines + 1] = string.format(
+              "%s | %s | %s | country=%s id=%s | units=%d | x=%.0f y=%.0f",
+              g.name, kind, sideName, tostring(country.name), tostring(country.id),
+              #(g.units or {}), g.x or 0, g.y or 0)
+          end
+        end
+      end
+    end
+  end
+
+  local ok, zone = pcall(trigger.misc.getZone, ZONE)
+  if ok and zone then
+    lines[#lines + 1] = string.format("zone %s | radius=%.0f | x=%.0f z=%.0f",
+      ZONE, zone.radius or -1, zone.point.x, zone.point.z)
+  else
+    lines[#lines + 1] = "zone " .. ZONE .. " NOT found (" .. tostring(zone) .. ")"
+  end
+
+  say(table.concat(lines, "\n"))
+end
+```
+
+What each line tells you:
+
+| Output | Means |
+|---|---|
+| `env.mission is NOT available` | Stop — nothing in the fixture design works. Everything downstream assumes this table |
+| ground fixtures listed under `vehicle`, the air one under `plane` | `missionGroupData` will find them. Any other category and it raises "no group named…" |
+| `id=` on each country | What `coalition.addGroup` receives. A wrong one adds to the wrong coalition **silently** — the nastiest failure in the set |
+| `units=` | Catches an empty group before `addAirFromMission` does |
+| `radius=` a real number | The zone is circular. `0` means you drew a quad — redraw it |
+
+- [ ] **Step 6: Verify the preflight and menu**
 
 Launch `skynet-insim.miz`, take the Game Master slot, open **F10**.
 Expected: a **Skynet Tests** menu with **Run all**, **Re-run last** and **Run one suite**.
@@ -2169,27 +2242,26 @@ Create `test/insim/scenarios/scenario_detection.lua`:
 --- knows where they are: position lives in the Mission Editor and nowhere else.
 
 local SCENARIO = "Detection"
+local ZONE = "FIXTURE-Detection-ZONE"
 local EWR = "FIXTURE-Detection-EWR"
 local SAM = "FIXTURE-Detection-SAM"
 local TARGET = "FIXTURE-Detection-Target"
 
---- Wide enough to cover a site's footprint plus debris scatter, and far short of the distance
---- to any other scenario's fixtures.
-local JUNK_RADIUS = 2000
+--- The target's leg, as a bearing and distance from the EWR. Both ends are chosen so the
+--- aircraft is outside detection range at spawn and flies into it, and so the leg outlasts the
+--- test -- AI behaviour at a final waypoint is its own rabbit hole.
+local INBOUND_BEARING = 270      -- degrees, clockwise from north: due west of the EWR
+local START_RANGE = 60000        -- metres out
+local END_RANGE = 20000          -- metres past, on the far side
+local TARGET_ALTITUDE = 6000     -- metres, BARO
+local TARGET_SPEED = 200         -- metres per second (about 390 kt)
 
 local TestDetection = {}
 
---- Clears the wrecks a previous run left around a fixture. Re-adding replaces a LIVE group but
---- does NOT clear a wreck, so this has to happen first.
-local function clearAround(groupName)
-  local data = InsimTestTools.missionGroupData(groupName)
-  InsimTestTools.removeJunkAround({ x = data.x, y = data.y }, JUNK_RADIUS)
-end
-
 function TestDetection:setUp()
-  for _, name in ipairs({ EWR, SAM, TARGET }) do
-    clearAround(name)
-  end
+  -- Clear the whole arena first. Re-adding replaces a LIVE group but does NOT clear a wreck, so
+  -- anything a previous run destroyed is still lying there.
+  InsimTestTools.removeJunkInZone(ZONE)
 
   InsimTestTools.addFromMission(EWR)
   InsimTestTools.addFromMission(SAM)
@@ -2225,7 +2297,15 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
   luaunit.assertNotNil(sam, "the SAM site did not join the IADS")
   luaunit.assertFalse(sam:isActive(), "the SAM should start dark")
 
-  InsimTestTools.addFromMission(TARGET)
+  -- The editor group supplies only the airframe. Its leg is computed from the EWR, so the
+  -- geometry lives here rather than in the Mission Editor where it would be invisible.
+  local ewr = InsimTestTools.missionGroupData(EWR)
+  InsimTestTools.addAirFromMission(TARGET, {
+    from = InsimTestTools.offsetFrom(ewr, INBOUND_BEARING, START_RANGE),
+    to = InsimTestTools.offsetFrom(ewr, INBOUND_BEARING - 180, END_RANGE),
+    altitude = TARGET_ALTITUDE,
+    speed = TARGET_SPEED,
+  })
 
   -- Detection, then the IADS's own evaluation cycle, then the SAM coming up.
   waitFor(function() return sam:isActive() end, 300)
@@ -2251,7 +2331,9 @@ This is why Game Master is the recommended slot. Read the `dcs.log` lines tagged
 | `the EWR group was not added` | `coalition.addGroup` rejected the mission's own table — the country id or category read from `env.mission` is wrong. Log `countryId` and the group's unit types |
 | Groups added but `getEarlyWarningRadars()` is 0 | Prefix mismatch: `addEarlyWarningRadarsByPrefix(EWR)` must match the group name |
 | `waitFor timed out` on the SAM going live | Target out of detection range, or no line of sight. Confirm on the map that the EWR really sees it before raising the timeout |
-| Fixtures land whole but a rerun shows wrecks | `JUNK_RADIUS` too small for the site's footprint plus scatter |
+| Fixtures land whole but a rerun shows wrecks | The arena zone is too small for the sites plus debris scatter, or it is a quad reporting radius 0 |
+| The target spawns but never flies | Suspect the group-level task or the empty `ComboTask`, not the route. Check `speed` and `alt` reached the units |
+| The target flies the wrong way | Re-read the `atan2` argument order in `bearingBetween`, despite its round-trip test |
 
 - [ ] **Step 4: Verify the re-run loop**
 
@@ -2292,7 +2374,8 @@ one turns out to be — several are questions about DCS, not about this code.
 ## Self-review
 
 **Spec coverage.** Shape → Task 9; repo path resolution → Tasks 8, 9; run loop and F10 menu →
-Task 8; async model → Tasks 4, 5; fixtures and the extractor → Tasks 3, 9, 10; axis conventions
+Task 8; async model → Tasks 4, 5; fixtures → Task 9 (authored) and Task 11 (read from env.mission);
+Tasks 3 and 10 superseded; axis conventions
 → Global Constraints, Tasks 3, 7; isolation → Tasks 7, 11; no mist → Global Constraints, honoured
 throughout; results → Task 6; setup cost → Task 9; layout → the file structure table;
 `test/common/` → Task 1; deliverable → Task 11.
