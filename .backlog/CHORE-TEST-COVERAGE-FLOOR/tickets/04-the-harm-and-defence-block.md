@@ -1,6 +1,6 @@
 # 04 — the HARM and defence block of the radar element
 
-Status: ⬜ ready — **the work lives in `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04**, this one
+Status: ⚪ no longer needed — for this lot. The floor reached **91** without it (tickets 03, 05 and 06), so `CHORE-TEST-COVERAGE-FLOOR` is closed and no longer waits on anything. This was always a measurement ticket: the work itself is `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04, the legacy port, which is **still worth doing on its own terms** — 42 in-sim tests covering HARM timing, point defence, engagement zones, ammunition and parent/child bookkeeping, and the 173 lines they would light up are the largest block the standalone suite still never runs. Closing this ticket closes the measurement, not the need
 measures it. At the lot's 90% target it is also the ticket the target depends on.
 
 `skynet-iads-abstract-radar-element.lua` is **71.25%** — 184 lines never executed, the second worst

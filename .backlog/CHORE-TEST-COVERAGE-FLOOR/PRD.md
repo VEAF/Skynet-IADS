@@ -1,6 +1,6 @@
 # CHORE-TEST-COVERAGE-FLOOR — the suite runs in CI, and nobody knows what it covers
 
-Status: 🔄 in-progress — **86.81%**, floor at **86**. Tickets 01, 02, 03 and 05 are merged ([PR #20](https://github.com/VEAF/Skynet-IADS/pull/20), [#21](https://github.com/VEAF/Skynet-IADS/pull/21), [#22](https://github.com/VEAF/Skynet-IADS/pull/22), [#23](https://github.com/VEAF/Skynet-IADS/pull/23)). Ticket 04 is blocked on `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04, the legacy port — but, and this is new, **the lot is no longer hostage to it**: see the arithmetic below. Ticket 06 is next, and on the numbers it can carry the floor past 90 on its own
+Status: ✅ done — **91.17%**, floor at **91**. The lot closes on the floor reaching 90, and it has. Tickets 01, 02, 03, 05 and 06 are merged ([PR #20](https://github.com/VEAF/Skynet-IADS/pull/20), [#21](https://github.com/VEAF/Skynet-IADS/pull/21), [#22](https://github.com/VEAF/Skynet-IADS/pull/22), [#23](https://github.com/VEAF/Skynet-IADS/pull/23), [#24](https://github.com/VEAF/Skynet-IADS/pull/24)); ticket 04 closes as **no longer needed for this lot**, which the plan below called a good outcome and not a shortcut. The legacy port it measured is still worth doing on its own terms, as `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04
 
 Origin: David, 2026-09-19 — *"on a une suite de tests unitaires en CI ? quelle est sa couverture ?
 je voudrais un minimum de 80%, fais un lot vivant pour ça"*, raised to **90%** the same day once the
@@ -131,9 +131,9 @@ to that lot; this one only measures what it buys.** See ticket 04 here for the c
 | 01 | [measure test coverage in CI, and publish the number](tickets/01-measure-test-coverage-in-ci.md) | ✅ |
 | 02 | [a floor that only goes up](tickets/02-a-floor-that-only-goes-up.md) | ✅ |
 | 03 | [pin the status printers the debug skill reads](tickets/03-pin-the-status-printers.md) | ✅ |
-| 04 | [the HARM and defence block of the radar element](tickets/04-the-harm-and-defence-block.md) | ⬜ |
+| 04 | [the HARM and defence block of the radar element](tickets/04-the-harm-and-defence-block.md) | ⚪ no longer needed |
 | 05 | [the network facade's getters and radio menu](tickets/05-the-network-facade.md) | ✅ |
-| 06 | [the long tail](tickets/06-the-long-tail.md) | ⬜ |
+| 06 | [the long tail](tickets/06-the-long-tail.md) | ✅ |
 
 01 and 02 are the mechanism and come first, in that order. 03 to 06 are the climb and can be taken
 in any order — each one raises the floor by the amount it actually bought, which is the point of
@@ -161,3 +161,23 @@ said out loud rather than left at 🔄.
 - The build fails when test coverage drops below the recorded floor.
 - The floor reads **90** or better, and the number it is measured against is the honest one.
 - `test/lua/README.md` says how to run the measurement locally, on Linux and on Windows.
+
+## How it actually went
+
+The plan above was wrong about one thing, and it is the thing that mattered: it said 90% needed tickets 03 **and** 04, which made this lot depend on another lot finishing a legacy port. That was true of the estimates, not of the measurement.
+
+| | measured |
+|---|---:|
+| at the start | 70.22% |
+| after ticket 03, the logger's status printers | 83.35% |
+| after ticket 05, the network facade | 86.81% |
+| after ticket 06, the long tail | **91.17%** |
+
+Ticket 06 was written as the margin — *"if 03 and 04 come up short, its 120 lines are what closes the gap"* — and that is exactly what it turned out to be, without 04. Eleven of the eighteen measured files are at 100%.
+
+Two things are worth carrying out of this lot:
+
+- **Not every uncovered line is reachable.** 34 of them are continuation lines of multi-line expressions, which Lua 5.1 attributes to the first line — no debug hook fires on the rest, so no test can ever reach them. Nineteen are in the logger's status page alone. A target set without knowing that is a target nobody can hit, and this lot nearly declared itself blocked on the strength of it.
+- **Reading the measurement beats reading the plan.** Ticket 06 said so in as many words (*"Read the current measurement before starting, not this paragraph"*), and it was right twice: once about what was left, and once about what was blocking it.
+
+Four defects were found in passing and deliberately not fixed — they are listed at the end of ticket 05, plus a fifth in ticket 06's write-up. None of them belongs to a test-coverage lot.

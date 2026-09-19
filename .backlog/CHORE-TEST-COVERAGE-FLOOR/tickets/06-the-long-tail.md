@@ -1,6 +1,6 @@
 # 06 — the long tail
 
-Status: ⬜ ready — take last, but at a 90% target it is the margin, not an afterthought
+Status: ✅ done — merged in [PR #24](https://github.com/VEAF/Skynet-IADS/pull/24). It was not the margin, it was the whole remaining gap: the project went 86.81% → **91.17%** and the floor 86 → **91**, which closes the lot. The jammer, the launcher, the contact, the table delegator, the abstract element and the MOOSE connector are at 100%; the HARM decision is at 98%. Nothing was deleted — see below
 
 What is left once tickets 03, 04 and 05 have landed: 119 lines across nine files, none of them a
 block.
@@ -54,3 +54,13 @@ Read the current measurement before starting, not this paragraph.
 - Every remaining uncovered function is either covered, deleted as dead, or listed here with the
   reason it stays uncovered — no function is left in the report with nobody having looked at it.
 - The floor reads 90 or better, or the lot says in writing what is holding it below.
+
+## What was done, and what was decided instead
+
+The ticket said to read the current measurement rather than its own estimate, and the measurement had moved: 77 lines short of 90%, with **118 reachable lines** outside the file ticket 04 is waiting on. The 27-line difference between that and the 145 uncovered is continuation lines of multi-line expressions, which Lua 5.1 attributes to the first line of the expression — no test can ever reach them, and counting them as work makes a target unreachable for no reason.
+
+Taken, in the ticket's own order of value: the anti-radiation-missile decision (the half that says *no*, the identification taken back when a track manoeuvres, and the handing of a confirmed missile to every usable element); the jammer entire; both `setupRangeData` implementations and the delegation between them, in a new `test_skynet_iads_range_data.lua`; the geometry the HARM aspect is built on; and the table delegator that makes every one-liner in `api.md` work.
+
+**Nothing was deleted.** `inheritsFrom`'s `class()`, `isa()` and default `create()` are dead inside this repository — checked across the sources, `test/lua` and `unit-tests` — but they are methods on every Skynet object and the artifact is vendored by VEAF-Mission-Creation-Tools. Deleting undocumented public surface from a vendored deliverable is VEAF's decision, not a side effect of a coverage ticket.
+
+**Every remaining uncovered line is accounted for**, in `test/lua/README.md` rather than here so it sits where the next person writing a test will read it: the block waiting on the legacy port (173), continuation lines (34), the inheritance helper (11), a Lua 5.2 compatibility shim that cannot run under 5.1 (5), and `SkynetIADS:addJammer()` (1), which cannot be called at all because `self.jammers` is never initialised.
