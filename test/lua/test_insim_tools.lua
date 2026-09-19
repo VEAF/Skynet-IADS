@@ -108,4 +108,35 @@ function TestInsimTools:testOffsetFromDoesNotMutateItsOrigin()
   luaunit.assertEquals(origin, { x = 10, y = 20 })
 end
 
+function TestInsimTools:testBearingBetweenReadsTheCardinalDirections()
+  local origin = { x = 0, y = 0 }
+  -- Radians clockwise from north, normalised to [0, 2pi): north 0, east pi/2, south pi, west 3pi/2.
+  luaunit.assertAlmostEquals(
+    InsimTestTools.bearingBetween(origin, { x = 100, y = 0 }), 0, 1e-9)
+  luaunit.assertAlmostEquals(
+    InsimTestTools.bearingBetween(origin, { x = 0, y = 100 }), math.pi / 2, 1e-9)
+  luaunit.assertAlmostEquals(
+    InsimTestTools.bearingBetween(origin, { x = -100, y = 0 }), math.pi, 1e-9)
+  luaunit.assertAlmostEquals(
+    InsimTestTools.bearingBetween(origin, { x = 0, y = -100 }), 3 * math.pi / 2, 1e-9)
+end
+
+function TestInsimTools:testBearingBetweenHandlesADiagonalAndAnOffsetOrigin()
+  local bearing = InsimTestTools.bearingBetween({ x = 500, y = 500 }, { x = 600, y = 600 })
+  luaunit.assertAlmostEquals(bearing, math.pi / 4, 1e-9)
+end
+
+function TestInsimTools:testBearingBetweenIsTheInverseOfOffsetFrom()
+  local from = { x = -12000, y = 8000 }
+  for _, degrees in ipairs({ 0, 37, 90, 155, 180, 233, 270, 341 }) do
+    local to = InsimTestTools.offsetFrom(from, degrees, 4000)
+    luaunit.assertAlmostEquals(math.deg(InsimTestTools.bearingBetween(from, to)), degrees, 1e-6)
+  end
+end
+
+function TestInsimTools:testBearingBetweenTreatsIdenticalPointsAsNorth()
+  luaunit.assertAlmostEquals(
+    InsimTestTools.bearingBetween({ x = 7, y = 9 }, { x = 7, y = 9 }), 0, 1e-9)
+end
+
 os.exit(luaunit.LuaUnit.run())

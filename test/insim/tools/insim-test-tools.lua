@@ -5,8 +5,8 @@ InsimTestTools -- helpers the test/insim tier needs that neither Skynet source n
 provides.
 
 Two halves, deliberately in one file while it stays small:
-  * pure Lua      -- deepCopy, serialize, offsetFrom. Usable in-sim and offline, and unit-tested
-                     offline by test/lua/test_insim_tools.lua.
+  * pure Lua      -- deepCopy, serialize, offsetFrom, bearingBetween. Usable in-sim and offline,
+                     and unit-tested offline by test/lua/test_insim_tools.lua.
   * DCS-world     -- missionGroupData, addFromMission, addAirFromMission, destroyIfLive,
                      removeJunkAround, removeJunkInZone. Need a running sim.
 
@@ -99,6 +99,26 @@ function InsimTestTools.offsetFrom(origin, bearingDegrees, metres)
   }
 end
 
+--- The course from `from` to `to`, in RADIANS clockwise from north -- the unit the mission table
+--- stores headings in, so it can be assigned straight to a unit. Use math.deg on it to feed
+--- offsetFrom, which takes degrees.
+---
+--- x is north and y is east, so the bearing is atan2(east, north): the inverse of offsetFrom's
+--- convention, not the atan2(y, x) of a maths-class plane. Normalised to [0, 2pi) to match what
+--- the Mission Editor writes; two identical points yield 0.
+function InsimTestTools.bearingBetween(from, to)
+  assert(type(from) == "table" and from.x and from.y,
+    "bearingBetween: from needs x (north) and y (east)")
+  assert(type(to) == "table" and to.x and to.y,
+    "bearingBetween: to needs x (north) and y (east)")
+
+  local radians = math.atan2(to.y - from.y, to.x - from.x)
+  if radians < 0 then
+    radians = radians + 2 * math.pi
+  end
+  return radians
+end
+
 --- DCS world ---------------------------------------------------------------------------------
 --- Everything below needs a running sim. See test/insim/README.md for how to exercise it.
 
@@ -167,8 +187,9 @@ function InsimTestTools.addFromMission(groupName)
   return groupName
 end
 
---- One in-air turning point, shaped as the Mission Editor writes them.
-local function airPoint(point, altitude, speed)
+--- One in-air turning point, shaped as the Mission Editor writes them. `etaLocked` is true on
+--- waypoint 1 and false thereafter, which is what the editor writes.
+local function airPoint(point, altitude, speed, etaLocked)
   return {
     type = "Turning Point",
     action = "Turning Point",
@@ -179,7 +200,7 @@ local function airPoint(point, altitude, speed)
     speed = speed,
     speed_locked = true,
     ETA = 0,
-    ETA_locked = false,
+    ETA_locked = etaLocked,
     formation_template = "",
     task = { id = "ComboTask", params = { tasks = {} } },
   }
@@ -208,6 +229,11 @@ function InsimTestTools.addAirFromMission(groupName, opts)
   local lead = data.units and data.units[1]
   assert(lead, "addAirFromMission: '" .. groupName .. "' has no units")
 
+  -- Face the flight along its own leg. Without this it spawns on whatever heading the editor
+  -- parked the template on and only turns onto waypoint 1 afterwards -- a wrong initial track for
+  -- the first seconds of a detection run, and a fixture that looks broken on the Game Master map.
+  local course = InsimTestTools.bearingBetween(opts.from, opts.to)
+
   -- Anchor the flight at `from` while preserving whatever spacing the editor gave it, so a
   -- two-ship stays a two-ship.
   local dx, dy = opts.from.x - lead.x, opts.from.y - lead.y
@@ -217,14 +243,15 @@ function InsimTestTools.addAirFromMission(groupName, opts)
     unit.alt = opts.altitude
     unit.alt_type = "BARO"
     unit.speed = opts.speed
+    unit.heading = course
   end
 
   data.x, data.y = opts.from.x, opts.from.y
   data.task = "Nothing"
   data.route = {
     points = {
-      airPoint(opts.from, opts.altitude, opts.speed),
-      airPoint(opts.to, opts.altitude, opts.speed),
+      airPoint(opts.from, opts.altitude, opts.speed, true),
+      airPoint(opts.to, opts.altitude, opts.speed, false),
     },
   }
 
