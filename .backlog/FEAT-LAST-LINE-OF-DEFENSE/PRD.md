@@ -126,8 +126,43 @@ least one test red. The suite also caught a real defect while being written — 
 sweep measures movement against was laid down by the first sweep, i.e. *after* the element had
 moved, so the move that mattered measured zero and was missed. `markCoverageUpdated()` is that fix.
 
-**What remains: the in-sim check.** A test mission under `demo-missions/` with a SAM and a
-deliberately badly placed EWR, driven through VEAF's DCS bridge, able to fail both ways — the site
-lights up when the target crosses the radius, and falls silent once the persistence has run out.
-The bridge has to be injected into a mission that carries no `veaf-scripts.lua`, so the usual VEAF
-injection path does not apply.
+**What remains: the in-sim check.** The mission for it is built and waiting to be flown:
+`demo-missions/skynet-insim-last-line-of-defence.miz`, with its scenario kept in readable form
+beside it as `demo-missions/skynet-insim-last-line-of-defence.lua`.
+
+### What the mission is
+
+A SA-6 (`TEST-SAM-SA-6`) and a 55G6 early warning radar (`TEST-EW-far`) **106 km apart**. That
+distance is the whole point: it is well inside the EWR's detection range, so Skynet's flat 2D
+coverage declares the battery covered and the network holds it dark — while an aircraft on the deck
+at 106 km is far under that radar's horizon. It is the reported situation, built on purpose.
+
+It is a copy of `skynet-test-persian-gulf.miz`, which brings a working trigger chain (mist, the
+compiled artifact, then the setup script) and terrain already known to carry these units. The demo's
+own IADS would ruin the measurement — an SA-10 would down the intruder two hundred kilometres out —
+so the scenario **destroys every group whose name does not begin with `TEST-`** at startup, and the
+setup script embedded in the `.miz` is the scenario itself, replacing the demo's. `dcs-bridge.lua`
+is embedded as a second startup trigger, which is the answer to this mission carrying no
+`veaf-scripts.lua`.
+
+### Flying it
+
+Nobody has to fly. Start `dcs-serve`, load the mission, and drive it through the bridge's
+`exec_lua`:
+
+| Call | What it does |
+|---|---|
+| `SKYNET_TEST.geometry()` | separation, the EWR's detection range, the radius drawn for this site, how many parents it has, and what each group is standing on |
+| `SKYNET_TEST.status()` | the line a run is read from: `ACTIVE`, `AUTONOMOUS`, `targetsInRange`, `freshReport`, and how far the intruder is |
+| `SKYNET_TEST.launchIntruder()` | an A-10A from 40 km south to 40 km north at 150 m AGL and 200 m/s, crossing the radius in about two minutes. It is told to do nothing, hold fire and ignore threats, and it is made immortal — all four keep it on the straight track the measurement assumes, since a woken SA-6 fires and an intruder that attacks, evades or dies leaves its run. 150 m rather than the deck because at 106 km it stays under the radar horizon up to roughly 400 m, and there is no reason to spend that margin flying an AI into a ridge |
+| `SKYNET_TEST.startWatch(5)` | on from the start; writes the status line into `dcs.log` every five seconds, so both edges of the run survive in the log |
+
+### What the run has to show
+
+`ACTIVE=false` while the intruder is far, `ACTIVE=true` while it is inside the radius, and
+`ACTIVE=false` again roughly 45 s after it leaves. A run showing only the first two proves nothing:
+the persistence expiring is half the check.
+
+Prerequisites, on the machine running DCS: `dcs-serve` listening, and the bridge's own
+[prerequisites](https://veaf.github.io/dcs-bridge/guide/prerequisites/) — `MissionScripting.lua`
+must not be sanitised, or the bridge cannot open its socket.

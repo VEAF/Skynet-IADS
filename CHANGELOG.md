@@ -138,6 +138,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   index a nil value*, which is what a mistyped group name looks like -- and that a prefix has to
   start the group name rather than merely appear in it.
 
+- `demo-missions/skynet-insim-last-line-of-defence.miz`, the in-sim check for the last line of
+  defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
+  while an aircraft on the deck stays under that radar's horizon -- the reported situation, built
+  on purpose. It is driven from outside through VEAF's `dcs-bridge`, so nobody has to fly: one call
+  puts an immortal intruder on a run across the site, another prints what the network is doing, and
+  the status line goes into `dcs.log` every five seconds. Its scenario is kept in readable form
+  next to it as `skynet-insim-last-line-of-defence.lua`.
+
 ### Changed
 
 - `develop` is the default branch, and the Lua suite runs on it.
