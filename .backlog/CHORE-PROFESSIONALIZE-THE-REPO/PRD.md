@@ -1,6 +1,7 @@
 # CHORE-PROFESSIONALIZE-THE-REPO — bring this repository up to the standard of the other two
 
-Status: ⬜ ready
+Status: 🔄 in-progress — six tickets of seven are done; only 04, the migration of the legacy
+suites, is still running
 
 Origin: David, 2026-09-19 — *"je veux aussi qu'on professionnalise le repo VEAF/Skynet (backlog,
 tests unitaires, CI, releases automatisées, skills, documentation publiée, etc.) comme CTLD et
@@ -38,15 +39,15 @@ What is missing, and is the scope of this lot:
 
 ## Tickets
 
-| # | Ticket |
-|---|---|
-| 01 | [Adopt gitflow](tickets/01-adopt-gitflow.md) |
-| 02 | [A backlog, a changelog and agent instructions](tickets/02-backlog-changelog-and-agent-instructions.md) |
-| 03 | [Build on the CI runner, and release automatically](tickets/03-build-in-ci-and-automated-releases.md) |
-| 04 | [Finish migrating the legacy suites](tickets/04-finish-migrating-the-legacy-suites.md) |
-| 05 | [Static analysis and formatting](tickets/05-static-analysis-and-formatting.md) |
-| 06 | [Publish the documentation](tickets/06-publish-the-documentation.md) |
-| 07 | [Repository hygiene](tickets/07-repository-hygiene.md) |
+| # | Ticket | Status |
+|---|---|---|
+| 01 | [Adopt gitflow](tickets/01-adopt-gitflow.md) | ✅ |
+| 02 | [A backlog, a changelog and agent instructions](tickets/02-backlog-changelog-and-agent-instructions.md) | ✅ |
+| 03 | [Build on the CI runner, and release automatically](tickets/03-build-in-ci-and-automated-releases.md) | ✅ |
+| 04 | [Finish migrating the legacy suites](tickets/04-finish-migrating-the-legacy-suites.md) | 🔄 |
+| 05 | [Static analysis and formatting](tickets/05-static-analysis-and-formatting.md) | ✅ |
+| 06 | [Publish the documentation](tickets/06-publish-the-documentation.md) | ✅ |
+| 07 | [Repository hygiene](tickets/07-repository-hygiene.md) | ✅ |
 
 **Ticket 01 comes first**: every other ticket here, and both tickets of `FEAT-LAST-LINE-OF-DEFENSE`,
 will be delivered as pull requests, and they need a target branch that is not the release branch.

@@ -1,6 +1,6 @@
 # 01 — Adopt gitflow
 
-Status: ⬜ ready
+Status: ✅ done
 
 **Do this first.** Every other ticket in this lot, and both tickets of
 `FEAT-LAST-LINE-OF-DEFENSE`, will be delivered as pull requests — they need a target branch that is
@@ -42,7 +42,11 @@ every PR, `master` carries releases.
 
 ## Definition of done
 
-- `develop` exists and is the default branch.
-- CI runs on pushes to `develop` and on PRs.
+- ~~`develop` exists and is the default branch.~~ **Done** — and *delete branch on merge* is on.
+- ~~CI runs on pushes to `develop` and on PRs.~~ **Done** — every workflow triggers on
+  `[master, develop]` and on pull requests.
 - ~~`contributing.md` describes the flow, the branch naming and the release path.~~ **Done.**
-- `feat/insim-tests` rebased or explicitly left alone, with Flogas informed.
+- ~~`feat/insim-tests` rebased or explicitly left alone, with Flogas informed.~~ **Left alone,
+  deliberately** — David informed Flogas on 2026-09-19. The branch is Flogas's open work and still
+  points at `master`; rebasing someone else's branch under them buys nothing here, and it will be
+  rebased or merged by its owner.

@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — slice 1 on `feature/port-abstract-radar-element-tests`
+Status: 🔄 in-progress — slice 1 merged; 42 of `abstract-radar-element`'s 50 tests left
 
 ## Progress
 
@@ -23,6 +23,13 @@ Status: 🔄 in-progress — slice 1 on `feature/port-abstract-radar-element-tes
   port (`sam-site`, `jammer`, `harm-detection`…) kept its copy and recorded the overlap in
   `test/lua/README.md` instead. That is a decision to confirm once the port is complete, not per
   slice.
+
+  **Confirmed, David 2026-09-19: the legacy copy goes once what it covered is covered by ours** —
+  both the loose `unit-tests/*.lua` and the copy baked into the `.miz`. The condition is coverage,
+  not a count: for each suite, every behaviour it asserts is asserted standalone, or is on the
+  "needs the simulator" list with a reason. A test that only ever passed because it ran against real
+  DCS objects is not "covered" by a standalone test that asks the stub the same question — that one
+  stays in the `.miz`. The removal is one pass at the end of the port, per suite, not per slice.
 
 `test/lua/README.md` already states the intent: logic tests go to the standalone suite, and only
 what genuinely needs the simulator — terrain elevation, real detection geometry, in-game events —

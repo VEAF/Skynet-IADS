@@ -1,6 +1,6 @@
 # 02 — A backlog, a changelog and agent instructions
 
-Status: ⬜ ready
+Status: ✅ done
 
 ## Backlog
 
@@ -39,6 +39,10 @@ to rediscover something twice.
 
 ## Definition of done
 
-- `.backlog/README.md` lists every active lot with its status.
-- `CHANGELOG.md` exists with an `[Unreleased]` section, and the contributing guide says to update it.
-- `CLAUDE.md` exists and is accurate — an agent following it does not edit the artifact by mistake.
+- ~~`.backlog/README.md` lists every active lot with its status.~~ **Done**, and it has tracked six
+  lots since.
+- ~~`CHANGELOG.md` exists with an `[Unreleased]` section, and the contributing guide says to update
+  it.~~ **Done** — every lot since has appended to it.
+- ~~`CLAUDE.md` exists and is accurate — an agent following it does not edit the artifact by
+  mistake.~~ **Done**, with two agent files under `docs/agents/` (`issue-tracker.md`,
+  `triage-labels.md`) written when a second session had to rediscover the same thing.

@@ -1,11 +1,11 @@
 # 06 — Publish the documentation, and shrink the README to a door
 
-Status: ✅ done, with one gap
+Status: ✅ done
 
-`documentation/api.md` documents the public API as it exists today. It does **not** yet document
-the wake-up entry point `FEAT-LAST-LINE-OF-DEFENSE` adds, since that lot is not landed — it is out
-of scope for the session that closed this ticket. Add that section to `api.md` when the lot merges;
-an entry point nobody can find is still not public until then.
+The gap this ticket closed with — `documentation/api.md` not documenting the wake-up entry point
+`FEAT-LAST-LINE-OF-DEFENSE` adds, because that lot had not landed — is **filled**: `api.md` carries
+the last line of defense, its three settings (`setLastLineOfDefence`, `setLastLineOfDefenceRadius`,
+`setLastLineOfDefencePersistence`) and the public `reportContact` door, since that lot merged.
 
 ## Decision
 
