@@ -156,6 +156,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   could not show: that the cycle really calls this code. The timings, the montage and the limits of
   what was covered are written up in
   [`.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md`](.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md).
+- Slice 2 of the same port, fifteen more tests: the HARM timing and defence states (how long a
+  battery hides, the slant range it measures the threat at, the whole truth table of
+  `shallIgnoreHARMShutdown()`), the two engagement flags, and the parent / child radar
+  bookkeeping. Two of those tests replace .miz originals that could not fail -- the order
+  assertions on `addParentRadar`/`addChildRadar` compared bare `{}` mocks, which luaunit finds
+  equal to one another, and the clean-up test never called the method it was named after. Test
+  coverage 92% -> 93%.
 
 ### Changed
 
