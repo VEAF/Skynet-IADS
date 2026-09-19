@@ -64,3 +64,9 @@ Taken, in the ticket's own order of value: the anti-radiation-missile decision (
 **Nothing was deleted.** `inheritsFrom`'s `class()`, `isa()` and default `create()` are dead inside this repository — checked across the sources, `test/lua` and `unit-tests` — but they are methods on every Skynet object and the artifact is vendored by VEAF-Mission-Creation-Tools. Deleting undocumented public surface from a vendored deliverable is VEAF's decision, not a side effect of a coverage ticket.
 
 **Every remaining uncovered line is accounted for**, in `test/lua/README.md` rather than here so it sits where the next person writing a test will read it: the block waiting on the legacy port (173), continuation lines (34), the inheritance helper (11), a Lua 5.2 compatibility shim that cannot run under 5.1 (5), and `SkynetIADS:addJammer()` (1), which cannot be called at all because `self.jammers` is never initialised.
+
+## Found on the way, not fixed here
+
+The jammer probability curves **rise with distance**. Measured: an SA-2 reads 91 at 0 NM, 119 at 10 NM and 4x10^14 at 100 NM, and `SkynetIADSAbstractRadarElement:jam()` compares that figure with `math.random(1, 100)`, so anything at or above 100 jams with certainty. A jammer is therefore at its weakest sitting on top of the battery and unbeatable from a hundred miles away, until it crosses the 200 NM cutoff in `maximumEffectiveDistanceNM` and stops working entirely.
+
+That reads inverted. It is also upstream behaviour keyed to a spreadsheet this repository does not have — the link is in the comment at the top of `skynet-iads-jammer.lua` — so establishing the intent takes someone who can open it. Recorded in `testTheCurvesRiseWithDistanceWhichIsSurprising`, which pins the shape and says why, rather than changed.
