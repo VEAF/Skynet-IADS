@@ -20,7 +20,7 @@ will disappear.
 
 The consumer of this repository is another repository:
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors
-`skynet-iads-compiled.lua` into `src/scripts/community/`. Nothing reaches a mission until they
+`demo-missions/skynet-iads-compiled.lua` into `src/scripts/community/`. Nothing reaches a mission until they
 re-vendor, and that copy has run a month behind without anyone noticing. **A release is the signal
 that makes the copy possible** — so the release notes are written for them as much as for players,
 and a release without a changelog entry is a release nobody can act on.
@@ -56,8 +56,12 @@ at runtime is at least a minor.
 3. **Build and prove it runs.**
 
    ```
-   pwsh -File build-tools/build-compiled-script.ps1
+   cd build-tools && pwsh -File ./build-compiled-script.ps1 3.5.0
    ```
+
+   The version argument is **mandatory** — without it the script prints `No Version supplied` and
+   stops — and the script uses relative paths, so it must run from `build-tools`. It writes
+   `demo-missions/skynet-iads-compiled.lua` and regenerates the root `README.md`.
 
    Then **execute** the result against the DCS stub — do not settle for loading it.
    `assert(loadfile(f))` parses the file and says nothing about a main chunk that raises, and that
@@ -85,7 +89,7 @@ at runtime is at least a minor.
    git checkout develop && git pull origin develop
    git tag v3.5.0
    git push origin v3.5.0
-   gh release create v3.5.0 skynet-iads-compiled.lua \
+   gh release create v3.5.0 demo-missions/skynet-iads-compiled.lua \
      --title "Skynet-IADS v3.5.0" \
      --notes-file <the changelog section for this version>
    ```

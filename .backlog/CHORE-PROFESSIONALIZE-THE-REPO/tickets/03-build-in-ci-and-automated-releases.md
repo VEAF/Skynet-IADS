@@ -1,4 +1,4 @@
-# 03 — Build on the CI runner, and release automatically
+# 03 — Rebuild the build on the CTLD model, and release automatically
 
 Status: ⬜ ready
 
@@ -7,20 +7,46 @@ hand and nobody knows which version they hold — which is exactly what happened
 vendored in VEAF-Mission-Creation-Tools identifies itself as `build 05.09.2026` while the sources
 had moved a month further on, and nothing anywhere said so.
 
-## Build on the runner
+## Decision
 
-`build-tools/build-compiled-script.ps1` is PowerShell; the CI runs Ubuntu. So **nothing checks that
-the sources still concatenate into a usable artifact** — the one thing a consumer depends on.
+David, 2026-09-19: **redo the build on the VMCT/CTLD model — it is the same job — and take the
+README out of it.** The README becomes a short hand-written entry point; the *documentation* is what
+gets generated, as in the other two repositories ([ticket 06](06-publish-the-documentation.md)).
 
-Two ways, to be weighed when doing it:
+## What the current build does, and what is wrong with it
 
-- **run it with `pwsh`**, which is available on the GitHub Ubuntu runners. No rewriting, and the
-  local and CI paths stay identical;
-- **port it** to Lua or to a shell script. One language less in the project, at the cost of
-  rewriting something that works and that Flogas knows.
+`build-tools/build-compiled-script.ps1`, 60 lines, does four things: it concatenates the sources,
+stamps a version banner, writes `demo-missions/skynet-iads-compiled.lua`, and regenerates the root
+`README.md` through `bin/gh-md-toc.exe`.
 
-Recommendation: `pwsh` first, because it is one line of CI and it closes the hole today; port later
-if the script grows.
+| | Today | CTLD |
+|---|---|---|
+| Source order | **twenty paths hard-coded on one `cat` line** | `tools/build/listToMerge.txt`, one path per line, with `--` comments explaining *why* the order is what it is |
+| Path resolution | `../skynet-iads-source/…`, relative to the **working directory** — run it from the repository root and it fails | resolved from the script's own location, so it runs from anywhere |
+| Version | a **mandatory argument**; forget it and the script prints `No Version supplied` and stops | read from a single source of truth in the code, and stamped from there |
+| Output | `demo-missions/skynet-iads-compiled.lua`, committed | repository root, **git-ignored**, rebuilt by CI and attached to releases |
+| Portability | ends with a 6 MB **Windows** binary that needs network access | pure PowerShell, runs on the Linux runner under `pwsh` |
+
+The hard-coded list is the worst of them: adding a source file means editing a 900-character line,
+and the load order — which matters, since these files define classes that depend on each other — is
+nowhere explained.
+
+## What to build
+
+1. **A merge manifest.** `build-tools/listToMerge.txt`, one source per line, in load order, with
+   comments saying why the order is what it is. Copy CTLD's shape: it is the same job and a
+   contributor moving between the two repositories should recognise it.
+2. **Resolve paths from the script**, not from the working directory.
+3. **One source of truth for the version**, read by the build rather than passed in. Which file
+   holds it is an open choice — a dedicated constant in `skynet-iads-source/skynet-iads.lua` is the
+   obvious candidate. The banner keeps its current shape, since that line is how anyone identifies
+   what a mission is running.
+4. **Take the README out of the build**, and drop `bin/gh-md-toc.exe` with it. That binary is the
+   only reason the build cannot run on the CI runner, and once the documentation is a published site
+   a generated table of contents on a short README buys nothing.
+5. **Decide where the artifact lives** and whether it stays committed. CTLD ignores it and lets CI
+   produce it, which is what makes "never hand-edit the artifact" enforceable rather than a request.
+   Note that `demo-missions/*.miz` load it from its current path — moving it means touching them.
 
 ## Check the artifact, do not merely build it
 
@@ -37,15 +63,16 @@ On a merge to `master`, or on a tag:
 - build the artifact;
 - attach it to a GitHub release, named by version;
 - take the release notes from the `[Unreleased]` section of the changelog;
-- stamp the version and build date into the artifact's first line, as the current one already does.
+- the version and build date are already stamped into the artifact's first line.
 
-Versioning: the project declares semantic versioning in `contributing.md`, the inherited tags stop
-at `v2.0.1`, and the artifact calls itself `3.4.0RP-VEAF`. Reconcile the two and say plainly in the
-changelog where VEAF numbering starts.
+Versioning is settled: **3.5.0**, tagged `v3.5.0`, continuing the artifact's lineage rather than the
+inherited `v2.0.1` tags, and without the `RP` suffix. See `CHANGELOG.md`.
 
 ## Definition of done
 
-- CI builds the artifact on every pull request and fails if the build fails.
+- The source list lives in a commented manifest, not in the script.
+- The build runs from any working directory, and on the Linux CI runner.
+- CI builds on every pull request and fails if the build fails.
 - CI loads **and runs** the built artifact against the DCS stub.
+- The build no longer touches `README.md`, and `gh-md-toc.exe` is gone.
 - Merging to `master` publishes a release carrying the artifact and the changelog extract.
-- A consumer can tell, from the artifact alone, which version it is.
