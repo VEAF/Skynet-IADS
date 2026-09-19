@@ -1,6 +1,6 @@
 # FEAT-LAST-LINE-OF-DEFENSE — a dark site can notice what flies over it, and coverage follows what moves
 
-Status: ⬜ ready
+Status: 🔄 in-progress — both tickets are implemented and tested; the in-sim check is what remains
 
 Origin: The Reaper, 2026-09-17, on a VEAF mission built with veaf-tools:
 
@@ -68,10 +68,10 @@ The design was then grilled. What came out:
 
 ## Tickets
 
-| # | Ticket |
-|---|---|
-| 01 | [Last line of defense: a dark site wakes on close proximity](tickets/01-last-line-of-defense.md) |
-| 02 | [Refresh radar coverage for whatever moves](tickets/02-refresh-coverage-for-what-moves.md) |
+| # | Ticket | Status |
+|---|---|---|
+| 01 | [Last line of defense: a dark site wakes on close proximity](tickets/01-last-line-of-defense.md) | ✅ |
+| 02 | [Refresh radar coverage for whatever moves](tickets/02-refresh-coverage-for-what-moves.md) | ✅ |
 
 ## How this is verified
 
@@ -102,3 +102,32 @@ exists to talk to a running DCS mission. It does: VEAF's `dcs-bridge`.
   site out of ammunition — it would light up for nothing and be killed for it.
 - The public entry point exists, is documented in the README, and this feature is its first caller.
 - `lua5.1 test/lua/run.lua` green; the in-sim check run and reported.
+
+## Where this stands
+
+Both tickets are written, tested and built. What is done, and how it was checked:
+
+| Item | Where |
+|---|---|
+| Last line of defense, its four settings and its guards | `skynet-iads.lua`, `skynet-iads-sam-site.lua` |
+| `SkynetIADS:reportContact(dcsUnit, samSite)`, the public door | `skynet-iads.lua`, documented in `documentation/api.md` |
+| Periodic coverage sweep, individual link removal, per-element position and range | `skynet-iads.lua`, `skynet-iads-abstract-radar-element.lua` |
+| 31 tests, almost all driving the real cycle | `test/lua/test_skynet_iads_last_line_of_defence.lua`, `test/lua/test_skynet_iads_coverage_refresh.lua` |
+
+One deliberate departure from ticket 02's wording: it says to compare each site's **parent list**
+before and after the sweep. The code compares its **autonomy** instead, which is strictly better —
+a site that gains a second parent while keeping its first has a changed list and an unchanged
+situation, and switching it off over that is the very defect the ticket is guarding against, the one
+`3a94937` fixed on the other path. Found by `/pr-code-review` on this work, not by a test.
+
+Checked by mutation rather than by the count: disabling the cycle hook, the persistence guard, the
+coalition filter, the airborne filter, the parent-list comparison or the link removal each turns at
+least one test red. The suite also caught a real defect while being written — the reference point a
+sweep measures movement against was laid down by the first sweep, i.e. *after* the element had
+moved, so the move that mattered measured zero and was missed. `markCoverageUpdated()` is that fix.
+
+**What remains: the in-sim check.** A test mission under `demo-missions/` with a SAM and a
+deliberately badly placed EWR, driven through VEAF's DCS bridge, able to fail both ways — the site
+lights up when the target crosses the radius, and falls silent once the persistence has run out.
+The bridge has to be injected into a mission that carries no `veaf-scripts.lua`, so the usual VEAF
+injection path does not apply.

@@ -1,6 +1,6 @@
 # 02 — Refresh radar coverage for whatever moves
 
-Status: ⬜ ready
+Status: ✅ done
 
 ## Problem
 

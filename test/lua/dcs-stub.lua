@@ -14,6 +14,7 @@ dcsStub = {}
 dcsStub.world = {} -- name -> fake object, backs *.getByName
 dcsStub.logs = {} -- { { level=, text= }, ... } from env.*
 dcsStub.eventHandlers = {} -- appended by world.addEventHandler
+dcsStub.groups = {} -- every group fixture in creation order, backs coalition.getGroups
 
 function dcsStub.now()
 	return now
@@ -29,6 +30,7 @@ function dcsStub.reset()
 	dcsStub.world = {}
 	dcsStub.logs = {}
 	dcsStub.eventHandlers = {}
+	dcsStub.groups = {}
 	timerTasks = {}
 	nextTimerId = 0
 	utilsSchedulerTasks = nil
@@ -57,6 +59,9 @@ Weapon = { Category = { SHELL = 0, MISSILE = 1, ROCKET = 2, BOMB = 3 } }
 -- Group branch — needed by setupElements()/getUnitsToAnalyse() and the wrapper's
 -- getTypeName guard.
 Group = {}
+-- Verbatim from DCS: the second argument of coalition.getGroups/coalition.addGroup. Note GROUND,
+-- not GROUND_UNIT — that spelling belongs to Unit.Category, and the two enums do not agree.
+Group.Category = { AIRPLANE = 0, HELICOPTER = 1, GROUND = 2, SHIP = 3, TRAIN = 4 }
 Unit = {}
 Unit.SensorType = { OPTIC = 0, RADAR = 1, IRST = 2, RWR = 3 }
 Unit.Category = { AIRPLANE = 0, HELICOPTER = 1, GROUND_UNIT = 2, SHIP = 3, STRUCTURE = 4 }
@@ -66,6 +71,22 @@ StaticObject = {}
 world = {
 	event = { S_EVENT_SHOT = 1, S_EVENT_HIT = 2, S_EVENT_DEAD = 8, S_EVENT_BIRTH = 15 },
 }
+
+-- coalition: SkynetIADSUtils' prefix listing walks coalition.side and calls coalition.getGroups,
+-- and SkynetIADS:getHostileAirUnits() asks it for the aircraft of every hostile side. Group
+-- fixtures register themselves in dcsStub.groups with the coalition and category their spec
+-- carries; a fixture that declares neither is simply never returned here.
+coalition = { side = { NEUTRAL = 0, RED = 1, BLUE = 2 } }
+function coalition.getGroups(side, category)
+	local groups = {}
+	for i = 1, #dcsStub.groups do
+		local group = dcsStub.groups[i]
+		if group.__coalition == side and (category == nil or group.__groupCategory == category) then
+			groups[#groups + 1] = group
+		end
+	end
+	return groups
+end
 function world.addEventHandler(h)
 	table.insert(dcsStub.eventHandlers, h)
 end
@@ -250,6 +271,14 @@ function dcsStub.makeUnit(spec)
 	function u:getCoalition()
 		return spec.coalition
 	end
+	-- DCS Unit.inAir(). SkynetIADS:getHostileAirUnits() uses it so a battery does not wake for an
+	-- aircraft parked on a nearby ramp. Aircraft fixtures are airborne unless a spec says otherwise.
+	function u:inAir()
+		if spec.inAir == nil then
+			return true
+		end
+		return spec.inAir
+	end
 	function u:__setPos(p)
 		pos = p
 	end
@@ -359,6 +388,11 @@ function dcsStub.makeGroup(groupSpec)
 	if groupSpec.name then
 		dcsStub.world[groupSpec.name] = g
 	end
+	-- Read by coalition.getGroups above. A spec that names neither is invisible to it, which is
+	-- what every suite predating that call expects.
+	g.__coalition = groupSpec.coalition
+	g.__groupCategory = groupSpec.category
+	table.insert(dcsStub.groups, g)
 	-- A real DCS Group carries its class; Skynet tells a Group from a Unit/Static
 	-- via getmetatable(rep) == Group (SkynetIADSAbstractDCSObjectWrapper:create's
 	-- getTypeName guard, SkynetIADSAbstractRadarElement:getUnitsToAnalyse). Group

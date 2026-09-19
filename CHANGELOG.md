@@ -59,6 +59,49 @@ Until that release is cut, the build date in the artifact's first line remains t
   modify, so it now has a standalone regression net. Each ported test was checked by mutation:
   six deliberate breakages of the source each turn at least one of them red. `test/lua/README.md`
   tracks what is ported and what the remaining 42 tests cover.
+- **A last line of defense** (`FEAT-LAST-LINE-OF-DEFENSE` ticket 01). A SAM site held dark by the
+  network is blind: its emission is off, and the only route back to life is an EW radar that covers
+  it holding the target, so proximity to the site is an input nowhere in the cycle. It now keeps a
+  short **virtual** detection radius of its own — Skynet's, no DCS radar involved — drawn once per
+  site between 10 and 15 km and kept for the mission, measured flat like everything else here. A
+  hostile aircraft inside it wakes the site with no radar contact anywhere, and the site stays live
+  45 s after the last pass. The kill-zone test is deliberately bypassed: requiring it would mean a
+  Shilka, useful range ~2.5 km, never wakes inside that radius — so a short-range piece can light up
+  for an aircraft it cannot reach, which is the accepted trade-off. A site defending against a HARM,
+  out of ammunition, without power or destroyed does not wake, and the site's own go-live
+  constraints are still honoured. **On by default: it changes existing missions.** Settable with
+  `setLastLineOfDefence`, `setLastLineOfDefenceRadius` and `setLastLineOfDefencePersistence`.
+- `SkynetIADS:reportContact(dcsUnit, samSite)`, a **public entry point**: it wakes a site on a DCS
+  unit as if something had reported that aircraft to the network. The last line of defense is its
+  first caller, and it is public because VEAF's spotter network has to wake a site from outside
+  Skynet — the alternative being external code writing into `targetsInRange` on every cycle.
+- `SkynetIADS:refreshRadarCoverage()`, a periodic coverage sweep, interval settable with
+  `setCoverageRefreshInterval` and 10 s by default (`FEAT-LAST-LINE-OF-DEFENSE` ticket 02). It
+  re-evaluates only the elements that have travelled more than 10 NM since the last sweep, and calls
+  `setToCorrectAutonomousState` only on the sites whose **autonomy** actually changed — a blanket
+  call means `resetAutonomousState()` and therefore `goDark()`, and `goDark()`'s guards do not
+  protect a site that has just gone live on designation and not yet locked on. Autonomy rather than
+  the parent list, because a site that gains a second parent while keeping its first has not changed
+  sides, and switching it off over that is the same defect `3a94937` fixed on the other path —
+  triggered by nothing more than an AWACS arriving on station.
+- Individual removal of a parent or child radar (`removeParentRadar`, `removeChildRadar`) and an
+  addition that does not fire a state change (`addParentRadarWithoutStateChange`). Until now it was
+  all-or-nothing: `clearParentRadars` and `clearChildRadars` were the only tools, and there was no
+  function at all to remove a single link.
+- `SkynetIADSAbstractRadarElement:getElementPosition()` and `:getMaxDetectionRange()`: one point and
+  one range per element. A site is a point.
+- `SkynetIADSAbstractRadarElement:hasValidParentRadar()`, the autonomy question asked as a *query*.
+  `setToCorrectAutonomousState()` is now that query plus the action it implies, so the coverage
+  sweep can ask whether a site's answer has changed before acting on it.
+- Two test suites, `test/lua/test_skynet_iads_last_line_of_defence.lua` (18 tests) and
+  `test/lua/test_skynet_iads_coverage_refresh.lua` (13 tests). Almost all of them drive the real
+  `SkynetIADS.evaluateContacts()` rather than calling the wake-up directly, because the failure mode
+  that matters here is a wake-up that is perfectly tested and never called by the cycle. Checked by
+  mutation: disabling the cycle hook, the persistence guard, the coalition filter, the airborne
+  filter, the autonomy comparison or the link removal each turns at least one of them red.
+- The DCS stub gained `coalition` (with `side` and `getGroups`), `Group.Category` and
+  `Unit.inAir()`, and the fixtures gained hostile aircraft, an AWACS, and positioned and
+  coalition-aware SAM groups.
 
 ### Changed
 
@@ -77,6 +120,24 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `stylua` run once over `skynet-iads-source/` and `test/lua/` (formatting only; excludes the
   vendored `test/lua/luaunit.lua`) — mostly re-indenting each file's top-level `do...end` body,
   which the source never actually indented.
+- Radar coverage is measured **element to element** instead of radar pair to radar pair. Iterating
+  every pair of radars of two elements cost a factor of four for the few metres that separate the
+  units inside one group, and it is what made a periodic sweep too expensive to run. The initial
+  build and the sweep now go through the same helper, so a borderline association cannot flip
+  between the two.
+- The "has this moved far enough to matter" check is no longer an AWACS method. It was
+  `SkynetIADSAWACSRadar:isUpdateOfAutonomousStateOfSAMSitesRequired()`, guarded by a `getmetatable`
+  test on the class, so a SA-15, a SA-8 or a Shilka driving in a convoy kept the parents it had when
+  it spawned for the whole mission. It is now
+  `SkynetIADSAbstractRadarElement:hasMovedSinceLastCoverageUpdate()`, on every element; the old name
+  still answers, since it is part of the script's public surface.
+- `evaluateContacts` no longer rebuilds an AWACS's coverage when it has travelled 10 NM. That path
+  routed to `buildRadarCoverageForAbstractRadarElement`, which only ever **adds** — so an AWACS in
+  transit accumulated every battery it had ever flown near and held them all non-autonomous from
+  hundreds of kilometres away. The periodic sweep replaces it and purges. Accepted consequence,
+  decided on 2026-09-19: an AWACS that goes home now has the same effect as one shot down, and the
+  batteries it alone covered become autonomous — which is the right answer for a battery no ground
+  radar covers.
 
 ### Removed
 

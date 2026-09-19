@@ -7,7 +7,6 @@ do
 		local instance = self:superClass():create(radarUnit, iads)
 		setmetatable(instance, self)
 		self.__index = self
-		instance.lastUpdatePosition = nil
 		instance.natoName = radarUnit:getTypeName()
 		return instance
 	end
@@ -22,32 +21,11 @@ do
 	-- AWACs will not scan for HARMS
 	function SkynetIADSAWACSRadar:scanForHarms() end
 
-	function SkynetIADSAWACSRadar:getMaxAllowedMovementForAutonomousUpdateInNM()
-		--local radarRange = SkynetIADSUtils.metersToNM(self.searchRadars[1]:getMaxRangeFindingTarget())
-		--return SkynetIADSUtils.round(radarRange / 10)
-		--fixed to 10 nm miles to better fit small SAM sites
-		return 10
-	end
-
+	-- The movement check used to live here, and being a method of this class is exactly what made it
+	-- apply to AWACS and to nothing else that moves. It is now
+	-- SkynetIADSAbstractRadarElement:hasMovedSinceLastCoverageUpdate(); this name is kept because it
+	-- is part of the public surface of the script.
 	function SkynetIADSAWACSRadar:isUpdateOfAutonomousStateOfSAMSitesRequired()
-		local isUpdateRequired = self:getDistanceTraveledSinceLastUpdate()
-			> self:getMaxAllowedMovementForAutonomousUpdateInNM()
-		if isUpdateRequired then
-			self.lastUpdatePosition = nil
-		end
-		return isUpdateRequired
-	end
-
-	function SkynetIADSAWACSRadar:getDistanceTraveledSinceLastUpdate()
-		local currentPosition = nil
-		if self.lastUpdatePosition == nil and self:getDCSRepresentation():isExist() then
-			self.lastUpdatePosition = self:getDCSRepresentation():getPosition().p
-		end
-		if self:getDCSRepresentation():isExist() then
-			currentPosition = self:getDCSRepresentation():getPosition().p
-		end
-		return SkynetIADSUtils.round(
-			SkynetIADSUtils.metersToNM(self:getDistanceToUnit(self.lastUpdatePosition, currentPosition))
-		)
+		return self:hasMovedSinceLastCoverageUpdate()
 	end
 end
