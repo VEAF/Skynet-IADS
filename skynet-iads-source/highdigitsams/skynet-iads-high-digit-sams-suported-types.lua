@@ -168,11 +168,11 @@ do
 	s300launchers["S-300PS 5P85DE ln"] = {}
 	s300launchers["S-300PS 5P85CE ln"] = {}
 
-	local s300launchers = samTypesDB["S-300PS"]["launchers"]
+	s300launchers = samTypesDB["S-300PS"]["launchers"]
 	s300launchers["S-300PS 5P85DE ln"] = {}
 	s300launchers["S-300PS 5P85CE ln"] = {}
 
-	local s300launchers = samTypesDB["S-300PMU1"]["launchers"]
+	s300launchers = samTypesDB["S-300PMU1"]["launchers"]
 	s300launchers["S-300PS 5P85DE ln"] = {}
 	s300launchers["S-300PS 5P85CE ln"] = {}
 
@@ -218,7 +218,7 @@ New launcher for the SA-3 complex:
 	--[[
 New launcher for the SA-2 complex: HQ_2_Guideline_LN
 --]]
-	local s125launchers = samTypesDB["S-75"]["launchers"]
+	s125launchers = samTypesDB["S-75"]["launchers"]
 	s125launchers["HQ_2_Guideline_LN"] = {}
 
 	--[[

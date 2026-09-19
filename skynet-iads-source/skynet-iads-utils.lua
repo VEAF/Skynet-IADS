@@ -15,7 +15,7 @@ it, the reason is written at the call site.
 	SkynetIADSUtils = {}
 
 	-- Lua 5.1 in DCS; the fallbacks keep the file loadable under a newer interpreter (unit tests).
-	local unpack = unpack or table.unpack
+	local unpack = unpack or table.unpack -- luacheck: ignore 143
 	local maxn = table.maxn
 		or function(t)
 			local n = 0

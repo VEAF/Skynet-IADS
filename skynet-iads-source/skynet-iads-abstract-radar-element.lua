@@ -468,7 +468,7 @@ do
 		local unitTypeName = unit:getTypeName()
 		for unitName, unitPerformanceData in pairs(unitData) do
 			if unitName == unitTypeName then
-				samElement = class:create(unit)
+				local samElement = class:create(unit)
 				samElement:setupRangeData()
 				table.insert(tableToAdd, samElement)
 			end
