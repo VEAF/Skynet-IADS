@@ -49,6 +49,13 @@ local function readFloor()
   if value <= 0 or value > 100 then
     fail(path .. " holds " .. value .. ", which is not a percentage between 0 and 100")
   end
+  -- Whole percents only, which is how the floor is meant to be written anyway (the measured
+  -- figure, rounded down). It also keeps the line count below exact: floor * measured is then
+  -- integer arithmetic, where floor / 100 * measured is a double that can land a hair above a
+  -- whole number and round the gate up by one line nobody asked for.
+  if value ~= math.floor(value) then
+    fail(path .. " holds " .. value .. "; the floor is written as a whole percent")
+  end
   return value
 end
 
@@ -141,8 +148,14 @@ end
 
 local measured = total.hits + total.missed
 -- The verdict is decided on whole lines, not on the percentage: that figure is rounded to two
--- decimals for reading, and a gate must not turn on a rounding nobody can see.
-local required = math.ceil(floor / 100 * measured)
+-- decimals for reading, and a gate must not turn on a rounding nobody can see. The ceiling is
+-- taken in integers for the same reason — `floor / 100 * measured` is a double, and a product
+-- that should be exactly 1600 can come out at 1600.0000000000002 and demand a 1601st line.
+local product = floor * measured
+local required = math.floor(product / 100)
+if required * 100 < product then
+  required = required + 1
+end
 
 print("")
 print(string.format(
