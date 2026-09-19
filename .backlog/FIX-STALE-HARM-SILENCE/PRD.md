@@ -1,6 +1,6 @@
 # FIX-STALE-HARM-SILENCE — a site cleaned up mid-HARM-evasion is deaf for the rest of the mission
 
-Status: ⬜ ready
+Status: 🔄 in-progress — `fix/stale-harm-silence-on-cleanup`
 
 Origin: [issue #3](https://github.com/VEAF/Skynet-IADS/issues/3), opened by davidp57 on 2026-08-31,
 re-read on 2026-09-19 once `FEAT-LAST-LINE-OF-DEFENSE` had merged. The defect is unchanged since;
@@ -71,11 +71,30 @@ Observed on the Persian Gulf demo mission, from the issue:
 
 The site never comes back, and nothing in the log says why.
 
+### Correction, 2026-09-19: by which object
+
+Checked on the DCS stub while implementing ticket 01, because the paragraph above does not survive
+reading `addSAMSitesByPrefix()` closely. That function rebuilds **fresh** site objects for
+`self.samSites`, and a fresh object has no `harmSilenceID` — so the IADS's own list is not what
+carries the stale field. The object that carries it is the one thrown away, and it is still reachable
+two ways: the mission's own reference (which is how the issue observed it), and the coverage graph,
+which nothing unwires. Measured: after `addSAMSitesByPrefix("SAM")` the EW radar holds **two** child
+radars, the discarded site among them, so `informChildrenOfStateChange()` keeps driving a dead object
+that owns the controller of the same DCS group as the live one — down `goDark()`'s HARM branch, which
+switches that controller off for a missile that is not coming.
+
+That wiring is a defect of its own, and the symmetrical call is worse: after
+`addEarlyWarningRadarsByPrefix()`, a battery keeps a discarded EW radar as a parent that passes every
+validity test, so it stays non-autonomous and dark under a radar the IADS no longer polls. Ticket 02
+removes it. The conclusion of this PRD is unchanged — `cleanUp()` still has to clear what it cancels,
+and the mission's own reference is reachable whatever the graph does.
+
 ## Tickets
 
 | # | Ticket | Status |
 |---|---|---|
-| 01 | [cleanUp() clears what it cancels](tickets/01-cleanup-clears-what-it-cancels.md) | ⬜ |
+| 01 | [cleanUp() clears what it cancels](tickets/01-cleanup-clears-what-it-cancels.md) | 🔄 |
+| 02 | [a bulk re-add unwires what it discards](tickets/02-a-bulk-re-add-unwires-what-it-discards.md) | 🔄 |
 
 ## How this is verified
 
@@ -92,4 +111,5 @@ not the first.
 - A site cleaned up while a HARM timer is armed goes live again on the next designation.
 - The same site wakes on proximity, and answers `reportContact`.
 - `isDefendingHARM()` answers `false` after `cleanUp()`.
+- A bulk re-add leaves no discarded element wired into the coverage graph, either way round.
 - `lua5.1 test/lua/run.lua` green; issue #3 closed referencing this lot.

@@ -1,6 +1,6 @@
 # 01 — cleanUp() clears what it cancels
 
-Status: ⬜ ready
+Status: 🔄 in-progress — `fix/stale-harm-silence-on-cleanup`
 
 ## What to build
 

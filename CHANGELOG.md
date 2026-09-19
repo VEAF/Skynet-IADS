@@ -165,3 +165,28 @@ Until that release is cut, the build date in the artifact's first line remains t
   behaviour change; verified against the DCS stub and the full suite under a real Lua 5.1.
 - `.gitignore` now covers `Thumbs.db`, `/.vscode/`, `/.idea/` and `/tmp/`, alongside the build
   and documentation output already ignored above — every rule checked with `git check-ignore -v`.
+- A SAM site torn down while it was evading an anti-radiation missile was deaf for the rest of the
+  mission ([issue #3](https://github.com/VEAF/Skynet-IADS/issues/3)). `cleanUp()` cancelled the two
+  HARM tasks but left `harmSilenceID` set, and `goLive()` refuses while that field is there — so
+  the site could no longer be woken by the network, by autonomy, by the last line of defense, or by
+  `SkynetIADS:reportContact()`, and nothing was left to clear the field: the task that would have
+  is the one `cleanUp()` had just removed. Reached by any `addSAMSitesByPrefix()`, which is what
+  VEAF missions call on respawn, and by `SkynetIADS:deactivate()` followed by `activate()` — that
+  pair empties no list, so the very same objects go back to work. `cleanUp()` now clears
+  `harmScanID`, `harmSilenceID` and
+  `harmShutdownTime` alongside cancelling their timers. It does **not** call `finishHarmDefence()`,
+  which ends in `goAutonomous()` — a site being torn down would light its radar up on the way out.
+  Covered by `test/lua/test_skynet_iads_harm_silence_cleanup.lua`, which drives the three doors a
+  mission actually uses rather than asserting the field is nil.
+- A bulk re-add left the elements it discarded wired into the coverage graph, for the rest of the
+  mission. `addSAMSitesByPrefix()` and `addEarlyWarningRadarsByPrefix()` replace their whole list,
+  and nothing removed an association: the per-element rebuild only ever adds, and
+  `refreshRadarCoverage()` walks the *current* elements, which a discarded object is no longer
+  among. A discarded EW radar still passed every test a parent is given — its DCS unit exists, it
+  has power, a connection node, it acts as EW — so a battery went on believing it was covered by a
+  radar the IADS no longer polls, stayed non-autonomous and stayed dark under nobody's watch; and a
+  discarded SAM site stayed a child of its EW radar, still driving the controller of the DCS group
+  the live site now owns. Both functions now rebuild the coverage once the list is repopulated,
+  under the same "only if the IADS is running" guard the incremental rebuild already carries.
+  Found while checking the premise of the fix above; covered by
+  `test/lua/test_skynet_iads_bulk_re_add.lua`.

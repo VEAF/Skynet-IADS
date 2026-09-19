@@ -40,13 +40,22 @@ API — it does not port the rest of `unit-tests/test-skynet-iads.lua`. The
 `.miz` copy stays the in-sim functional/smoke suite for the rest of the
 `iads` class until (if ever) that gets a standalone port too.
 
-Two suites have no `unit-tests/` ancestor — they were written with the feature
-they cover, `FEAT-LAST-LINE-OF-DEFENSE`:
+Four suites have no `unit-tests/` ancestor — they were written with the work
+they cover. Two came with `FEAT-LAST-LINE-OF-DEFENSE`:
 `test_skynet_iads_last_line_of_defence.lua` (18 tests) and
 `test_skynet_iads_coverage_refresh.lua` (13 tests). Almost every test in them
 drives the real `SkynetIADS.evaluateContacts()` or `refreshRadarCoverage()`
 rather than calling the wake-up directly: the failure mode that feature had to
 avoid is a wake-up that is perfectly tested and never called by the cycle.
+
+Two more came with `FIX-STALE-HARM-SILENCE`:
+`test_skynet_iads_harm_silence_cleanup.lua` (5 tests), for issue #3 — a site
+cleaned up mid-HARM-evasion that never came back — and
+`test_skynet_iads_bulk_re_add.lua` (5 tests), for the discarded elements a
+`*ByPrefix` call left wired into the coverage graph. Same principle: they drive
+the doors a mission uses (network designation, the last line of defense,
+`reportContact`; a battery going autonomous when its radar leaves the IADS) and
+only then assert state.
 
 `abstract-radar-element` is **partly** ported, in slices.
 `test_skynet_iads_abstract_radar_element.lua` carries the autonomy / coverage
@@ -74,7 +83,7 @@ milestone): `early-warning-radar`, most of `iads`,
 |------|---------|
 | `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
 | `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord` and a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler |
-| `dcs-fixtures.lua` | Reusable fixtures — SAM group builders (positioned, coalition-aware, movable), connection nodes, the EW radar and AWACS unit builders, hostile aircraft groups, the IADS-contact factory |
+| `dcs-fixtures.lua` | Reusable fixtures — SAM group builders (positioned, coalition-aware, movable), connection nodes, the EW radar builders (a bare unit, or one in a group for prefix discovery) and the AWACS unit builder, hostile aircraft groups, the IADS-contact factory |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
 | `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |
