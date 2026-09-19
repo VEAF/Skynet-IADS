@@ -68,6 +68,7 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the
   only reason the build could not run on the CI runner.
 - `skynet-iads-source/README_source.md`, superseded by the pages under `documentation/`.
+- `tmp/skynet-iads-compiled.lua`, a 76-byte stub committed by an interrupted build.
 
 ### Fixed
 
@@ -80,3 +81,5 @@ Until that release is cut, the build date in the artifact's first line remains t
   Two of those are now scheduled to disappear: the build is being redone on the CTLD model, and the
   README is coming out of it — it becomes a short hand-written door, and the documentation is what
   gets generated.
+- `.gitignore` now covers `Thumbs.db`, `/.vscode/`, `/.idea/` and `/tmp/`, alongside the build
+  and documentation output already ignored above — every rule checked with `git check-ignore -v`.
