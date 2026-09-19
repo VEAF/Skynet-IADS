@@ -419,6 +419,19 @@ function dcsStub.makeUnit(spec)
 	function u:getAmmo()
 		return spec.ammo
 	end
+	--- Firing, as far as Skynet can see it: Unit.getAmmo() answers what the unit has left, and the
+	--- counts fall as it shoots.
+	---
+	--- It also accepts nil, because that is what this repository has written down twice about an
+	--- empty launcher: skynet-iads-sam-launcher.lua's setupRangeData() comments "data becomes nil,
+	--- when all missiles are fired" and guards on `if data then`, and the .miz suite's
+	--- testShutDownWhenOutOfMissiles drives exactly that case. So `__setAmmo(nil)` is a launcher
+	--- that has run dry. A gun out of shells is a separate case and stays a table of zeroes --
+	--- which is what the .miz's testShutDownShilkaWhenOutOfAmmo does -- and the two are not
+	--- interchangeable here because hasRemainingAmmo() reaches them by different routes.
+	function u:__setAmmo(ammo)
+		spec.ammo = ammo
+	end
 	function u:__destroy()
 		spec.exists = false
 	end

@@ -163,6 +163,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   assertions on `addParentRadar`/`addChildRadar` compared bare `{}` mocks, which luaunit finds
   equal to one another, and the clean-up test never called the method it was named after. Test
   coverage 92% -> 93%.
+- Slice 3 of the same port, sixteen more tests: what a battery has left to shoot with and when it
+  falls silent because of it (missiles, a gun's shells, a missile still in the air, a dead power
+  source), and the engagement zone -- which of the search radar, the tracking radar and the
+  launcher has to reach a contact before the site lights up, and what `setGoLiveRangeInPercent()`
+  does to that. What did **not** come across is the DCS figures those .miz tests assert (the Flat
+  Face's 53499.2265625 m detection range and the like): those belong to ED, and a standalone test
+  would only prove the fixture repeats itself. `test/lua/README.md` now carries a "needs the
+  simulator" list saying so. Test coverage 93.97%.
 
 ### Changed
 
