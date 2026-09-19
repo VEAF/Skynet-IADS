@@ -69,4 +69,16 @@ Taken, in the ticket's own order of value: the anti-radiation-missile decision (
 
 The jammer probability curves **rise with distance**. Measured: an SA-2 reads 91 at 0 NM, 119 at 10 NM and 4x10^14 at 100 NM, and `SkynetIADSAbstractRadarElement:jam()` compares that figure with `math.random(1, 100)`, so anything at or above 100 jams with certainty. A jammer is therefore at its weakest sitting on top of the battery and unbeatable from a hundred miles away, until it crosses the 200 NM cutoff in `maximumEffectiveDistanceNM` and stops working entirely.
 
-That reads inverted. It is also upstream behaviour keyed to a spreadsheet this repository does not have — the link is in the comment at the top of `skynet-iads-jammer.lua` — so establishing the intent takes someone who can open it. Recorded in `testTheCurvesRiseWithDistanceWhichIsSurprising`, which pins the shape and says why, rather than changed.
+That looked inverted. **It is not** — investigated 2026-09-19, and the conclusion is *no change*.
+
+The spreadsheet the comment at the top of `skynet-iads-jammer.lua` links to is public and still up. It holds one sheet, seven systems, columns *Distance NM (x)* and *Jammer probability (Y)*. Its values match the formulas in the code to within 0.51% once both are capped at 100, so it is a plot of the code rather than a specification the code was meant to meet — there is no independent intent recorded anywhere to check the formulas against.
+
+It settles two things all the same.
+
+**The rising shape is deliberate, and it is right.** Seven curves, all rising, tabulated on purpose. It also matches how jamming works: the jammer rides the aircraft, so the radar's echo off that aircraft falls as 1/R^4 while the jammer's own signal only falls as 1/R^2. The jammer therefore dominates at range and the radar burns through as the aircraft closes. A curve that rises with distance is the expected shape, not an inversion.
+
+**What is genuinely unbounded is the range, not the direction.** walder's tables stop at 35 NM (60 for the SA-10, 18 for the SA-15) and he left the saturation visible — his SA-8 column reads 434 at 20 NM and 36,478 at 35 NM. The code applies those same formulas out to the 200 NM in `maximumEffectiveDistanceNM`, which nobody ever plotted. The hierarchy he was aiming for is legible at contact (SA-2 91%, SA-3 81%, SA-8 31%, SA-6 24%, SA-11 16%, SA-10 and SA-15 6% — older systems jammable, modern ones not) and has vanished by 20 NM, where everything but the SA-10 and the SA-15 is certain.
+
+Three options were put to David on 2026-09-19 — bound the range per system, flatten the curves so none reaches 100%, or leave it and document it. **He chose to leave the jammer alone.** `setMaximumEffectiveDistance()` is already there for a mission that wants a shorter reach. Reopening this needs a new reason, not a rereading of the curves.
+
+`testTheCurvesRiseWithDistanceWhichIsSurprising` pins the shape. The shape is now endorsed rather than merely recorded.

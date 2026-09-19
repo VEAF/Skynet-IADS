@@ -71,8 +71,10 @@ to decide what the right behaviour is rather than how to write it. They are reco
 - **`addRadioMenu()` has no idempotence guard** — a second call re-issues every menu call. What DCS
   then shows a player is not established, because two submenus built with the same name carry the
   same path.
-- **The jammer probability curves rise with distance** — measured, and it reads inverted, but the
-  intent lives in a spreadsheet this repository does not have.
+- **The jammer probability curves rise with distance** — measured. Investigated on 2026-09-19 and
+  **closed: no change.** See the note at the end of `CHORE-TEST-COVERAGE-FLOOR` ticket 06; the
+  short version is that the rising shape is correct, the spreadsheet turned out to be readable,
+  and David decided on 2026-09-19 to leave the jammer alone.
 
 ## What implementing it taught us
 
