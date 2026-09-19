@@ -389,6 +389,14 @@ function dcsStub.makeStatic(spec)
 	function s:getDesc()
 		return spec.desc or {}
 	end
+	-- SkynetIADS:addCommandCenter() calls setCoalition() on what it is handed, and
+	-- documentation/api.md hands it a StaticObject.getByName(...) — so the shipped
+	-- code already relies on a DCS StaticObject answering getCoalition(), the same
+	-- way the unit and group fixtures above do (added in f6d77e6 for the same
+	-- reason). Only the static fixture was missing it.
+	function s:getCoalition()
+		return spec.coalition
+	end
 	function s:__destroy()
 		spec.exists = false
 	end

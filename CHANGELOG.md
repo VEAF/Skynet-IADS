@@ -52,6 +52,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   this project's own (no module system in DCS; see `build-tools/listToMerge.txt`), and pins the
   first run's remaining warnings to their exact file and code — a ratchet to erode, not a floor
   to sit on.
+- `test/lua/test_skynet_iads_abstract_radar_element.lua`: the first slice of the legacy
+  `unit-tests/test-skynet-iads-abstract-radar-element.lua`, 8 of its 50 tests — the autonomy and
+  coverage cluster (`goDark`/`goLive`, `setToCorrectAutonomousState`, the connection-node and
+  power-source chain, `setActAsEW`). That is the class both tickets of `FEAT-LAST-LINE-OF-DEFENSE`
+  modify, so it now has a standalone regression net. Each ported test was checked by mutation:
+  six deliberate breakages of the source each turn at least one of them red. `test/lua/README.md`
+  tracks what is ported and what the remaining 42 tests cover.
 
 ### Changed
 

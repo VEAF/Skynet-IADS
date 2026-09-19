@@ -40,8 +40,24 @@ API — it does not port the rest of `unit-tests/test-skynet-iads.lua`. The
 `.miz` copy stays the in-sim functional/smoke suite for the rest of the
 `iads` class until (if ever) that gets a standalone port too.
 
-Still DCS-only (need the demo-IADS-world fixture — a later milestone):
-`early-warning-radar`, `abstract-radar-element`, most of `iads`,
+`abstract-radar-element` is **partly** ported, in slices.
+`test_skynet_iads_abstract_radar_element.lua` carries the autonomy / coverage
+cluster — 8 of that suite's 50 tests:
+`testGoDark`, `testGoLive`, `testGoDarkDueToHARMTestIfAIisOff`,
+`testInformChildrenOfStateChange`,
+`testSAMSiteAndEWRadarLoosesConnectionAndPowerSourceThenAddANewOneAgain`,
+`testSetToCorrectAutonomousState`,
+`testWillGoLiveWhenAutonomousAndHARMDefenceFinished` and
+`testActAsEarlyWarningRadar`. That is the cluster `FEAT-LAST-LINE-OF-DEFENSE`
+needs a regression net for; the rest of the suite still runs only in the `.miz`.
+
+Still to port out of `abstract-radar-element` (the remaining 42 tests, grouped
+as they sit in the file): HARM timing and defence states, point defence, the
+SA-2 range / engagement-zone tests, ammo and missiles-in-flight, the parent /
+child radar bookkeeping, and the cached-targets and aspect calculations.
+
+Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
+milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
 
 ## Files
