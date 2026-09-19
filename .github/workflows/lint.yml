@@ -22,7 +22,7 @@ jobs:
           sudo luarocks install luacheck
 
       - name: Run luacheck
-        run: luacheck skynet-iads-source test/lua
+        run: luacheck --codes skynet-iads-source test/lua
 
   stylua:
     name: stylua --check

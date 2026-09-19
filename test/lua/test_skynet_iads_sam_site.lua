@@ -103,7 +103,7 @@ function TestSkynetIADSSAMSite:testCompleteDestructionOfSamSiteAndLoadDestroyedS
 
 	--test build SAM with destroyed elements
 	samSite:cleanUp()
-	local samSite = SkynetIADSSamSite:create(Group.getByName("Destruction-test-sam"), self.skynetIADS)
+	samSite = SkynetIADSSamSite:create(Group.getByName("Destruction-test-sam"), self.skynetIADS)
 	samSite:setupElements()
 	luaunit.assertEquals(samSite:getNatoName(), "UNKNOWN")
 	luaunit.assertEquals(#samSite:getRadars(), 0)
@@ -300,7 +300,7 @@ function TestSkynetIADSSAMSite:testRemoveGoLiveConstraint()
 	self.samSite:addGoLiveConstraint("constraint", {})
 
 	--this marker function is to test if after removing the first function this one will still exist
-	function testMarkerFunction(contact)
+	local function testMarkerFunction(contact)
 		return 3
 	end
 

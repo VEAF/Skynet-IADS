@@ -371,7 +371,7 @@ do
 				--	samToTrigger:informOfContact(contact)
 				--end
 				--[[
-				Above code will not always work, as it assumes the contact is a unit. But actually a contact can be a unit or a weapon. 
+				Above code will not always work, as it assumes the contact is a unit. But actually a contact can be a unit or a weapon.
 				Categories returned by description.category will not be the same for a unit or a weapon:
 					Unit.Category = { AIRPLANE=0, HELICOPTER=1, GROUND_UNIT=2, SHIP=3, STRUCTURE=4 }
 					Weapon.Category = { SHELL=0, MISSILE=1, ROCKET=2, BOMB=3 }
@@ -383,7 +383,7 @@ do
 
 				This has become an issue since the Phalanx has been introduced, as it is a unit capable of engaging incoming bombs.
 				As it is now, a Phalanx will be kept off when bombs are inbound.
-								
+
 				Proposed correction consist in correctly considering the contact object category, before looking at its description category.
 				I also think it would be better to test for categories to include, rather than categories to exclude, but this is another matter.
 
@@ -630,25 +630,25 @@ do
 
 	function SkynetIADS:addRadioMenu()
 		self.radioMenu = missionCommands.addSubMenu("SKYNET IADS " .. self:getCoalitionString())
-		local displayIADSStatus = missionCommands.addCommand(
+		missionCommands.addCommand(
 			"show IADS Status",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
 			{ self = self, value = true, option = "IADSStatus" }
 		)
-		local displayIADSStatus = missionCommands.addCommand(
+		missionCommands.addCommand(
 			"hide IADS Status",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
 			{ self = self, value = false, option = "IADSStatus" }
 		)
-		local displayIADSStatus = missionCommands.addCommand(
+		missionCommands.addCommand(
 			"show contacts",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
 			{ self = self, value = true, option = "contacts" }
 		)
-		local displayIADSStatus = missionCommands.addCommand(
+		missionCommands.addCommand(
 			"hide contacts",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
