@@ -319,6 +319,9 @@ do
 		ewRadar:setToCorrectAutonomousState()
 		ewRadar:goLive()
 		table.insert(self.earlyWarningRadars, ewRadar)
+		--after the insert, not before: the connector reads self.earlyWarningRadars, so a radar
+		--refreshed while it is still only a local is a radar MOOSE never hears about
+		self:refreshMooseConnector()
 		if self:getDebugSettings().addedEWRadar then
 			self:printOutputToLog("ADDED: " .. ewRadar:getDescription())
 		end
@@ -437,10 +440,8 @@ do
 				-- there is no designation yet to switch off. activate() does exactly this for every
 				-- site, through buildRadarCoverage().
 				samSite:setToCorrectAutonomousState()
-				-- MOOSE's A2A dispatcher works from the list the connector last handed it, and
-				-- recording the coverage no longer refreshes that as a side effect.
-				self:getMooseConnector():update()
 			end
+			self:refreshMooseConnector()
 			return samSite
 		end
 	end
@@ -1048,6 +1049,23 @@ do
 			self.mooseConnector = SkynetMooseA2ADispatcherConnector:create(self)
 		end
 		return self.mooseConnector
+	end
+
+	--- Hands MOOSE's A2A dispatcher the element list it now has to work from.
+	--
+	-- Call it wherever self.samSites or self.earlyWarningRadars changes. It used to happen by
+	-- itself, at the end of informChildrenOfStateChange(), which recording a radar's coverage
+	-- reached -- so it fired N^2 times during a setup, never once for an early warning radar added
+	-- while the mission runs (the radar joins the list after that code has run), and not at all
+	-- once the coverage was recorded quietly.
+	--
+	-- Only when a connector already exists: getMooseConnector() would build one, and a mission that
+	-- never called addMooseSetGroup() has no use for it. One that did has it, and the update costs
+	-- nothing until a SET_GROUP is registered -- which the documented setup does last.
+	function SkynetIADS:refreshMooseConnector()
+		if self.mooseConnector ~= nil then
+			self.mooseConnector:update()
+		end
 	end
 
 	function SkynetIADS:addMooseSetGroup(mooseSetGroup)

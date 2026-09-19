@@ -24,6 +24,25 @@ local BLUE = 2 -- coalition.side.BLUE
 -- every radar fixture sees 120 km (dcs-fixtures RADAR_RANGE_M)
 local OUT_OF_RANGE = 900000
 
+--- A stand-in for MOOSE's SET_GROUP, registered on the IADS. It only has to remember what it was
+--- last handed; the returned table is the set of group names MOOSE would currently be watching.
+local function attachMooseSetGroup(iads)
+	local heldGroups = {}
+	local mooseSetGroup = {}
+	function mooseSetGroup:RemoveGroupsByName(groupNames)
+		for i = 1, #groupNames do
+			heldGroups[groupNames[i]] = nil
+		end
+	end
+	function mooseSetGroup:AddGroupsByName(groupNames)
+		for i = 1, #groupNames do
+			heldGroups[groupNames[i]] = true
+		end
+	end
+	iads:addMooseSetGroup(mooseSetGroup)
+	return heldGroups
+end
+
 TestSkynetIADSCoverageUpdateNotification = {}
 
 function TestSkynetIADSCoverageUpdateNotification:setUp()
@@ -214,20 +233,7 @@ function TestSkynetIADSCoverageUpdateNotification:testEnrollingASiteRefreshesThe
 	end
 	iads:activate()
 
-	--a stand-in for MOOSE's SET_GROUP: it only has to remember what it was last handed
-	local heldGroups = {}
-	local mooseSetGroup = {}
-	function mooseSetGroup:RemoveGroupsByName(groupNames)
-		for i = 1, #groupNames do
-			heldGroups[groupNames[i]] = nil
-		end
-	end
-	function mooseSetGroup:AddGroupsByName(groupNames)
-		for i = 1, #groupNames do
-			heldGroups[groupNames[i]] = true
-		end
-	end
-	iads:addMooseSetGroup(mooseSetGroup)
+	local heldGroups = attachMooseSetGroup(iads)
 	luaunit.assertNil(heldGroups["SAM-late"])
 
 	F.samGroup("SA-2", "SAM-late", { pos = { x = 60000, y = 0, z = 0 }, coalition = RED })
@@ -237,6 +243,34 @@ function TestSkynetIADSCoverageUpdateNotification:testEnrollingASiteRefreshesThe
 	end
 
 	luaunit.assertEquals(heldGroups["SAM-late"], true)
+end
+
+--the same for a radar, and it never worked: addEarlyWarningRadar() puts the radar into
+--self.earlyWarningRadars at the very end, after everything that could have refreshed the connector
+--has run, so the radar entered the SET_GROUP only by accident -- if a battery happened to be
+--enrolled after it. MOOSE scrambles interceptors on what that set detects.
+function TestSkynetIADSCoverageUpdateNotification:testEnrollingAnEarlyWarningRadarRefreshesTheMooseSetGroups()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+
+	F.earlyWarningRadarGroup("EW-group", "EW-north", { pos = { x = 0, y = 0, z = 0 }, coalition = RED })
+	local ewRadar = iads:addEarlyWarningRadar("EW-north")
+	function ewRadar:getDetectedTargets()
+		return {}
+	end
+	iads:activate()
+
+	local heldGroups = attachMooseSetGroup(iads)
+	luaunit.assertEquals(heldGroups["EW-group"], true)
+	luaunit.assertNil(heldGroups["EW-late-group"])
+
+	F.earlyWarningRadarGroup("EW-late-group", "EW-late", { pos = { x = 30000, y = 0, z = 0 }, coalition = RED })
+	local late = iads:addEarlyWarningRadar("EW-late")
+	function late:getDetectedTargets()
+		return {}
+	end
+
+	luaunit.assertEquals(heldGroups["EW-late-group"], true)
 end
 
 --buildRadarCoverageForSAMSite() is public, and documented as the runtime entry point for a single
