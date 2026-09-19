@@ -63,6 +63,18 @@ The deliverable is vendored by
 `src/scripts/community/`. A change here reaches missions only once that repository re-vendors it,
 which is a deliberate step on their side — the copy has run a month behind before now.
 
+## Static analysis and formatting
+
+`skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
+(`.github/workflows/lint.yml`). `.luacheckrc` lists the DCS Scripting Engine's globals and this
+project's own (every class is a bare global — DCS has no module system, and the sources are
+concatenated, not required); `stylua.toml` excludes the vendored `test/lua/luaunit.lua` via
+`.styluaignore`.
+
+`.luacheckrc` also pins a **ratchet**: warnings the first run already had, scoped to their exact
+file and code, so a *new* warning of the same kind in the same file still fails. Fix new code
+instead of extending it — it exists to erode, never to grow.
+
 ## Tests
 
 - New **logic** tests go in `test/lua/`, run with `lua5.1 test/lua/run.lua` (a suite name filters:
