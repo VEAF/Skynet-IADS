@@ -37,6 +37,28 @@ function TestHarnessSmoke:test_loadAll_includes_utils()
 	luaunit.assertEquals(type(SkynetIADSUtils), "table")
 end
 
+function TestHarnessSmoke:test_loader_order_matches_the_build_list()
+	-- The loader's ORDER claims to be verbatim from listToMerge.txt. Nothing enforced that,
+	-- and the cost of a drift is quiet: a source added to the build but not to the loader is
+	-- never loaded by the suite, so it is neither tested nor even visible to the test-coverage
+	-- report — luacov only knows about files something executed.
+	local listPath = base .. "/../../build-tools/listToMerge.txt"
+	local list = assert(io.open(listPath, "r"), "cannot open " .. listPath)
+	local expected = {}
+	for line in list:lines() do
+		local entry = line:match("^%s*(.-)%s*$")
+		-- highdigitsams/ is a separate suite the loader deliberately leaves out. Any *other*
+		-- subdirectory appearing here should fail this test rather than be skipped silently.
+		if entry ~= "" and entry:sub(1, 1) ~= "#" and entry:sub(1, #"highdigitsams/") ~= "highdigitsams/" then
+			local name = entry:gsub("%.lua$", "")
+			expected[#expected + 1] = name
+		end
+	end
+	list:close()
+
+	luaunit.assertEquals(loader.ORDER, expected)
+end
+
 function TestHarnessSmoke:test_loader_memoises()
 	loader.load("skynet-iads-contact")
 	loader.load("skynet-iads-contact") -- second call must be a no-op, not an error

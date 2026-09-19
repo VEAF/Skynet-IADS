@@ -9,6 +9,17 @@ local isWindows = (sep == "\\")
 local interp = arg[-1] or "lua"
 local filter = arg[1]
 
+-- SKYNET_TEST_COVERAGE=1 makes every child load luacov. Each one merges its counts into
+-- luacov.stats.out in the working directory rather than overwriting it, which is what makes
+-- these separate processes add up to a single report; luacov also wraps os.exit, which is how
+-- a suite always ends through luaunit. Unset, the run below is exactly what it was before,
+-- with no debug hook installed.
+local coverage = os.getenv("SKYNET_TEST_COVERAGE")
+local coverageFlag = ""
+if coverage and coverage ~= "" and coverage ~= "0" then
+	coverageFlag = " -lluacov"
+end
+
 local function listSuites()
 	local cmd
 	if isWindows then
@@ -50,9 +61,9 @@ for _, name in ipairs(suites) do
 	if isWindows then
 		-- cmd.exe strips one leading+trailing quote pair from the whole string,
 		-- so wrap the already-quoted command in an extra pair.
-		cmd = '""' .. interp .. '" "' .. target .. '""'
+		cmd = '""' .. interp .. '"' .. coverageFlag .. ' "' .. target .. '""'
 	else
-		cmd = '"' .. interp .. '" "' .. target .. '"'
+		cmd = '"' .. interp .. '"' .. coverageFlag .. ' "' .. target .. '"'
 	end
 	local ok = os.execute(cmd)
 	-- Lua 5.1 os.execute returns the process exit code (0 == success). Some

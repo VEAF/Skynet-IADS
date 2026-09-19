@@ -1,6 +1,6 @@
 # CHORE-TEST-COVERAGE-FLOOR — the suite runs in CI, and nobody knows what it covers
 
-Status: ⬜ ready
+Status: 🔄 in-progress — ticket 01 on `feature/measure-test-coverage-in-ci`
 
 Origin: David, 2026-09-19 — *"on a une suite de tests unitaires en CI ? quelle est sa couverture ?
 je voudrais un minimum de 80%, fais un lot vivant pour ça"*, raised to **90%** the same day once the
@@ -24,7 +24,7 @@ lot, and in the code and configuration it produces, the two words stay together:
 `.github/workflows/lua-tests.yml` installs Lua 5.1 on `ubuntu-latest` and runs
 `lua5.1 test/lua/run.lua`, on every push to `master` and `develop` and on every pull request.
 `run.lua` discovers `test/lua/test_*.lua`, runs each as a child process and aggregates the exit
-codes — **23 suites, all green**.
+codes — **18 suites, all green**.
 
 So: yes, there is a unit-test suite in CI. It measures nothing. There is no `luacov`, no report, no
 threshold, and no `.luacov` anywhere in the repository. Until this lot, *"what does the suite
@@ -33,8 +33,8 @@ cover"* had never been asked in a way that produced a number.
 ## What the measurement says
 
 Taken on 2026-09-19, at `4125b52`, with `luacov` under Lua 5.1 — each suite run as
-`lua5.1 -lluacov test/lua/test_*.lua` so that `luacov` accumulates across the 23 child processes,
-then the reporter over the merged `luacov.stats.out`. All 23 suites green during the run.
+`lua5.1 -lluacov test/lua/test_*.lua` so that `luacov` accumulates across the 18 child processes,
+then the reporter over the merged `luacov.stats.out`. All 18 suites green during the run.
 
 **70.22%** — 1 679 lines executed out of 2 391, over the sources the loader loads, data tables
 excluded (see below).
@@ -120,7 +120,7 @@ to that lot; this one only measures what it buys.** See ticket 04 here for the c
 
 | # | Ticket | Status |
 |---|---|---|
-| 01 | [measure test coverage in CI, and publish the number](tickets/01-measure-test-coverage-in-ci.md) | ⬜ |
+| 01 | [measure test coverage in CI, and publish the number](tickets/01-measure-test-coverage-in-ci.md) | 🔄 |
 | 02 | [a floor that only goes up](tickets/02-a-floor-that-only-goes-up.md) | ⬜ |
 | 03 | [pin the status printers the debug skill reads](tickets/03-pin-the-status-printers.md) | ⬜ |
 | 04 | [the HARM and defence block of the radar element](tickets/04-the-harm-and-defence-block.md) | ⬜ |

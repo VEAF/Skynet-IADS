@@ -22,3 +22,51 @@ jobs:
 
       - name: Run the standalone suite
         run: lua5.1 test/lua/run.lua
+
+  test-coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # luacov is pure Lua, but it has to land where lua5.1 will find it: apt's luarocks is
+      # built against the distribution's default Lua, and --lua-version redirects it. The
+      # 5.1 headers are what lets it configure that version, the same way lint.yml needs them.
+      - name: Install Lua 5.1 and luacov
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
+          sudo luarocks --lua-version=5.1 install luacov
+          # require, not -lluacov: the latter would start a collection here and drop a stats
+          # file into the checkout before the measurement run has begun.
+          lua5.1 -e "require('luacov.runner') print('luacov resolves under ' .. _VERSION)"
+
+      # A separate job on purpose: the suite above must keep running with no debug hook
+      # installed. It takes under a second, so running it twice costs nothing.
+      - name: Run the suite under luacov
+        env:
+          SKYNET_TEST_COVERAGE: 1
+        run: lua5.1 test/lua/run.lua
+
+      # pipefail matters: without it the pipeline reports tee's status, so a reporter that
+      # exits non-zero — no luacov, no stats, and the threshold ticket 02 adds — would leave
+      # the step green. The scratch file goes to the runner's temp, not into the checkout.
+      - name: Report test coverage
+        run: |
+          set -o pipefail
+          lua5.1 build-tools/report-test-coverage.lua | tee "$RUNNER_TEMP/test-coverage.txt"
+          {
+            echo '### Test coverage'
+            echo ''
+            echo '```'
+            cat "$RUNNER_TEMP/test-coverage.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the per-line report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-report
+          path: luacov.report.out
+          if-no-files-found: warn
