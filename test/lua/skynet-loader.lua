@@ -1,5 +1,5 @@
 --- Loads Skynet source files (globals, no modules) in dependency order,
---- the same order build-tools/build-compiled-script.ps1 concatenates them.
+--- the same order build-tools/listToMerge.txt concatenates them.
 --- Usage:
 ---   local loader = dofile(".../skynet-loader.lua")
 ---   loader.load("skynet-iads-contact")   -- one file
@@ -8,7 +8,7 @@
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "./"
 local src = (os.getenv("SKYNET_SRC") or (base .. "/../../skynet-iads-source")) .. "/"
 
--- Verbatim order from build-compiled-script.ps1 (highdigitsams entry omitted:
+-- Verbatim order from build-tools/listToMerge.txt (highdigitsams entry omitted:
 -- it is a separate suite, not part of the core load).
 local ORDER = {
   "skynet-iads-utils",
