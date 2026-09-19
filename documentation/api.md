@@ -254,6 +254,12 @@ Returns a SAM site with the specified group name:
 redIADS:getSAMSiteByGroupName('SAM-SA-6')
 ```
 
+**If no group carries that name, nothing is returned** — the call yields no value at all, which
+reads as `nil` when you assign it, the way every example on this page does. Chaining straight off
+the call, as in `redIADS:getSAMSiteByGroupName('typo'):setActAsEW(true)`, then fails with *attempt
+to index a nil value*: that error almost always means a group name that does not match the mission.
+`getEarlyWarningRadarByUnitName` behaves the same way.
+
 Returns a SAM site with the specified group name prefix. Let's say you have a bunch of SAM sites
 that all will share the same power source.
 Give these sites a special prefix in the group name, e.g. `SAM-SECTOR-A`. Once you have added the
@@ -262,6 +268,11 @@ SAM sites you can access them via the prefix to set whatever options you want:
 ```lua
 redIADS:getSAMSitesByPrefix('SAM-SECTOR-A')
 ```
+
+The prefix has to **start** the group name: `SECTOR-A` matches nothing when the groups are called
+`SAM-SECTOR-A-...`. A prefix that matches nothing, and a Nato name no site carries, both give back
+an empty list rather than nothing at all, so chaining options onto them is safe — the options simply
+reach no one.
 
 ### Act as EW radar
 

@@ -66,12 +66,18 @@ These `unit-tests/` suites now also run standalone (their `.miz` copies are kept
 `harm-detection`, `abstract-dcs-object-wrapper`, `moose-a2a-connector` (1 test),
 `jammer`, `abstract-element`, `sam-site`, plus the M1 `contact` pilot.
 
-`test_skynet_iads.lua` additionally carries one narrow regression test
-(`testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`, the `3a94937` fix)
-ported straight off the real `addEarlyWarningRadar`/`addSAMSite`/`activate`
-API — it does not port the rest of `unit-tests/test-skynet-iads.lua`. The
-`.miz` copy stays the in-sim functional/smoke suite for the rest of the
-`iads` class until (if ever) that gets a standalone port too.
+`test_skynet_iads.lua` is the `SkynetIADS` suite. It carries the narrow
+regression test for the `3a94937` fix
+(`testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`, ported straight off
+the real `addEarlyWarningRadar`/`addSAMSite`/`activate` API) and, since
+`CHORE-TEST-COVERAGE-FLOOR` ticket 05, the network facade: the getters
+`documentation/api.md` shows on the `SkynetIADS` object, the enrolment calls and
+what a mistyped group name gets you, the radio menu, and `getCoalitionString`.
+Three of those tests pin behaviour that is probably wrong and say so where they
+do -- they record what the code does today so that changing it is a decision
+somebody takes on purpose. It does not port the rest of
+`unit-tests/test-skynet-iads.lua`; the `.miz` copy stays the in-sim
+functional/smoke suite for the rest of the `iads` class.
 
 Five suites have no `unit-tests/` ancestor — they were written with the work
 they cover. Two came with `FEAT-LAST-LINE-OF-DEFENSE`:
@@ -130,7 +136,7 @@ milestone): `early-warning-radar`, most of `iads`,
 | File | Purpose |
 |------|---------|
 | `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
-| `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord`, a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler, and recorders for what the code prints — `dcsStub.logs` for `env.*`, `dcsStub.screenText` for `trigger.action.outText` |
+| `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord`, a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler, and recorders for what the code prints — `dcsStub.logs` for `env.*`, `dcsStub.screenText` for `trigger.action.outText` , `dcsStub.radioItems` for `missionCommands` |
 | `dcs-fixtures.lua` | Reusable fixtures — SAM group builders (positioned, coalition-aware, movable), connection nodes, the EW radar builders (a bare unit, or one in a group for prefix discovery) and the AWACS unit builder, hostile aircraft groups, the IADS-contact factory |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
