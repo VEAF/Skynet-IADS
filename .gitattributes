@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# A .miz is a zip whose `mission` entry is plain Lua, so git can diff the mission text
+# instead of an opaque blob. Once per clone, not committed:
+#   git config diff.miz.textconv "unzip -p"
+*.miz diff=miz

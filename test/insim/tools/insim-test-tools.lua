@@ -7,7 +7,8 @@ provides.
 Two halves, deliberately in one file while it stays small:
   * pure Lua      -- deepCopy, serialize. Usable in-sim and offline, and unit-tested offline
                      by test/lua/test_insim_tools.lua.
-  * DCS-world     -- addOrReplace, removeJunkAround, scopedName. Need a running sim.
+  * DCS-world     -- missionGroupData, addFromMission, destroyIfLive, removeJunkAround. Need a
+                     running sim.
 
 Scope rules: nothing Skynet-specific (that belongs in scenarios or fixtures); check
 SkynetIADSUtils before adding arithmetic, since test/lua already covers it; split this file
@@ -86,65 +87,56 @@ end
 --- DCS world ---------------------------------------------------------------------------------
 --- Everything below needs a running sim. See test/insim/README.md for how to exercise it.
 
---- Test-scoped names keep one scenario's fixtures from colliding with another's, and give
---- Skynet's prefix discovery a prefix that cannot match a neighbour's leftovers.
-function InsimTestTools.scopedName(scenarioName, fixtureName)
-  assert(type(scenarioName) == "string" and type(fixtureName) == "string",
-    "scopedName: both arguments must be strings")
-  return string.format("insim_%s_%s", scenarioName, fixtureName)
-end
+--- The mission's own definition of an editor-placed group, by name, plus the country that owns
+--- it and whether it is a static. `env.mission` is the entire mission table, available to any
+--- mission script -- it is how mist builds its database without touching the filesystem.
+---
+--- Returns a deep copy, so a caller that mutates the table (to randomise a position, say)
+--- cannot corrupt the mission table that later runs read from.
+function InsimTestTools.missionGroupData(groupName)
+  assert(type(groupName) == "string", "missionGroupData: groupName must be a string")
+  assert(env and env.mission and env.mission.coalition,
+    "missionGroupData: env.mission is unavailable -- is this running inside a mission?")
 
---- Adds a group from a template at `anchor`. Re-adding the same name replaces a LIVE group;
---- a wreck is not replaced, which is why setUp calls removeJunkAround first.
---- anchor/dx/dy are mission-table coordinates: x is NORTH, y is EAST.
-function InsimTestTools.addGroupFromTemplate(template, name, anchor, countryId)
-  assert(type(template) == "table" and template.units and template.units[1],
-    "addGroupFromTemplate: template has no units")
-  assert(type(name) == "string", "addGroupFromTemplate: name must be a string")
-  assert(type(anchor) == "table" and anchor.x and anchor.y,
-    "addGroupFromTemplate: anchor needs x (north) and y (east)")
-
-  local groupData = {
-    name = name,
-    task = template.task or "Ground Nothing",
-    units = {},
-    route = { points = {} },
-  }
-
-  for i, unit in ipairs(template.units) do
-    groupData.units[i] = {
-      name = string.format("%s-%d", name, i),
-      type = unit.type,
-      x = anchor.x + (unit.dx or 0),
-      y = anchor.y + (unit.dy or 0),
-      heading = unit.heading or 0,
-      skill = unit.skill or "Average",
-      playerCanDrive = false,
-    }
+  for _, coalitionData in pairs(env.mission.coalition) do
+    for _, country in pairs(coalitionData.country or {}) do
+      for _, isStatic in ipairs({ false, true }) do
+        local category = isStatic and country.static or country.vehicle
+        for _, group in pairs((category or {}).group or {}) do
+          if group.name == groupName then
+            return InsimTestTools.deepCopy(group), country.id, isStatic
+          end
+        end
+      end
+    end
   end
 
-  coalition.addGroup(countryId, Group.Category.GROUND, groupData)
-  return name
+  error("missionGroupData: no group named '" .. tostring(groupName) .. "' in the mission")
 end
 
-function InsimTestTools.addStaticFromTemplate(template, name, anchor, countryId)
-  assert(type(template) == "table" and template.type, "addStaticFromTemplate: bad template")
-  assert(template.category,
-    "addStaticFromTemplate: template has no category -- is this a group template?")
-  assert(type(name) == "string", "addStaticFromTemplate: name must be a string")
-  assert(type(anchor) == "table" and anchor.x and anchor.y,
-    "addStaticFromTemplate: anchor needs x (north) and y (east)")
+--- Adds an editor-placed group or static under its own name, exactly where the Mission Editor
+--- put it. Re-adding replaces a LIVE entity, so this doubles as the respawn that gives each
+--- test fresh units; a wreck is not replaced, which is why setUp clears junk first.
+function InsimTestTools.addFromMission(groupName)
+  local data, countryId, isStatic = InsimTestTools.missionGroupData(groupName)
 
-  coalition.addStaticObject(countryId, {
-    name = name,
-    type = template.type,
-    category = template.category,
-    x = anchor.x,
-    y = anchor.y,
-    heading = template.heading or 0,
-    dead = false,
-  })
-  return name
+  if isStatic then
+    local unit = data.units and data.units[1]
+    assert(unit, "addFromMission: static '" .. groupName .. "' has no unit")
+    coalition.addStaticObject(countryId, {
+      name = data.name,
+      type = unit.type,
+      category = unit.category,
+      x = unit.x,
+      y = unit.y,
+      heading = unit.heading,
+      dead = false,
+    })
+  else
+    coalition.addGroup(countryId, Group.Category.GROUND, data)
+  end
+
+  return groupName
 end
 
 --- Destroys a group or static if it is still live. Has no effect on a wreck -- that is what
