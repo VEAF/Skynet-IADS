@@ -43,6 +43,10 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `.github/workflows/release.yml`: a tag matching `v*` builds, verifies and publishes a GitHub
   release carrying the artifact and this section's contents, marked as a pre-release unless the tag
   is a plain `vX.Y.Z`.
+- A published documentation site under `documentation/`, built with MkDocs Material and versioned
+  with `mike` (`.github/workflows/docs.yml`), deployed to <https://veaf.github.io/Skynet-IADS/>.
+  `develop` publishes as `dev` (the site default until a stable release exists), `master` as
+  `latest`, and a tag as its own version — plus `latest` if the tag is a plain `vX.Y.Z`.
 
 ### Changed
 
@@ -53,11 +57,17 @@ Until that release is cut, the build date in the artifact's first line remains t
 - The build no longer takes the version as an argument, no longer resolves paths from the working
   directory, and no longer regenerates `README.md` — that file is now hand-written.
   `demo-missions/skynet-iads-compiled.lua` is generated and no longer committed.
+- `README.md` rewritten short: what the project is, who maintains it, where the documentation is,
+  how to get the script, where to report a problem. It is hand-written and no longer generated.
+- `skynet-iads-source/README_source.md`'s prose split across `documentation/*.md` along its natural
+  seams (setup concepts and the mission editor, tactics, the public API, the FAQ), reorganised
+  rather than rewritten. `images/` moved to `documentation/images/`, its only consumer.
 
 ### Removed
 
 - `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the
   only reason the build could not run on the CI runner.
+- `skynet-iads-source/README_source.md`, superseded by the pages under `documentation/`.
 
 ### Fixed
 
