@@ -62,14 +62,14 @@ in the same pull request. The report tells you when it can be raised and to what
 
 ## What stays uncovered, and why
 
-Measured at **91.17%**. Everything reachable is covered except the five entries below, so
+Measured at **93.51%**. Everything reachable is covered except the five entries below, so
 nothing is left in the report with nobody having looked at it. Re-check this list whenever the
 figure moves for a reason you did not expect.
 
-**`skynet-iads-abstract-radar-element.lua` — 173 lines.** The HARM timing, point defence,
-engagement zone, ammunition and parent/child tests that still live only in `unit-tests/*.miz`.
-Porting them is `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04; `CHORE-TEST-COVERAGE-FLOOR` ticket 04
-tracks what it buys. This is the one block still worth real work.
+**`skynet-iads-abstract-radar-element.lua` — 116 lines.** The point defence, engagement zone and
+ammunition tests that still live only in `unit-tests/*.miz`. Porting them is
+`CHORE-PROFESSIONALIZE-THE-REPO` ticket 04; `CHORE-TEST-COVERAGE-FLOOR` ticket 04 tracks what it
+buys. This is the one block still worth real work.
 
 **Continuation lines — 34 lines, and no test can ever reach them.** The second and later lines of
 a multi-line concatenation or `return`. Lua 5.1 attributes the whole expression to its first
@@ -141,20 +141,40 @@ on what a player sees; the call count during `activate()` is a separate test, an
 it is the one that proves the N^2 noise was removed rather than moved.
 
 `abstract-radar-element` is **partly** ported, in slices.
-`test_skynet_iads_abstract_radar_element.lua` carries the autonomy / coverage
-cluster — 8 of that suite's 50 tests:
-`testGoDark`, `testGoLive`, `testGoDarkDueToHARMTestIfAIisOff`,
-`testInformChildrenOfStateChange`,
-`testSAMSiteAndEWRadarLoosesConnectionAndPowerSourceThenAddANewOneAgain`,
-`testSetToCorrectAutonomousState`,
-`testWillGoLiveWhenAutonomousAndHARMDefenceFinished` and
-`testActAsEarlyWarningRadar`. That is the cluster `FEAT-LAST-LINE-OF-DEFENSE`
-needs a regression net for; the rest of the suite still runs only in the `.miz`.
+`test_skynet_iads_abstract_radar_element.lua` carries, of that suite's 50 test
+methods:
 
-Still to port out of `abstract-radar-element` (the remaining 42 tests, grouped
-as they sit in the file): HARM timing and defence states, point defence, the
-SA-2 range / engagement-zone tests, ammo and missiles-in-flight, the parent /
-child radar bookkeeping, and the cached-targets and aspect calculations.
+- **slice 1 — the autonomy / coverage cluster** (8 tests): `testGoDark`,
+  `testGoLive`, `testGoDarkDueToHARMTestIfAIisOff`,
+  `testInformChildrenOfStateChange`,
+  `testSAMSiteAndEWRadarLoosesConnectionAndPowerSourceThenAddANewOneAgain`,
+  `testSetToCorrectAutonomousState`,
+  `testWillGoLiveWhenAutonomousAndHARMDefenceFinished`,
+  `testActAsEarlyWarningRadar`. That is the cluster
+  `FEAT-LAST-LINE-OF-DEFENSE` needs a regression net for.
+- **slice 2 — HARM timing, defence states and the radar bookkeeping**
+  (15 tests): `testHARMDefenceStates`, `testGoLiveFailsWhenInHARMDefenceMode`,
+  `testFinishHARMDefence`, `testHARMTimeToImpactCalculation`,
+  `testSlantRangeCalculationForHARMDefence`, `testShutDownTimes`,
+  `testCalculateAspectInDegrees`, `testShallIgnoreHARMShutdown`,
+  `testCleanUpOldObjectsIdentifiedAsHARMS`, `testCanEngageAirWeapons`,
+  `testCanEngageHARM`, `testAddParentRadarAndClearParentRadars`,
+  `testAddChildRadarAndClearChildRadars`, `testGetUsableChildRadars`,
+  `testDaisychainSAMOptions`.
+
+Three of that slice are **not** faithful copies, on purpose. The two order
+assertions on `addParentRadar`/`addChildRadar` compared bare `{}` mocks with
+`assertEquals`, and luaunit compares tables by value — two empty tables are
+equal, so those assertions could not fail whatever order the code produced.
+They use `assertIs` here, and a mutation that reverses the insertion order
+turns both red. `testCleanUpOldObjectsIdentifiedAsHARMS` never called the
+method it is named after; here it pins the 60-second age boundary the method
+actually enforces.
+
+Still to port out of `abstract-radar-element` (27 methods, of which 3 are
+commented out in the legacy file and 1 has an empty body — so **23 real
+tests**, grouped as they sit in the file): ammo and missiles-in-flight, the
+SA-2 range / engagement-zone tests, point defence, and cached targets.
 
 Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,

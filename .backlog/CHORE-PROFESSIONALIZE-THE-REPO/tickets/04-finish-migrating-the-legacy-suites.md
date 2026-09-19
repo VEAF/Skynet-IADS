@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — slice 1 merged; 42 of `abstract-radar-element`'s 50 tests left
+Status: 🔄 in-progress — slices 1 and 2 done; 23 real tests of `abstract-radar-element` left
 
 ## Progress
 
@@ -10,9 +10,20 @@ Status: 🔄 in-progress — slice 1 merged; 42 of `abstract-radar-element`'s 50
   methods; porting it in one sitting is a pull request nobody can review. Slice 1 ports the
   autonomy / coverage cluster — 8 tests — into
   `test/lua/test_skynet_iads_abstract_radar_element.lua`, because that is the cluster
-  `FEAT-LAST-LINE-OF-DEFENSE` modifies. The remaining 42 (HARM timing and defence states, point
-  defence, the SA-2 range tests, ammo and missiles-in-flight, parent/child bookkeeping, cached
-  targets and aspect) follow in later slices; `test/lua/README.md` lists them.
+  `FEAT-LAST-LINE-OF-DEFENSE` modifies. Slice 2 ports 15 more: HARM timing and defence states, the
+  two engagement flags, the parent / child radar bookkeeping.
+
+  Of the 27 methods left, **3 are commented out in the legacy file** (the two
+  `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
+  `testCallMethodOnTableElements`) and **1 has an empty body**
+  (`testPointDefenceWhenOnlyOneEWRadarIsActiveAndAmmoIsStillAvailable`, a `--TODO: write Unit test`
+  that was never written). So **23 real tests remain**: ammo and missiles-in-flight, the SA-2
+  range / engagement-zone tests, point defence, cached targets. `test/lua/README.md` lists them.
+
+  One thing the port keeps finding: a legacy test that cannot fail. Two of slice 2's originals
+  compared bare `{}` mocks with `assertEquals`, and luaunit compares tables by value — so the order
+  they claimed to pin was never checked; a third never called the method it was named after. Each
+  ported test is checked by mutating the source and watching it go red.
 - **Step 4, removing the legacy copy: not done, and deliberately.** The `unit-tests/*.lua` files are
   loose copies of scripts baked into `skynet-unit-tests.miz` (`l10n/DEFAULT/<same name>.lua`);
   editing one without rebuilding the `.miz` makes the two drift, which is the problem the step

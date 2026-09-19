@@ -55,6 +55,30 @@ local SAM_COMPOSITIONS = {
 			{ name = groupName .. "-ln2", type = "S_75M_Volhov", ammo = launcherAmmo(3) },
 		}
 	end,
+	-- The two compositions below share launcherAmmo(), whose missile data is the real SA-2's: the
+	-- unit *types* are each SAM's own, so samTypesDB recognises them, but the range and altitude a
+	-- launcher reports are an SA-2's. Nothing asserts an SA-10 or SA-11 range today. A test that
+	-- means to needs its own ammo table here first, or it will pin an SA-2's 40 km reach on an
+	-- S-300.
+	--
+	-- samTypesDB "S-300": search radar, tracking radar and launcher, plus a command post
+	-- marked required that setupElements() never looks at (it reads searchRadar, launchers and
+	-- trackingRadar only), so the fixture leaves it out. can_engage_harm is true for this type,
+	-- which is why it is the one the HARM tests use.
+	["SA-10"] = function(groupName)
+		return {
+			{ name = groupName .. "-sr", type = "S-300PS 40B6MD sr", sensors = searchRadarSensors() },
+			{ name = groupName .. "-tr", type = "S-300PS 40B6M tr", sensors = searchRadarSensors() },
+			{ name = groupName .. "-ln1", type = "S-300PS 5P85D ln", ammo = launcherAmmo(3) },
+		}
+	end,
+	-- samTypesDB "Buk": a search radar and a launcher, no tracking radar.
+	["SA-11"] = function(groupName)
+		return {
+			{ name = groupName .. "-sr", type = "SA-11 Buk SR 9S18M1", sensors = searchRadarSensors() },
+			{ name = groupName .. "-ln1", type = "SA-11 Buk LN 9A310M1", ammo = launcherAmmo(3) },
+		}
+	end,
 }
 
 --- F.samGroup(natoShort, groupName [, opts])

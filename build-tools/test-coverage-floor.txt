@@ -19,6 +19,10 @@
 # seconds after the jammer goes quiet -- and removed SkynetIADS:addJammer(), one of the lines
 # nothing could ever cover.
 #
+# 92 -> 93: CHORE-PROFESSIONALIZE-THE-REPO ticket 04, slice 2 of the abstract-radar-element port --
+# the HARM timing and defence states, the two engagement flags and the parent/child radar
+# bookkeeping, fifteen tests that until now ran only inside skynet-unit-tests.miz.
+#
 # A warning paid for in that lot: luacov ADDS to an existing luacov.stats.out, so measuring twice
 # without deleting it reports the union of both runs, counting lines the first covered that the
 # second no longer has. A floor was briefly raised on a figure produced that way. run.lua now
@@ -28,4 +32,4 @@
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 #                 lua5.1 build-tools/report-test-coverage.lua
-92
+93
