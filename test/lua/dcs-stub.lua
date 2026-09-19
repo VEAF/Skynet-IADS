@@ -389,6 +389,11 @@ function dcsStub.makeStatic(spec)
 	function s:getDesc()
 		return spec.desc or {}
 	end
+	-- A DCS StaticObject is a Coalition Object, so it answers getCoalition() just
+	-- like a Unit does; SkynetIADS:setCoalition() calls it on a command centre.
+	function s:getCoalition()
+		return spec.coalition
+	end
 	function s:__destroy()
 		spec.exists = false
 	end

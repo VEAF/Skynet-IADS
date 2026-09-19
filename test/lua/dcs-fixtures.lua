@@ -95,6 +95,20 @@ function F.connectionNodeStatic(name)
 	return dcsStub.makeStatic({ name = name, type = "Comms tower M", pos = { x = 0, y = 0, z = 0 } })
 end
 
+function F.powerSourceStatic(name)
+	-- A power source is only ever probed with isExist() (SkynetIADSAbstractElement
+	-- :genericCheckOneObjectIsAlive), so the type string is decoration; 'Electric
+	-- power box' is a real DCS static, kept so a fixture reads like the mission.
+	return dcsStub.makeStatic({ name = name, type = "Electric power box", pos = { x = 0, y = 0, z = 0 } })
+end
+
+function F.commandCenterStatic(name)
+	-- SkynetIADSCommandCenter overrides goLive()/goDark() to no-ops and never
+	-- calls setupElements(), so the type is never looked up in samTypesDB either;
+	-- only isExist() and getName() are read.
+	return dcsStub.makeStatic({ name = name, type = "Comms tower M", pos = { x = 0, y = 0, z = 0 } })
+end
+
 function F.iadsContact(unitName)
 	local unit = dcsStub.world[unitName]
 	if not unit then

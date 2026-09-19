@@ -1,6 +1,28 @@
 # 04 — Finish migrating the legacy suites
 
-Status: ⬜ ready
+Status: 🔄 in-progress — slice 1 on `feature/port-abstract-radar-element-tests`
+
+## Progress
+
+- **Step 1, the inventory: done.** It lives in `test/lua/README.md` ("Ported suites" / "Still
+  DCS-only"), kept current as each slice lands, rather than in a one-off document here.
+- **Step 2, the port: sliced.** `unit-tests/test-skynet-iads-abstract-radar-element.lua` is 50 test
+  methods; porting it in one sitting is a pull request nobody can review. Slice 1 ports the
+  autonomy / coverage cluster — 8 tests — into
+  `test/lua/test_skynet_iads_abstract_radar_element.lua`, because that is the cluster
+  `FEAT-LAST-LINE-OF-DEFENSE` modifies. The remaining 42 (HARM timing and defence states, point
+  defence, the SA-2 range tests, ammo and missiles-in-flight, parent/child bookkeeping, cached
+  targets and aspect) follow in later slices; `test/lua/README.md` lists them.
+- **Step 4, removing the legacy copy: not done, and deliberately.** The `unit-tests/*.lua` files are
+  loose copies of scripts baked into `skynet-unit-tests.miz` (`l10n/DEFAULT/<same name>.lua`);
+  editing one without rebuilding the `.miz` makes the two drift, which is the problem the step
+  exists to prevent. It has already happened once: the loose
+  `unit-tests/test-skynet-iads.lua` carries `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
+  (the `3a94937` fix) and the `.miz`'s copy does not, so the in-sim suite has never run it — 38
+  lines of drift, and the only file of the fifteen where the two copies differ at all. Every earlier
+  port (`sam-site`, `jammer`, `harm-detection`…) kept its copy and recorded the overlap in
+  `test/lua/README.md` instead. That is a decision to confirm once the port is complete, not per
+  slice.
 
 `test/lua/README.md` already states the intent: logic tests go to the standalone suite, and only
 what genuinely needs the simulator — terrain elevation, real detection geometry, in-game events —
