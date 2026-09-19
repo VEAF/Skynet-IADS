@@ -1,6 +1,6 @@
 # 02 — a floor that only goes up
 
-Status: 🔄 in-progress — on `feature/test-coverage-floor`
+Status: ✅ done — merged in [PR #21](https://github.com/VEAF/Skynet-IADS/pull/21). The floor is `build-tools/test-coverage-floor.txt`, at **70**. Proved on the branch: a commit raising it to 71 turned the job red with *"below the floor of 71% (1698 lines) — 19 lines short"*, every other check green
 
 Ticket 01 prints a number. This one makes the build fail when the number drops.
 

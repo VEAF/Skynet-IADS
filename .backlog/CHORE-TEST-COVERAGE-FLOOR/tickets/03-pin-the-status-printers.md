@@ -66,5 +66,6 @@ human scans; a test that breaks on a changed dash teaches people to delete tests
   lot, so there is no slack to make up elsewhere.
 - A renamed or reordered field in a status line fails a test, and the failure says which field.
 - The stub's new capture is commented with the real behaviour it replaces.
-- The floor from ticket 02 is raised, in this pull request, to the newly measured figure rounded
-  down.
+- `build-tools/test-coverage-floor.txt` is raised, in this pull request, to the newly measured
+  figure rounded down — 83 if the file is covered whole. The report names the figure it can be
+  raised to, so there is nothing to compute by hand.

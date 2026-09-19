@@ -1,6 +1,6 @@
 # CHORE-TEST-COVERAGE-FLOOR — the suite runs in CI, and nobody knows what it covers
 
-Status: 🔄 in-progress — ticket 01 merged in [PR #20](https://github.com/VEAF/Skynet-IADS/pull/20), ticket 02 on `feature/test-coverage-floor`
+Status: 🔄 in-progress — **the mechanism is done**: tickets 01 and 02 merged in [PR #20](https://github.com/VEAF/Skynet-IADS/pull/20) and [#21](https://github.com/VEAF/Skynet-IADS/pull/21). CI measures 70.22% on every pull request and fails below the floor of 70. What is left is the climb: tickets 03 to 06, each raising the floor by what it bought. Next is 03, the logger — 310 lines, which on its own takes the floor from 70 to 83
 
 Origin: David, 2026-09-19 — *"on a une suite de tests unitaires en CI ? quelle est sa couverture ?
 je voudrais un minimum de 80%, fais un lot vivant pour ça"*, raised to **90%** the same day once the
@@ -121,7 +121,7 @@ to that lot; this one only measures what it buys.** See ticket 04 here for the c
 | # | Ticket | Status |
 |---|---|---|
 | 01 | [measure test coverage in CI, and publish the number](tickets/01-measure-test-coverage-in-ci.md) | ✅ |
-| 02 | [a floor that only goes up](tickets/02-a-floor-that-only-goes-up.md) | 🔄 |
+| 02 | [a floor that only goes up](tickets/02-a-floor-that-only-goes-up.md) | ✅ |
 | 03 | [pin the status printers the debug skill reads](tickets/03-pin-the-status-printers.md) | ⬜ |
 | 04 | [the HARM and defence block of the radar element](tickets/04-the-harm-and-defence-block.md) | ⬜ |
 | 05 | [the network facade's getters and radio menu](tickets/05-the-network-facade.md) | ⬜ |
