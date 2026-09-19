@@ -1826,10 +1826,15 @@ Debug output may slow down DCS, so it's recommended to turn it off in a live env
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">contacts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">jammerProbability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </code></pre></div>
+<p>Setup mistakes — a group or unit name that is not in the mission, an element belonging to the other
+coalition, a group Skynet has no SAM data for — are shown on screen prefixed <code>WARNING:</code>, and are
+always written to <code>dcs.log</code> whatever this is set to. It is <strong>on by default</strong>, so a mission that
+knows about its own warnings and does not want them on players' screens turns it off:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">iadsDebug</span><span class="p">.</span><span class="py">warnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</code></pre></div>
 <p>Output to dcs.log:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">iadsDebug</span><span class="p">.</span><span class="py">addedEWRadar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">addedSAMSite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="nv">iadsDebug</span><span class="p">.</span><span class="py">warnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">radarWentLive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">radarWentDark</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">harmDefence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
