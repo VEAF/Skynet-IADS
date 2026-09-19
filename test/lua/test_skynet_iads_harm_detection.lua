@@ -15,7 +15,6 @@ function TestSkynetIADSHARMDetection:setUp()
 end
 
 function TestSkynetIADSHARMDetection:testContact0GroundSpeed()
-
 	local mockContact = {}
 	function mockContact:getGroundSpeedInKnots(round)
 		return 0
@@ -25,13 +24,12 @@ function TestSkynetIADSHARMDetection:testContact0GroundSpeed()
 	function mockContact:getSimpleAltitudeProfile()
 		calledProfileInfo = true
 	end
-	self.harmDetection:setContacts({mockContact})
+	self.harmDetection:setContacts({ mockContact })
 	self.harmDetection:evaluateContacts()
 	luaunit.assertEquals(calledProfileInfo, false)
 end
 
 function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
-
 	--test with a contact that shall be identified as a HARM
 	local mockContactHARM = {}
 
@@ -44,7 +42,7 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 	end
 
 	function mockContactHARM:getSimpleAltitudeProfile()
-		return {SkynetIADSContact.CLIMB}
+		return { SkynetIADSContact.CLIMB }
 	end
 
 	local harmStateCalled = false
@@ -56,7 +54,7 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 	local calls = 0
 	function mockContactHARM:isIdentifiedAsHARM()
 		calls = calls + 1
-		if ( calls == 2 ) then
+		if calls == 2 then
 			return true
 		else
 			return false
@@ -69,7 +67,7 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 	end
 
 	function mockContactHARM:getAbstractRadarElementsDetected()
-		return {mockRadar}
+		return { mockRadar }
 	end
 
 	local probCalled = false
@@ -79,15 +77,13 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 		return true
 	end
 
-
 	local contactInform = false
 	function self.harmDetection:informRadarsOfHARM(contact)
 		luaunit.assertEquals(mockContactHARM, contact)
 		contactInform = true
 	end
 
-
-	self.harmDetection:setContacts({mockContactHARM})
+	self.harmDetection:setContacts({ mockContactHARM })
 
 	local calledCleanedAgedTargets = false
 	function self.harmDetection:cleanAgedContacts()
@@ -115,7 +111,7 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactDetectedAsHARMHa
 	end
 
 	function mockContactHARM:getSimpleAltitudeProfile()
-		return {SkynetIADSContact.DESCEND, SkynetIADSContact.CLIMB, SkynetIADSContact.DESCEND }
+		return { SkynetIADSContact.DESCEND, SkynetIADSContact.CLIMB, SkynetIADSContact.DESCEND }
 	end
 
 	local harmStateCalled = false
@@ -127,7 +123,7 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactDetectedAsHARMHa
 	local calls = 0
 	function mockContactHARM:isIdentifiedAsHARM()
 		calls = calls + 1
-		if ( calls == 2 ) then
+		if calls == 2 then
 			return true
 		else
 			return false
@@ -140,19 +136,17 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactDetectedAsHARMHa
 	end
 
 	function self.harmDetection:getNewRadarsThatHaveDetectedContact(contact)
-		return {"MockRadar"}
+		return { "MockRadar" }
 	end
 
-	self.harmDetection:setContacts({mockContactHARM})
+	self.harmDetection:setContacts({ mockContactHARM })
 	self.harmDetection:evaluateContacts()
 
 	luaunit.assertEquals(harmStateCalled, true)
 	luaunit.assertEquals(contactInform, false)
-
 end
 
 function TestSkynetIADSHARMDetection:testGetDetectionProbability()
-
 	local mockSAM1 = {}
 	function mockSAM1:getHARMDetectionChance()
 		return 60
@@ -163,7 +157,7 @@ function TestSkynetIADSHARMDetection:testGetDetectionProbability()
 		return 30
 	end
 
-	local mockNewRadarsDetected = {mockSAM1, mockSam2}
+	local mockNewRadarsDetected = { mockSAM1, mockSam2 }
 
 	luaunit.assertEquals(self.harmDetection:getDetectionProbability(mockNewRadarsDetected), 72)
 
@@ -176,37 +170,39 @@ function TestSkynetIADSHARMDetection:testGetDetectionProbability()
 	end
 
 	luaunit.assertEquals(self.harmDetection:getDetectionProbability(mockNewRadarsDetected), 92)
-
 end
 
 function TestSkynetIADSHARMDetection:testGetNewRadarsThatHaveDetectedContact()
 	local mockContact = {}
-	local mockRadar1 = {"MockRadar1"}
-	local mockRadar2 = {"MockRadar2"}
-	local detectedRadars = {mockRadar1, mockRadar2}
+	local mockRadar1 = { "MockRadar1" }
+	local mockRadar2 = { "MockRadar2" }
+	local detectedRadars = { mockRadar1, mockRadar2 }
 	function mockContact:getAbstractRadarElementsDetected()
 		return detectedRadars
 	end
 	local result = self.harmDetection:getNewRadarsThatHaveDetectedContact(mockContact)
-	luaunit.assertEquals(result, {mockRadar1, mockRadar2})
-	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], {mockRadar1, mockRadar2})
+	luaunit.assertEquals(result, { mockRadar1, mockRadar2 })
+	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], { mockRadar1, mockRadar2 })
 
 	local result2 = self.harmDetection:getNewRadarsThatHaveDetectedContact(mockContact)
 	luaunit.assertEquals(result2, {})
-	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], {mockRadar1, mockRadar2})
+	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], { mockRadar1, mockRadar2 })
 
-	local mockRadar3 = {"MockRadar3"}
+	local mockRadar3 = { "MockRadar3" }
 	table.insert(detectedRadars, mockRadar3)
 	luaunit.assertEquals(#mockContact:getAbstractRadarElementsDetected(), 3)
 	local result3 = self.harmDetection:getNewRadarsThatHaveDetectedContact(mockContact)
-	luaunit.assertEquals(result3, {mockRadar3})
-	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], {mockRadar1, mockRadar2, mockRadar3})
+	luaunit.assertEquals(result3, { mockRadar3 })
+	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], { mockRadar1, mockRadar2, mockRadar3 })
 
-	local mockRadar4 = {"MockRadar4"}
+	local mockRadar4 = { "MockRadar4" }
 	table.insert(detectedRadars, mockRadar4)
 	local result4 = self.harmDetection:getNewRadarsThatHaveDetectedContact(mockContact)
-	luaunit.assertEquals(result4, {mockRadar4})
-	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact], {mockRadar1, mockRadar2, mockRadar3, mockRadar4})
+	luaunit.assertEquals(result4, { mockRadar4 })
+	luaunit.assertEquals(
+		self.harmDetection.contactRadarsEvaluated[mockContact],
+		{ mockRadar1, mockRadar2, mockRadar3, mockRadar4 }
+	)
 end
 
 function TestSkynetIADSHARMDetection:testCleanAgedContacts()

@@ -47,6 +47,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   with `mike` (`.github/workflows/docs.yml`), deployed to <https://veaf.github.io/Skynet-IADS/>.
   `develop` publishes as `dev` (the site default until a stable release exists), `master` as
   `latest`, and a tag as its own version — plus `latest` if the tag is a plain `vX.Y.Z`.
+- `luacheck` and `stylua`, gating `skynet-iads-source/` and `test/lua/` in CI
+  (`.github/workflows/lint.yml`). `.luacheckrc` declares the DCS Scripting Engine's globals and
+  this project's own (no module system in DCS; see `build-tools/listToMerge.txt`), and pins the
+  first run's remaining warnings to their exact file and code — a ratchet to erode, not a floor
+  to sit on.
 
 ### Changed
 
@@ -62,6 +67,9 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `skynet-iads-source/README_source.md`'s prose split across `documentation/*.md` along its natural
   seams (setup concepts and the mission editor, tactics, the public API, the FAQ), reorganised
   rather than rewritten. `images/` moved to `documentation/images/`, its only consumer.
+- `stylua` run once over `skynet-iads-source/` and `test/lua/` (formatting only; excludes the
+  vendored `test/lua/luaunit.lua`) — mostly re-indenting each file's top-level `do...end` body,
+  which the source never actually indented.
 
 ### Removed
 
@@ -80,3 +88,9 @@ Until that release is cut, the build date in the artifact's first line remains t
   Two of those are now scheduled to disappear: the build is being redone on the CTLD model, and the
   README is coming out of it — it becomes a short hand-written door, and the documentation is what
   gets generated.
+- Three accidental globals `luacheck`'s first run caught, none reachable from outside the
+  function or file that set them: `samElement` in
+  `SkynetIADSAbstractRadarElement:buildSingleUnit`, `testMarkerFunction` in a
+  `test_skynet_iads_sam_site.lua` test method, and two of the highdigitsams file's
+  local-redeclared-three-times chains left shadowing instead of reusing the local. Zero
+  behaviour change; verified against the DCS stub and the full suite under a real Lua 5.1.
