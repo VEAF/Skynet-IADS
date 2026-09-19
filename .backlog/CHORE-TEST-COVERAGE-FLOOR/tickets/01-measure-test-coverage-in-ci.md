@@ -1,6 +1,6 @@
 # 01 — measure test coverage in CI, and publish the number
 
-Status: 🔄 in-progress — on `feature/measure-test-coverage-in-ci`
+Status: ✅ done — merged in [PR #20](https://github.com/VEAF/Skynet-IADS/pull/20). CI measures 70.22%, the same figure to the hundredth as the local run on a different OS and a different luacov
 
 The suite already runs in CI and tells you pass or fail. This ticket makes it also tell you **how
 much of the source it ran**. No threshold yet — ticket 02 adds the gate. Splitting the two keeps

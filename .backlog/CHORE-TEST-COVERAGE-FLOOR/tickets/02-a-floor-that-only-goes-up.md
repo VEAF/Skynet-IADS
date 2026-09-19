@@ -1,6 +1,6 @@
 # 02 — a floor that only goes up
 
-Status: ⬜ ready — depends on 01
+Status: 🔄 in-progress — on `feature/test-coverage-floor`
 
 Ticket 01 prints a number. This one makes the build fail when the number drops.
 

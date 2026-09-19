@@ -48,13 +48,16 @@ jobs:
           SKYNET_TEST_COVERAGE: 1
         run: lua5.1 test/lua/run.lua
 
-      # pipefail matters: without it the pipeline reports tee's status, so a reporter that
-      # exits non-zero — no luacov, no stats, and the threshold ticket 02 adds — would leave
-      # the step green. The scratch file goes to the runner's temp, not into the checkout.
+      # pipefail matters: without it the pipeline reports tee's status, so a reporter that exits
+      # non-zero — below the floor (1), or no measurement at all (2) — would leave the step green.
+      # The status is held back until the summary is written, because a failing run is exactly the
+      # one whose per-file table the reviewer needs. The scratch file goes to the runner's temp,
+      # not into the checkout.
       - name: Report test coverage
         run: |
           set -o pipefail
-          lua5.1 build-tools/report-test-coverage.lua | tee "$RUNNER_TEMP/test-coverage.txt"
+          status=0
+          lua5.1 build-tools/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
           {
             echo '### Test coverage'
             echo ''
@@ -62,6 +65,7 @@ jobs:
             cat "$RUNNER_TEMP/test-coverage.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
       - name: Upload the per-line report
         if: always()

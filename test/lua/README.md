@@ -50,10 +50,15 @@ there is nothing to install:
 `SKYNET_TEST_COVERAGE` unset — the normal case — runs the suite with no debug hook
 installed, exactly as before.
 
-The report prints a per-file summary, worst first, and the total. The per-line
-detail lands in `luacov.report.out`, where a `****0` marks a line the suite never
-ran. What counts and what does not is in `.luacov` at the repository root, with the
-reasons; the same two commands run in CI on every pull request.
+The report prints a per-file summary, worst first, then the total and a verdict.
+The per-line detail lands in `luacov.report.out`, where a `****0` marks a line the
+suite never ran. What counts and what does not is in `.luacov` at the repository
+root, with the reasons; the same two commands run in CI on every pull request.
+
+**There is a floor**, in `build-tools/test-coverage-floor.txt`, and CI fails below
+it — exit 1, distinct from exit 2, which means the measurement did not happen at
+all. The floor only ever goes up: when your tests push the figure past it, raise it
+in the same pull request. The report tells you when it can be raised and to what.
 
 ## Ported suites
 
