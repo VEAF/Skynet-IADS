@@ -27,6 +27,8 @@ in the artifact's first line as the real identifier.
   and `CHORE-PROFESSIONALIZE-THE-REPO`.
 - `CLAUDE.md`, `CONTEXT.md` and `docs/agents/`, so the project's conventions and vocabulary are
   written down rather than rediscovered.
+- Two agent skills: `skynet-runtime-debug`, for diagnosing an in-game report from a `dcs.log`, and
+  `release`, which documents the release as it is actually done today — by hand.
 - This changelog.
 
 ### Changed

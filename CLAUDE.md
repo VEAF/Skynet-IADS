@@ -83,6 +83,8 @@ narrower than they sound.
 - Issue tracker and lot conventions: `docs/agents/issue-tracker.md`
 - Status vocabulary: `docs/agents/triage-labels.md`
 - Runtime diagnosis from a DCS log: the `skynet-runtime-debug` skill
+- Cutting a release: the `release` skill (manual today — see
+  `CHORE-PROFESSIONALIZE-THE-REPO` ticket 03)
 
 ## Bash
 
