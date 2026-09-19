@@ -200,12 +200,11 @@ do
 		end
 	end
 
-	function SkynetIADS:onEvent(event)
-		if event.id == world.event.S_EVENT_BIRTH then
-			env.info("New Object Spawned")
-			--	self:addSAMSite(event.initiator:getGroup():getName());
-		end
-	end
+	-- Skynet acts on no world event of its own: the elements handle the ones that matter to them,
+	-- through SkynetIADSAbstractElement:onEvent. This is deliberately still registered in create():
+	-- it is the obvious place for the next network-level event feature, and an empty handler costs
+	-- one dispatch per event.
+	function SkynetIADS:onEvent(event) end
 
 	function SkynetIADS:setUpdateInterval(interval)
 		self.contactUpdateInterval = interval
@@ -218,7 +217,9 @@ do
 				self.coalitionID = coalitionID
 			end
 			if self.coalitionID ~= coalitionID then
-				self:printOutputToLog("element: " .. item:getName() .. " has a different coalition than the IADS", true)
+				local message = "element: " .. item:getName() .. " has a different coalition than the IADS"
+				self:printOutputToLog(message)
+				self:printOutput(message, true)
 			end
 		end
 	end
@@ -288,11 +289,10 @@ do
 	function SkynetIADS:addEarlyWarningRadar(earlyWarningRadarUnitName)
 		local earlyWarningRadarUnit = Unit.getByName(earlyWarningRadarUnitName)
 		if earlyWarningRadarUnit == nil then
-			self:printOutputToLog(
-				"you have added an EW Radar that does not exist, check name of Unit in Setup and Mission editor: "
-					.. earlyWarningRadarUnitName,
-				true
-			)
+			local message = "you have added an EW Radar that does not exist, check name of Unit in Setup and Mission editor: "
+				.. earlyWarningRadarUnitName
+			self:printOutputToLog(message)
+			self:printOutput(message, true)
 			return
 		end
 		self:setCoalition(earlyWarningRadarUnit)
@@ -402,11 +402,10 @@ do
 	function SkynetIADS:addSAMSite(samSiteName)
 		local samSiteDCS = Group.getByName(samSiteName)
 		if samSiteDCS == nil then
-			self:printOutputToLog(
-				"you have added an SAM Site that does not exist, check name of Group in Setup and Mission editor: "
-					.. tostring(samSiteName),
-				true
-			)
+			local message = "you have added an SAM Site that does not exist, check name of Group in Setup and Mission editor: "
+				.. tostring(samSiteName)
+			self:printOutputToLog(message)
+			self:printOutput(message, true)
 			return
 		end
 		self:setCoalition(samSiteDCS)
@@ -416,10 +415,9 @@ do
 		samSite:goLive()
 		samSite:setCachedTargetsMaxAge(self:getCachedTargetsMaxAge())
 		if samSite:getNatoName() == "UNKNOWN" then
-			self:printOutputToLog(
-				"you have added an SAM site that Skynet IADS can not handle: " .. samSite:getDCSName(),
-				true
-			)
+			local message = "you have added an SAM site that Skynet IADS can not handle: " .. samSite:getDCSName()
+			self:printOutputToLog(message)
+			self:printOutput(message, true)
 			samSite:cleanUp()
 		else
 			samSite:goDark()
