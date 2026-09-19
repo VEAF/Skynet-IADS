@@ -182,19 +182,24 @@ function TestSkynetIADSJammer:testATypeWithNoCurveIsNeverJammed()
 	luaunit.assertEquals(self.jammer:isKnownRadarEmitter("SA-99"), false)
 end
 
---- Measured, and surprising enough to be worth writing down rather than left for the next
---- reader to discover: the curves RISE with distance. `jam()` compares this figure with
---- math.random(1, 100), so anything at or above 100 jams with certainty -- which an SA-2 reaches
---- at roughly 6 NM, and every type reaches long before the 200 NM cutoff in
---- maximumEffectiveDistanceNM. A jammer is therefore at its weakest sitting on top of the
---- battery and unbeatable from a hundred miles away, until it crosses the cutoff and stops
---- working entirely.
+--- The curves RISE with distance, and that is the right way round. A jammer rides the aircraft,
+--- so the radar's echo off that aircraft falls as 1/R^4 while the jammer's own signal only falls
+--- as 1/R^2: the jammer dominates at range, and the radar burns through as the aircraft closes.
+--- Weakest sitting on top of the battery, strongest far away, is what jamming does.
 ---
---- That reads inverted, but it is upstream behaviour keyed to a spreadsheet this repository does
---- not have (see the comment in skynet-iads-jammer.lua), so it is recorded here, not changed.
---- If someone establishes the intent and flips the curves, this test is what tells them every
---- caller that depended on the old shape.
-function TestSkynetIADSJammer:testTheCurvesRiseWithDistanceWhichIsSurprising()
+--- What is unbounded is the reach, not the direction. `jam()` compares this figure with
+--- math.random(1, 100), so anything at or above 100 jams with certainty -- which an SA-2 reaches
+--- at 6.84 NM, and every type reaches by 77 NM, well inside the 200 NM cutoff in
+--- maximumEffectiveDistanceNM. walder plotted these curves to 35 NM, and to 60 for the SA-10; the
+--- code applies them to 200.
+---
+--- Investigated on 2026-09-19, down to the spreadsheet linked at the top of
+--- skynet-iads-jammer.lua, which is public and readable and turns out to plot these same formulas
+--- rather than specify them. David decided then to leave the jammer as it is:
+--- setMaximumEffectiveDistance() is already there for a mission that wants a shorter reach. The
+--- full reasoning is in CHORE-TEST-COVERAGE-FLOOR ticket 06. This test holds the shape to what
+--- was decided -- do not read it as an invitation to flip the curves.
+function TestSkynetIADSJammer:testTheCurvesRiseWithDistanceAsJammingDoes()
 	local close = self.jammer:getSuccessProbability(1, "SA-6")
 	local far = self.jammer:getSuccessProbability(50, "SA-6")
 	luaunit.assertTrue(far > close, "the curve rises with distance")

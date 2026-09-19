@@ -81,4 +81,4 @@ It settles two things all the same.
 
 Three options were put to David on 2026-09-19 — bound the range per system, flatten the curves so none reaches 100%, or leave it and document it. **He chose to leave the jammer alone.** `setMaximumEffectiveDistance()` is already there for a mission that wants a shorter reach. Reopening this needs a new reason, not a rereading of the curves.
 
-`testTheCurvesRiseWithDistanceWhichIsSurprising` pins the shape. The shape is now endorsed rather than merely recorded.
+`testTheCurvesRiseWithDistanceAsJammingDoes` pins the shape — renamed from `…WhichIsSurprising`, because it is not. The shape is now endorsed rather than merely recorded.
