@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build the compiled artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        run: pwsh -File build-tools/build-compiled-script.ps1
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+
+      - name: Load and run the artifact against the DCS stub
+        run: lua5.1 build-tools/check-artifact.lua demo-missions/skynet-iads-compiled.lua

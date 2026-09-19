@@ -29,20 +29,24 @@ project are not only French-speaking.
 `skynet-iads-source/*.lua`. `README.md` at the root is **regenerated** from
 `skynet-iads-source/README_source.md`. Editing either is lost at the next build, silently.
 
-Build, from `build-tools`, with the version as its **mandatory** argument — without it the script
-refuses, and it uses relative paths so the working directory matters:
+Build from any working directory — paths resolve from the script's own location, and the version
+comes from `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`, not from an argument:
 
 ```
-cd build-tools && pwsh -File ./build-compiled-script.ps1 3.5.0
+pwsh -File build-tools/build-compiled-script.ps1
 ```
 
-The table-of-contents step calls `bin/gh-md-toc.exe`, which needs network access and is a Windows
-binary — worth knowing before assuming the build runs anywhere.
+The source order lives in `build-tools/listToMerge.txt`, one path per line, commented with why the
+order is what it is — edit that file to add or reorder a source, never the script. The build no
+longer touches `README.md`; that file is now hand-written (`CHORE-PROFESSIONALIZE-THE-REPO` ticket
+06 covers the published documentation it points to).
 
-**Both of those are transitional.** `CHORE-PROFESSIONALIZE-THE-REPO` tickets 03 and 06 rebuild the
-build on the CTLD model — a commented merge manifest, paths resolved from the script, the version
-read from one place — and take the README out of it: it becomes a short hand-written door, and the
-*documentation* is what gets generated.
+CI (`.github/workflows/build.yml`) runs the build on every push and pull request, then loads and
+executes the artifact against the DCS stub with `build-tools/check-artifact.lua` — a build proves
+the files concatenate, not that the result runs. A tag matching `v*`
+(`.github/workflows/release.yml`) builds, verifies, and publishes a GitHub release carrying the
+artifact and the `[Unreleased]` section of `CHANGELOG.md`; a tag that is not a plain `vX.Y.Z` is
+published as a pre-release.
 
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under

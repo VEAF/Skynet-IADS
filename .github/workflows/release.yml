@@ -1,0 +1,54 @@
+name: Release
+
+# Tag-triggered, not branch-triggered: a tag like v3.5.0-rc1 cuts a pre-release without
+# it ever being the tip of master, matching the CTLD model.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        run: pwsh -File build-tools/build-compiled-script.ps1
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+
+      - name: Load and run the artifact against the DCS stub
+        run: lua5.1 build-tools/check-artifact.lua demo-missions/skynet-iads-compiled.lua
+
+      - name: Extract the changelog's Unreleased section
+        run: |
+          awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release-notes.md
+
+      - name: Determine pre-release status
+        id: prerelease
+        run: |
+          # A plain vX.Y.Z tag is a stable release; anything else (vX.Y.Z-rc1, ...) is a
+          # pre-release, so it never gets published as "latest" downstream.
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create the GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            demo-missions/skynet-iads-compiled.lua \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            ${{ steps.prerelease.outputs.flag }}

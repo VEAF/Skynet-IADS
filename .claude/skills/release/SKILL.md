@@ -10,11 +10,18 @@ Interactive, step by step. **Wait for the user's confirmation at each step.** Ne
 publish a release without an explicit go: both are irreversible and both are visible to everyone who
 consumes this project.
 
-## Read this first: the release is manual today
+## Read this first: building and publishing are automated, the rest is not
 
-There is no release workflow. `CHORE-PROFESSIONALIZE-THE-REPO` ticket 03 will add one; until it
-lands, every step below is done by hand. The steps marked **→ automated later** are the ones that
-will disappear.
+`CHORE-PROFESSIONALIZE-THE-REPO` ticket 03 added `.github/workflows/release.yml`: pushing a tag
+matching `v*` builds the artifact, runs it against the DCS stub, and publishes a GitHub release
+carrying it — attaching whatever is currently under `## [Unreleased]` in `CHANGELOG.md` as the
+release notes. A tag that is not a plain `vX.Y.Z` (a pre-release like `v3.5.0-rc1`) publishes as a
+pre-release, matching the CTLD model.
+
+That last point reorders one thing versus a hand-rolled release: **do not rename `[Unreleased]` to
+the version heading before tagging** — the workflow reads that heading literally, and a renamed
+section would ship an empty release. Freeze the changelog *after* the tag is pushed and the release
+is out, as a follow-up commit on `develop`. Everything else below is still done by hand.
 
 ## Why it matters more than usual here
 
@@ -53,48 +60,37 @@ at runtime is at least a minor.
    in a diff: a new default, a site that now lights up where it used to stay dark, a setting that
    changed meaning. Say it plainly or someone will file it as a bug.
 
-3. **Build and prove it runs.**
+3. **Bump `SkynetIADS.version`** in `skynet-iads-source/skynet-iads.lua` to the target version, on a
+   branch off `develop` (e.g. `release/x.y.z`), and open a pull request. Wait for CI — it builds the
+   artifact and runs it against the DCS stub on every pull request, so a chunk that raises fails the
+   gate before you ever tag it. **Do not touch `CHANGELOG.md`'s `[Unreleased]` heading here** — it
+   must still read `## [Unreleased]` when the tag is pushed in step 5. Merge to `develop`, then
+   promote to `master` per the project's branching model.
 
-   ```
-   cd build-tools && pwsh -File ./build-compiled-script.ps1 3.5.0
-   ```
+4. **Never commit the built artifact.** It is git-ignored and rebuilt by CI; nothing in this branch
+   should touch `demo-missions/skynet-iads-compiled.lua`.
 
-   The version argument is **mandatory** — without it the script prints `No Version supplied` and
-   stops — and the script uses relative paths, so it must run from `build-tools`. It writes
-   `demo-missions/skynet-iads-compiled.lua` and regenerates the root `README.md`.
-
-   Then **execute** the result against the DCS stub — do not settle for loading it.
-   `assert(loadfile(f))` parses the file and says nothing about a main chunk that raises, and that
-   is exactly how a CTLD release passed its gate and killed every radio menu in the mission. One
-   raise takes down the whole concatenated chunk a mission loads.
-
-   Check the artifact's first line carries the new version and build date before going further.
-
-   → automated later: ticket 03 moves both the build and this check into CI.
-
-4. **Freeze the changelog.** Replace `## [Unreleased]` with `## [x.y.z] — YYYY-MM-DD` and open a
-   fresh empty `[Unreleased]` above it. Entries are appended at the end of that section by every
-   pull request, so the order already reads chronologically.
-
-5. **Release branch and pull request.** `release/x.y.z` from `develop`, carrying the changelog and
-   whatever version string lives in the sources. Target `develop`. Title: `release: prepare x.y.z`.
-   Wait for CI and review, then merge.
-
-   **Never commit the built artifact from a release branch.** It is a build output; publishing it is
-   step 6's job.
-
-6. **Tag and publish** — give the user the commands, let them run them:
+5. **Tag and let CI publish it** — give the user the commands, let them run them:
 
    ```bash
-   git checkout develop && git pull origin develop
+   git checkout master && git pull origin master
    git tag v3.5.0
    git push origin v3.5.0
-   gh release create v3.5.0 demo-missions/skynet-iads-compiled.lua \
-     --title "Skynet-IADS v3.5.0" \
-     --notes-file <the changelog section for this version>
    ```
 
-   → automated later: pushing the tag will do all of it.
+   The push triggers `.github/workflows/release.yml`: it builds, runs the artifact against the DCS
+   stub, and publishes a GitHub release named `v3.5.0` carrying the artifact and whatever is under
+   `## [Unreleased]` right now. Watch the run once (`gh run list --workflow=release.yml`), do not
+   poll it in a loop.
+
+   A pre-release goes out the same way, from a branch instead of `master` if it must not be on the
+   release branch yet: tag it `v3.5.0-rc1` (anything not a plain `vX.Y.Z`), and the workflow marks
+   the GitHub release as a pre-release automatically.
+
+6. **Freeze the changelog**, now that the release is out: on `develop`, replace `## [Unreleased]`
+   with `## [x.y.z] — YYYY-MM-DD` and open a fresh empty `[Unreleased]` above it. Doing this before
+   the tag would have shipped an empty release — the workflow reads the `[Unreleased]` heading
+   literally.
 
 7. **Tell the consumer.** The release does not reach a single mission by itself. Say so, and say
    what is waiting on it — normally a vendoring lot in VEAF-Mission-Creation-Tools. If that lot

@@ -32,6 +32,17 @@ Until that release is cut, the build date in the artifact's first line remains t
 - Two agent skills: `skynet-runtime-debug`, for diagnosing an in-game report from a `dcs.log`, and
   `release`, which documents the release as it is actually done today — by hand.
 - This changelog.
+- `SkynetIADS.version`, the single source of truth for the shipped artifact's version, read by the
+  build rather than passed to it as an argument.
+- `build-tools/listToMerge.txt`, the commented merge manifest replacing the twenty hard-coded paths
+  on one line in the build script.
+- `build-tools/check-artifact.lua`: the build proves the sources concatenate, this proves the
+  result runs, by loading and executing the artifact against `test/lua/dcs-stub.lua`.
+- `.github/workflows/build.yml`, which builds and checks the artifact on every push and pull
+  request — the build is now pure PowerShell and runs on the Linux CI runner.
+- `.github/workflows/release.yml`: a tag matching `v*` builds, verifies and publishes a GitHub
+  release carrying the artifact and this section's contents, marked as a pre-release unless the tag
+  is a plain `vX.Y.Z`.
 
 ### Changed
 
@@ -39,6 +50,14 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `contributing.md` rewritten around what this repository actually does. The previous guide was
   upstream's: it pointed at walder's Discord, told contributors to add tests to a `.miz`, and said
   nothing about the standalone suite, the branching model, or the fact that two files are generated.
+- The build no longer takes the version as an argument, no longer resolves paths from the working
+  directory, and no longer regenerates `README.md` — that file is now hand-written.
+  `demo-missions/skynet-iads-compiled.lua` is generated and no longer committed.
+
+### Removed
+
+- `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the
+  only reason the build could not run on the CI runner.
 
 ### Fixed
 
