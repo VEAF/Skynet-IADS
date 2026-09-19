@@ -40,7 +40,7 @@ API — it does not port the rest of `unit-tests/test-skynet-iads.lua`. The
 `.miz` copy stays the in-sim functional/smoke suite for the rest of the
 `iads` class until (if ever) that gets a standalone port too.
 
-Four suites have no `unit-tests/` ancestor — they were written with the work
+Five suites have no `unit-tests/` ancestor — they were written with the work
 they cover. Two came with `FEAT-LAST-LINE-OF-DEFENSE`:
 `test_skynet_iads_last_line_of_defence.lua` (18 tests) and
 `test_skynet_iads_coverage_refresh.lua` (13 tests). Almost every test in them
@@ -56,6 +56,13 @@ cleaned up mid-HARM-evasion that never came back — and
 the doors a mission uses (network designation, the last line of defense,
 `reportContact`; a battery going autonomous when its radar leaves the IADS) and
 only then assert state.
+
+`test_skynet_iads_coverage_update_notification.lua` (5 tests) came with
+`FIX-COVERAGE-UPDATE-DARKENS-SITES`, for the extinction order that recording a
+radar's coverage used to carry. Its leading test lights a battery through a real
+`evaluateContacts()` cycle and then adds a radar to the running IADS, so it fails
+on what a player sees; the call count during `activate()` is a separate test, and
+it is the one that proves the N^2 noise was removed rather than moved.
 
 `abstract-radar-element` is **partly** ported, in slices.
 `test_skynet_iads_abstract_radar_element.lua` carries the autonomy / coverage
