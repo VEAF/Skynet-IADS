@@ -1589,12 +1589,21 @@ For all units beginning with 'SA-': don't add Nato code names (Guideline, Gainfu
 <p>Returns a SAM site with the specified group name:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-6'</span><span class="p">)</span>
 </code></pre></div>
+<p><strong>If no group carries that name, nothing is returned</strong> — the call yields no value at all, which
+reads as <code>nil</code> when you assign it, the way every example on this page does. Chaining straight off
+the call, as in <code>redIADS:getSAMSiteByGroupName('typo'):setActAsEW(true)</code>, then fails with <em>attempt
+to index a nil value</em>: that error almost always means a group name that does not match the mission.
+<code>getEarlyWarningRadarByUnitName</code> behaves the same way.</p>
 <p>Returns a SAM site with the specified group name prefix. Let's say you have a bunch of SAM sites
 that all will share the same power source.
 Give these sites a special prefix in the group name, e.g. <code>SAM-SECTOR-A</code>. Once you have added the
 SAM sites you can access them via the prefix to set whatever options you want:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM-SECTOR-A'</span><span class="p">)</span>
 </code></pre></div>
+<p>The prefix has to <strong>start</strong> the group name: <code>SECTOR-A</code> matches nothing when the groups are called
+<code>SAM-SECTOR-A-...</code>. A prefix that matches nothing, and a Nato name no site carries, both give back
+an empty list rather than nothing at all, so chaining options onto them is safe — the options simply
+reach no one.</p>
 <h3 id="act-as-ew-radar">Act as EW radar</h3>
 <p>Will set the SAM site to act as an EW radar. This will result in the SAM site always having its
 radar on. Contacts the SAM site sees are reported to the IADS. This option is recommended for long
