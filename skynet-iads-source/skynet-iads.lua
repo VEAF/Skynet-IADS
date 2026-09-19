@@ -674,6 +674,10 @@ do
 	-- insertToTableIfNotAlreadyAdded, and this is the only function that clears anything. Applying
 	-- them to an AWACS in transit is what made it accumulate every battery it had ever flown near.
 	-- Movement is refreshRadarCoverage()'s job, and it purges.
+	--
+	-- It is false for a **removal** too, which is the other half of the same thing: a *ByPrefix call
+	-- replaces a whole list, and the elements it drops stay wired in until something clears. So this
+	-- runs at runtime as well, from rebuildRadarCoverageAfterBulkReAdd().
 	function SkynetIADS:buildRadarCoverage()
 		--to build the basic radar coverage we use all SAM sites. Checks if SAM site has power or a connection node is done when using the SAM site later on
 		local samSites = self:getSAMSites()
