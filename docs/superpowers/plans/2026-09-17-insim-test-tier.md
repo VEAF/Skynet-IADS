@@ -1981,8 +1981,11 @@ That prefix is what keeps Skynet's own `addEarlyWarningRadarsByPrefix` /
 `addSAMSitesByPrefix` scoped to one scenario's fixtures, and it is why no separate name-scoping
 layer is needed.
 
-Two placement rules, both geometric rather than recorded:
+Three placement rules, all geometric rather than recorded:
 
+- **Author the arena zone as a CIRCLE, not a quad.** `removeJunkInZone` reads the zone's radius,
+  and a quad-point zone can report a radius of 0 — which fails with a message pointing at the
+  wrong function.
 - **Separate scenarios in space.** `setUp` clears wrecks in a sphere around its own fixtures; that
   sphere must not reach another scenario's. Keep scenarios kilometres apart.
 - **Put the target within detection range** of the EWR, with line of sight. On Caucasus, a valley

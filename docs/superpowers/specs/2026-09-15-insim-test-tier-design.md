@@ -159,13 +159,40 @@ without touching the filesystem. So a scenario asks for an editor-placed group b
 hands its definition straight to `coalition.addGroup`.
 
 That keeps re-adding as the isolation primitive (see below) while removing everything that used
-to stand between the editor and the runtime: no extraction step, no generated fixture files, no
-separate anchor table, and no offset arithmetic. Position is not modelled at all — it is
-wherever you put the asset.
+to stand between the editor and the runtime: no extraction step, no generated fixture files and
+no separate anchor table.
+
+**Ground fixtures are added exactly as authored.** Position is not modelled for them at all — it
+is wherever you put the asset, and no scenario does coordinate arithmetic to place one.
 
 ```lua
-InsimTestTools.missionGroupData("FIXTURE-Detection-SAM")   -- the ME-authored table, as authored
+InsimTestTools.addFromMission("FIXTURE-Detection-SAM")     -- in place, as authored
 ```
+
+**Air fixtures are the exception, and deliberately so.** Parking an aircraft at a useful spot in
+the editor does not survive contact with a scenario: it needs a route, and a route authored in
+the editor is wrong the moment the scenario wants a different geometry. So an air fixture is
+authored as airframes only — type, count, skill, country — on a single in-air turning point
+placed anywhere, and the scenario supplies the rest:
+
+```lua
+local ewr = InsimTestTools.missionGroupData("FIXTURE-Detection-EWR")
+InsimTestTools.addAirFromMission("FIXTURE-Detection-Target", {
+  from     = InsimTestTools.offsetFrom(ewr, 270, 60000),   -- 60 km due west
+  to       = InsimTestTools.offsetFrom(ewr, 90, 20000),    -- flying through
+  altitude = 6000,                                         -- metres, BARO
+  speed    = 200,                                          -- metres per second
+})
+```
+
+The editor group's own coordinates and waypoint are ignored. Units are anchored at `from` with
+their editor spacing preserved, faced along the leg, and given a fresh two-point route. That is
+the one place in the tier where a scenario computes coordinates, which is why `offsetFrom` and
+`bearingBetween` are pure functions with offline tests — the axis convention below is exactly
+what they encode.
+
+An air fixture must be authored as an **in-air** start. A ramp start carries an `airdromeId` on
+its first waypoint, which is meaningless once the group is placed somewhere else.
 
 Scenario fixtures are named by convention, `FIXTURE-<Scenario>-<Role>`, which gives each
 scenario a prefix of its own. That is what keeps Skynet's own prefix-based discovery scoped to
