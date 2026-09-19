@@ -90,6 +90,14 @@ the doors a mission uses (network designation, the last line of defense,
 `reportContact`; a battery going autonomous when its radar leaves the IADS) and
 only then assert state.
 
+`test_skynet_iads_logger.lua` (26 tests) came with `CHORE-TEST-COVERAGE-FLOOR`
+ticket 03, for the status page the `skynet-runtime-debug` skill reads back out of
+a `dcs.log`. It drives the real `printSystemStatus()` over a network whose damage
+is known, and asserts each line **field by field** — names, order and values —
+rather than by string equality: a test that fails on a changed dash teaches people
+to delete tests. Every counter in that network is non-zero on purpose, so a
+printer stuck at zero cannot pass a presence check.
+
 `test_skynet_iads_coverage_update_notification.lua` (10 tests) came with
 `FIX-COVERAGE-UPDATE-DARKENS-SITES`, for the extinction order that recording a
 radar's coverage used to carry. Its leading test lights a battery through a real
@@ -122,7 +130,7 @@ milestone): `early-warning-radar`, most of `iads`,
 | File | Purpose |
 |------|---------|
 | `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
-| `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord` and a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler |
+| `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord`, a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler, and recorders for what the code prints — `dcsStub.logs` for `env.*`, `dcsStub.screenText` for `trigger.action.outText` |
 | `dcs-fixtures.lua` | Reusable fixtures — SAM group builders (positioned, coalition-aware, movable), connection nodes, the EW radar builders (a bare unit, or one in a group for prefix discovery) and the AWACS unit builder, hostile aircraft groups, the IADS-contact factory |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |

@@ -8,7 +8,10 @@
 # (CHORE-TEST-COVERAGE-FLOOR ticket 02); the lot aims for 90. A gate set at the target rather
 # than at the measurement is red before anyone has done anything wrong, and gets bypassed.
 #
+# 70 -> 83: CHORE-TEST-COVERAGE-FLOOR ticket 03 pinned the logger's four status printers, which
+# were the single largest block the suite never ran (310 lines, 44% of everything it missed).
+#
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 #                 lua5.1 build-tools/report-test-coverage.lua
-70
+83
