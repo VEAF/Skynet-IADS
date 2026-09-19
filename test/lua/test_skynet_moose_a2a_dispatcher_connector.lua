@@ -22,14 +22,13 @@ function TestMooseA2ADispatcherConnector:tearDown()
 end
 
 function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
-
 	local mockMooseSetGroup = {}
 	mockMooseSetGroup.connector = self.connector
 	local numRemoveCalls = 0
 
 	function mockMooseSetGroup:RemoveGroupsByName(groupNames)
 		numRemoveCalls = numRemoveCalls + 1
-		if	numRemoveCalls == 1 then
+		if numRemoveCalls == 1 then
 			luaunit.assertEquals(groupNames, self.connector.ewRadarGroupNames)
 		end
 
@@ -50,7 +49,6 @@ function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
 
 	local numAddCalls = 0
 	function mockMooseSetGroup:AddGroupsByName(groupNames)
-
 		if numAddCalls == 0 then
 			luaunit.assertEquals(groupNames, samGroups)
 		end
@@ -63,7 +61,6 @@ function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
 	end
 
 	self.connector:addMooseSetGroup(mockMooseSetGroup)
-
 
 	luaunit.assertEquals(numRemoveCalls, 2)
 	luaunit.assertEquals(numAddCalls, 2)

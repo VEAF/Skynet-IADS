@@ -15,12 +15,12 @@ TestSkynetIADSAbstractElement = {}
 function TestSkynetIADSAbstractElement:setUp()
 	dcsStub.reset()
 	self.iads = SkynetIADS:create()
-	self.group = dcsStub.makeGroup({ name = "SAM-SA-6-2", units = { { name = "SAM-SA-6-2-u1", type = "Kub 2P25 ln" } } })
+	self.group =
+		dcsStub.makeGroup({ name = "SAM-SA-6-2", units = { { name = "SAM-SA-6-2-u1", type = "Kub 2P25 ln" } } })
 	self.abstractElement = SkynetIADSAbstractElement:create(self.group, self.iads)
 
 	--mock this function, we test it once in testCheckOneGenericObjectAliveForUnitWorks
-	function self.abstractElement:setToCorrectAutonomousState()
-	end
+	function self.abstractElement:setToCorrectAutonomousState() end
 end
 
 function TestSkynetIADSAbstractElement:tearDown()
@@ -35,7 +35,7 @@ function TestSkynetIADSAbstractElement:testHasActiveConnectionNodeByDefaultIfNon
 end
 
 function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForUnitWorks()
-	local unit = F.connectionNodeUnit('SAM-SA-6-2-connection-node-unit')
+	local unit = F.connectionNodeUnit("SAM-SA-6-2-connection-node-unit")
 
 	local called = false
 
@@ -52,9 +52,8 @@ function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForUnitWork
 	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), false)
 end
 
-
 function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForStaticObjectsWorks()
-	local static = F.connectionNodeStatic('SAM-SA-6-2-coonection-node-static')
+	local static = F.connectionNodeStatic("SAM-SA-6-2-coonection-node-static")
 	self.abstractElement:addConnectionNode(static)
 	luaunit.assertEquals(self.abstractElement:genericCheckOneObjectIsAlive(self.abstractElement.connectionNodes), true)
 	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), true)
@@ -64,7 +63,6 @@ function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForStaticOb
 end
 
 function TestSkynetIADSAbstractElement:testPowerSourceAndConnectionNodeStaticObjectAndDestrutionSuccessful()
-
 	local powerSource = F.connectionNodeStatic("test-ground-vehicle-power-source")
 	local connectionNode = F.connectionNodeStatic("test-ground-vehicle-connection-node")
 
@@ -101,7 +99,6 @@ function TestSkynetIADSAbstractElement:testGetDCSName()
 	end
 
 	luaunit.assertEquals(self.abstractElement:getDCSName(), "SAM-SA-6-2")
-
 end
 
 os.exit(luaunit.LuaUnit.run())
