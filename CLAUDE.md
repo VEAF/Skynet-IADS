@@ -1,0 +1,89 @@
+# Skynet-IADS — Claude Code Instructions
+
+> Skynet gives DCS World an Integrated Air Defence System: early-warning radars feed contacts to
+> SAM sites, which stay dark until the network tells them to engage. Pure Lua 5.1 sources in
+> `skynet-iads-source/` are concatenated into a single deliverable `skynet-iads-compiled.lua` by a
+> PowerShell build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
+
+**VEAF maintains this project.** `regroupement-patrouille/Skynet-IADS` is read-only and walder has
+been inactive for years — the two communities agreed that VEAF takes it over. Never open pull
+requests against either upstream, and never treat them as a source of truth.
+
+## Language
+
+English, everywhere: code, comments, commits, pull requests, documentation. The users of this
+project are not only French-speaking.
+
+## Behaviour (surgical mode)
+
+- **Surgical**: never modify adjacent code, comments or formatting unrelated to the request. No
+  opportunistic refactor.
+- **Simplicity**: the minimum code that solves the problem. No speculative abstraction.
+- **Zero assumptions**: if a specification is ambiguous or missing, stop and ask. Never invent DCS
+  API behaviour — verify it against the [dcs-lua-datamine
+  dataset](https://github.com/Quaggles/dcs-lua-datamine) or a real log.
+
+## The compiled file is a build artifact
+
+`skynet-iads-compiled.lua` at the repository root is **generated**. Editing it is lost at the next
+build, and the loss is silent. Sources live in `skynet-iads-source/`.
+
+Build: `pwsh -File build-tools/build-compiled-script.ps1`.
+
+The same file is vendored by
+[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under
+`src/scripts/community/`. A change here reaches missions only once that repository re-vendors it,
+which is a deliberate step on their side — the copy has run a month behind before now.
+
+## Tests
+
+- New **logic** tests go in `test/lua/`, run with `lua5.1 test/lua/run.lua` (a suite name filters:
+  `lua5.1 test/lua/run.lua contact`). They use the DCS stub in `test/lua/dcs-stub.lua`.
+- `unit-tests/*.miz` is the legacy in-sim suite, being migrated. Only behaviour that genuinely needs
+  the simulator — terrain elevation, real detection geometry, in-game events — stays there.
+- **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
+  its tests.
+- A test that passes only because the stub returns something convenient is worth nothing. When a
+  test needs the stub extended, extend it deliberately and write down what real behaviour it stands
+  in for.
+
+## Git flow
+
+- `develop` is the default branch and the target of every pull request. `master` carries releases.
+- Work on `feature/*` or `fix/*` cut from `develop`. Never commit directly to `develop` or `master`.
+- One branch and one pull request per lot, not per ticket. Conventional Commits, in English.
+- Branches are deleted on merge.
+
+## Backlog
+
+`.backlog/` is the tracker: one directory per lot, holding `PRD.md` and one file per ticket under
+`tickets/`, with `.backlog/README.md` as the hand-maintained index. Lots closed for more than a few
+days are compacted into `.backlog/archive/<LOT-ID>.md`.
+
+GitHub issues are for reports arriving from outside. A report that turns into work becomes a lot.
+`docs/evolutions.md` is the idea tracker: an evolution is a thought, a lot is committed work.
+
+## Default workflow
+
+Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
+with its tests → `lua5.1 test/lua/run.lua` → rebuild if the sources changed → update `CHANGELOG.md`
+under `[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
+`develop` → address review and CI → merge.
+
+If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
+
+## Domain
+
+`CONTEXT.md` holds the vocabulary — what an IADS is here, what "covered" means, and the words the
+code uses. Read it before touching the radar element hierarchy; several of its terms mean something
+narrower than they sound.
+
+## Agent notes
+
+- Issue tracker and lot conventions: `docs/agents/issue-tracker.md`
+- Status vocabulary: `docs/agents/triage-labels.md`
+- Runtime diagnosis from a DCS log: the `skynet-runtime-debug` skill
+
+## Bash
+
+All Bash commands are authorized. Never block work waiting for approval on one.
