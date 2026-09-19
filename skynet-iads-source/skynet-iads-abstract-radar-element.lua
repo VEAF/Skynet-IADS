@@ -80,8 +80,17 @@ do
 			local pointDefence = self.pointDefences[i]
 			pointDefence:cleanUp()
 		end
+		-- The state has to go with the timers. goLive() refuses while harmSilenceID is set, so a
+		-- site torn down mid-evasion would stay deaf for the rest of the mission -- to the network,
+		-- to autonomy, and to the last line of defense -- with nothing left to clear the field: the
+		-- task that would have is the one just removed. Not finishHarmDefence(), which ends in
+		-- goAutonomous() and would light a DCS-AI site's radar on the way out; teardown forgets the
+		-- HARM defence, it does not finish it.
 		SkynetIADSUtils.removeFunction(self.harmScanID)
+		self.harmScanID = nil
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
+		self.harmSilenceID = nil
+		self.harmShutdownTime = 0
 		--call method from super class
 		self:removeEventHandlers()
 	end
