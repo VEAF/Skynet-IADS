@@ -5,6 +5,7 @@ luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()
+local F = dofile(base .. "/dcs-fixtures.lua")
 
 TestSkynetIADSHARMDetection = {}
 
@@ -228,6 +229,237 @@ function TestSkynetIADSHARMDetection:testCleanAgedContacts()
 	end
 	luaunit.assertEquals(count, 1)
 	luaunit.assertEquals(self.harmDetection.contactRadarsEvaluated[mockContact1], "keep")
+end
+
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+--
+-- The tests above are the port of the .miz suite and drive evaluateContacts() with mock
+-- contacts. What they never reached is the half of the decision that says "no": the branch that
+-- marks a contact NOT_HARM, the one that takes an identification back when the track turns out
+-- to manoeuvre, the debug output either writes, and the handing of a confirmed HARM to the
+-- network. FIX-STALE-HARM-SILENCE exists because this area is easy to get wrong.
+
+--- A contact that looks exactly like an anti-radiation missile: fast, and on a profile with no
+--- more than two legs. `harmState` is what the detection is deciding, so it is real state here
+--- rather than an assertion trap.
+local function fastContact(name, profile)
+	local contact = {
+		harmState = SkynetIADSContact.HARM_UNKNOWN,
+		__name = name,
+	}
+	function contact:getGroundSpeedInKnots(_)
+		return 1500 -- well past HARM_THRESHOLD_SPEED_KTS
+	end
+	function contact:getSimpleAltitudeProfile()
+		return profile or { SkynetIADSContact.CLIMB }
+	end
+	function contact:getAbstractRadarElementsDetected()
+		return { {
+			getHARMDetectionChance = function()
+				return 90
+			end,
+		} }
+	end
+	function contact:setHARMState(state)
+		self.harmState = state
+	end
+	function contact:isIdentifiedAsHARM()
+		return self.harmState == SkynetIADSContact.HARM
+	end
+	function contact:getAge()
+		return 0
+	end
+	function contact:getName()
+		return name
+	end
+	function contact:getTypeName()
+		return "AGM-88"
+	end
+	return contact
+end
+
+--- Replaces math.random for the duration of `body` so the coin toss inside shallReactToHARM is
+--- a decision the test makes rather than one it hopes for. Restored whatever happens -- through
+--- pcall, so a failing assertion inside `body` cannot leave a fixed math.random behind to poison
+--- every test that runs after it.
+---
+--- luacheck objects to assigning a field of a standard global, and it is right to in general.
+--- Here it is the point: shallReactToHARM() rolls a die, and a test that cannot control the die
+--- can only assert what happens to be true this run. Silenced at the two lines that do it, the
+--- way skynet-iads-utils.lua silences 143 for its unpack fallback, rather than in .luacheckrc --
+--- the ratchet there exists to erode, never to grow.
+local function withRoll(value, body)
+	local realRandom = math.random
+	math.random = function() -- luacheck: ignore 122
+		return value
+	end
+	local ok, err = pcall(body)
+	math.random = realRandom -- luacheck: ignore 122
+	if not ok then
+		error(err, 0)
+	end
+end
+
+local function loggedLines()
+	local lines = {}
+	for i = 1, #dcsStub.logs do
+		lines[i] = dcsStub.logs[i].text
+	end
+	return lines
+end
+
+local function lineWith(lines, needle)
+	for i = 1, #lines do
+		if lines[i]:find(needle, 1, true) then
+			return lines[i]
+		end
+	end
+	return nil
+end
+
+--- The roll beats the probability, so the network decides this one is not a HARM. Nothing is
+--- silenced, and the contact is marked so the next cycle does not re-evaluate it from scratch.
+function TestSkynetIADSHARMDetection:testAContactTheRollAcquitsIsMarkedNotAHARM()
+	local contact = fastContact("Pilot #12")
+	self.harmDetection:setContacts({ contact })
+	-- detection probability is 90; a roll of 91 is above it, so shallReactToHARM says no
+	withRoll(91, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.NOT_HARM)
+	luaunit.assertEquals(contact:isIdentifiedAsHARM(), false)
+end
+
+function TestSkynetIADSHARMDetection:testARollAtTheProbabilityIdentifiesTheHARM()
+	local contact = fastContact("Pilot #12")
+	self.harmDetection:setContacts({ contact })
+	-- 90 >= 90: the comparison is inclusive, which is the edge worth pinning
+	withRoll(90, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.HARM)
+end
+
+--- Both outcomes write a line naming the contact and the probability, and both are gated by the
+--- harmDefence setting. This is what someone reads in a dcs.log when a battery went silent and
+--- they want to know what convinced it.
+function TestSkynetIADSHARMDetection:testHARMDefenceLoggingReportsBothOutcomesWithTheProbability()
+	self.harmDetection.iads:getDebugSettings().harmDefence = true
+
+	local identified = fastContact("Pilot #12")
+	self.harmDetection:setContacts({ identified })
+	dcsStub.logs = {}
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	local line = lineWith(loggedLines(), "HARM IDENTIFIED:")
+	luaunit.assertNotNil(line)
+	luaunit.assertStrContains(line, "AGM-88")
+	luaunit.assertStrContains(line, "90%")
+
+	local acquitted = fastContact("Pilot #13")
+	self.harmDetection:setContacts({ acquitted })
+	dcsStub.logs = {}
+	withRoll(100, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	local acquittedLine = lineWith(loggedLines(), "HARM NOT IDENTIFIED:")
+	luaunit.assertNotNil(acquittedLine)
+	luaunit.assertStrContains(acquittedLine, "90%")
+end
+
+function TestSkynetIADSHARMDetection:testNeitherOutcomeIsLoggedWhileHARMDefenceIsOff()
+	luaunit.assertEquals(self.harmDetection.iads:getDebugSettings().harmDefence, false, "off by default")
+	self.harmDetection:setContacts({ fastContact("Pilot #12") })
+	dcsStub.logs = {}
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertNil(lineWith(loggedLines(), "HARM IDENTIFIED:"))
+end
+
+--- A missile flies one leg. A track already called a HARM that then shows a third leg was an
+--- aircraft manoeuvring all along, and the identification is taken back -- otherwise every
+--- battery it overflies stays silent for nothing.
+function TestSkynetIADSHARMDetection:testAnIdentificationIsTakenBackWhenTheTrackManoeuvres()
+	self.harmDetection.iads:getDebugSettings().harmDefence = true
+	local contact = fastContact("Pilot #12", {
+		SkynetIADSContact.CLIMB,
+		SkynetIADSContact.DESCEND,
+		SkynetIADSContact.CLIMB,
+	})
+	contact.harmState = SkynetIADSContact.HARM
+
+	self.harmDetection:setContacts({ contact })
+	dcsStub.logs = {}
+	self.harmDetection:evaluateContacts()
+
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.HARM_UNKNOWN)
+	local line = lineWith(loggedLines(), "CORRECTING HARM STATE")
+	luaunit.assertNotNil(line)
+	luaunit.assertStrContains(line, "Pilot #12")
+end
+
+--- The point of identifying a HARM at all: every usable battery and every usable early warning
+--- radar is told, through the real getUsableSAMSites() / getUsableEarlyWarningRadars() rather
+--- than a mock list -- a warning that goes to a list nobody builds warns nobody.
+function TestSkynetIADSHARMDetection:testAConfirmedHARMIsHandedToEveryUsableElement()
+	local iads = SkynetIADS:create("Ruby")
+	local harmDetection = SkynetIADSHARMDetection:create(iads)
+
+	local informed = {}
+	local function enrol(element, name)
+		function element:informOfHARM(contact)
+			informed[#informed + 1] = name
+		end
+		function element:getDetectedTargets()
+			return {}
+		end
+	end
+
+	F.samGroup("SA-6", "RED-SAM-north", { pos = { x = 0, y = 0, z = 0 }, coalition = 1 })
+	enrol(iads:addSAMSite("RED-SAM-north"), "RED-SAM-north")
+	F.samGroup("SA-2", "RED-SAM-south", { pos = { x = 20000, y = 0, z = 0 }, coalition = 1 })
+	enrol(iads:addSAMSite("RED-SAM-south"), "RED-SAM-south")
+	F.earlyWarningRadarUnit("EW-north", { pos = { x = 0, y = 0, z = 0 }, coalition = 1 })
+	enrol(iads:addEarlyWarningRadar("EW-north"), "EW-north")
+
+	local contact = fastContact("Pilot #12")
+	contact.harmState = SkynetIADSContact.HARM
+	harmDetection:setContacts({ contact })
+	harmDetection:evaluateContacts()
+
+	table.sort(informed)
+	luaunit.assertEquals(informed, { "EW-north", "RED-SAM-north", "RED-SAM-south" })
+	iads:deactivate()
+end
+
+--- An element the network cannot use -- no working connection node -- is not warned, because it
+--- is not in the usable list. Worth its own test: the difference between "every element" and
+--- "every usable element" is a battery left emitting while a missile is inbound.
+function TestSkynetIADSHARMDetection:testAnUnusableBatteryIsNotWarned()
+	local iads = SkynetIADS:create("Ruby")
+	local harmDetection = SkynetIADSHARMDetection:create(iads)
+
+	local informed = {}
+	F.samGroup("SA-6", "RED-SAM-cut-off", { pos = { x = 0, y = 0, z = 0 }, coalition = 1 })
+	local samSite = iads:addSAMSite("RED-SAM-cut-off")
+	function samSite:informOfHARM(_)
+		informed[#informed + 1] = "RED-SAM-cut-off"
+	end
+	function samSite:getDetectedTargets()
+		return {}
+	end
+	samSite:addConnectionNode(F.connectionNodeStatic("RED-SAM-cut-off-node"))
+	dcsStub.world["RED-SAM-cut-off-node"]:__destroy()
+
+	local contact = fastContact("Pilot #12")
+	contact.harmState = SkynetIADSContact.HARM
+	harmDetection:setContacts({ contact })
+	harmDetection:evaluateContacts()
+
+	luaunit.assertEquals(informed, {})
+	iads:deactivate()
 end
 
 os.exit(luaunit.LuaUnit.run())

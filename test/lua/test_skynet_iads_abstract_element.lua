@@ -101,4 +101,56 @@ function TestSkynetIADSAbstractElement:testGetDCSName()
 	luaunit.assertEquals(self.abstractElement:getDCSName(), "SAM-SA-6-2")
 end
 
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+
+--- Two debug settings a mission turns on while wiring a network up, to find out why an element
+--- refuses to work. They report on every check, so they are noisy by design and off by default.
+function TestSkynetIADSAbstractElement:testTheNoConnectionSettingNamesTheElementThatIsCutOff()
+	self.abstractElement:addConnectionNode(dcsStub.makeStatic({ name = "node-dead" }))
+	dcsStub.world["node-dead"]:__destroy()
+	self.iads:getDebugSettings().samNoConnection = true
+
+	dcsStub.screenText = {}
+	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), false)
+	luaunit.assertEquals(#dcsStub.screenText, 1)
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "no connection to Command Center")
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "SAM-SA-6-2")
+end
+
+function TestSkynetIADSAbstractElement:testTheNoPowerSettingNamesTheElementThatIsDark()
+	self.abstractElement:addPowerSource(dcsStub.makeStatic({ name = "power-dead" }))
+	dcsStub.world["power-dead"]:__destroy()
+	self.iads:getDebugSettings().hasNoPower = true
+
+	dcsStub.screenText = {}
+	luaunit.assertEquals(self.abstractElement:hasWorkingPowerSource(), false)
+	luaunit.assertEquals(#dcsStub.screenText, 1)
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "has no power")
+end
+
+function TestSkynetIADSAbstractElement:testNeitherSettingSaysAnythingWhileTheyAreOff()
+	self.abstractElement:addPowerSource(dcsStub.makeStatic({ name = "power-dead-2" }))
+	dcsStub.world["power-dead-2"]:__destroy()
+	dcsStub.screenText = {}
+	self.abstractElement:hasWorkingPowerSource()
+	self.abstractElement:hasActiveConnectionNode()
+	luaunit.assertEquals(#dcsStub.screenText, 0)
+end
+
+--- A shot event is handed to weaponFired, which the base class leaves empty and the radar
+--- element overrides to count its missiles in flight. The dispatch is what matters here: a site
+--- that never hears about its own launches never knows it has missiles up.
+function TestSkynetIADSAbstractElement:testAShotEventIsHandedToWeaponFired()
+	local fired = 0
+	function self.abstractElement:weaponFired(_)
+		fired = fired + 1
+	end
+
+	self.abstractElement:onEvent({ id = world.event.S_EVENT_SHOT })
+	luaunit.assertEquals(fired, 1)
+
+	self.abstractElement:onEvent({ id = world.event.S_EVENT_BIRTH })
+	luaunit.assertEquals(fired, 1, "and no other event is mistaken for one")
+end
+
 os.exit(luaunit.LuaUnit.run())

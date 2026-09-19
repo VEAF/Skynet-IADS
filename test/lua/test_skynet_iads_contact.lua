@@ -222,4 +222,33 @@ function TestSkynetIADSContact:test_addAbstractRadarElementDetected_dedupes()
 	luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 2)
 end
 
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+
+--- A DCS radar target reports how much it has worked out about what it is looking at. Skynet
+--- passes both flags through untouched; what matters is that they come from the radar target and
+--- are not invented.
+function TestSkynetIADSContact:testWhatTheRadarKnowsAboutAContactIsReportedAsIs()
+	local unit = dcsStub.makeUnit({ name = "bogey", type = "F-16C", pos = { x = 0, y = 3000, z = 0 } })
+	local identified = SkynetIADSContact:create({ object = unit, type = true, distance = true })
+	luaunit.assertEquals(identified:isTypeKnown(), true)
+	luaunit.assertEquals(identified:isDistanceKnown(), true)
+
+	local unknown = SkynetIADSContact:create({ object = unit, type = false, distance = false })
+	luaunit.assertEquals(unknown:isTypeKnown(), false)
+	luaunit.assertEquals(unknown:isDistanceKnown(), false)
+end
+
+--- A contact whose unit DCS no longer has answers a height of zero and an empty description
+--- instead of throwing. Half a destroyed network is exactly when the status page walks these.
+function TestSkynetIADSContact:testADeadContactAnswersNeutrallyInsteadOfThrowing()
+	local unit = dcsStub.makeUnit({ name = "shot-down", type = "F-16C", pos = { x = 0, y = 3000, z = 0 } })
+	local contact = SkynetIADSContact:create({ object = unit })
+	contact:refresh()
+	luaunit.assertTrue(contact:getHeightInFeetMSL() > 0)
+
+	unit:__destroy()
+	luaunit.assertEquals(contact:getHeightInFeetMSL(), 0)
+	luaunit.assertEquals(contact:getDesc(), {})
+end
+
 os.exit(luaunit.LuaUnit.run())
