@@ -1,6 +1,6 @@
 # 02 — a bulk re-add unwires what it discards
 
-Status: 🔄 in-progress — `fix/stale-harm-silence-on-cleanup`
+Status: ✅ done — [PR #18](https://github.com/VEAF/Skynet-IADS/pull/18)
 
 ## Why this is in this lot
 

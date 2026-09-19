@@ -1,6 +1,6 @@
 # FIX-STALE-HARM-SILENCE — a site cleaned up mid-HARM-evasion is deaf for the rest of the mission
 
-Status: 🔄 in-progress — `fix/stale-harm-silence-on-cleanup`
+Status: ✅ done — [PR #18](https://github.com/VEAF/Skynet-IADS/pull/18), merged 2026-09-19
 
 Origin: [issue #3](https://github.com/VEAF/Skynet-IADS/issues/3), opened by davidp57 on 2026-08-31,
 re-read on 2026-09-19 once `FEAT-LAST-LINE-OF-DEFENSE` had merged. The defect is unchanged since;
@@ -93,8 +93,8 @@ and the mission's own reference is reachable whatever the graph does.
 
 | # | Ticket | Status |
 |---|---|---|
-| 01 | [cleanUp() clears what it cancels](tickets/01-cleanup-clears-what-it-cancels.md) | 🔄 |
-| 02 | [a bulk re-add unwires what it discards](tickets/02-a-bulk-re-add-unwires-what-it-discards.md) | 🔄 |
+| 01 | [cleanUp() clears what it cancels](tickets/01-cleanup-clears-what-it-cancels.md) | ✅ |
+| 02 | [a bulk re-add unwires what it discards](tickets/02-a-bulk-re-add-unwires-what-it-discards.md) | ✅ |
 
 ## How this is verified
 
