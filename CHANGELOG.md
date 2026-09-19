@@ -143,8 +143,16 @@ Until that release is cut, the build date in the artifact's first line remains t
   while an aircraft on the deck stays under that radar's horizon -- the reported situation, built
   on purpose. It is driven from outside through VEAF's `dcs-bridge`, so nobody has to fly: one call
   puts an immortal intruder on a run across the site, another prints what the network is doing, and
-  the status line goes into `dcs.log` every five seconds. Its scenario is kept in readable form
-  next to it as `skynet-insim-last-line-of-defence.lua`.
+  the status line goes into `dcs.log` every five seconds. A second run, started on demand, covers
+  the other half of the feature: a battery whose only parent is an AWACS, and an AWACS that flies
+  out of its own detection range. Its scenario is kept in readable form next to it as
+  `skynet-insim-last-line-of-defence.lua`.
+
+  Both were measured on 2026-09-19. A battery held dark lit up on proximity with no radar contact
+  anywhere, stayed in the network while lit, and fell silent 45 s after the intruder left its
+  radius -- to the second, on two runs with different drawn radii. The covered battery was handed
+  back the moment its AWACS crossed its own range. That is what the standalone suite could not
+  show: that the cycle really calls this code.
 
 ### Changed
 

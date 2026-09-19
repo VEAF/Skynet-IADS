@@ -1,6 +1,8 @@
 # FEAT-LAST-LINE-OF-DEFENSE — a dark site can notice what flies over it, and coverage follows what moves
 
-Status: 🔄 in-progress — both tickets are implemented and tested; the in-sim check is what remains
+Status: ✅ done — both tickets implemented and tested, and both mechanisms measured in DCS on
+2026-09-19: a dark battery woken by proximity alone and silent again 45 s later, and a battery
+handed back the moment the AWACS covering it flew out of range
 
 Origin: The Reaper, 2026-09-17, on a VEAF mission built with veaf-tools:
 
@@ -126,9 +128,53 @@ least one test red. The suite also caught a real defect while being written — 
 sweep measures movement against was laid down by the first sweep, i.e. *after* the element had
 moved, so the move that mattered measured zero and was missed. `markCoverageUpdated()` is that fix.
 
-**What remains: the in-sim check.** The mission for it is built and waiting to be flown:
-`demo-missions/skynet-insim-last-line-of-defence.miz`, with its scenario kept in readable form
-beside it as `demo-missions/skynet-insim-last-line-of-defence.lua`.
+**The in-sim check: run, and both mechanisms hold.** 2026-09-19, on
+`demo-missions/skynet-insim-last-line-of-defence.miz`, driven through VEAF's dcs-bridge, with the
+scenario kept in readable form beside it as `demo-missions/skynet-insim-last-line-of-defence.lua`.
+Every run below was flown from that file as the mission loads it — nothing hand-injected.
+
+### What was measured
+
+**Run 1, the last line of defense.** A battery the network held dark lit up on proximity alone and
+fell silent again:
+
+| | first run | replayed after a reload |
+|---|---|---|
+| radius drawn for the site | 10.9 km | **14.1 km** |
+| lit up at | 9.27 km | 13.06 km |
+| left the radius → report expired | **45 s** | **45 s** |
+| went dark at | 27.29 km | 27.21 km |
+
+At the moment it lit up: `ACTIVE=true` with `targetsInRange=false` — **no radar had designated
+anything**, the EWR 106 km away saw nothing of an aircraft at 150 m — and `freshReport=true`, so it
+was `reportContact` that woke it, not another path. `AUTONOMOUS=false` throughout: the battery
+lights up *while staying in the network*, which is the behaviour this lot wanted and not the
+inversion the report described.
+
+Two things the second run settles that the first could not. The radius is **drawn once per site and
+stable**: a single value across the mission's 75 samples, and a different one after a reload, which
+is the per-site draw doing its job rather than a hard-coded distance. And the persistence is
+**45 s to the second**, twice.
+
+The site then stays lit for another ~45 s after the report expires. That is not the persistence
+overrunning: `goDark()` has always refused to switch off a radar that is holding a target with
+ammunition left, and Skynet's own status line shows the contact
+(`CONTACT: TEST-INTRUDER-1 | DISTANCE NM: 8.56`). Pre-existing behaviour, and the right one — a
+battery that can see its attacker has no business going back to sleep.
+
+**Run 2, coverage follows what moves.** A battery whose only parent was an AWACS, and an AWACS
+flying away from it. The geometry was built on two measured numbers: the A-50's real detection
+range, read back in game (**204.5 km**), and the sweep's movement threshold, 10 NM. Starting at
+190 km, the link was dropped at **211.0 km** — the same value on both runs — with `AUTONOMOUS`,
+`parents` and the radar's own child count all flipping together: 1 → 0. Before this lot the
+incremental rebuild never purged, and that battery would have stayed non-autonomous for the rest of
+the mission with the aircraft at the other end of the map.
+
+The 25 s between crossing the range and dropping the link is the movement threshold, not a delay:
+the sweep only rebuilds for an element that has moved more than 18.5 km since its last rebuild, and
+the reference point dated from enrolment at 190.1 km.
+
+No script error in the log across any run.
 
 ### What the mission is
 
@@ -156,12 +202,18 @@ Nobody has to fly. Start `dcs-serve`, load the mission, and drive it through the
 | `SKYNET_TEST.status()` | the line a run is read from: `ACTIVE`, `AUTONOMOUS`, `targetsInRange`, `freshReport`, and how far the intruder is |
 | `SKYNET_TEST.launchIntruder()` | an A-10A from 40 km south to 40 km north at 150 m AGL and 200 m/s, crossing the radius in about two minutes. It is told to do nothing, hold fire and ignore threats, and it is made immortal — all four keep it on the straight track the measurement assumes, since a woken SA-6 fires and an intruder that attacks, evades or dies leaves its run. 150 m rather than the deck because at 106 km it stays under the radar horizon up to roughly 400 m, and there is no reason to spend that margin flying an AI into a ridge |
 | `SKYNET_TEST.startWatch(5)` | on from the start; writes the status line into `dcs.log` every five seconds, so both edges of the run survive in the log |
+| `SKYNET_TEST.startCoverageRun()` | run 2, on demand: spawns a battery and an AWACS 190 km from it in a second network, and starts its own watch. Not started at load — it builds a whole second IADS, which has no business happening in a mission somebody opened to look at run 1 |
+| `SKYNET_TEST.coverageStatus()` | that run's line: the AWACS's distance and range, the battery's autonomy and parent count, and how many sites the AWACS covers |
 
-### What the run has to show
+### What the runs have to show
 
-`ACTIVE=false` while the intruder is far, `ACTIVE=true` while it is inside the radius, and
-`ACTIVE=false` again roughly 45 s after it leaves. A run showing only the first two proves nothing:
-the persistence expiring is half the check.
+**Run 1**: `ACTIVE=false` while the intruder is far, `ACTIVE=true` while it is inside the radius,
+and `ACTIVE=false` again once the persistence has run out. A run showing only the first two proves
+nothing: the persistence expiring is half the check.
+
+**Run 2**: `AUTONOMOUS=false parents=1` while the AWACS covers the battery, then
+`AUTONOMOUS=true parents=0` once it has flown past its own detection range. Same rule — the
+handing back is the half that the old code got wrong.
 
 Prerequisites, on the machine running DCS: `dcs-serve` listening, and the bridge's own
 [prerequisites](https://veaf.github.io/dcs-bridge/guide/prerequisites/) — `MissionScripting.lua`

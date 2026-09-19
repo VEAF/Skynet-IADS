@@ -1,18 +1,26 @@
---- In-sim check for the last line of defense and the coverage refresh.
+--- In-sim checks for the last line of defense and the coverage refresh.
 --
--- This is the scenario FEAT-LAST-LINE-OF-DEFENSE asks for: a SAM site held dark by the network,
--- and an early warning radar placed so far away that it covers the site on Skynet's flat 2D
--- geometry while seeing nothing at all of an aircraft on the deck. It is the shape of the report
--- this whole lot came from — fly under the EWR's horizon and no battery reacts.
+-- Two runs, because FEAT-LAST-LINE-OF-DEFENSE has two mechanisms, and neither can be proved by a
+-- test against a stub: the failure mode that matters is a piece of code that is perfectly tested
+-- and never called by the cycle.
 --
--- Everything the check needs is driven from outside through VEAF's dcs-bridge, so nobody has to
--- fly: SKYNET_TEST.launchIntruder() puts an aircraft on a run across the site, and
--- SKYNET_TEST.status() prints what the network is doing. The mission carries no player task.
+-- **Run 1, the last line of defense.** A SAM site held dark by the network, and an early warning
+-- radar placed so far away that it covers the site on Skynet's flat 2D geometry while seeing
+-- nothing at all of an aircraft on the deck. It is the shape of the report this whole lot came
+-- from — fly under the EWR's horizon and no battery reacts. It starts with the mission;
+-- SKYNET_TEST.launchIntruder() flies it.
 --
--- The check must be able to fail BOTH ways:
---   * the site lights up when the intruder crosses its last-line-of-defense radius, and
---   * it falls silent once the persistence has run out after the intruder leaves.
--- A run that only ever shows one of the two proves nothing.
+-- **Run 2, coverage follows what moves.** A battery whose only parent is an AWACS, and an AWACS
+-- that flies away from it. Started on demand by SKYNET_TEST.startCoverageRun(), in a network of
+-- its own.
+--
+-- Everything is driven from outside through VEAF's dcs-bridge, so nobody has to fly. The mission
+-- carries no player task.
+--
+-- Each check must be able to fail BOTH ways. For run 1: the site lights up when the intruder
+-- crosses its last-line-of-defense radius, AND it falls silent once the persistence has run out.
+-- For run 2: the battery is held non-autonomous while the AWACS covers it, AND it is handed back
+-- once the AWACS has left. A run that only ever shows one of the two proves nothing.
 
 do
 	SKYNET_TEST = {}
@@ -341,6 +349,176 @@ do
 			return "intruder removed"
 		end
 		return "no intruder to remove"
+	end
+
+	-- The second check: coverage follows what moves -------------------------------------------------
+	--
+	-- A battery whose only parent is an AWACS, and an AWACS that flies away from it. Before this lot
+	-- the incremental rebuild only ever added, so that battery kept the parent for the rest of the
+	-- mission and stayed non-autonomous with the aircraft at the other end of the map. The periodic
+	-- sweep has to take it back.
+	--
+	-- It runs in a network of its own, so neither check can disturb the other, and it is not started
+	-- at load: it spawns two groups and builds a second IADS, which has no business happening in a
+	-- mission somebody opened to look at the first check.
+	--
+	-- The geometry rests on two measured numbers rather than guessed ones. The A-50's detection range
+	-- is 204.5 km, read back in game; a sweep only rebuilds for an element that has moved more than
+	-- 10 NM (18.5 km) since its last rebuild. So the AWACS starts at 190 km -- inside its range,
+	-- therefore covering -- and flies straight away from the battery: the range is crossed at
+	-- 204.5 km and the movement threshold at 208.6 km, and the first sweep after both drops the link.
+
+	SKYNET_TEST.COVERAGE_SAM_GROUP = "TEST2-SAM-coverage"
+	SKYNET_TEST.COVERAGE_AWACS_UNIT = "TEST2-EW-awacs-1"
+
+	local function airborneWaypoint(point, altitude, speed)
+		return {
+			["x"] = point.x,
+			["y"] = point.y,
+			["alt"] = altitude,
+			["alt_type"] = "BARO",
+			["type"] = "Turning Point",
+			["action"] = "Turning Point",
+			["speed"] = speed,
+			["speed_locked"] = true,
+			["ETA"] = 0,
+			["ETA_locked"] = false,
+			["formation_template"] = "",
+			["task"] = { ["id"] = "ComboTask", ["params"] = { ["tasks"] = {} } },
+		}
+	end
+
+	--- Distance, parents and autonomy in one line: the three things this run turns on.
+	function SKYNET_TEST.coverageStatus()
+		if SKYNET_TEST.iads2 == nil then
+			return "coverage: not started -- call SKYNET_TEST.startCoverageRun()"
+		end
+		local site = SKYNET_TEST.iads2:getSAMSiteByGroupName(SKYNET_TEST.COVERAGE_SAM_GROUP)
+		local awacs = SKYNET_TEST.iads2:getEarlyWarningRadarByUnitName(SKYNET_TEST.COVERAGE_AWACS_UNIT)
+		if site == nil or awacs == nil then
+			return "coverage: the battery or the AWACS is missing"
+		end
+		local sitePosition = site:getElementPosition()
+		local awacsPosition = awacs:getElementPosition()
+		if sitePosition == nil or awacsPosition == nil then
+			return "coverage: no position -- the battery or the AWACS no longer exists"
+		end
+		return string.format(
+			"COVERAGE: AWACS at %.1f km (range %.1f km) | battery AUTONOMOUS=%s parents=%d | AWACS covers %d site(s)",
+			site:getDistanceToUnit(sitePosition, awacsPosition) / 1000,
+			awacs:getMaxDetectionRange() / 1000,
+			tostring(site:getAutonomousState()),
+			#site:getParentRadars(),
+			#awacs:getChildRadars()
+		)
+	end
+
+	function SKYNET_TEST.startCoverageWatch(intervalSeconds)
+		intervalSeconds = intervalSeconds or 5
+		if SKYNET_TEST.coverageWatchID then
+			timer.removeFunction(SKYNET_TEST.coverageWatchID)
+		end
+		SKYNET_TEST.coverageWatchID = timer.scheduleFunction(function(_, time)
+			env.info("SKYNET-TEST-" .. SKYNET_TEST.coverageStatus())
+			return time + intervalSeconds
+		end, nil, timer.getTime() + intervalSeconds)
+		return "coverage watch started, every " .. intervalSeconds .. "s"
+	end
+
+	--- Spawns the battery and its AWACS, wires them into a second network, and starts watching.
+	--
+	-- separationKm is how far the AWACS starts from the battery; the default puts it inside its own
+	-- detection range and close enough to the edge that one and a half minutes of flight crosses it.
+	function SKYNET_TEST.startCoverageRun(separationKm)
+		separationKm = separationKm or 190
+		--a position the demo mission already carried a SAM on, so the terrain is known to take one,
+		--and far enough from TEST-EW-far (633 km) that the fixed radar cannot be a second parent --
+		--a battery with two parents would not change autonomy when one of them leaves
+		local battery = { x = -108202, y = 516834 }
+		local awacsStart = { x = battery.x, y = battery.y - separationKm * 1000 }
+		local awacsEnd = { x = battery.x, y = awacsStart.y - 100000 }
+
+		local samGroup = {
+			["name"] = SKYNET_TEST.COVERAGE_SAM_GROUP,
+			["task"] = "Ground Nothing",
+			["taskSelected"] = true,
+			["hidden"] = false,
+			["units"] = {
+				{
+					["name"] = "TEST2-SAM-radar",
+					["type"] = "Kub 1S91 str",
+					["x"] = battery.x,
+					["y"] = battery.y,
+					["heading"] = 0,
+					["skill"] = "Excellent",
+				},
+				{
+					["name"] = "TEST2-SAM-ln-1",
+					["type"] = "Kub 2P25 ln",
+					["x"] = battery.x + 60,
+					["y"] = battery.y,
+					["heading"] = 0,
+					["skill"] = "Excellent",
+				},
+			},
+			["route"] = {
+				["points"] = {
+					{
+						["x"] = battery.x,
+						["y"] = battery.y,
+						["type"] = "Turning Point",
+						["action"] = "Off Road",
+						["speed"] = 0,
+					},
+				},
+			},
+		}
+
+		local awacsGroup = {
+			["name"] = "TEST2-EW-awacs",
+			["task"] = "AWACS",
+			["taskSelected"] = true,
+			["hidden"] = false,
+			["uncontrolled"] = false,
+			["start_time"] = 0,
+			["route"] = {
+				["points"] = { airborneWaypoint(awacsStart, 8000, 220), airborneWaypoint(awacsEnd, 8000, 220) },
+			},
+			["units"] = {
+				{
+					["name"] = SKYNET_TEST.COVERAGE_AWACS_UNIT,
+					["type"] = "A-50",
+					["skill"] = "Excellent",
+					["x"] = awacsStart.x,
+					["y"] = awacsStart.y,
+					["alt"] = 8000,
+					["alt_type"] = "BARO",
+					["speed"] = 220,
+					["heading"] = 0,
+					["payload"] = { ["fuel"] = 60000, ["flare"] = 0, ["chaff"] = 0, ["gun"] = 0, ["pylons"] = {} },
+					["callsign"] = { [1] = 2, [2] = 1, [3] = 1, ["name"] = "Overlord21" },
+				},
+			},
+		}
+
+		if coalition.addGroup(country.id.RUSSIA, Group.Category.GROUND, samGroup) == nil then
+			return "the battery did not spawn"
+		end
+		if coalition.addGroup(country.id.RUSSIA, Group.Category.AIRPLANE, awacsGroup) == nil then
+			return "the AWACS did not spawn"
+		end
+
+		SKYNET_TEST.iads2 = SkynetIADS:create("COVERAGE-TEST")
+		local coverageDebug = SKYNET_TEST.iads2:getDebugSettings()
+		coverageDebug.radarWentDark = true
+		coverageDebug.radarWentLive = true
+		SKYNET_TEST.iads2:addEarlyWarningRadar(SKYNET_TEST.COVERAGE_AWACS_UNIT)
+		SKYNET_TEST.iads2:addSAMSite(SKYNET_TEST.COVERAGE_SAM_GROUP)
+		SKYNET_TEST.iads2:activate()
+
+		SKYNET_TEST.startCoverageWatch(5)
+		log("coverage run started")
+		return SKYNET_TEST.coverageStatus()
 	end
 
 	-- Build ---------------------------------------------------------------------------------------
