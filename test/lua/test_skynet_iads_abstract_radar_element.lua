@@ -1,5 +1,5 @@
 --- Standalone port of unit-tests/test-skynet-iads-abstract-radar-element.lua —
---- first slice: the autonomy / coverage cluster (7 of that file's 50 tests).
+--- first slice: the autonomy / coverage cluster (8 of that file's 50 tests).
 ---
 --- Ported here because SkynetIADSAbstractRadarElement carries goLive, goDark,
 --- setToCorrectAutonomousState and the HARM evasion, and both tickets of
@@ -13,7 +13,11 @@
 --- trigger.action.explosion(...). Here they come from dcs-fixtures and are
 --- killed with <obj>:__destroy() — the stub's trigger.action.explosion is a
 --- no-op, so destroying the object directly is what stands in for the blast.
---- Everything else (the mocks, the assertions, their order) is the .miz test.
+--- Everything else (the mocks, the assertions, their order) is the .miz test,
+--- with one deliberate departure: the .miz's enableEmission mocks set their flag
+--- to a hard-coded true/false and ignore the argument, so `emissionState` only
+--- ever recorded *that* the call happened. Here the mock records the argument,
+--- which is what the assertion underneath it reads as.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
@@ -72,8 +76,8 @@ function TestSkynetIADSAbstractRadarElement:testGoDark()
 
 	local emissionState = nil
 
-	function mockRepresentation:enableEmission()
-		emissionState = false
+	function mockRepresentation:enableEmission(state)
+		emissionState = state
 	end
 
 	function mockRepresentation:isExist()
@@ -109,8 +113,8 @@ function TestSkynetIADSAbstractRadarElement:testGoLive()
 
 	local emissionState = nil
 
-	function mockRepresentation:enableEmission()
-		emissionState = true
+	function mockRepresentation:enableEmission(state)
+		emissionState = state
 	end
 
 	function mockRepresentation:isExist()
