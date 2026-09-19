@@ -102,6 +102,17 @@ Until that release is cut, the build date in the artifact's first line remains t
 - The DCS stub gained `coalition` (with `side` and `getGroups`), `Group.Category` and
   `Unit.inAir()`, and the fixtures gained hostile aircraft, an AWACS, and positioned and
   coalition-aware SAM groups.
+- `test/lua/test_skynet_iads_logger.lua` (26 tests), pinning the status page the
+  `skynet-runtime-debug` skill reads back out of a `dcs.log`. It asserts each line field by field —
+  their names, their order and their values — over a network whose damage is known and whose every
+  counter is non-zero, so a printer stuck at zero cannot pass. The separators' own spacing is
+  deliberately left out of the contract. Checked by mutation: renaming a field, swapping two, and
+  freezing a counter each turn it red, naming the field. This takes
+  `skynet-iads-source/skynet-iads-logger.lua` from 10% to 95% test coverage, and the project from
+  70% to 83%.
+- The DCS stub records `trigger.action.outText` into `dcsStub.screenText`, the way `env.*` is
+  already recorded into `dcsStub.logs`. It was a no-op until now, so every summary line the logger
+  has ever emitted went nowhere in this suite.
 
 ### Changed
 

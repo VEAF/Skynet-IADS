@@ -15,6 +15,7 @@ dcsStub.world = {} -- name -> fake object, backs *.getByName
 dcsStub.logs = {} -- { { level=, text= }, ... } from env.*
 dcsStub.eventHandlers = {} -- appended by world.addEventHandler
 dcsStub.groups = {} -- every group fixture in creation order, backs coalition.getGroups
+dcsStub.screenText = {} -- { { text=, duration= }, ... } from trigger.action.outText
 
 function dcsStub.now()
 	return now
@@ -31,6 +32,7 @@ function dcsStub.reset()
 	dcsStub.logs = {}
 	dcsStub.eventHandlers = {}
 	dcsStub.groups = {}
+	dcsStub.screenText = {}
 	timerTasks = {}
 	nextTimerId = 0
 	utilsSchedulerTasks = nil
@@ -113,7 +115,23 @@ env = {
 	end,
 }
 
-trigger = { action = { outText = function() end, explosion = function() end } }
+-- trigger.action.outText(text, seconds) is what SkynetIADSLogger:printOutput() writes to, and it
+-- is the only route the IADS status page takes -- the per-element blocks go to env.info, the three
+-- summary lines go here. In DCS the call puts `text` on every player's screen for `seconds` and
+-- returns nothing: there is no read-back, no history, and no way to know whether anyone looked.
+-- So the recording below stands in for the players' eyes and nothing else. It keeps what was
+-- printed and for how long, the same way env.* is kept in dcsStub.logs, and models neither the
+-- display itself nor the fact that a second call replaces the first on screen.
+-- Left a no-op until 03-pin-the-status-printers, which is why every summary line the logger ever
+-- emitted went nowhere in this suite.
+trigger = {
+	action = {
+		outText = function(text, duration)
+			table.insert(dcsStub.screenText, { text = tostring(text), duration = duration })
+		end,
+		explosion = function() end,
+	},
+}
 
 timer = {
 	getAbsTime = function()
