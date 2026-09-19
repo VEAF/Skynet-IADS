@@ -138,6 +138,25 @@ Until that release is cut, the build date in the artifact's first line remains t
   index a nil value*, which is what a mistyped group name looks like -- and that a prefix has to
   start the group name rather than merely appear in it.
 
+- `demo-missions/skynet-insim-last-line-of-defence.miz`, the in-sim check for the last line of
+  defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
+  while an aircraft on the deck stays under that radar's horizon -- the reported situation, built
+  on purpose. It is driven from outside through VEAF's `dcs-bridge`, so nobody has to fly: one call
+  puts an immortal intruder on a run across the site, another prints what the network is doing, and
+  the status line goes into `dcs.log` every five seconds. A second run, started on demand, covers
+  the other half of the feature: a battery whose only parent is an AWACS, and an AWACS that flies
+  out of its own detection range. Its scenario is kept in readable form next to it as
+  `skynet-insim-last-line-of-defence.lua`.
+
+  Both were measured in DCS 2.9.29.27468 on 2026-09-19. A battery held dark lit up on proximity
+  with no radar contact anywhere, stayed in the network while lit, and fell silent 45 s after the
+  intruder left its radius -- to the second, on two runs whose drawn radii differed (10.9 km and
+  14.1 km), which also shows the radius is drawn per site and stable: one value across 107 samples.
+  The covered battery was handed back at 211.0 km on both runs. That is what the standalone suite
+  could not show: that the cycle really calls this code. The timings, the montage and the limits of
+  what was covered are written up in
+  [`.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md`](.backlog/FEAT-LAST-LINE-OF-DEFENSE/in-sim-test-report-2026-09-19.md).
+
 ### Changed
 
 - `develop` is the default branch, and the Lua suite runs on it.
