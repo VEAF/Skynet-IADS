@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  luacheck:
+    name: luacheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install luacheck
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
+          sudo luarocks install luacheck
+
+      - name: Run luacheck
+        run: luacheck skynet-iads-source test/lua
+
+  stylua:
+    name: stylua --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install stylua
+        run: |
+          curl -sSL -o stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/download/v2.4.0/stylua-linux-x86_64.zip
+          unzip -o stylua.zip
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/stylua
+
+      - name: Check formatting
+        run: stylua --check skynet-iads-source test/lua
