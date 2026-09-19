@@ -37,7 +37,10 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - Branch from `develop`: `feature/<something>` or `fix/<something>`. Never commit directly to
   `develop` or `master`.
-- One branch and one pull request per lot, not per ticket.
+- One branch and one pull request per lot, not per ticket. A lot can be split across several pull
+  requests when its tickets are genuinely independent — agree the split before starting, rather
+  than discovering it halfway through.
+- One commit per ticket. Two subjects in one commit cannot be read, reverted or bisected apart.
 - [Conventional Commits](https://www.conventionalcommits.org/), in English.
 - Branches are deleted on merge — this is automatic.
 

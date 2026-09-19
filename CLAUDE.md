@@ -109,7 +109,18 @@ instead of extending it — it exists to erode, never to grow.
   tracker costs a review cycle and protects nothing CI can check. The moment a change touches
   `skynet-iads-source/`, `test/`, `documentation/`, `CHANGELOG.md` or the build, it goes through a
   branch and a pull request — including a one-line change.
-- One branch and one pull request per lot, not per ticket. Conventional Commits, in English.
+- One branch and one pull request per lot, not per ticket. A lot may be split across several pull
+  requests when its tickets are genuinely independent, but **the split is announced in the plan and
+  approved before the first branch is cut** — never decided ticket by ticket as the work goes.
+  David's call, 2026-09-19, after `CHORE-PROFESSIONALIZE-THE-REPO` reached nine pull requests and
+  `CHORE-TEST-COVERAGE-FLOOR` five, none of which he had been asked about. The rule already allowed
+  the split; what was missing was his say in it.
+- **One commit per ticket** inside a pull request. Two tickets in one commit reads fine at the time
+  and is unreadable six months later: `FEAT-LAST-LINE-OF-DEFENSE` shipped the proximity wake-up and
+  the coverage rebuild as a single commit (`0ebbc01`), so neither can be read, reverted or bisected
+  on its own. Flogas caught it. A lot shared by two tickets does not justify a commit shared by two
+  subjects.
+- Conventional Commits, in English.
 - Branches are deleted on merge.
 
 ## Backlog
