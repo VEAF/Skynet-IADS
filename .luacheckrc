@@ -55,6 +55,15 @@ globals = {
 -- should fail.
 allow_defined_top = true
 
+-- Every method here takes `self` because that is how `function Class:method(...)` reads, not
+-- because the method needs it — most don't. Warning on that would be noise on every file.
+self = false
+
+-- 631, line too long: several lines predate this tool by years and run well past any
+-- reasonable width (one is 285 characters). Rewrapping them is out of scope for adding the
+-- linter; stylua's own column_width already keeps anything it reformats in check.
+ignore = { "631" }
+
 exclude_files = {
 	"test/lua/luaunit.lua", -- vendored upstream, unmodified
 }
