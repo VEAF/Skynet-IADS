@@ -143,4 +143,147 @@ function TestSkynetIADSUtils:test_removeFunction_returns_boolean()
 	luaunit.assertEquals(SkynetIADSUtils.removeFunction(nil), false)
 end
 
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+--
+-- The geometry helpers the HARM aspect calculation and the coverage graph are built on, and the
+-- two ends of the scheduler's life the tests above never reached.
+
+-- ---- makeVec3: the y/z swap every distance goes through -------------------------------------
+
+--- A mission-table point is a vec2: its easting is in `y`. A runtime vec3 keeps the altitude
+--- there and the easting in `z`. Getting it backwards raises nothing, it silently puts the point
+--- somewhere else -- which is why every distance in this file converts first, and why this is
+--- worth a test rather than a glance.
+function TestSkynetIADSUtils:test_makeVec3_moves_a_vec2_easting_into_z()
+	local vec3 = SkynetIADSUtils.makeVec3({ x = 10, y = 20 })
+	luaunit.assertEquals(vec3, { x = 10, y = 0, z = 20 })
+end
+
+function TestSkynetIADSUtils:test_makeVec3_takes_the_altitude_from_alt()
+	local vec3 = SkynetIADSUtils.makeVec3({ x = 10, y = 20, alt = 300 })
+	luaunit.assertEquals(vec3, { x = 10, y = 300, z = 20 })
+end
+
+--- An explicit altitude wins over the point's own, which is how a caller lifts a ground point.
+function TestSkynetIADSUtils:test_makeVec3_prefers_an_explicit_altitude()
+	luaunit.assertEquals(SkynetIADSUtils.makeVec3({ x = 10, y = 20 }, 500), { x = 10, y = 500, z = 20 })
+	luaunit.assertEquals(SkynetIADSUtils.makeVec3({ x = 10, y = 20, alt = 300 }, 500), { x = 10, y = 500, z = 20 })
+end
+
+function TestSkynetIADSUtils:test_makeVec3_leaves_a_vec3_alone()
+	luaunit.assertEquals(SkynetIADSUtils.makeVec3({ x = 1, y = 2, z = 3 }), { x = 1, y = 2, z = 3 })
+end
+
+-- ---- getDir / getHeadingPoints --------------------------------------------------------------
+
+--- Grid north is +x and grid east is +z, so these four are the compass. The last one is the
+--- branch that matters: atan2 answers in (-pi, pi], and a bearing has to come back in [0, 2*pi).
+--- Without the wrap, anything pointing west of north reads as a negative heading and every
+--- aspect built on it is wrong by a full turn.
+function TestSkynetIADSUtils:test_getDir_answers_a_bearing_in_0_2pi()
+	luaunit.assertAlmostEquals(SkynetIADSUtils.getDir({ x = 1, y = 0, z = 0 }), 0, 1e-9)
+	luaunit.assertAlmostEquals(SkynetIADSUtils.getDir({ x = 0, y = 0, z = 1 }), math.pi / 2, 1e-9)
+	luaunit.assertAlmostEquals(SkynetIADSUtils.getDir({ x = -1, y = 0, z = 0 }), math.pi, 1e-9)
+	luaunit.assertAlmostEquals(SkynetIADSUtils.getDir({ x = 0, y = 0, z = -1 }), 3 * math.pi / 2, 1e-9)
+end
+
+--- Passing a reference point adds the correction from grid north to true north. The stub's
+--- coord is a linear fake in which the two coincide (see dcs-stub.lua), so the corrected answer
+--- has to equal the raw one -- which is what makes this a test of the branch being taken rather
+--- than of a number the fake invented.
+function TestSkynetIADSUtils:test_getDir_with_a_reference_point_applies_the_north_correction()
+	local vec = { x = 0, y = 0, z = 1 }
+	luaunit.assertEquals(SkynetIADSUtils.getNorthCorrection({ x = 0, y = 0, z = 0 }), 0)
+	luaunit.assertAlmostEquals(SkynetIADSUtils.getDir(vec, { x = 0, y = 0, z = 0 }), SkynetIADSUtils.getDir(vec), 1e-9)
+end
+
+--- The heading from one point to another, which is what the HARM aspect calculation asks for
+--- before deciding whether a missile is pointed at the radar or merely passing it.
+function TestSkynetIADSUtils:test_getHeadingPoints_measures_from_the_first_point_to_the_second()
+	local origin = { x = 0, y = 0, z = 0 }
+	luaunit.assertAlmostEquals(
+		SkynetIADSUtils.getHeadingPoints(origin, { x = 1000, y = 0, z = 0 }),
+		0,
+		1e-9,
+		"due grid north"
+	)
+	luaunit.assertAlmostEquals(
+		SkynetIADSUtils.getHeadingPoints(origin, { x = 0, y = 0, z = 1000 }),
+		math.pi / 2,
+		1e-9,
+		"due grid east"
+	)
+	-- and the other way round is the reciprocal, not the same bearing
+	luaunit.assertAlmostEquals(
+		SkynetIADSUtils.getHeadingPoints({ x = 0, y = 0, z = 1000 }, origin),
+		3 * math.pi / 2,
+		1e-9
+	)
+end
+
+function TestSkynetIADSUtils:test_getHeadingPoints_north_corrected_matches_the_raw_one_here()
+	local origin = { x = 0, y = 0, z = 0 }
+	local target = { x = 1000, y = 0, z = 1000 }
+	luaunit.assertAlmostEquals(
+		SkynetIADSUtils.getHeadingPoints(origin, target, true),
+		SkynetIADSUtils.getHeadingPoints(origin, target),
+		1e-9
+	)
+end
+
+-- ---- the two ends of a scheduled task's life ------------------------------------------------
+
+--- A repeating task with a stop time stops, and stops for good. Without this the coverage
+--- refresh and the contact cycle would be the only scheduler users ever exercised, and both run
+--- forever.
+function TestSkynetIADSUtils:test_a_repeating_task_stops_at_its_stop_time()
+	local runs = 0
+	SkynetIADSUtils.scheduleFunction(function()
+		runs = runs + 1
+	end, {}, 1, 5, 12)
+
+	for _ = 1, 4 do
+		dcsStub.advanceClock(5)
+		dcsStub.fireDueTimers()
+	end
+	luaunit.assertEquals(runs, 2, "it ran at 5 s and at 10 s, and the 15 s tick was past the stop time")
+
+	dcsStub.advanceClock(100)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(runs, 2, "and it does not come back")
+end
+
+--- A task that removes itself while it is running must not be re-armed afterwards. This is what
+--- SkynetIADS:deactivate() does from inside a cycle, and re-arming a task whose owner has just
+--- been torn down is how a dead network keeps polling DCS objects that no longer exist.
+function TestSkynetIADSUtils:test_a_task_that_removes_itself_is_not_rearmed()
+	local runs = 0
+	local id
+	id = SkynetIADSUtils.scheduleFunction(function()
+		runs = runs + 1
+		SkynetIADSUtils.removeFunction(id)
+	end, {}, 1, 5)
+
+	dcsStub.advanceClock(5)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(runs, 1)
+
+	dcsStub.advanceClock(100)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(runs, 1, "it took itself off the scheduler from inside its own run")
+end
+
+--- Removing a task that is merely pending, from outside, has the same effect by the other route.
+function TestSkynetIADSUtils:test_a_task_removed_before_it_fires_never_runs()
+	local runs = 0
+	local id = SkynetIADSUtils.scheduleFunction(function()
+		runs = runs + 1
+	end, {}, 1, 5)
+	luaunit.assertEquals(SkynetIADSUtils.removeFunction(id), true)
+
+	dcsStub.advanceClock(100)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(runs, 0)
+end
+
 os.exit(luaunit.LuaUnit.run())

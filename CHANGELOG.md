@@ -120,6 +120,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   never run. What a getter gives back on a miss is asserted, and `api.md` now says the same
   thing. `skynet-iads-source/skynet-iads.lua` goes from 82% to 98% test coverage, and the project
   from 83% to 86%.
+- The long tail of the suite, which takes the project past its 90% test-coverage target:
+  the jammer (100%), the anti-radiation-missile decision and who it warns (98%), how a battery
+  learns its own range from its sensors and its ammunition (`test_skynet_iads_range_data.lua`,
+  new), the geometry helpers the HARM aspect calculation is built on, and the table delegator
+  that makes `getSAMSitesByNatoName('SA-10'):setActAsEW(true)` reach every site. Eleven of the
+  eighteen measured files are now at 100%; the project reads **91.17%** and the floor moves to
+  **91**. What stays uncovered, and why, is written down in `test/lua/README.md`.
 - The DCS stub provides `missionCommands` (`addSubMenu`, `addCommand`, `removeItem`) and keeps
   the resulting menu in `dcsStub.radioItems`, so a test can ask what a player would find under
   F10 and invoke a command the way clicking it would. What DCS does with `removeItem(nil)`, or

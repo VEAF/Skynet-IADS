@@ -642,4 +642,167 @@ function TestSkynetIADS:testAnEventSkynetDoesNotHandleIsSilent()
 	luaunit.assertEquals(#printed.screen, 0)
 end
 
+-- ---- the cycle's remaining corners, and the table delegator (ticket 06) ---------------------
+
+--- A battery set to act as an early warning radar feeds the network instead of being fed by it:
+--- the cycle treats it as a radar, and its contacts reach every site under its coverage. That is
+--- the recommended setup for a long-range system, so it is not an edge case.
+function TestSkynetIADS:testABatteryActingAsEarlyWarningFeedsTheNetwork()
+	local iads = self:buildNetwork()
+	local watcher = iads:getSAMSiteByGroupName("RED-SAM-north")
+	watcher:setActAsEW(true)
+
+	F.aircraftGroup("Intruder", { pos = { x = 10000, y = 3000, z = 0 }, coalition = BLUE })
+	function watcher:getDetectedTargets()
+		return { F.iadsContact("Intruder-1") }
+	end
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(#iads:getContacts(), 1, "what the watcher saw reached the network")
+	luaunit.assertEquals(iads:getContacts()[1]:getName(), "Intruder-1")
+end
+
+--- The same aircraft seen by two elements is one contact in the network, carrying both of
+--- the radars that saw it. That second part is not bookkeeping: the HARM detection counts
+--- how many *new* radars have seen a track before deciding it is an anti-radiation missile,
+--- so a merge that dropped them would make every missile look like it had been seen once.
+---
+--- A contact records the element that saw it through the second argument of
+--- SkynetIADSContact:create, which is what the real getDetectedTargets() passes; the
+--- fixture helper does not, so these two build their contacts by hand.
+function TestSkynetIADS:testTheSameAircraftSeenTwiceIsOneContactCarryingBothRadars()
+	local iads = self:buildNetwork()
+	F.aircraftGroup("Intruder", { pos = { x = 10000, y = 3000, z = 0 }, coalition = BLUE })
+
+	local function seenBy(element)
+		local contact = SkynetIADSContact:create({ object = dcsStub.world["Intruder-1"] }, element)
+		contact:refresh()
+		return contact
+	end
+
+	local watcher = iads:getSAMSiteByGroupName("RED-SAM-north")
+	watcher:setActAsEW(true)
+	function watcher:getDetectedTargets()
+		return { seenBy(self) }
+	end
+
+	local lonely = iads:getSAMSiteByGroupName("RED-SAM-lonely")
+	luaunit.assertEquals(lonely:isActive(), true, "the autonomous battery is lit, so it reports its own")
+	function lonely:getDetectedTargets()
+		return { seenBy(self) }
+	end
+
+	iads:evaluateContacts()
+
+	luaunit.assertEquals(#iads:getContacts(), 1, "merged on the contact's name, not counted twice")
+	luaunit.assertEquals(
+		#iads:getContacts()[1]:getAbstractRadarElementsDetected(),
+		2,
+		"and it carries both of the elements that saw it"
+	)
+end
+
+--- The network wakes a battery for an aircraft, and for a missile, but not for a shell or a
+--- rocket in flight -- otherwise every artillery barrage in the mission lights up the air
+--- defence.
+function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
+	local iads = self:buildNetwork()
+	local lonely = iads:getSAMSiteByGroupName("RED-SAM-lonely")
+
+	local informedOf = {}
+	function lonely:informOfContact(contact)
+		informedOf[#informedOf + 1] = contact:getName()
+	end
+
+	-- a weapon in flight: Object.getCategory answers WEAPON, and desc.category tells a missile
+	-- from a shell
+	local function weaponContact(name, weaponCategory)
+		local unit = dcsStub.makeUnit({
+			name = name,
+			type = name,
+			pos = { x = 400100, y = 2000, z = 0 },
+			category = Object.Category.WEAPON,
+			desc = { category = weaponCategory },
+		})
+		local contact = SkynetIADSContact:create({ object = unit })
+		contact:refresh()
+		return contact
+	end
+
+	local watcher = iads:getSAMSiteByGroupName("RED-SAM-north")
+	watcher:setActAsEW(true)
+	function watcher:getDetectedTargets()
+		return {
+			weaponContact("inbound-missile", Weapon.Category.MISSILE),
+			weaponContact("outgoing-shell", Weapon.Category.SHELL),
+			weaponContact("outgoing-rocket", Weapon.Category.ROCKET),
+		}
+	end
+	-- the cycle asks which covered batteries are *usable*, not which are covered
+	function watcher:getUsableChildRadars()
+		return { lonely }
+	end
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(informedOf, { "inbound-missile" })
+end
+
+-- ---- the table delegator ---------------------------------------------------------------------
+
+--- getSAMSites() answers a delegator, not a plain list: calling a method on it calls that method
+--- on every site. This is what makes the one-liners in documentation/api.md work --
+--- `redIADS:getSAMSitesByNatoName('SA-10'):setActAsEW(true)` is one call reaching several
+--- batteries, and nothing had ever executed the forwarding.
+function TestSkynetIADS:testAMethodCalledOnTheListReachesEverySite()
+	local iads = self:buildNetwork()
+	local sites = iads:getSAMSitesByNatoName("SA-6")
+	luaunit.assertEquals(#sites, 3)
+
+	local called = {}
+	for i = 1, #sites do
+		local site = sites[i]
+		function site:setGoLiveRangeInPercent(percent)
+			called[#called + 1] = site:getDCSName() .. ":" .. tostring(percent)
+		end
+	end
+
+	local returned = sites:setGoLiveRangeInPercent(70)
+	table.sort(called)
+	luaunit.assertEquals(called, {
+		"OTHER-SAM-east:70",
+		"RED-SAM-lonely:70",
+		"RED-SAM-north:70",
+	})
+	luaunit.assertIs(returned, sites, "and it answers the list again, so calls chain")
+end
+
+--- Chaining is the whole point of answering the list: api.md writes several options in a row on
+--- one line.
+function TestSkynetIADS:testCallsOnTheListChain()
+	local iads = self:buildNetwork()
+	local sites = iads:getSAMSitesByNatoName("SA-2")
+	local calls = {}
+	for i = 1, #sites do
+		local site = sites[i]
+		function site:setActAsEW(value)
+			calls[#calls + 1] = "actAsEW=" .. tostring(value)
+		end
+		function site:setHARMDetectionChance(chance)
+			calls[#calls + 1] = "harm=" .. tostring(chance)
+		end
+	end
+
+	sites:setActAsEW(true):setHARMDetectionChance(80)
+	luaunit.assertEquals(calls, { "actAsEW=true", "harm=80" })
+end
+
+--- An empty list takes the call and does nothing, which is what makes it safe to chain options
+--- onto a prefix that matched nothing -- the promise made in documentation/api.md.
+function TestSkynetIADS:testAMethodCalledOnAnEmptyListDoesNothing()
+	local iads = self:buildNetwork()
+	local none = iads:getSAMSitesByPrefix("no-such-prefix")
+	luaunit.assertEquals(#none, 0)
+	luaunit.assertIs(none:setActAsEW(true), none)
+end
+
 os.exit(luaunit.LuaUnit.run())

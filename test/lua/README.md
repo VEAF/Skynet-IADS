@@ -60,6 +60,40 @@ it — exit 1, distinct from exit 2, which means the measurement did not happen 
 all. The floor only ever goes up: when your tests push the figure past it, raise it
 in the same pull request. The report tells you when it can be raised and to what.
 
+## What stays uncovered, and why
+
+Measured at **91.17%**. Everything reachable is covered except the five entries below, so
+nothing is left in the report with nobody having looked at it. Re-check this list whenever the
+figure moves for a reason you did not expect.
+
+**`skynet-iads-abstract-radar-element.lua` — 173 lines.** The HARM timing, point defence,
+engagement zone, ammunition and parent/child tests that still live only in `unit-tests/*.miz`.
+Porting them is `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04; `CHORE-TEST-COVERAGE-FLOOR` ticket 04
+tracks what it buys. This is the one block still worth real work.
+
+**Continuation lines — 34 lines, and no test can ever reach them.** The second and later lines of
+a multi-line concatenation or `return`. Lua 5.1 attributes the whole expression to its first
+line, so no debug hook fires on the rest. Nineteen of them are in the logger's status page, where
+every field sits on its own line; the others are scattered. Counting them as work left to do is
+how a coverage target becomes unreachable for no reason.
+
+**`inheritsFrom`'s `class()`, `isa()` and the default `create()` — 11 lines.** Dead inside this
+repository: all ten classes built with `inheritsFrom()` define their own `create`, and
+`isa`/`class` appear nowhere outside their own definition — checked across `skynet-iads-source`,
+`test/lua` and `unit-tests`. They are still methods on every Skynet object, and the artifact is
+vendored by VEAF-Mission-Creation-Tools, so a mission script may be calling them without this
+repository knowing. Deleting undocumented public surface from a vendored deliverable is a
+decision for VEAF, not a side effect of a test-coverage ticket.
+
+**`SkynetIADSUtils`'s `maxn` fallback — 5 lines.** It runs only where `table.maxn` is absent,
+which means Lua 5.2 and later. DCS and this runner are both 5.1, so the shim cannot execute here.
+It is not dead: it is what keeps the file loadable under a newer interpreter.
+
+**`SkynetIADS:addJammer()` — 1 line, and it cannot be called.** `self.jammers` is never
+initialised in `create()`, so the call throws, and nothing anywhere reads that field. Reported as
+a defect rather than tested: making it work needs someone to decide what a registered jammer is
+for, which is a design question and not a missing test.
+
 ## Ported suites
 
 These `unit-tests/` suites now also run standalone (their `.miz` copies are kept):
@@ -141,4 +175,5 @@ milestone): `early-warning-radar`, most of `iads`,
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
 | `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |
+| `test_skynet_iads_range_data.lua` | How a battery learns its own range: `setupRangeData` on the search radar and the launcher, and the delegation between them |
 | `test_*.lua` | Test suites — self-contained, self-executing |
