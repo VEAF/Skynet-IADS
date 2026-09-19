@@ -33,6 +33,79 @@ SAM sites off or on according to targets it has detected:
 redIADS:setUpdateInterval(5)
 ```
 
+## Last line of defense
+
+A SAM site under network control has its radar switched off, so it is **blind**: the only thing that
+can bring it back to life is an early warning radar that covers it and is holding the target. Fly
+under the EW radars' horizon and no battery reacts, whatever the distance — proximity to the site is
+an input nowhere in the cycle, because the only sensor that could measure it is the one that was
+just switched off.
+
+The last line of defense fixes that. A site held dark keeps a short **virtual** detection radius of
+its own — Skynet's, no DCS radar involved — and a hostile aircraft inside it makes the site go live
+with no radar contact anywhere. It is **on by default**.
+
+The honest limit, which is deliberate: a short-range piece can light up for an aircraft it cannot
+reach, because the radius ignores the firing envelope. Requiring the kill zone would mean a Shilka,
+useful range about 2.5 km, never waking inside a 10–15 km radius — and short-range pieces are
+exactly what a last line of defense is for.
+
+Switch it off for a mission that wants a purist IADS:
+
+```lua
+redIADS:setLastLineOfDefence(false)
+```
+
+Set the bounds, in metres, of the radius. Each site draws its own radius once, between these two
+values, and keeps it for the whole mission — so a pilot cannot learn the exact distance, and a site
+does not blink for an aircraft loitering near the mean. Changing the bounds makes every site draw
+again:
+
+```lua
+redIADS:setLastLineOfDefenceRadius(10000, 15000)
+```
+
+Set how long, in seconds, a site stays live after the last contact reported to it. Without this a
+fast pass lights the site for a single cycle and a racetrack makes it flicker:
+
+```lua
+redIADS:setLastLineOfDefencePersistence(45)
+```
+
+A site silenced to evade an anti-radiation missile, out of ammunition, without power or destroyed
+does **not** wake on proximity, and the site's own [go live constraints](#add-go-live-constraints)
+are still honoured.
+
+### Reporting a contact from outside Skynet
+
+`reportContact` is the public entry point the last line of defense itself uses. Call it to wake a
+SAM site on a DCS unit, as if something had reported that aircraft to the network — a spotter, a
+JTAC, any script of your own:
+
+```lua
+redIADS:reportContact(Unit.getByName('Intruder'), redIADS:getSAMSiteByGroupName('SAM-SA-6'))
+```
+
+Unlike the normal path it does not require the target to be inside the site's firing envelope: the
+site lights up because something told it the aircraft is there, not because it can hit it. Every
+other guard still applies, and the site is held live by the persistence above. It answers whether
+the site is live after the call.
+
+## Coverage refresh
+
+Which battery sits under which radar is geometry, and geometry changes when something moves. Skynet
+re-evaluates the coverage of every element that has travelled more than 10 NM since the last sweep,
+by default every 10 seconds. This is what makes an AWACS in transit lose the batteries it left
+behind — they become autonomous, exactly as if it had been shot down — and a mobile SAM site's
+parents follow it as it drives.
+
+```lua
+redIADS:setCoverageRefreshInterval(10)
+```
+
+An interval of `0` stops the sweep. Killing an early warning radar still frees its batteries
+immediately, without waiting for the next sweep.
+
 ## Adding a command center
 
 The command center represents the place where information is collected and analysed. If it is

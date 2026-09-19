@@ -1,6 +1,6 @@
 # 01 — Last line of defense: a dark site wakes on close proximity
 
-Status: ⬜ ready
+Status: ✅ done
 
 ## What to build
 

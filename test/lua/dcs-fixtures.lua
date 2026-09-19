@@ -57,30 +57,92 @@ local SAM_COMPOSITIONS = {
 	end,
 }
 
-function F.samGroup(natoShort, groupName)
+--- F.samGroup(natoShort, groupName [, opts])
+---   opts.pos       — where the site stands; its units are laid out a metre apart from there
+---   opts.coalition — the side it belongs to, so SkynetIADS:setCoalition() has something to read
+function F.samGroup(natoShort, groupName, opts)
+	opts = opts or {}
+	local origin = opts.pos or { x = 0, y = 0, z = 0 }
 	local build = SAM_COMPOSITIONS[natoShort]
 	if not build then
 		error("dcs-fixtures: no SAM composition for '" .. tostring(natoShort) .. "'")
 	end
 	local units = build(groupName)
 	for i = 1, #units do
-		units[i].pos = units[i].pos or { x = i, y = 0, z = 0 }
+		units[i].pos = units[i].pos or { x = origin.x + i, y = origin.y, z = origin.z }
+		units[i].coalition = opts.coalition
 	end
 	-- dcsStub.makeGroup sets setmetatable(g, Group), so setupElements() iterates
 	-- the member units instead of treating the group as one unit.
-	return dcsStub.makeGroup({ name = groupName, units = units })
+	return dcsStub.makeGroup({
+		name = groupName,
+		units = units,
+		coalition = opts.coalition,
+		category = Group.Category.GROUND,
+	})
 end
 
-function F.earlyWarningRadarUnit(name)
+--- Moves every unit of a SAM group, the way a mobile site drives away in a convoy.
+function F.moveSamGroup(groupName, pos)
+	local group = dcsStub.world[groupName]
+	if not group then
+		error("dcs-fixtures: no group registered as '" .. tostring(groupName) .. "'")
+	end
+	local units = group:getUnits()
+	for i = 1, #units do
+		units[i]:__setPos({ x = pos.x + i, y = pos.y, z = pos.z })
+	end
+end
+
+--- One hostile aircraft in a group of its own, visible to coalition.getGroups.
+--- opts.inAir defaults to true; set it false to park it on a ramp.
+function F.aircraftGroup(name, opts)
+	opts = opts or {}
+	local pos = opts.pos or { x = 0, y = 3000, z = 0 }
+	dcsStub.makeGroup({
+		name = name,
+		coalition = opts.coalition,
+		category = opts.category or Group.Category.AIRPLANE,
+		units = {
+			{
+				name = name .. "-1",
+				type = opts.type or "F-16C",
+				pos = pos,
+				coalition = opts.coalition,
+				inAir = opts.inAir,
+				desc = { category = Unit.Category.AIRPLANE },
+			},
+		},
+	})
+	return dcsStub.world[name .. "-1"]
+end
+
+--- An airborne early warning radar: SkynetIADS:addEarlyWarningRadar() builds a
+--- SkynetIADSAWACSRadar from it because its desc.category is AIRPLANE.
+function F.awacsUnit(name, opts)
+	opts = opts or {}
+	return dcsStub.makeUnit({
+		name = name,
+		type = "A-50",
+		pos = opts.pos or { x = 0, y = 9000, z = 0 },
+		coalition = opts.coalition,
+		desc = { category = Unit.Category.AIRPLANE },
+		sensors = searchRadarSensors(),
+	})
+end
+
+function F.earlyWarningRadarUnit(name, opts)
 	-- '1L13 EWR' (Box Spring) is a plain ground search radar in samTypesDB with
 	-- no launcher entry, so SkynetIADSEWRadar:setupElements() finds it via the
 	-- same 'searchRadar' lookup SAM search radars use. desc.category is set
 	-- explicitly so SkynetIADS:addEarlyWarningRadar()'s AIRPLANE/SHIP check
 	-- reliably takes the ground-radar branch instead of building an AWACS radar.
+	opts = opts or {}
 	return dcsStub.makeUnit({
 		name = name,
 		type = "1L13 EWR",
-		pos = { x = 0, y = 0, z = 0 },
+		pos = opts.pos or { x = 0, y = 0, z = 0 },
+		coalition = opts.coalition,
 		desc = { category = Unit.Category.GROUND_UNIT },
 		sensors = searchRadarSensors(),
 	})

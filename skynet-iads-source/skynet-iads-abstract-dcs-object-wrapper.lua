@@ -62,6 +62,19 @@ do
 		return not isAdded
 	end
 
+	--- Answers a copy of `tbl` without `object`. Counterpart of insertToTableIfNotAlreadyAdded:
+	--- until the coverage sweep needed it, removing a single parent or child radar was impossible,
+	--- the only tools being clearParentRadars/clearChildRadars, which are all-or-nothing.
+	function SkynetIADSAbstractDCSObjectWrapper:removeFromTable(tbl, object)
+		local remaining = {}
+		for i = 1, #tbl do
+			if tbl[i] ~= object then
+				table.insert(remaining, tbl[i])
+			end
+		end
+		return remaining
+	end
+
 	-- helper code for class inheritance
 	function inheritsFrom(baseClass)
 		local new_class = {}

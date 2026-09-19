@@ -35,6 +35,26 @@ If a SAM site or EW radar detects an inbound HARM it just turns off its radar as
 HARM as it is programmed in DCS will try and glide in to the last known position, mostly resulting
 in misses by 50-100 meters.
 
+## Why does a SAM site not react to an aircraft right above it?
+
+Because a site under network control has its radar switched off, and is therefore blind. It lights
+up when an EW radar **that covers it** hands it a contact — nothing else. Fly under the EW radars'
+horizon and no battery reacts, whatever the distance.
+
+The corollary surprises people the other way round: **destroy the EW radars and the remaining sites
+become more aggressive**, because they revert to the DCS AI, which turns everything on and engages.
+
+This is softened by the [last line of defense](api.md#last-line-of-defense): a dark site keeps a
+short virtual detection radius of its own, so an aircraft flying over it wakes it even when no radar
+anywhere holds a contact. It is on by default and can be switched off.
+
+## Does "covered" mean the EW radar is feeding that site?
+
+No. Coverage is a flat 2D distance between the EW radar and the battery, compared against the EW
+radar's detection range — no horizon, no terrain, no altitude. It says the EW radar is **near** the
+battery, never that it is actually feeding it anything. A single long-range radar can list a dozen
+batteries as covered while detecting nothing at all.
+
 ## Are there known bugs?
 
 Yes, when placing multi-unit SAM sites (e.g. SA-3, Patriot..) make sure the first unit you place is

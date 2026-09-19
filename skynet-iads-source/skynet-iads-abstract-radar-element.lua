@@ -11,6 +11,9 @@ do
 	SkynetIADSAbstractRadarElement.HARM_TO_SAM_ASPECT = 15
 	SkynetIADSAbstractRadarElement.HARM_LOOKAHEAD_NM = 20
 
+	--- How far an element has to travel before its radar coverage is recomputed, in NM.
+	SkynetIADSAbstractRadarElement.COVERAGE_UPDATE_MOVEMENT_NM = 10
+
 	function SkynetIADSAbstractRadarElement:create(dcsElementWithRadar, iads)
 		local instance = self:superClass():create(dcsElementWithRadar, iads)
 		setmetatable(instance, self)
@@ -26,6 +29,7 @@ do
 		instance.searchRadars = {}
 		instance.parentRadars = {}
 		instance.childRadars = {}
+		instance.lastCoverageUpdatePosition = nil
 		instance.missilesInFlight = {}
 		instance.pointDefences = {}
 		instance.harmDecoys = {}
@@ -107,8 +111,20 @@ do
 	end
 
 	function SkynetIADSAbstractRadarElement:addParentRadar(parentRadar)
-		self:insertToTableIfNotAlreadyAdded(self.parentRadars, parentRadar)
+		self:addParentRadarWithoutStateChange(parentRadar)
 		self:informChildrenOfStateChange()
+	end
+
+	-- SkynetIADS:refreshRadarCoverage() rebuilds the associations of every element that moved and
+	-- then decides for itself which sites actually changed parents, so it must not go through
+	-- addParentRadar: informChildrenOfStateChange() ends in resetAutonomousState() -> goDark(), and
+	-- a periodic sweep would hand an extinction order to the whole network every ten seconds.
+	function SkynetIADSAbstractRadarElement:addParentRadarWithoutStateChange(parentRadar)
+		self:insertToTableIfNotAlreadyAdded(self.parentRadars, parentRadar)
+	end
+
+	function SkynetIADSAbstractRadarElement:removeParentRadar(parentRadar)
+		self.parentRadars = self:removeFromTable(self.parentRadars, parentRadar)
 	end
 
 	function SkynetIADSAbstractRadarElement:getParentRadars()
@@ -121,6 +137,10 @@ do
 
 	function SkynetIADSAbstractRadarElement:addChildRadar(childRadar)
 		self:insertToTableIfNotAlreadyAdded(self.childRadars, childRadar)
+	end
+
+	function SkynetIADSAbstractRadarElement:removeChildRadar(childRadar)
+		self.childRadars = self:removeFromTable(self.childRadars, childRadar)
 	end
 
 	function SkynetIADSAbstractRadarElement:getChildRadars()
@@ -153,7 +173,12 @@ do
 		self.iads:getMooseConnector():update()
 	end
 
-	function SkynetIADSAbstractRadarElement:setToCorrectAutonomousState()
+	--- Does at least one parent radar still connect this element to the IADS?
+	--
+	-- This is the whole of the autonomy question, and it is a *query*: unlike
+	-- setToCorrectAutonomousState() below it changes nothing, so the coverage sweep can ask whether
+	-- a site's answer has actually changed before acting on it.
+	function SkynetIADSAbstractRadarElement:hasValidParentRadar()
 		local parents = self:getParentRadars()
 		for i = 1, #parents do
 			local parent = parents[i]
@@ -167,11 +192,18 @@ do
 				and parent:getActAsEW() == true
 				and parent:isDestroyed() == false
 			then
-				self:resetAutonomousState()
-				return
+				return true
 			end
 		end
-		self:goAutonomous()
+		return false
+	end
+
+	function SkynetIADSAbstractRadarElement:setToCorrectAutonomousState()
+		if self:hasValidParentRadar() then
+			self:resetAutonomousState()
+		else
+			self:goAutonomous()
+		end
 	end
 
 	function SkynetIADSAbstractRadarElement:setAutonomousBehaviour(mode)
@@ -650,25 +682,114 @@ do
 		return (isSearchRadarInRange and isTrackingRadarInRange and isLauncherInRange)
 	end
 
-	function SkynetIADSAbstractRadarElement:isInRadarDetectionRangeOf(abstractRadarElement)
+	--- Where this element is, as a single vec3. A site is a point.
+	--
+	-- A Group has no getPosition() in DCS, so a SAM site has to answer from one of its units; the
+	-- radars come first because they are what the geometry is about, and the launchers and the raw
+	-- representation are there so an element whose radars are all destroyed still has a position.
+	-- Answers nil when nothing of the element is left.
+	function SkynetIADSAbstractRadarElement:getElementPosition()
 		local radars = self:getRadars()
-		local abstractRadarElementRadars = abstractRadarElement:getRadars()
 		for i = 1, #radars do
 			local radar = radars[i]
-			for j = 1, #abstractRadarElementRadars do
-				local abstractRadarElementRadar = abstractRadarElementRadars[j]
-				if abstractRadarElementRadar:isExist() and radar:isExist() then
-					local distance = self:getDistanceToUnit(
-						radar:getDCSRepresentation():getPosition().p,
-						abstractRadarElementRadar:getDCSRepresentation():getPosition().p
-					)
-					if abstractRadarElementRadar:getMaxRangeFindingTarget() >= distance then
-						return true
-					end
+			if radar:isExist() then
+				return radar:getDCSRepresentation():getPosition().p
+			end
+		end
+		for i = 1, #self.launchers do
+			local launcher = self.launchers[i]
+			if launcher:isExist() then
+				return launcher:getDCSRepresentation():getPosition().p
+			end
+		end
+		local dcsRepresentation = self:getDCSRepresentation()
+		if dcsRepresentation == nil or dcsRepresentation:isExist() == false then
+			return nil
+		end
+		if getmetatable(dcsRepresentation) == Group then
+			local units = dcsRepresentation:getUnits()
+			if units and units[1] then
+				return units[1]:getPosition().p
+			end
+			return nil
+		end
+		return dcsRepresentation:getPosition().p
+	end
+
+	--- How far this element's best radar sees, in metres. 0 when it has no working radar.
+	function SkynetIADSAbstractRadarElement:getMaxDetectionRange()
+		local maxRange = 0
+		local radars = self:getRadars()
+		for i = 1, #radars do
+			local radar = radars[i]
+			if radar:isExist() then
+				local range = radar:getMaxRangeFindingTarget()
+				if range > maxRange then
+					maxRange = range
 				end
 			end
 		end
-		return false
+		return maxRange
+	end
+
+	-- One position and one maximum range per element, rather than every pair of radars of the two
+	-- elements: iterating radar pairs costs a factor of four for the few metres that separate the
+	-- units inside one group, and it is what made a periodic coverage sweep too expensive to run.
+	-- The initial build and the sweep both come through here, so a borderline association cannot
+	-- flip between the two.
+	function SkynetIADSAbstractRadarElement:isInRadarDetectionRangeOf(abstractRadarElement)
+		local maxRange = abstractRadarElement:getMaxDetectionRange()
+		if maxRange <= 0 then
+			return false
+		end
+		local position = self:getElementPosition()
+		local otherPosition = abstractRadarElement:getElementPosition()
+		if position == nil or otherPosition == nil then
+			return false
+		end
+		return maxRange >= self:getDistanceToUnit(position, otherPosition)
+	end
+
+	--- Takes the current position as the reference the next movement is measured against.
+	--
+	-- Called whenever coverage is actually built for this element. Without it the reference point
+	-- would be laid down by the first sweep, which happens *after* the element has moved, so the
+	-- move that mattered would measure zero and be missed.
+	function SkynetIADSAbstractRadarElement:markCoverageUpdated()
+		self.lastCoverageUpdatePosition = self:getElementPosition()
+	end
+
+	--- How far this element has moved since the last time coverage was rebuilt for it, in NM.
+	function SkynetIADSAbstractRadarElement:getDistanceTraveledSinceLastUpdate()
+		local currentPosition = self:getElementPosition()
+		if currentPosition == nil then
+			return 0
+		end
+		if self.lastCoverageUpdatePosition == nil then
+			self.lastCoverageUpdatePosition = currentPosition
+		end
+		return SkynetIADSUtils.round(
+			SkynetIADSUtils.metersToNM(self:getDistanceToUnit(self.lastCoverageUpdatePosition, currentPosition))
+		)
+	end
+
+	function SkynetIADSAbstractRadarElement:getMaxAllowedMovementForAutonomousUpdateInNM()
+		--fixed to 10 nm miles to better fit small SAM sites
+		return SkynetIADSAbstractRadarElement.COVERAGE_UPDATE_MOVEMENT_NM
+	end
+
+	--- Has this element moved far enough that its coverage is worth recomputing?
+	--
+	-- Asking it moves the reference point, so two calls in a row answer true then false. It was an
+	-- AWACS-only notion until the coverage sweep: a SA-15 or a Shilka driving in a convoy kept the
+	-- parents it had when it spawned, for the whole mission, because the check tested the class.
+	function SkynetIADSAbstractRadarElement:hasMovedSinceLastCoverageUpdate()
+		local maxAllowedMovement = self:getMaxAllowedMovementForAutonomousUpdateInNM()
+		local hasMoved = self:getDistanceTraveledSinceLastUpdate() > maxAllowedMovement
+		if hasMoved then
+			self:markCoverageUpdated()
+		end
+		return hasMoved
 	end
 
 	function SkynetIADSAbstractRadarElement:getDistanceToUnit(unitPosA, unitPosB)
