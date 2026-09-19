@@ -190,3 +190,47 @@ Until that release is cut, the build date in the artifact's first line remains t
   under the same "only if the IADS is running" guard the incremental rebuild already carries.
   Found while checking the premise of the fix above; covered by
   `test/lua/test_skynet_iads_bulk_re_add.lua`.
+- Declaring that a radar covers a battery switched the battery off. `buildRadarAssociation()`
+  recorded the link through `addParentRadar()`, which ends in `informChildrenOfStateChange()` ->
+  `resetAutonomousState()` -> `goDark()` — so writing down a fact of geometry handed an extinction
+  order to every battery in range. `goDark()`'s own guards protect a site that has acquired a track
+  or has missiles in flight, but not one that has just gone live on network designation and not yet
+  locked on, which is exactly the symptom commit `3a94937` is about: launchers raised, slew onto the
+  target, back to travel state, no shot. In game this is reached by adding an early warning radar or
+  a SAM site to a running mission, including the `*ByPrefix` calls VEAF's helper uses, and the gap
+  lasts until the next contact cycle — 5 s by default, long enough for a fast pass to be over. The
+  same oversight did the work N², at 250 notifications per `activate()` on three EW radars and ten
+  SAM sites where 10 are needed. `buildRadarAssociation()` now uses
+  `addParentRadarWithoutStateChange()`, added by the last line of defense for this very hazard and
+  applied then to `refreshRadarCoverage()` only, and the two incremental entry points notify what
+  actually changed, under the criterion `refreshRadarCoverage()` already uses: a site's state is
+  touched only when its autonomy has really changed. `addEarlyWarningRadar()` also sets `actAsEW`
+  before building the coverage rather than after — `setActAsEW(true)` is itself a state change, so
+  running it after the rebuild darkened the batteries the radar had just picked up, and running it
+  before means the radar already counts as a valid parent when the rebuild asks whose autonomy
+  moved. `addParentRadar()` is unchanged and still public. Covered by
+  `test/lua/test_skynet_iads_coverage_update_notification.lua`, whose leading test drives a real
+  `evaluateContacts()` cycle rather than counting calls.
+- A battery enrolled on a running IADS with no valid radar covering it stayed dark for the rest of
+  the mission instead of being handed back to the DCS AI. Found by reviewing the fix above, which
+  introduced it: the "only act when the autonomy has actually changed" test reads `isAutonomous`,
+  and on a site `addSAMSite()` has just built that field is the constructor's default — it says
+  `true` although `goAutonomous()` has never run, so the comparison weighed a value that never meant
+  anything and skipped. It was reached whenever the only element in range was no use to the battery,
+  a neighbouring SAM site not acting as EW being the ordinary case, and nothing came back for it
+  afterwards: the last line of defense skips an autonomous DCS-AI site, the contact cycle never
+  offers it anything because it is no usable radar's child, and the coverage sweep carries the same
+  test. The state is now applied unconditionally to the site that has just joined, the way
+  `activate()` applies it to every site — the site is one statement old and dark, so there is no
+  designation to lose. The same call also used to refresh the MOOSE A2A dispatcher connector, at the
+  end of `informChildrenOfStateChange()`; a mission using `addMooseSetGroup()` went on dispatching
+  from the list it held before the battery joined, so the refresh is now asked for explicitly.
+- An early warning radar added while a mission runs never reached MOOSE's A2A dispatcher.
+  `addEarlyWarningRadar()` puts the radar into `self.earlyWarningRadars` at the very end, after
+  everything that could have refreshed the connector has run, so the radar entered the `SET_GROUP`
+  only by accident — if a battery happened to be enrolled after it. MOOSE scrambles interceptors on
+  what that set detects, so the radar was watching for an IADS that could not act on it. Longstanding,
+  found while measuring the entry above. The refresh is now a single method called wherever
+  `self.samSites` or `self.earlyWarningRadars` changes, after the insert rather than before; it does
+  nothing when no connector exists, and the documented setup registers its `SET_GROUP` last, so
+  enrolling a whole mission still costs nothing.

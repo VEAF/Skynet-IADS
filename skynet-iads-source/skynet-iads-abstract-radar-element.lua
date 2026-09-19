@@ -119,15 +119,20 @@ do
 		table.insert(self.harmDecoys, harmDecoy)
 	end
 
+	--- Records a parent and announces it. Part of the script's public surface; nothing inside the
+	--- IADS calls it any more -- everything that builds coverage uses the quiet version below and
+	--- decides for itself who needs telling.
 	function SkynetIADSAbstractRadarElement:addParentRadar(parentRadar)
 		self:addParentRadarWithoutStateChange(parentRadar)
 		self:informChildrenOfStateChange()
 	end
 
-	-- SkynetIADS:refreshRadarCoverage() rebuilds the associations of every element that moved and
-	-- then decides for itself which sites actually changed parents, so it must not go through
-	-- addParentRadar: informChildrenOfStateChange() ends in resetAutonomousState() -> goDark(), and
-	-- a periodic sweep would hand an extinction order to the whole network every ten seconds.
+	-- Every piece of code that builds coverage -- SkynetIADS:buildRadarAssociation(),
+	-- SkynetIADS:updateRadarAssociation() and therefore refreshRadarCoverage() -- goes through this
+	-- one and then decides for itself which sites actually changed. It must not go through
+	-- addParentRadar: informChildrenOfStateChange() ends in resetAutonomousState() -> goDark(), so
+	-- recording a fact of geometry would hand an extinction order to every battery in range, and a
+	-- periodic sweep would do it to the whole network every ten seconds.
 	function SkynetIADSAbstractRadarElement:addParentRadarWithoutStateChange(parentRadar)
 		self:insertToTableIfNotAlreadyAdded(self.parentRadars, parentRadar)
 	end
