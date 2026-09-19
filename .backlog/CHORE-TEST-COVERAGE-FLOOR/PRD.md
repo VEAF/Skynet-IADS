@@ -1,6 +1,6 @@
 # CHORE-TEST-COVERAGE-FLOOR — the suite runs in CI, and nobody knows what it covers
 
-Status: 🔄 in-progress — **the mechanism is done**: tickets 01 and 02 merged in [PR #20](https://github.com/VEAF/Skynet-IADS/pull/20) and [#21](https://github.com/VEAF/Skynet-IADS/pull/21). CI measures 70.22% on every pull request and fails below the floor of 70. What is left is the climb: tickets 03 to 06, each raising the floor by what it bought. Next is 03, the logger — 310 lines, which on its own takes the floor from 70 to 83
+Status: 🔄 in-progress — **86.81%**, floor at **86**. Tickets 01, 02, 03 and 05 are merged ([PR #20](https://github.com/VEAF/Skynet-IADS/pull/20), [#21](https://github.com/VEAF/Skynet-IADS/pull/21), [#22](https://github.com/VEAF/Skynet-IADS/pull/22), [#23](https://github.com/VEAF/Skynet-IADS/pull/23)). Ticket 04 is blocked on `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04, the legacy port — but, and this is new, **the lot is no longer hostage to it**: see the arithmetic below. Ticket 06 is next, and on the numbers it can carry the floor past 90 on its own
 
 Origin: David, 2026-09-19 — *"on a une suite de tests unitaires en CI ? quelle est sa couverture ?
 je voudrais un minimum de 80%, fais un lot vivant pour ça"*, raised to **90%** the same day once the
@@ -94,11 +94,19 @@ Cumulatively, in ticket order:
 
 | Once this lands | Lines it buys | Test coverage |
 |---|---:|---:|
-| — today | | **70.22%** |
-| The logger's four status printers (ticket 03) | 310 | 83.19% |
-| The HARM / defence / point-defence block of `abstract-radar-element` (ticket 04) | 184 | **90.88%** |
-| The network facade's getters and radio menu (ticket 05) | 98 | 94.98% |
-| The long tail (ticket 06) | 120 | 100% |
+| — at the start | | 70.22% |
+| ✅ The logger's four status printers (ticket 03) | 303 | 83.35% |
+| ✅ The network facade's getters and radio menu (ticket 05) | 84 | **86.81%** |
+| The HARM / defence / point-defence block of `abstract-radar-element` (ticket 04) | 173 | ~94% |
+| The long tail (ticket 06) | up to 126 | — |
+
+The first two rows are measured, not estimated; the figures the original plan carried (310 and 98 lines, for 83.19% and 94.98%) were close on the logger and optimistic on the facade. The denominator also moved, from 2 391 to 2 411: `luacov` only knows a line exists once the stats file has seen it, so covering a file deeper reveals more of it.
+
+**What changed, and it matters.** 90% of 2 411 is 2 170 lines, and the suite runs 2 093 — **77 short**. Of the 318 lines still never run, 173 sit in `abstract-radar-element`, the file ticket 04 needs the other lot for. The remaining **145 are everywhere else**, which is ticket 06's territory, and 77 < 145.
+
+So the sentence below, written before 03 and 05 landed, is no longer true as stated: ticket 04 is not the gate any more. Ticket 06 alone can take the floor past 90, provided enough of those 145 lines are real. That proviso is not a formality — 19 of them are the logger's continuation lines of multi-line concatenations, which Lua 5.1 does not instrument and which no test can ever reach. Nobody has checked how many of the other 126 are the same kind, and that check is the first thing ticket 06 should do.
+
+The original reasoning, kept because it is what the target was set against:
 
 **90% is where the target stops being reachable by one block.** At 80% the logger alone would have
 done it; at 90% tickets 03 *and* 04 both have to land, and close to completely — three quarters of
@@ -122,9 +130,9 @@ to that lot; this one only measures what it buys.** See ticket 04 here for the c
 |---|---|---|
 | 01 | [measure test coverage in CI, and publish the number](tickets/01-measure-test-coverage-in-ci.md) | ✅ |
 | 02 | [a floor that only goes up](tickets/02-a-floor-that-only-goes-up.md) | ✅ |
-| 03 | [pin the status printers the debug skill reads](tickets/03-pin-the-status-printers.md) | ⬜ |
+| 03 | [pin the status printers the debug skill reads](tickets/03-pin-the-status-printers.md) | ✅ |
 | 04 | [the HARM and defence block of the radar element](tickets/04-the-harm-and-defence-block.md) | ⬜ |
-| 05 | [the network facade's getters and radio menu](tickets/05-the-network-facade.md) | ⬜ |
+| 05 | [the network facade's getters and radio menu](tickets/05-the-network-facade.md) | ✅ |
 | 06 | [the long tail](tickets/06-the-long-tail.md) | ⬜ |
 
 01 and 02 are the mechanism and come first, in that order. 03 to 06 are the climb and can be taken

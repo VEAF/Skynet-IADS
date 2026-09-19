@@ -1,6 +1,6 @@
 # 03 — pin the status printers the debug skill reads
 
-Status: ⬜ ready
+Status: ✅ done — merged in [PR #22](https://github.com/VEAF/Skynet-IADS/pull/22). `skynet-iads-logger.lua` went from 10.14% to **94.68%**, the project from 70.22% to 83.35%, and the floor from 70 to **83**. The 19 lines still uncovered are all continuation lines of multi-line concatenations, which Lua 5.1 does not instrument — the file is covered as far as it can be. Proved by mutation: renaming a field, swapping two, and freezing a counter each turn a test red, naming the field
 
 `skynet-iads-logger.lua` is **10.14%** — 35 lines run out of 345, the worst file in the project by a
 wide margin and 44% of everything the suite never executes.

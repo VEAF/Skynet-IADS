@@ -1,6 +1,6 @@
 # 05 — the network facade's getters and radio menu
 
-Status: ⬜ ready
+Status: ✅ done — merged in [PR #23](https://github.com/VEAF/Skynet-IADS/pull/23). `skynet-iads.lua` went from 81.95% to **98.19%**, the project from 83.35% to 86.81%, and the floor from 83 to **86**. All 25 calls `api.md` shows on the `SkynetIADS` object are executed by at least one suite, checked one by one rather than assumed. Four latent defects were found on the way and are listed at the end of this ticket
 
 `skynet-iads.lua` is at 81.95%, which sounds fine until you read which 98 lines never run.
 
@@ -64,3 +64,14 @@ test that builds its own fixture table proves the fixture, not the getter.
   test.
 - What a getter returns when nothing matches is asserted, and the documentation says the same thing.
 - The floor is raised in this pull request.
+
+## Found on the way, not fixed here
+
+Four defects the tests walked into. Three are pinned as they behave today, with a comment saying so; the fourth cannot be called at all. None was fixed: this was a test-coverage ticket, and two of the four need a design decision rather than a patch.
+
+1. **`addJammer()` throws.** `self.jammers` is never initialised in `create()`, and nothing anywhere reads that field. Initialising it would make the call succeed while still doing nothing, so what a registered jammer is meant to do has to be decided first.
+2. **An enrolment failure never reaches a player.** `addSAMSite`, `addEarlyWarningRadar` and the coalition-mismatch check each build their message as a warning — they pass `true` as a second argument — and hand it to `printOutputToLog()`, which takes one argument and drops it. The intent was clearly `printOutput(msg, true)`, which prefixes `WARNING:` and is gated by the `warnings` setting that is on by default precisely so a mission maker sees this. As written, a mistyped group name leaves one line in a log nobody opens until something is already wrong.
+3. **`addRadioMenu()` has no idempotence guard.** A second call re-issues every menu call and overwrites `self.radioMenu`. What DCS shows a player then is unverified — two submenus built with the same name carry the same path — which is the point: the caller cannot reason about it either.
+4. **A birth event only writes `New Object Spawned` to the log**, with no `SKYNET:` prefix, and does nothing else — the enrolment it was meant to do is commented out. A mission running a red and a blue network writes two of those per spawning unit, player slots included, and the debug skill's `SKYNET:` grep cannot filter them away.
+
+2 and 4 are small and scoped. 1 and 3 are design questions. Awaiting David's call on how to split them between a lot and `docs/evolutions.md`.
