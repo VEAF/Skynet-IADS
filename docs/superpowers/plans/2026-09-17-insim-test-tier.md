@@ -2215,13 +2215,15 @@ Skip straight from Task 9 to Task 11.
 - Create: `test/insim/scenarios/scenario_detection.lua`
 
 **Interfaces:**
-- Consumes: `InsimTestTools.addFromMission` / `missionGroupData` / `destroyIfLive` /
-  `removeJunkAround` (Tasks 2, 7), `waitFor` (Task 4), the fixtures placed in
+- Consumes: `InsimTestTools.addFromMission` / `addAirFromMission` / `missionGroupData` /
+  `offsetFrom` / `destroyIfLive` / `removeJunkInZone` (Tasks 2, 7), `waitFor` (Task 4), the
+  fixtures placed in
   `skynet-insim.miz` (Task 9), `SkynetIADS` from the loaded source
 - Produces: a scenario file returning `{ name = "Detection", suite = <table> }`
 
 Fixtures are read from the mission by name — there is no fixture file and no anchor table. The
-Mission Editor must contain three late-activated groups named `FIXTURE-Detection-EWR`,
+Mission Editor must contain a circular zone `FIXTURE-Detection-ZONE` and three late-activated
+groups named `FIXTURE-Detection-EWR`,
 `FIXTURE-Detection-SAM` and `FIXTURE-Detection-Target`.
 
 This is the deliverable that proves the tier: it adds fixtures, waits for genuine DCS radar
