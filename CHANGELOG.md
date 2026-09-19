@@ -36,3 +36,14 @@ Until that release is cut, the build date in the artifact's first line remains t
 ### Changed
 
 - `develop` is the default branch, and the Lua suite runs on it.
+- `contributing.md` rewritten around what this repository actually does. The previous guide was
+  upstream's: it pointed at walder's Discord, told contributors to add tests to a `.miz`, and said
+  nothing about the standalone suite, the branching model, or the fact that two files are generated.
+
+### Fixed
+
+- The build was documented wrong in three places written the day before. The deliverable is
+  `demo-missions/skynet-iads-compiled.lua`, not a file at the repository root; the build script
+  takes the version as a **mandatory** argument and resolves its paths relative to `build-tools/`;
+  and the root `README.md` is **generated** from `skynet-iads-source/README_source.md`, so editing
+  it is lost. Corrected in `CLAUDE.md`, the `release` skill and the backlog.

@@ -30,7 +30,7 @@ every PR, `master` carries releases.
    [ticket 03](03-build-in-ci-and-automated-releases.md).
 6. Enable *delete branch on merge*. A surviving branch with a fixed name silenced a scheduled robot
    on the VMCT side for three weeks before anyone noticed.
-7. Say all of it in `contributing.md`, which currently describes upstream's workflow.
+7. ~~Say all of it in `contributing.md`~~ — **done 2026-09-19**, rewritten end to end.
 
 ## Watch out for
 
@@ -44,5 +44,5 @@ every PR, `master` carries releases.
 
 - `develop` exists and is the default branch.
 - CI runs on pushes to `develop` and on PRs.
-- `contributing.md` describes the flow, the branch naming and the release path.
+- ~~`contributing.md` describes the flow, the branch naming and the release path.~~ **Done.**
 - `feat/insim-tests` rebased or explicitly left alone, with Flogas informed.

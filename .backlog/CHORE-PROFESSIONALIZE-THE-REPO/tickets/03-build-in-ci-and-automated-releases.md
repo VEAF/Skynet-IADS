@@ -12,15 +12,26 @@ had moved a month further on, and nothing anywhere said so.
 `build-tools/build-compiled-script.ps1` is PowerShell; the CI runs Ubuntu. So **nothing checks that
 the sources still concatenate into a usable artifact** — the one thing a consumer depends on.
 
-Two ways, to be weighed when doing it:
+`pwsh` is available on the GitHub Ubuntu runners, so PowerShell alone is not the obstacle. **The
+table-of-contents step is.** The script ends by regenerating the root `README.md` from
+`skynet-iads-source/README_source.md` using `build-tools/bin/gh-md-toc.exe` — a 6 MB **Windows**
+binary that also needs network access. On Linux it will not run at all.
 
-- **run it with `pwsh`**, which is available on the GitHub Ubuntu runners. No rewriting, and the
-  local and CI paths stay identical;
-- **port it** to Lua or to a shell script. One language less in the project, at the cost of
-  rewriting something that works and that Flogas knows.
+So the work splits in two, and only the first half is needed to close the hole:
 
-Recommendation: `pwsh` first, because it is one line of CI and it closes the hole today; port later
-if the script grows.
+- **the concatenation** — pure PowerShell, runs under `pwsh` anywhere, and it is the part a consumer
+  depends on. Do this first;
+- **the table of contents** — either a Windows runner for the release job alone, or a portable
+  replacement, or cut it from the build entirely and regenerate the README elsewhere. Decide when
+  ticket 06 settles what the documentation becomes: if the README shrinks to an entry point, a
+  generated table of contents may no longer be worth a 6 MB binary.
+
+Two details the script imposes on whatever calls it: the **version is a mandatory argument**, and it
+resolves its paths **relative to `build-tools`**. It writes `demo-missions/skynet-iads-compiled.lua`.
+
+Flogas already guarded the failure mode worth knowing about (VEAF #4): `gh-md-toc.exe` exits 0 with
+no network while emitting a header and no entries, which silently blanked the README's table of
+contents. The build now bails instead.
 
 ## Check the artifact, do not merely build it
 

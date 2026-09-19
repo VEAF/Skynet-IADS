@@ -23,14 +23,23 @@ project are not only French-speaking.
   API behaviour — verify it against the [dcs-lua-datamine
   dataset](https://github.com/Quaggles/dcs-lua-datamine) or a real log.
 
-## The compiled file is a build artifact
+## Two generated files — never edit either
 
-`skynet-iads-compiled.lua` at the repository root is **generated**. Editing it is lost at the next
-build, and the loss is silent. Sources live in `skynet-iads-source/`.
+`demo-missions/skynet-iads-compiled.lua` is the **deliverable**, concatenated from
+`skynet-iads-source/*.lua`. `README.md` at the root is **regenerated** from
+`skynet-iads-source/README_source.md`. Editing either is lost at the next build, silently.
 
-Build: `pwsh -File build-tools/build-compiled-script.ps1`.
+Build, from `build-tools`, with the version as its **mandatory** argument — without it the script
+refuses, and it uses relative paths so the working directory matters:
 
-The same file is vendored by
+```
+cd build-tools && pwsh -File ./build-compiled-script.ps1 3.5.0
+```
+
+The table-of-contents step calls `bin/gh-md-toc.exe`, which needs network access and is a Windows
+binary — worth knowing before assuming the build runs anywhere.
+
+The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under
 `src/scripts/community/`. A change here reaches missions only once that repository re-vendors it,
 which is a deliberate step on their side — the copy has run a month behind before now.
