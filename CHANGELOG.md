@@ -113,6 +113,23 @@ Until that release is cut, the build date in the artifact's first line remains t
 - The DCS stub records `trigger.action.outText` into `dcsStub.screenText`, the way `env.*` is
   already recorded into `dcsStub.logs`. It was a no-op until now, so every summary line the logger
   has ever emitted went nowhere in this suite.
+- The network facade a mission maker writes against is under test, in
+  `test/lua/test_skynet_iads.lua` (34 tests, up from 1): every call `documentation/api.md` shows
+  on the `SkynetIADS` object is now executed by at least one suite, including
+  `getSAMSiteByGroupName`, which eleven examples on that page depend on and which the suite had
+  never run. What a getter gives back on a miss is asserted, and `api.md` now says the same
+  thing. `skynet-iads-source/skynet-iads.lua` goes from 82% to 98% test coverage, and the project
+  from 83% to 86%.
+- The DCS stub provides `missionCommands` (`addSubMenu`, `addCommand`, `removeItem`) and keeps
+  the resulting menu in `dcsStub.radioItems`, so a test can ask what a player would find under
+  F10 and invoke a command the way clicking it would. What DCS does with `removeItem(nil)`, or
+  with two submenus sharing a name, is not modelled: neither is verified here, and the stub
+  raises rather than inventing an answer a test could come to depend on.
+
+- `documentation/api.md` now says what `getSAMSiteByGroupName` and `getEarlyWarningRadarByUnitName`
+  return when nothing matches -- no value at all, so chaining off the call fails with *attempt to
+  index a nil value*, which is what a mistyped group name looks like -- and that a prefix has to
+  start the group name rather than merely appear in it.
 
 ### Changed
 

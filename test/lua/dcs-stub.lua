@@ -16,6 +16,7 @@ dcsStub.logs = {} -- { { level=, text= }, ... } from env.*
 dcsStub.eventHandlers = {} -- appended by world.addEventHandler
 dcsStub.groups = {} -- every group fixture in creation order, backs coalition.getGroups
 dcsStub.screenText = {} -- { { text=, duration= }, ... } from trigger.action.outText
+dcsStub.radioItems = {} -- { { name=, path={...}, handler=, args= }, ... } from missionCommands
 
 function dcsStub.now()
 	return now
@@ -33,6 +34,7 @@ function dcsStub.reset()
 	dcsStub.eventHandlers = {}
 	dcsStub.groups = {}
 	dcsStub.screenText = {}
+	dcsStub.radioItems = {}
 	timerTasks = {}
 	nextTimerId = 0
 	utilsSchedulerTasks = nil
@@ -132,6 +134,81 @@ trigger = {
 		explosion = function() end,
 	},
 }
+
+-- missionCommands builds the F10 "Other" radio menu players see. SkynetIADS:addRadioMenu() is its
+-- only caller here: one submenu per network, four commands under it, and removeRadioMenu() takes
+-- the submenu away again. In DCS each call returns an opaque *path* -- the names from the root
+-- down -- and nothing can read the menu back, so this keeps the tree instead: dcsStub.radioItems
+-- holds one entry per live item in creation order, so a test can ask what a player would see and
+-- can invoke a command's handler the way a player clicking it would.
+--
+-- Removing a submenu removes everything under it, which is why removeItem() matches on the path
+-- prefix rather than on the item alone.
+--
+-- Deliberately NOT modelled: the *ForCoalition and *ForGroup variants (Skynet calls neither), and
+-- the per-menu item limit DCS enforces. removeItem(nil) raises instead of guessing -- what DCS
+-- does with no path is not something this repository has verified, and a stub that invents it
+-- would let a test depend on behaviour nobody has checked.
+--
+-- Same caution for two items added under the same name: they get the same path here and both are
+-- kept, so removeItem() takes both. SkynetIADS:addRadioMenu() called twice does exactly that, and
+-- whether DCS collapses such a pair, replaces the first or shows two is ALSO unverified. So no
+-- test may assert what removal does in that case -- see testAddRadioMenuTwiceBuildsTheWholeMenu-
+-- Again in test_skynet_iads.lua, which asserts only the calls Skynet itself makes.
+local function radioPath(parentPath, name)
+	local path = {}
+	for i = 1, #(parentPath or {}) do
+		path[i] = parentPath[i]
+	end
+	path[#path + 1] = name
+	return path
+end
+
+local function radioPathIsUnder(path, prefix)
+	if #path < #prefix then
+		return false
+	end
+	for i = 1, #prefix do
+		if path[i] ~= prefix[i] then
+			return false
+		end
+	end
+	return true
+end
+
+missionCommands = {}
+function missionCommands.addSubMenu(name, path)
+	local item = { name = name, path = radioPath(path, name) }
+	table.insert(dcsStub.radioItems, item)
+	return item.path
+end
+function missionCommands.addCommand(name, path, handler, args)
+	local item = { name = name, path = radioPath(path, name), handler = handler, args = args }
+	table.insert(dcsStub.radioItems, item)
+	return item.path
+end
+function missionCommands.removeItem(path)
+	assert(path ~= nil, "dcsStub: missionCommands.removeItem(nil) is not modelled; DCS's behaviour there is unverified")
+	for i = #dcsStub.radioItems, 1, -1 do
+		if radioPathIsUnder(dcsStub.radioItems[i].path, path) then
+			table.remove(dcsStub.radioItems, i)
+		end
+	end
+end
+
+--- The FIRST radio item carrying this label, or nil -- what a player would click on in the F10
+--- menu. Lookup is by label, not by path, and labels are not unique: SkynetIADS:addRadioMenu()
+--- called twice puts two "show IADS Status" commands in the tree and this returns the earlier
+--- one. A test that needs to tell two same-named items apart has to walk dcsStub.radioItems and
+--- compare paths itself.
+function dcsStub.radioItemNamed(name)
+	for i = 1, #dcsStub.radioItems do
+		if dcsStub.radioItems[i].name == name then
+			return dcsStub.radioItems[i]
+		end
+	end
+	return nil
+end
 
 timer = {
 	getAbsTime = function()
