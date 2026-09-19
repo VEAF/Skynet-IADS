@@ -15,9 +15,11 @@ built artifact — and until now nothing told it what had changed between two co
 ## A note on version numbers
 
 The inherited tags stop at `v2.0.1`, from walder's lineage, while the compiled script has long
-identified itself as `3.4.0RP-VEAF`. The two are not reconciled yet; doing so, and cutting the first
-automated release, is `CHORE-PROFESSIONALIZE-THE-REPO` ticket 03. Until then, treat the build date
-in the artifact's first line as the real identifier.
+identified itself as `3.4.0RP-VEAF`. Settled on 2026-09-19: VEAF continues the **artifact's**
+lineage, since that is the number anyone reads in a log. The first VEAF release is **3.5.0**, tagged
+`v3.5.0`, and the `RP` suffix is dropped — the Regroupement no longer maintains this project.
+
+Until that release is cut, the build date in the artifact's first line remains the real identifier.
 
 ## [Unreleased]
 

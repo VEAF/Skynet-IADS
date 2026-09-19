@@ -25,23 +25,18 @@ re-vendor, and that copy has run a month behind without anyone noticing. **A rel
 that makes the copy possible** — so the release notes are written for them as much as for players,
 and a release without a changelog entry is a release nobody can act on.
 
-## Versioning — settle this on the first use
+## Versioning — settled 2026-09-19
 
-Two numbering schemes coexist and have never been reconciled:
+Two numbering schemes had coexisted without ever being reconciled: the inherited tags stop at
+`v2.0.1` (walder's lineage), while the artifact has long called itself `3.4.0RP-VEAF`.
 
-| | |
-|---|---|
-| Inherited tags | `v1.1.1` … `v2.0.1`, from walder's lineage |
-| The artifact's own string | `3.4.0RP-VEAF build DD.MM.YYYY` — the `RP` is the Regroupement's fork |
+**David's decision**: continue the artifact's lineage, because that is the number anyone actually
+reads in a log. The first VEAF release is **`3.5.0`**, tagged **`v3.5.0`** — the shape of the
+existing tags, colliding with none of them. The `RP` suffix is dropped: the Regroupement no longer
+maintains this project.
 
-**Recommendation, to confirm with the user before the first release**: continue the artifact's
-lineage, because that is the number anyone reads in a log — so `3.5.0` for the first VEAF release.
-Tag it `v3.5.0`, matching the shape of the existing tags without colliding with any of them. Drop
-the `RP` suffix: the Regroupement no longer maintains this. Record the decision in `CHANGELOG.md` so
-the question is settled once.
-
-Semantic versioning, as `contributing.md` already states. A change to what a mission sees at runtime
-is at least a minor.
+Semantic versioning from there, as `contributing.md` already states. A change to what a mission sees
+at runtime is at least a minor.
 
 ## Steps
 
