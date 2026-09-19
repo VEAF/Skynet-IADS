@@ -1,6 +1,6 @@
 # 07 — Repository hygiene
 
-Status: ⬜ ready
+Status: ✅ done
 
 Small things, each costing a few minutes and saving someone an hour.
 
@@ -39,5 +39,8 @@ are history, and something may reference them.
 ## Definition of done
 
 - ~~`contributing.md` describes this repository's workflow, not upstream's.~~ **Done.**
-- `tmp/` untracked and ignored.
-- `.gitignore` covers what the project generates, verified with `git check-ignore -v`.
+- ~~`tmp/` untracked and ignored.~~ **Done** — the committed stub is removed, and the rewritten
+  build (ticket 03) no longer writes there at all, but the rule stays as a defensive default.
+- ~~`.gitignore` covers what the project generates, verified with `git check-ignore -v`.~~ **Done**
+  — added `Thumbs.db`, `/.vscode/`, `/.idea/`; verified every rule with `git check-ignore -v`
+  against a matching file.

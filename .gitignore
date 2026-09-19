@@ -1,8 +1,14 @@
 .DS_STORE
+Thumbs.db
 /demo-missions/spikes/
 /.superpowers/
 
-# Built by build-tools/build-compiled-script.ps1 — rebuilt by CI, never hand-edited.
+# Editors
+/.vscode/
+/.idea/
+
+# Build output — rebuilt by CI, never hand-edited.
+/tmp/
 /demo-missions/skynet-iads-compiled.lua
 
 # MkDocs build output — published to the gh-pages branch by CI, not committed here.

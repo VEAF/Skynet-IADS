@@ -76,6 +76,7 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the
   only reason the build could not run on the CI runner.
 - `skynet-iads-source/README_source.md`, superseded by the pages under `documentation/`.
+- `tmp/skynet-iads-compiled.lua`, a 76-byte stub committed by an interrupted build.
 
 ### Fixed
 
@@ -94,3 +95,5 @@ Until that release is cut, the build date in the artifact's first line remains t
   `test_skynet_iads_sam_site.lua` test method, and two of the highdigitsams file's
   local-redeclared-three-times chains left shadowing instead of reusing the local. Zero
   behaviour change; verified against the DCS stub and the full suite under a real Lua 5.1.
+- `.gitignore` now covers `Thumbs.db`, `/.vscode/`, `/.idea/` and `/tmp/`, alongside the build
+  and documentation output already ignored above — every rule checked with `git check-ignore -v`.
