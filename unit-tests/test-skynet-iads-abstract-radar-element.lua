@@ -1,4 +1,21 @@
 do
+--Figures that belong to Eagle Dynamics are NOT asserted here any more.
+--
+--This suite used to pin them: `getRange() == 35000` for the SA-11's missile, and 124 more like
+--it across the in-sim suites. ED has since made that 46000, so a Buk battery wakes 11 km further
+--out in every mission that places one -- and the only way anyone found out was running this
+--mission in DCS after three years, where it read as four red tests rather than as news.
+--
+--Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
+--Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps
+--the pin and opens a pull request when a figure moves. That is where a changed range shows up now.
+--
+--What stays here is what a stub cannot answer: terrain elevation, real detection geometry, what
+--DCS reports about a group's composition, and Skynet's own decisions. Assertions on figures the
+--test itself fabricates through a mocked getDCSRepresentation() stay too -- those are not ED's.
+--
+--The `--[[ ... ]]` blocks below are captures of getSensors() and getAmmo() taken in 2023. They
+--are kept as documentation of the shape Skynet parses; do not read their numbers as current.
 TestSkynetIADSAbstractRadarElement = {}
 
 function TestSkynetIADSAbstractRadarElement:setUp()
@@ -698,10 +715,6 @@ function TestSkynetIADSAbstractRadarElement:testShutDownWhenOutOfMissiles()
 	self:setUp()
 	
 	local launcher = self.samSite:getLaunchers()[1]
-	lu.assertEquals(launcher:getInitialNumberOfMissiles(), 3)
-	lu.assertEquals(launcher:getRemainingNumberOfMissiles(), 3)
-	lu.assertEquals(self.samSite:getInitialNumberOfMissiles(), 3)
-	lu.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 3)
 	
 	local launcherData =
 		{
@@ -851,14 +864,11 @@ function TestSkynetIADSAbstractRadarElement:testSA2InformOfContactTargetInRangeM
 	local searchRadar = self.samSite:getSearchRadars()[1]
 	lu.assertEquals(searchRadar:getTypeName(), 'p-19 s-125 sr')
 	local sensors = Unit.getByName('Unit #005'):getSensors()
-	lu.assertEquals(searchRadar:getMaxRangeFindingTarget(), 53499.2265625)
 
 	local launcher = self.samSite:getLaunchers()[1]
-	lu.assertEquals(launcher:getRange(), 40000)
 	
 	local trackingRadar = self.samSite:getTrackingRadars()[1]
 	--in its current implementation the SA-2 tracking radar returns the values of the search radar, I presume its only a placeholder in DCS
-	lu.assertEquals(trackingRadar:getMaxRangeFindingTarget(), 53499.2265625)	
 		
 	lu.assertEquals(self.samSite:isActive(), true)
 	lu.assertEquals(self.samSite:isTargetInRange(target), true)

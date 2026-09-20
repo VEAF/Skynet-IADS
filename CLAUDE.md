@@ -89,9 +89,11 @@ instead of extending it — it exists to erode, never to grow.
 - `unit-tests/*.miz` is the legacy in-sim suite, being migrated — two archives,
   `unit-tests/skynet-unit-tests.miz` and `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`.
   Only behaviour that genuinely needs the simulator — terrain elevation, real detection geometry,
-  in-game events, and the figures DCS units report about themselves — stays there. A suite whose
-  every assertion runs standalone is removed from both copies, the loose `unit-tests/*.lua` and the
-  one inside the `.miz`. Never edit the `.miz` by hand:
+  in-game events, how a DCS group is composed — stays there. **The numeric figures ED states about a
+  unit do not**: a missile's reach, its firing ceiling, a radar's detection distance are recorded in
+  `test/lua/dcs-figures.lua`, generated from a pinned datamine commit, and a weekly workflow opens a
+  pull request when one moves. A suite whose every assertion runs standalone is removed from both
+  copies, the loose `unit-tests/*.lua` and the one inside the `.miz`. Never edit the `.miz` by hand:
   a script is wired into it in four places, and `build-tools/miz-suite.py` (`check`, `sync`,
   `extract`, `remove`) is what keeps them consistent; every command covers both archives unless
   `--miz <path>` narrows it. **A script inside an archive is a copy**, and copies drift: both

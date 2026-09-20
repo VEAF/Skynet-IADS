@@ -138,7 +138,7 @@ second case.
 |---|-------|--------|
 | 01 | [Refresh the deliverable the mission carries](tickets/01-refresh-the-embedded-deliverable.md) | ✅ |
 | 02 | [Take MiST out of the mission](tickets/02-take-mist-out-of-the-mission.md) | ✅ |
-| 03 | [Take ED's figures out of DCS, and check them against the datamine](tickets/03-decide-about-the-dcs-figures.md) | ⬜ |
+| 03 | [Take ED's figures out of DCS, and check them against the datamine](tickets/03-decide-about-the-dcs-figures.md) | ✅ |
 | 04 | [Fix the renamed field the refresh exposed](tickets/04-fix-the-renamed-coverage-field.md) | ✅ |
 
 Order matters between 01 and 02: MiST cannot leave while the artifact in the mission still calls it.

@@ -428,3 +428,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   because the mission ran the December 2023 build, where the old name was still the real one --
   `docs/evolutions.md` had predicted this exact failure on 2026-09-19 and could not prove it.
   Refreshing the artifact proved it, in one line of the DCS log.
+- 125 assertions pinning a figure that belongs to Eagle Dynamics are out of the in-sim suites --
+  missile reach, firing ceiling, radar detection distance, initial ammunition. They are recorded in
+  `test/lua/dcs-figures.lua` instead, where a change arrives as a pull request rather than as a red
+  test nobody sees for three years. What stays in the `.miz` is what a stub cannot answer: terrain,
+  real detection geometry, how a DCS group is composed, and Skynet's own decisions -- along with the
+  assertions on figures a test fabricates through a mocked `getDCSRepresentation()`, which are not
+  ED's, and the handful asserting that the S-300's radars report no range at all, which is Skynet
+  coping with a unit DCS ships without sensor data.

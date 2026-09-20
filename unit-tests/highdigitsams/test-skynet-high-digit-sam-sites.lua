@@ -1,4 +1,21 @@
 do
+--Figures that belong to Eagle Dynamics are NOT asserted here any more.
+--
+--This suite used to pin them: `getRange() == 35000` for the SA-11's missile, and 124 more like
+--it across the in-sim suites. ED has since made that 46000, so a Buk battery wakes 11 km further
+--out in every mission that places one -- and the only way anyone found out was running this
+--mission in DCS after three years, where it read as four red tests rather than as news.
+--
+--Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
+--Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps
+--the pin and opens a pull request when a figure moves. That is where a changed range shows up now.
+--
+--What stays here is what a stub cannot answer: terrain elevation, real detection geometry, what
+--DCS reports about a group's composition, and Skynet's own decisions. Assertions on figures the
+--test itself fabricates through a mocked getDCSRepresentation() stay too -- those are not ED's.
+--
+--The `--[[ ... ]]` blocks below are captures of getSensors() and getAmmo() taken in 2023. They
+--are kept as documentation of the shape Skynet parses; do not read their numbers as current.
 
 TestSyknetIADSHighDigitSAMSites = {}
 
@@ -37,37 +54,27 @@ function TestSyknetIADSHighDigitSAMSites:testSA20AGargoyle()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300PMU1 5P85CE ln")
-	lu.assertEquals(launcher1:getRange(), 150000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 27000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 	
 	local launcher2 = launchers[2]
 	lu.assertEquals(launcher2:getTypeName(), "S-300PMU1 5P85DE ln")
-	lu.assertEquals(launcher2:getRange(), 150000)
-	lu.assertEquals(launcher2:getMaximumFiringAltitude(), 27000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 	
 	local searchRadars = self.samSite:getSearchRadars()
 	lu.assertEquals(#searchRadars, 2)
 	
 	local searchRadars1 = searchRadars[1]
 	lu.assertEquals(searchRadars1:getTypeName(), "S-300PMU1 40B6MD sr")
-	lu.assertEquals(searchRadars1:getMaxRangeFindingTarget(), 106998.453125)
 
 	local searchRadars2 = searchRadars[2]
 	lu.assertEquals(searchRadars2:getTypeName(), "S-300PMU1 64N6E sr")
-	lu.assertEquals(searchRadars2:getMaxRangeFindingTarget(), 106998.453125)
 	
 	local trackingRadars = self.samSite:getTrackingRadars()
 	lu.assertEquals(#trackingRadars, 2)
 	
 	local trackingRadar1 = trackingRadars[1]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300PMU1 40B6M tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 106998.453125)
 	
 	local trackingRadar2 = trackingRadars[2]
 	lu.assertEquals(trackingRadar2:getTypeName(), "S-300PMU1 30N6E tr")
-	lu.assertEquals(trackingRadar2:getMaxRangeFindingTarget(), 106998.453125)
 	
 	lu.assertEquals(self.samSite:getHARMDetectionChance(), 90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
@@ -130,33 +137,24 @@ function TestSyknetIADSHighDigitSAMSites:testSA23GladiatorOrGiant()
 
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300VM 9A83ME ln")
-	lu.assertEquals(launcher1:getRange(), 100000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 
 	local launcher1 = launchers[2]
 	lu.assertEquals(launcher1:getTypeName(), "S-300VM 9A82ME ln")
-	lu.assertEquals(launcher1:getRange(), 200000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 37000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 2)	
 	
 	local searchRadars = self.samSite:getSearchRadars()
 	lu.assertEquals(#searchRadars, 2)
 	
 	local searchRadars1 = searchRadars[1]
 	lu.assertEquals(searchRadars1:getTypeName(), "S-300VM 9S15M2 sr")
-	lu.assertEquals(searchRadars1:getMaxRangeFindingTarget(), 213996.90625)
 	
 	local searchRadars1 = searchRadars[2]
 	lu.assertEquals(searchRadars1:getTypeName(), "S-300VM 9S19M2 sr")
-	lu.assertEquals(searchRadars1:getMaxRangeFindingTarget(), 213996.90625)
 	
 	local trackingRadars = self.samSite:getTrackingRadars()
 	lu.assertEquals(#trackingRadars, 1)
 	
 	local trackingRadar1 = trackingRadars[1]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300VM 9S32ME tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 213996.90625)
 
 	lu.assertEquals(self.samSite:getHARMDetectionChance(), 90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
@@ -173,37 +171,27 @@ function TestSyknetIADSHighDigitSAMSites:testSA10BGrumble()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300PS 5P85SE_mod ln")
-	lu.assertEquals(launcher1:getRange(), 75000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 	
 	local launcher1 = launchers[2]
 	lu.assertEquals(launcher1:getTypeName(), "S-300PS 5P85SU_mod ln")
-	lu.assertEquals(launcher1:getRange(), 75000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 	
 	local searchRadars = self.samSite:getSearchRadars()
 	lu.assertEquals(#searchRadars, 2)
 	
 	local searchRadars1 = searchRadars[1]
 	lu.assertEquals(searchRadars1:getTypeName(), "S-300PS SA-10B 40B6MD MAST sr")
-	lu.assertEquals(searchRadars1:getMaxRangeFindingTarget(), 80248.84375)
 	
 	local searchRadars1 = searchRadars[2]
 	lu.assertEquals(searchRadars1:getTypeName(), "S-300PS 64H6E TRAILER sr")
-	lu.assertEquals(searchRadars1:getMaxRangeFindingTarget(), 80248.84375)
 	
 	local trackingRadars = self.samSite:getTrackingRadars()
 	lu.assertEquals(#trackingRadars, 2)
 	
 	local trackingRadar1 = trackingRadars[1]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300PS 30N6 TRAILER tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 80248.84375)
 	
 	local trackingRadar1 = trackingRadars[2]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300PS SA-10B 40B6M MAST tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 80248.84375)
 	
 	lu.assertEquals(self.samSite:getHARMDetectionChance(), 90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
@@ -220,9 +208,6 @@ function TestSyknetIADSHighDigitSAMSites:testEDDefaultSA10GrubleWith55VRUD()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300PS 5P85DE ln")
-	lu.assertEquals(launcher1:getRange(), 90000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 25000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 end
 
 function TestSyknetIADSHighDigitSAMSites:testSA10BGrumbleWith55VRUD()
@@ -253,9 +238,6 @@ function TestSyknetIADSHighDigitSAMSites:testSA17Grizzly()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "SA-17 Buk M1-2 LN 9A310M1-2")
-	lu.assertEquals(launcher1:getRange(), 50000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 50000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 end
 
 function TestSyknetIADSHighDigitSAMSites:testSA2GuidelineWithV7595V23()
@@ -268,9 +250,6 @@ function TestSyknetIADSHighDigitSAMSites:testSA2GuidelineWithV7595V23()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S_75M_Volhov_V759")
-	lu.assertEquals(launcher1:getRange(), 56000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 1)	
 end	
 
 function TestSyknetIADSHighDigitSAMSites:testSA3GoaWithV601P5V27()
@@ -283,9 +262,6 @@ function TestSyknetIADSHighDigitSAMSites:testSA3GoaWithV601P5V27()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "5p73 V-601P ln")
-	lu.assertEquals(launcher1:getRange(), 25000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 18000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)	
 end
 
 function TestSyknetIADSHighDigitSAMSites:testSA2GuidelineWithHQ2()
@@ -298,9 +274,6 @@ function TestSyknetIADSHighDigitSAMSites:testSA2GuidelineWithHQ2()
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "HQ_2_Guideline_LN")
-	lu.assertEquals(launcher1:getRange(), 50000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 1)	
 	
 end
 
@@ -318,30 +291,21 @@ function TestSyknetIADSHighDigitSAMSites:testSA12GladiatorGiant()
 	
 	local searchRadar1 = searchRadars[1]
 	lu.assertEquals(searchRadar1:getTypeName(), "S-300V 9S15 sr")
-	lu.assertEquals(searchRadar1:getMaxRangeFindingTarget(), 160497.6875)
 
 	local searchRadar2 = searchRadars[2]
 	lu.assertEquals(searchRadar2:getTypeName(), "S-300V 9S19 sr")
-	lu.assertEquals(searchRadar2:getMaxRangeFindingTarget(), 160497.6875)
 	
 	local trackingRadars = self.samSite:getTrackingRadars()
 	lu.assertEquals(#trackingRadars, 1)
 	
 	local trackingRadar1 = trackingRadars[1]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300V 9S32 tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 160497.6875)
 		
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300V 9A83 ln")
-	lu.assertEquals(launcher1:getRange(), 75000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 25000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)	
 	
 	local launcher2 = launchers[2]
 	lu.assertEquals(launcher2:getTypeName(), "S-300V 9A82 ln")
-	lu.assertEquals(launcher2:getRange(), 100000)
-	lu.assertEquals(launcher2:getMaximumFiringAltitude(), 30000)
-	lu.assertEquals(launcher2:getInitialNumberOfMissiles(), 2)	
 	
 	lu.assertEquals(self.samSite:getHARMDetectionChance(), 90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
@@ -359,23 +323,18 @@ function TestSyknetIADSHighDigitSAMSites:testSA20BGargoyle()
 	
 	local searchRadar1 = searchRadars[1]
 	lu.assertEquals(searchRadar1:getTypeName(), "S-300PMU2 64H6E2 sr")
-	lu.assertEquals(searchRadar1:getMaxRangeFindingTarget(), 220684.3125)
 	
 	local trackingRadars = self.samSite:getTrackingRadars()
 	lu.assertEquals(#trackingRadars, 1)
 	
 	local trackingRadar1 = trackingRadars[1]
 	lu.assertEquals(trackingRadar1:getTypeName(), "S-300PMU2 92H6E tr")
-	lu.assertEquals(trackingRadar1:getMaxRangeFindingTarget(), 220684.3125)
 	
 	local launchers = self.samSite:getLaunchers()
 	lu.assertEquals(#launchers, 1)
 	
 	local launcher1 = launchers[1]
 	lu.assertEquals(launcher1:getTypeName(), "S-300PMU2 5P85SE2 ln")
-	lu.assertEquals(launcher1:getRange(), 200000)
-	lu.assertEquals(launcher1:getMaximumFiringAltitude(), 27000)
-	lu.assertEquals(launcher1:getInitialNumberOfMissiles(), 4)
 	
 	lu.assertEquals(self.samSite:getHARMDetectionChance(), 90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)

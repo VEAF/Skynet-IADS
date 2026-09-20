@@ -337,11 +337,15 @@ triggers. The archive being well-formed is no longer one of the things you need 
 Behaviour that stays in `unit-tests/*.miz` on purpose, because a standalone test
 would only be asking the stub to repeat what the fixture told it:
 
-- **What a DCS unit reports about itself.** The detection range in a unit's
-  sensor table, the range and firing ceiling in its ammunition table, the NATO
-  name DCS gives a type. `abstract-radar-element`'s SA-2 tests assert
-  53499.2265625 m for the Flat Face; that figure is ED's, changes when they
-  change the unit, and only the simulator can tell you it has.
+- **How a DCS unit is put together.** How many launchers and radars a group has,
+  which is a search radar and which a tracking one, the NATO name DCS gives a
+  type. A stub asked about that would only repeat its fixture.
+- **The numeric figures ED states about a unit** — a missile's reach, its firing
+  ceiling, a radar's detection distance — used to be asserted here and are not any
+  more. `abstract-radar-element` pinned 53499.2265625 m for the Flat Face and the
+  SA-11's reach at 35000 m; ED made the latter 46000 and the suite read as a red
+  test rather than as news. Those figures now live in `dcs-figures.lua`, where a
+  change to one arrives as a pull request. See *The figures DCS states* above.
 - **Terrain.** Elevation, line of sight, `land.getIP` — the standalone `land`
   stub answers "visible, no intersection" and says so.
 - **Real detection geometry**, as opposed to the range arithmetic Skynet does on

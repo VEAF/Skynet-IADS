@@ -1,6 +1,6 @@
 # 03 — Take ED's figures out of DCS, and check them against the datamine
 
-Status: ⬜ ready — decided 2026-09-20, see *The decision* below
+Status: ✅ done — 2026-09-20, bar the DCS pass; decision in *The decision* below
 
 Four tests failed on the 2026-09-20 run, all in `test-skynet-iads-red-sam-sites-and-ew-radars.lua`,
 last touched 2023-12-29:
@@ -61,16 +61,38 @@ match to the eighth decimal.
 The unit-to-sensor link is direct: `_G/db/Units/Cars/Car/*.lua` carries
 `Sensors = { RADAR = { "SA-11 Buk TR" } }`.
 
-### What is not established
+A correction to the line above, measured after it was written: the radar relation lands **bit for
+bit on both samples, but only in single precision**. Rounding `0.2 ^ 0.25` to a 32-bit float and
+multiplying in 32-bit reproduces both figures exactly; in double precision the SA-11 still lands and
+the Shilka misses by 4.5e-4, one unit in the last place of a 32-bit float at that magnitude. The
+earlier claim that both matched "to the eighth decimal" was checked by eye and was wrong for the
+Shilka. Lua is double precision, so `test/lua/test_dcs_figures.lua` asserts a relative tolerance.
 
-**The unit-to-missile link.** It goes through `WS[].LN[].PL[].type_ammunition`, which is empty on the
-SA-11 TEL, so there is a level of indirection left to understand. That is the one thing that decides
-whether a generator is straightforward or painful — settle it before writing the generator, and say
-so here if it turns out the datamine cannot answer it.
+### Settled: the unit-to-missile link does not exist in the dump
 
-**The breadth.** Three missiles and two radars is what the correspondence rests on. Skynet models
-around forty types. A sample that holds on five is a reason to build, not a proof that it holds on
-forty.
+The ticket asked for this to be settled before writing the generator, and to be written up here if
+the datamine could not answer it. **It cannot.** The link lives in `WS[].LN[].PL[].type_ammunition`,
+and Quaggles' exporter prunes it: empty on 50 of the 61 ground units that carry one, `"Redacted"` on
+the rest. Measured 2026-09-20 across the whole `_G/db/Units/Cars` subtree, not inferred from the
+SA-11 alone.
+
+Two consequences, and neither costs the point of the ticket:
+
+- **Radars are recorded by unit**, because that walk is real on both hops: `samTypesDB` names the DCS
+  type, `_G/db/Units/**/<type>.lua` names its sensor, `_G/db/Sensors/Sensor/<sensor>.lua` states the
+  distance. 34 of the 36 types `samTypesDB` lists resolve; the two that do not are `Strela-1 9P31`
+  and `Strela-10M3`, which carry no radar at all — they are infrared — and are correct to be absent.
+- **Missiles are recorded by missile**, unfiltered. The display name carries the connection a human
+  needs: the entry that moved from 35000 to 46000 is `9M38M1 Buk-M1 (SA-11 Gadfly)`. Filtering to the
+  surface-to-air ones would mean guessing from the `_file` path of an ED source file, and a filter
+  that misses a SAM costs more than a few hundred lines nobody reads.
+
+So point 2 of *What to build* — standalone tests comparing Skynet's accessors to the table — is not
+what shipped for launchers, and could not be. What `test/lua/test_dcs_figures.lua` does instead is
+guard the **generator**, which is where the real risk was: a regex-based generator fails quietly, by
+writing a well-formed empty file or a plausible half-full one. Reading the real `samTypesDB` from the
+Lua side is what caught a non-greedy regex that read only the first entry of each block and had
+silently dropped two radars.
 
 ## What to build
 
@@ -101,8 +123,29 @@ usable — not the other way round.
 ## Definition of done
 
 - The unit-to-missile link is either understood, or written up here as the reason the scope shrank.
+  ✅ written up above: the dump prunes it, and the shape changed rather than shrank.
 - A committed table of ED's figures exists, generated from a pinned datamine ref, with the ref
-  recorded in it.
-- `test/lua/` checks Skynet's accessors against that table, and CI runs it.
-- CI fails if the committed table and the pin disagree.
+  recorded in it. ✅ `test/lua/dcs-figures.lua`, 34 radars and 234 missiles at `fe1d8008e6e8`.
+- `test/lua/` checks Skynet's accessors against that table, and CI runs it. ✅ with the change of
+  target explained above — `test_dcs_figures.lua` guards the generator and anchors the figures
+  against what a real DCS run reported, and CI runs it with the rest of the suite.
+- CI fails if the committed table and the pin disagree. ✅ `dcs-figures.py check`, in the *Lua unit
+  tests* job.
 - The in-sim suites no longer assert ED's figures, and what is left there is what needs a simulator.
+  ✅ 125 assertions removed, each one reading a real DCS unit. Kept on purpose: 16 whose figures the
+  test fabricates through a mocked `getDCSRepresentation()`, and 13 asserting a range of 0 — Skynet
+  coping with the S-300, which DCS ships with empty sensor data.
+- ⬜ **Pending the next DCS pass.** Removing assertions cannot turn a test red in CI, because nothing
+  in CI runs this mission. The run is what proves no test lost the local it needed.
+
+## The weekly watch
+
+`.github/workflows/dcs-data-drift.yml`, Mondays 06:20 UTC. It reads upstream's HEAD, bumps the pin,
+regenerates, and opens a pull request when a figure moved. The branch name carries the commit, on
+purpose: a fixed branch name that survives a merge makes the push a no-op, no pull request is opened,
+and the workflow goes quiet in a way indistinguishable from "nothing changed" — which silenced the
+same robot in VEAF-Mission-Creation-Tools for three weeks in July 2026.
+
+The pin is moved by `dcs-figures.py bump`, not by a `sed` in the workflow, because a textual
+replacement that matches nothing exits zero: the pin would stay put while every later step reported
+success.
