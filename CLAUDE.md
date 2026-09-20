@@ -86,8 +86,12 @@ instead of extending it — it exists to erode, never to grow.
 
 - New **logic** tests go in `test/lua/`, run with `lua5.1 test/lua/run.lua` (a suite name filters:
   `lua5.1 test/lua/run.lua contact`). They use the DCS stub in `test/lua/dcs-stub.lua`.
-- `unit-tests/*.miz` is the legacy in-sim suite, being migrated — two archives,
-  `unit-tests/skynet-unit-tests.miz` and `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`.
+- `unit-tests/` holds every mission that needs the simulator. Two are the legacy in-sim suite, being
+  migrated — `unit-tests/skynet-unit-tests.miz` and
+  `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`; the third,
+  `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, is a check driven from
+  outside through VEAF's `dcs-bridge` with no player task. The directory is also what a release
+  reads: `demo-missions/` archives are attached to it, `unit-tests/` ones never are.
   Only behaviour that genuinely needs the simulator — terrain elevation, real detection geometry,
   in-game events, how a DCS group is composed — stays there. **The numeric figures ED states about a
   unit do not**: a missile's reach, its firing ceiling, a radar's detection distance are recorded in

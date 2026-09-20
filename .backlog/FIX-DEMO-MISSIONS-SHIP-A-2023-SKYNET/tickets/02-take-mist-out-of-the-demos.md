@@ -15,7 +15,7 @@ Measured 2026-09-20 across the loose setup scripts:
 | script | MiST calls |
 |---|---|
 | `demo-missions/skynet-iads-setup-persian-gulf.lua` | **0** |
-| `demo-missions/skynet-insim-last-line-of-defence.lua` | **0** |
+| `skynet-insim-last-line-of-defence.lua` (now `unit-tests/last-line-of-defence/`) | **0** |
 | `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher-setup.lua` | **1** |
 
 The one:

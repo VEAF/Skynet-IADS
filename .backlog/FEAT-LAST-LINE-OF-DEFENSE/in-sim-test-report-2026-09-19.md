@@ -16,8 +16,8 @@ it.
 |---|---|
 | DCS World | 2.9.29.27468 (x86_64, MT, Windows NT 10.0.26200) |
 | Skynet | **3.5.0**, build 19.09.2026 1946Z, as the mission's embedded artifact reports itself |
-| Mission | `demo-missions/skynet-insim-last-line-of-defence.miz`, theatre Persian Gulf |
-| Scenario | `demo-missions/skynet-insim-last-line-of-defence.lua`, embedded in the mission and loaded by its startup trigger |
+| Mission | `demo-missions/skynet-insim-last-line-of-defence.miz`, theatre Persian Gulf — moved to `unit-tests/last-line-of-defence/` on 2026-09-20, after this run |
+| Scenario | `demo-missions/skynet-insim-last-line-of-defence.lua`, embedded in the mission and loaded by its startup trigger — same move |
 | Driven by | VEAF [dcs-bridge](https://github.com/VEAF/VEAF-dcs-bridge), `dcs-serve` on 127.0.0.1:8080, `dcs-bridge.lua` as a second startup trigger |
 | Evidence | `Saved Games/DCS/Logs/dcs.log`, status line written every 5 s by the scenario's own watch |
 

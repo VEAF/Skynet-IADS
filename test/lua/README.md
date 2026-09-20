@@ -293,9 +293,14 @@ connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
 ## Building and editing the `.miz`
 
 Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
-`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both. It
-applies to the four archives under `demo-missions/` too: they are not tests, but they are handled by
-the same tool and for the same reason, and `miz-suite.py` covers all six.
+`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both. A
+third sits beside them, `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`,
+which is not a luaunit suite: it is driven from outside through VEAF's `dcs-bridge` and carries no
+player task. It applies to the three archives under `demo-missions/` too: those are not tests, but
+they are handled by the same tool and for the same reason, and `miz-suite.py` covers all six.
+
+The split between the two directories is what a release reads: `demo-missions/` archives are
+attached to it, everything under `unit-tests/` is developer material and is not.
 
 **None of them contains the scripts it runs.** Each holds a placeholder for every script, and the
 mission you open in DCS is assembled on demand:

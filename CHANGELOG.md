@@ -138,8 +138,8 @@ Until that release is cut, the build date in the artifact's first line remains t
   index a nil value*, which is what a mistyped group name looks like -- and that a prefix has to
   start the group name rather than merely appear in it.
 
-- `demo-missions/skynet-insim-last-line-of-defence.miz`, the in-sim check for the last line of
-  defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
+- `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, the in-sim check for the
+  last line of defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
   while an aircraft on the deck stays under that radar's horizon -- the reported situation, built
   on purpose. It is driven from outside through VEAF's `dcs-bridge`, so nobody has to fly: one call
   puts an immortal intruder on a run across the site, another prints what the network is doing, and
@@ -266,6 +266,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   copy is the only one now. What that dropped, measured rather than assumed: one deprecated no-op
   call (`setIgnoreHARMSWhilePointDefencesHaveAmmo`) the Persian Gulf archive had and its loose copy
   did not, and a typo the loose MOOSE copy had already fixed.
+
+- `skynet-insim-last-line-of-defence.miz` moved from `demo-missions/` to
+  `unit-tests/last-line-of-defence/`, with its scenario script. It was never a demo: it is driven
+  from outside through VEAF's `dcs-bridge`, it carries no player task, and its own script opens with
+  *"In-sim checks for the last line of defense and the coverage refresh"*. It sat among the demos
+  because that is where it was written, on 2026-09-19, and the directory now says what it is — which
+  is also what keeps it out of the release assets, since those are the `demo-missions/` archives and
+  nothing else.
 
 - `build-tools/miz-suite.py` covers six archives instead of two, and reads a `mission` written by
   either DCS or VEAF's mission editor — the two serialise the same Lua table differently, and

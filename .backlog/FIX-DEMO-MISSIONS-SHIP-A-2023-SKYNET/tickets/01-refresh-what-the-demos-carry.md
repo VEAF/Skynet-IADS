@@ -28,12 +28,14 @@ measured 2026-09-20 by reading the archives rather than assuming:
    demands that every member be a placeholder, which `Moose.lua` must not be. Both have to learn the
    exception before the tuple gets its first entry.
 
-3. **The loose-file scan runs per archive, and three archives share `demo-missions/`.** `check` would
-   report `skynet-insim-last-line-of-defence.lua` as loaded by no trigger while checking the Persian
-   Gulf archive, and the Persian Gulf setup as unloaded while checking the last-line one. The scan
-   has to be folder-wide and run once, after every archive in that folder has been read. It also has
-   to skip `skynet-iads-compiled.lua`, which is generated into `demo-missions/` and is nobody's
-   loose script.
+3. **The loose-file scan runs per archive, and several archives draw on the same folder.** `check`
+   would report `skynet-insim-last-line-of-defence.lua` as loaded by no trigger while checking the
+   Persian Gulf archive, and the Persian Gulf setup as unloaded while checking the last-line one.
+   The scan has to be folder-wide and run once, after every archive has been read. It also has to
+   skip `skynet-iads-compiled.lua`, which is generated into `demo-missions/` and is nobody's loose
+   script. Still true after the move: `demo-missions/skynet-iads-setup-persian-gulf.lua` is loaded
+   by two archives, and every archive under `unit-tests/` falls back to `unit-tests/`, where the
+   legacy suites sit that only `skynet-unit-tests.miz` loads.
 
 4. **`skynet-insim-last-line-of-defence.miz` is not written in DCS's own serialisation.** It was
    re-saved by VEAF's mission editor on 2026-09-19, which writes `trigrules = {` where DCS writes
@@ -108,14 +110,27 @@ parsing and the trigrules surgery get a `unittest` file, covering both serialisa
 re-checks its own output before writing, which has caught mistakes, but it cannot catch a regex that
 matches the wrong thing consistently.
 
-## Open question, for David
+## Answered by David, 2026-09-20: move it
 
 **`skynet-insim-last-line-of-defence.miz` is not a demo.** Its script opens with *"In-sim checks for
 the last line of defense and the coverage refresh"*, it is driven from outside through VEAF's
-dcs-bridge, and it "carries no player task". It sits in `demo-missions/` because that is where it was
-written, on 2026-09-19. It should not be attached to a release as a demo, and arguably belongs beside
-the in-sim suite. This ticket **leaves it where it is** and excludes it from the release assets;
-moving it is a rename that touches the `FEAT-LAST-LINE-OF-DEFENSE` record and is David's call.
+dcs-bridge, and it "carries no player task". It sat in `demo-missions/` because that is where it was
+written, on 2026-09-19.
+
+It is now `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, with its scenario
+script beside it, on the pattern `unit-tests/highdigitsams/` already set: one subdirectory per
+archive, holding the scripts it loads. `source_folders()` needed nothing — the rule written for the
+demos, *the archive's own directory then the top of its path*, gives `unit-tests/` as the fallback
+here on its own.
+
+**What the move buys beyond tidiness**: the release no longer has to name what it excludes. The
+assets are the `demo-missions/` archives and nothing else, which is a rule about a directory rather
+than a list somebody has to keep in step. The comment in `release.yml` that used to spell out the
+exception is gone with it.
+
+The `FEAT-LAST-LINE-OF-DEFENSE` PRD and its in-sim report keep the path they were written with, each
+carrying a line saying where the file went — a record of a run on 2026-09-19 should not claim to
+have used a path that did not exist yet.
 
 ## Flown in DCS, 2026-09-20
 

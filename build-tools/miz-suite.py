@@ -5,10 +5,13 @@ Six `.miz` files carry scripts from this repository, and all six are handled her
 
   * `unit-tests/skynet-unit-tests.miz`                                 the in-sim suite
   * `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`            the same, for the mod
+  * `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`   driven from outside
   * `demo-missions/skynet-test-persian-gulf.miz`                       the demo `documentation/` points at
   * `demo-missions/skynet-test-persian-gulf-stress-test.miz`           the same map, many more sites
   * `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher.miz`
-  * `demo-missions/skynet-insim-last-line-of-defence.miz`              the in-sim check for that lot
+
+The three under `unit-tests/` are developer material; the three under `demo-missions/` are what a
+release attaches. Nothing else distinguishes them here.
 
 **The archives in git do not contain the scripts they run.** Each holds a placeholder, and `build`
 puts the real files in to produce the mission DCS opens. That is deliberate. A copy of the code
@@ -82,7 +85,7 @@ ARCHIVES = (
     os.path.join("demo-missions", "skynet-test-persian-gulf.miz"),
     os.path.join("demo-missions", "skynet-test-persian-gulf-stress-test.miz"),
     os.path.join("demo-missions", "moose_a2a_connector", "skynet-and-moose-a2a-dispatcher.miz"),
-    os.path.join("demo-missions", "skynet-insim-last-line-of-defence.miz"),
+    os.path.join("unit-tests", "last-line-of-defence", "skynet-insim-last-line-of-defence.miz"),
 )
 
 #: The deliverable, which is what the in-sim suite actually exercises. It is generated, not
