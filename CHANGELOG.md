@@ -267,6 +267,12 @@ Until that release is cut, the build date in the artifact's first line remains t
   call (`setIgnoreHARMSWhilePointDefencesHaveAmmo`) the Persian Gulf archive had and its loose copy
   did not, and a typo the loose MOOSE copy had already fixed.
 
+- `build-tools/miz-suite.py` covers six archives instead of two, and reads a `mission` written by
+  either DCS or VEAF's mission editor — the two serialise the same Lua table differently, and
+  assuming DCS's shape made the tool read `skynet-insim-last-line-of-defence.miz` as having an empty
+  `mapResource`. `test/python/test_miz_suite.py` covers both shapes, run in CI: a pattern that
+  matches the wrong block does not raise, it rewrites the wrong trigger and writes the archive.
+
 - `skynet-insim-last-line-of-defence.miz` moved from `demo-missions/` to
   `unit-tests/last-line-of-defence/`, with its scenario script. It was never a demo: it is driven
   from outside through VEAF's `dcs-bridge`, it carries no player task, and its own script opens with
@@ -274,12 +280,6 @@ Until that release is cut, the build date in the artifact's first line remains t
   because that is where it was written, on 2026-09-19, and the directory now says what it is — which
   is also what keeps it out of the release assets, since those are the `demo-missions/` archives and
   nothing else.
-
-- `build-tools/miz-suite.py` covers six archives instead of two, and reads a `mission` written by
-  either DCS or VEAF's mission editor — the two serialise the same Lua table differently, and
-  assuming DCS's shape made the tool read `skynet-insim-last-line-of-defence.miz` as having an empty
-  `mapResource`. `test/python/test_miz_suite.py` covers both shapes, run in CI: a pattern that
-  matches the wrong block does not raise, it rewrites the wrong trigger and writes the archive.
 
 ### Removed
 
