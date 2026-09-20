@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-sam-site.lua (12 tests).
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- The DCS-mission version reads SAM groups baked into skynet-unit-tests.miz
 --- and kills units with trigger.action.explosion(...). Here the SAM groups are
 --- built by dcs-fixtures (F.samGroup), contacts by F.iadsContact, and units are

@@ -62,14 +62,28 @@ in the same pull request. The report tells you when it can be raised and to what
 
 ## What stays uncovered, and why
 
-Measured at **93.97%**. Everything reachable is covered except the five entries below, so
+Measured at **94.63%**. Everything reachable is covered except the four entries below, so
 nothing is left in the report with nobody having looked at it. Re-check this list whenever the
 figure moves for a reason you did not expect.
 
-**`skynet-iads-abstract-radar-element.lua` — 105 lines.** The point defence and cached-target
-tests that still live only in `unit-tests/*.miz`. Porting them is
-`CHORE-PROFESSIONALIZE-THE-REPO` ticket 04; `CHORE-TEST-COVERAGE-FLOOR` ticket 04 tracks what it
-buys. This is the one block still worth real work.
+**`skynet-iads-abstract-radar-element.lua` — 89 lines, and porting the legacy suite could not
+close them,** because the legacy suite never covered them either. Four blocks:
+
+- **`informOfHARM()`** — the geometry and the decision behind a HARM evasion: aspect, distance,
+  time to impact, whether to remember the track as a HARM, whether to wake the point defences,
+  whether to go dark and for how long. The largest single block left in the project.
+- **`weaponFired()`** — the `S_EVENT_SHOT` handler that puts a launched missile on the
+  missiles-in-flight list. The list itself is covered; what fills it is not.
+- **The five ammunition helpers behind `shallIgnoreHARMShutdown()`**
+  (`hasRequiredNumberOfMissiles`, `hasRemainingAmmoToEngageMissiles`,
+  `hasEnoughLaunchersToEngageMissiles`, `pointDefencesHaveRemainingAmmo`,
+  `pointDefencesHaveEnoughLaunchers`). The truth table above them is covered, by a test that
+  mocks all five away — which is what the legacy test did too, and why they stay dark.
+- **`addHARMDecoy()`, the deprecated `setIgnoreHARMSWhilePointDefencesHaveAmmo()`,
+  `calculateImpactPoint()`'s `land.getIP` call, and the debug-log branches.**
+
+That is work for a lot of its own, not for the port: writing these tests means deciding what
+`informOfHARM` should do, not recording what a legacy test already said.
 
 **Continuation lines — 34 lines, and no test can ever reach them.** The second and later lines of
 a multi-line concatenation or `return`. Lua 5.1 attributes the whole expression to its first
@@ -91,9 +105,15 @@ It is not dead: it is what keeps the file loadable under a newer interpreter.
 
 ## Ported suites
 
-These `unit-tests/` suites now also run standalone (their `.miz` copies are kept):
-`harm-detection`, `abstract-dcs-object-wrapper`, `moose-a2a-connector` (1 test),
-`jammer`, `abstract-element`, `sam-site`, plus the M1 `contact` pilot.
+**Six legacy suites are gone**, both copies — the loose `unit-tests/*.lua` and
+the one baked into `skynet-unit-tests.miz`: `abstract-dcs-object-wrapper`,
+`abstract-element`, `contact`, `harm-detection`, `jammer` and `sam-site`. Every
+test each of them asserted runs here, none of them asserted anything only DCS
+can answer, and two copies that drift are worse than one. David's call,
+2026-09-19; done by `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04.
+
+`moose-a2a-connector` stays: one of its three tests is ported and the other two
+enumerate the 17-EW / 17-SAM demo world.
 
 `test_skynet_iads.lua` is the `SkynetIADS` suite. It carries the narrow
 regression test for the `3a94937` fix
@@ -205,13 +225,60 @@ is the decision built on top of them — which of the search radar, tracking rad
 and launcher has to reach a contact, and what `setGoLiveRangeInPercent()` does
 to that.
 
-Still to port out of `abstract-radar-element` (11 methods, of which 3 are
-commented out in the legacy file and 1 has an empty body — so **7 real tests**):
-point defence (5) and the cached-target behaviour (2).
+- **slice 4 — point defence and the detected-target cache** (7 tests):
+  `testSetPointDefence`, `testPointDefencesGoLive`,
+  `testPointDefenceActiveWhenSAMGoesDarkDueToHARMDefence`,
+  `testPointDefencesAreNotActivatedWhenNoHARMSRemoved`,
+  `testPointDefenceLitByHandIsNotStoodDownWhenItsSAMGoesDark`,
+  `testCacheDetectedTargets`,
+  `testCacheInvalidatedFirstfewSecondsAfterControllerIsActivated`.
+
+**The port is complete.** The legacy suite has 50 test methods, of which 3 are
+commented out upstream and 1 has an empty body; all **46** live ones now run
+standalone.
+
+The last of them is a **finding**, not a port, and it is the fourth legacy test
+in this suite that could not fail.
+`testPointDefenceWillGoDarkWhenSAMItIsProtectingGoesDark` lights a point defence
+by hand, sends the site it protects dark and asserts the point defence followed
+it down. Its point defence is built without `setupElements()`, so it has no
+launchers and no radars, `SkynetIADSSamSite:isDestroyed()` answers true and
+`goLive()` never lit it — the assertion read a site that had never been on.
+With a real point defence it stays lit: `pointDefencesStopActingAsEW()` is
+called from `goLive()` and from the last remembered HARM ageing out, and from
+nowhere else. That is not a hole in the live mechanism — a point defence is only
+ever lit by `pointDefencesGoLive()`, which `goDark()` runs only during HARM
+evasion — but it is one for a mission that lights one by hand. The standalone
+test pins what the code does today under a name that says so.
 
 Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
+
+## Editing the `.miz`
+
+`unit-tests/skynet-unit-tests.miz` is a zip, and a script baked into one is wired in **four**
+places: the file under `l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`,
+the `a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's
+own structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to
+stay contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
+mission runs the script while the editor shows an empty trigger, or the reverse.
+
+    python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py extract <dir>
+    python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
+
+`check` asserts all four agree; `remove` re-checks the result and refuses to write if anything is
+off, so a failed run leaves the `.miz` untouched.
+
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then
+`extract` plus a Lua parse of every file in the archive — including `mission` and `mapResource`,
+which are Lua too and are the two the tool edits. Verified against three deliberate breakages: a
+`trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
+caught, and the first two are caught *only* by `check`.
+
+What is left for DCS is narrow: whether the simulator accepts the mission file and runs its
+triggers. The archive being well-formed is no longer one of the things you need DCS to find out.
 
 ## Needs the simulator
 

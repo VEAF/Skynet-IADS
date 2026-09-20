@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-jammer.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- The DCS-mission version reads a "jammer-source" unit baked into
 --- skynet-unit-tests.miz and kills the emitter with
 --- trigger.action.explosion(...). Here the emitter is a code-defined

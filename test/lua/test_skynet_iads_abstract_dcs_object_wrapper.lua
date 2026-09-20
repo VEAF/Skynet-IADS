@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-abstract-dcs-object-wrapper.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- All 5 tests exercise the wrapper around a fixture unit: EW-SA-6, a Kub 1S91 str.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")

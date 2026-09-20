@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — slices 1 to 3 done; 7 real tests of `abstract-radar-element` left
+Status: 🔄 in-progress — port complete, six legacy suites removed; one question left for David
 
 ## Progress
 
@@ -13,25 +13,76 @@ Status: 🔄 in-progress — slices 1 to 3 done; 7 real tests of `abstract-radar
   `FEAT-LAST-LINE-OF-DEFENSE` modifies. Slice 2 ports 15 more: HARM timing and defence states, the
   two engagement flags, the parent / child radar bookkeeping.
 
-  Slice 3 ports 16 more: ammunition and missiles in flight, and the engagement zone.
+  Slice 3 ports 16 more: ammunition and missiles in flight, and the engagement zone. Slice 4 ports
+  the last 7: point defence and the detected-target cache.
 
-  Of the 11 methods left, **3 are commented out in the legacy file** (the two
-  `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
+  **The port is done.** The legacy file has 50 test methods, of which **3 are commented out** (the
+  two `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
   `testCallMethodOnTableElements`) and **1 has an empty body**
   (`testPointDefenceWhenOnlyOneEWRadarIsActiveAndAmmoIsStillAvailable`, a `--TODO: write Unit test`
-  that was never written). So **7 real tests remain**: point defence (5) and cached targets (2).
-  `test/lua/README.md` lists them.
+  that was never written). All **46** live ones run standalone.
+
+  The split into four slices, and into three pull requests, was agreed with David on 2026-09-19,
+  under the rule `CLAUDE.md` acquired the same day.
 
   Slice 3 also drew the first entries on the **"needs the simulator"** list the removal decision
   turns on: the `.miz` SA-2 range tests assert the figures DCS units report about themselves
   (53499.2265625 m for the Flat Face). Those are ED's numbers, not Skynet's, and a standalone test
   asking the stub would only prove `dcs-fixtures.lua` repeats itself. They stay.
 
-  One thing the port keeps finding: a legacy test that cannot fail. Two of slice 2's originals
-  compared bare `{}` mocks with `assertEquals`, and luaunit compares tables by value — so the order
-  they claimed to pin was never checked; a third never called the method it was named after. Each
-  ported test is checked by mutating the source and watching it go red.
-- **Step 4, removing the legacy copy: not done, and deliberately.** The `unit-tests/*.lua` files are
+  One thing the port kept finding: **a legacy test that cannot fail**, four times in this one
+  file. Two of slice 2's originals compared bare `{}` mocks with `assertEquals`, and luaunit
+  compares tables by value — so the order they claimed to pin was never checked. A third never
+  called the method it was named after. A fourth, slice 3's `testSA8GoLiveRangeInPercent`, returned
+  on `informOfContact()`'s own guard before the range was ever consulted.
+
+  The fifth is a **finding**, not a defect in the test alone.
+  `testPointDefenceWillGoDarkWhenSAMItIsProtectingGoesDark` asserts that a point defence goes dark
+  with the site it protects. It passes because its point defence is built without
+  `setupElements()`, so `SkynetIADSSamSite:isDestroyed()` answers true and `goLive()` never lit it.
+  With a real point defence it **stays lit**: `pointDefencesStopActingAsEW()` is called from
+  `goLive()` and from the last remembered HARM ageing out, and from nowhere else. Harmless in the
+  live mechanism — nothing but HARM evasion ever lights a point defence — but not harmless for a
+  mission that lights one by hand. The standalone test records what the code does, under a name
+  that says so.
+
+  Every ported test is checked by mutating the source and watching it go red: 19 mutations across
+  the four slices.
+- **Step 4, removing the legacy copy: done for six suites.** `abstract-dcs-object-wrapper`,
+  `abstract-element`, `contact`, `harm-detection`, `jammer` and `sam-site` are gone from both
+  places — the loose `unit-tests/*.lua` and the copy inside `skynet-unit-tests.miz`. Each was
+  checked test by test: every assertion runs standalone, and none of them asserts terrain, real
+  detection, or a figure a DCS unit reports about itself.
+
+  Editing the `.miz` turned out to need a tool, `build-tools/miz-suite.py`, and the reason is
+  worth knowing: a script is wired into a `.miz` in **four** places, not three. Besides the file,
+  its `mapResource` key and the compiled `a_do_script_file(...)` call in `mission`'s `trig.actions`,
+  the Mission Editor keeps its own structured copy of the same trigger in `trigrules`, an array
+  whose indices have to stay contiguous. The first attempt removed three of the four and the tool's
+  own check caught it.
+
+  That check now runs in CI (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*),
+  together with a Lua parse of every file in the archive. Until now **nothing** checked the `.miz`:
+  it is the one file in this repository that no gate looked at, and a hand edit that broke it was
+  found by opening DCS, or not at all. What still needs the simulator is only whether DCS accepts
+  the mission and runs its triggers.
+
+  **What stays, and why.** `iads`, `early-warning-radar` and `red`/`blue-sam-sites-and-ew-radars`
+  enumerate the demo world. Two of the three `moose-a2a-connector` tests do the same.
+  `abstract-radar-element` is fully ported but still asserts the ranges DCS reports for the units it
+  models — 53499.2265625 m for the SA-2's Flat Face — and that is the one thing a stub cannot stand
+  in for. **Open question for David:** keep 47 KB of otherwise-duplicated suite for three numbers,
+  or reduce it in the `.miz` to a small canary that checks only ED's figures? Reducing it means
+  authoring an in-sim suite, which only a DCS session can judge — so it is not something to do
+  unasked.
+
+  **Not fixed here, and pre-existing:** the loose `unit-tests/test-skynet-iads.lua` carries
+  `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage` (the `3a94937` fix) and its `.miz` copy
+  does not, so the in-sim suite has never run it. The standalone suite does, so nothing is
+  uncovered; the two copies are simply still out of step. Left alone: syncing them changes what the
+  in-sim suite runs, which only DCS can judge.
+
+- **Step 4, the reasoning that got there:** The `unit-tests/*.lua` files are
   loose copies of scripts baked into `skynet-unit-tests.miz` (`l10n/DEFAULT/<same name>.lua`);
   editing one without rebuilding the `.miz` makes the two drift, which is the problem the step
   exists to prevent. It has already happened once: the loose

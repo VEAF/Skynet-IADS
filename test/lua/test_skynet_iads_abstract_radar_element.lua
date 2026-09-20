@@ -5,8 +5,9 @@
 --- FEAT-LAST-LINE-OF-DEFENSE modify that class. Slice 2 takes the HARM timing
 --- and defence states, the two engagement flags and the parent / child radar
 --- bookkeeping. Slice 3 takes ammunition and missiles in flight, and the
---- engagement zone. Point defence and the cached-target behaviour are still
---- DCS-only; see test/lua/README.md for what is left.
+--- engagement zone. Slice 4 takes point defence and the cached-target
+--- behaviour, which completes the port; see test/lua/README.md for what stays
+--- in the .miz and why.
 ---
 --- The .miz version reads SAM groups, connection nodes, power sources and a
 --- command centre baked into skynet-unit-tests.miz, and kills them with
@@ -40,6 +41,7 @@ local GROUPS = {
 	["SAM-SA-10"] = "SA-10",
 	["SAM-SA-11"] = "SA-11",
 	["SAM-SA-8"] = "SA-8",
+	["SAM-SA-15-1"] = "SA-15",
 	["SAM-Shilka"] = "Shilka",
 }
 
@@ -1213,6 +1215,219 @@ function TestSkynetIADSAbstractRadarElement:testSA8GoLiveRangeInPercent()
 	self.samSite:informOfContact(target)
 	luaunit.assertEquals(self.samSite:getLaunchers()[1]:isInRange(target), false)
 	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+-- ---- slice 4: point defence ---------------------------------------------------------------
+--
+-- A point defence is a short-range battery a SAM site keeps around itself to shoot at the missiles
+-- aimed at its radar. The mechanism is entirely in setActAsEW(): while the site it protects is
+-- evading a HARM, its point defences are switched into EW mode, which is what keeps them lit while
+-- the site they protect is dark. They are switched back off when the site comes back up, and when
+-- the last remembered HARM ages out.
+
+--- Builds an SA-15 as a site of the IADS, the way the .miz suite's addSAMSitesByPrefix does, so
+--- the point defence under test is a real SkynetIADSSamSite and not a mock.
+local function pointDefenceSamSite(iads, groupName)
+	F.samGroup("SA-15", groupName)
+	local pointDefence = SkynetIADSSamSite:create(Group.getByName(groupName), iads)
+	pointDefence:setupElements()
+	return pointDefence
+end
+
+function TestSkynetIADSAbstractRadarElement:testSetPointDefence()
+	self.samSiteName = "SAM-SA-10"
+	self:setUp()
+	F.samGroup("SA-15", "SAM-SA-15-1")
+	local pd = self.skynetIADS:addSAMSite("SAM-SA-15-1")
+
+	luaunit.assertEquals(pd:getIsAPointDefence(), false)
+	luaunit.assertIs(self.samSite:addPointDefence(pd), self.samSite)
+	luaunit.assertEquals(pd:getIsAPointDefence(), true)
+	luaunit.assertEquals(#self.samSite:getPointDefences(), 1)
+	luaunit.assertIs(self.samSite:getPointDefences()[1], pd)
+
+	pd:cleanUp()
+end
+
+--- pointDefencesGoLive() answers whether it actually changed anything, and that return value is
+--- what stops goDark() switching a point defence on twice.
+function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
+	self.samSiteName = "SAM-SA-10"
+	self:setUp()
+
+	local actingAsEW = false
+	local mockPD = {
+		getActAsEW = function()
+			return actingAsEW
+		end,
+		setIsAPointDefence = function() end,
+		setActAsEW = function(_, state)
+			actingAsEW = state
+		end,
+		-- the protected site's cleanUp() calls this on every point defence it holds
+		cleanUp = function() end,
+	}
+
+	self.samSite:addPointDefence(mockPD)
+	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), true, "it was dark, so this switched it on")
+	luaunit.assertEquals(actingAsEW, true)
+
+	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), false, "already lit: nothing to change")
+end
+
+--- The whole point of the mechanism: the site hides from the HARM, its point defence lights up to
+--- meet it, and when the site comes back the point defence stands down again.
+function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDarkDueToHARMDefence()
+	self.samSiteName = "SAM-SA-10"
+	self:setUp()
+	self.samSite:setActAsEW(true)
+
+	local pointDefence = pointDefenceSamSite(self.skynetIADS, "SAM-SA-15-1")
+	pointDefence:goLive()
+	pointDefence:goDark()
+	luaunit.assertIs(self.samSite:addPointDefence(pointDefence), self.samSite)
+	luaunit.assertEquals(#self.samSite:getPointDefences(), 1)
+
+	self.samSite:goSilentToEvadeHARM()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+	luaunit.assertEquals(pointDefence:getActAsEW(), true)
+
+	self.samSite:finishHarmDefence()
+	self.samSite:goLive()
+	luaunit.assertEquals(pointDefence:getActAsEW(), false)
+
+	pointDefence:cleanUp()
+end
+
+--- The HARM scan runs every two seconds whether or not anything is happening. With nothing
+--- remembered as a HARM it must leave the point defences exactly as they are -- switching them off
+--- on every quiet pass would undo the step above two seconds after it happened.
+function TestSkynetIADSAbstractRadarElement:testPointDefencesAreNotActivatedWhenNoHARMSRemoved()
+	self.samSiteName = "SAM-SA-10"
+	self:setUp()
+	local pointDefence = pointDefenceSamSite(self.skynetIADS, "SAM-SA-15-1")
+	self.samSite:addPointDefence(pointDefence)
+
+	local calledStopPointDefence = false
+	function self.samSite:pointDefencesStopActingAsEW()
+		calledStopPointDefence = true
+	end
+
+	self.samSite:evaluateIfTargetsContainHARMs()
+	luaunit.assertEquals(calledStopPointDefence, false)
+
+	-- and by contrast: once a remembered HARM ages out, the scan does stand them down
+	table.insert(self.samSite.objectsIdentifiedAsHarms, {
+		getAge = function()
+			return 120
+		end,
+	})
+	self.samSite:evaluateIfTargetsContainHARMs()
+	luaunit.assertEquals(calledStopPointDefence, true)
+
+	pointDefence:cleanUp()
+end
+
+--- Departure from the .miz, and a finding rather than a port. The test of this name there is
+--- called testPointDefenceWillGoDarkWhenSAMItIsProtectingGoesDark: it lights a point defence by
+--- hand with setActAsEW(true), sends the protected site dark, and asserts the point defence went
+--- dark with it. It passes for a reason that has nothing to do with that. Its point defence is
+--- built without setupElements(), so it has no launchers and no radars, SkynetIADSSamSite
+--- :isDestroyed() answers true, and goLive() therefore never set aiState at all -- the assertion
+--- was reading a site that had never been lit, and could not have failed.
+---
+--- With a point defence that really is lit, it stays lit: pointDefencesStopActingAsEW() is called
+--- from goLive() and from the last remembered HARM ageing out, and from nowhere else. goDark()
+--- does not stand its point defences down.
+---
+--- That is not a hole in the live mechanism -- a point defence is only ever lit by
+--- pointDefencesGoLive(), which goDark() runs only during HARM evasion, and both ways back down
+--- are covered by the two tests above. It is a hole for a mission that lights one by hand. This
+--- pins what the code does today, so that changing it is a decision somebody takes on purpose.
+function TestSkynetIADSAbstractRadarElement:testPointDefenceLitByHandIsNotStoodDownWhenItsSAMGoesDark()
+	self.samSiteName = "SAM-SA-10"
+	self:setUp()
+	local pointDefence = pointDefenceSamSite(self.skynetIADS, "SAM-SA-15-1")
+	self.samSite:addPointDefence(pointDefence)
+	pointDefence:setActAsEW(true)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+	luaunit.assertEquals(pointDefence:getActAsEW(), true)
+
+	pointDefence:cleanUp()
+end
+
+-- ---- slice 4: the detected-target cache ----------------------------------------------------
+--
+-- getDetectedTargets() goes to the DCS controller, which is expensive, and one IADS update asks
+-- the same site several times within a few milliseconds. So the answer is cached for
+-- cachedTargetsMaxAge seconds -- one update cycle by default.
+--
+-- With one exception, and it is the reason the second test exists: the IADS switches a site's
+-- controller off and on again, and the first getDetectedTargets() after a goLive comes back empty
+-- whatever is in front of the radar. Cached, that empty answer would make the site behave as if
+-- the sky were clear for a whole cycle. So for noCacheActiveForSecondsAfterGoLive seconds after
+-- goLive the cache is bypassed.
+--
+-- Departure from the .miz: these drive the clock. dcs-stub's clock starts at 0, where
+-- `timer.getTime() - self.goLiveTime < noCacheActiveForSecondsAfterGoLive` reads 0 < 5 and the
+-- cache is bypassed for a reason that has nothing to do with the behaviour under test. A mission
+-- is never at t = 0 when any of this happens.
+--
+-- These two do not use setUp's site, because setUp replaces getDetectedTargets() with one that
+-- returns {} -- there would be nothing left to test. The site here is built by the IADS itself,
+-- and the stub controller answers no contacts, so what the assertions compare is *identity*: the
+-- same table back means the cache answered, a different one means it went to the controller.
+
+--- Adds an SA-10 to the IADS the way a mission does, with the real getDetectedTargets() in place.
+local function samSiteFromIADS(iads, groupName)
+	F.samGroup("SA-10", groupName)
+	return iads:addSAMSite(groupName)
+end
+
+function TestSkynetIADSAbstractRadarElement:testCacheDetectedTargets()
+	self:setUp()
+	local samSite = samSiteFromIADS(self.skynetIADS, "SAM-SA-10")
+	self.samSite = samSite
+
+	dcsStub.advanceClock(100)
+	samSite:goDark()
+	samSite:goLive()
+	-- deactivate no cache after goLive
+	samSite.noCacheActiveForSecondsAfterGoLive = 0
+
+	luaunit.assertIs(samSite:getDetectedTargets(), samSite:getDetectedTargets())
+
+	samSite.cachedTargetsMaxAge = -1
+	luaunit.assertNotIs(
+		samSite:getDetectedTargets(),
+		samSite:getDetectedTargets(),
+		"a cache that expires before it is written is no cache"
+	)
+end
+
+function TestSkynetIADSAbstractRadarElement:testCacheInvalidatedFirstfewSecondsAfterControllerIsActivated()
+	self:setUp()
+	local samSite = samSiteFromIADS(self.skynetIADS, "SAM-SA-10")
+	self.samSite = samSite
+
+	dcsStub.advanceClock(100)
+	samSite:goDark()
+	samSite:goLive()
+
+	luaunit.assertEquals(samSite.noCacheActiveForSecondsAfterGoLive, 5)
+	luaunit.assertNotIs(
+		samSite:getDetectedTargets(),
+		samSite:getDetectedTargets(),
+		"inside the window the cache is bypassed, so the first empty answer cannot stick"
+	)
+
+	dcsStub.advanceClock(6)
+	luaunit.assertIs(samSite:getDetectedTargets(), samSite:getDetectedTargets(), "and the window closes")
 end
 
 os.exit(luaunit.LuaUnit.run())
