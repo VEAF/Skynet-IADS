@@ -118,6 +118,6 @@ function Vec3CalculationSpike()
 	posCounter = posCounter + 1
 end
 
---mist.scheduleFunction(Vec3CalculationSpike, {}, 1, 1)
+--SkynetIADSUtils.scheduleFunction(Vec3CalculationSpike, {}, 1, 1)
 
 end

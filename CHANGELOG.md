@@ -188,11 +188,32 @@ Until that release is cut, the build date in the artifact's first line remains t
   if anything is off.
 - A CI job for the in-sim mission archive (`.github/workflows/lua-tests.yml`, *In-sim mission
   archive*). It cannot run the `.miz` -- that needs the simulator -- but it runs `miz-suite.py
-  check` and parses every Lua file inside the archive, `mission` and `mapResource` included. Until
+  check`, assembles both missions and parses every Lua file in them, `mission` and `mapResource`
+  included. (It parsed the committed archives when this job was first written; since the missions
+  became assembled, parsing those would only be parsing placeholders.) Until
   now nothing checked that file at all: it is the one file in this repository no gate looked at,
   and a hand edit that broke it was found by opening DCS, or not at all. Verified against three
   deliberate breakages -- a `trigrules` entry removed, a `mapResource` line removed, a script
   truncated -- each caught.
+
+- `miz-suite.py build`: the in-sim missions are **assembled** now, not committed complete. Both
+  archives hold a placeholder for every script and `build` puts the real files in, writing to the
+  git-ignored `build/missions/`. A copy of the code committed beside the code it copies goes stale
+  without a sound -- which is the defect below -- and an assembled mission cannot; one opened
+  unbuilt prints a message on screen instead of quietly measuring the wrong thing. `check` fails if
+  git is holding a copy of anything, in either direction, so a suite added to the repository and
+  never wired in is reported too. Both archives are covered,
+  `unit-tests/skynet-unit-tests.miz` and `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`;
+  `--miz <path>` narrows any command to one.
+
+- `test/lua/dcs-figures.lua` and `build-tools/dcs-figures.py`: a record of what Eagle Dynamics says
+  about the units Skynet models -- missile reach, firing ceiling, radar detection distance -- read
+  from a pinned commit of the `Quaggles/dcs-lua-datamine` dump. CI regenerates it against the pin and
+  fails on any difference, and `.github/workflows/dcs-data-drift.yml` bumps the pin weekly and opens
+  a pull request whose diff names the figure that moved. It is the only thing in this project that
+  can say a battery changed behaviour in game: the SA-11's missile went from 35000 m to 46000 m
+  between December 2023 and September 2026 -- 11 km further out before a Buk wakes -- and the only
+  reason anyone found out was running the in-sim mission after three years.
 
 ### Changed
 
@@ -382,3 +403,48 @@ Until that release is cut, the build date in the artifact's first line remains t
   jammer stops jamming it — shot down, switched off, out of range, or line of sight lost. That has
   always worked, through a timeout on the anti-radiation-missile scan every live battery runs, but
   no test covered it and `documentation/api.md` never mentioned it. Both now do.
+- Both in-sim mission archives carried **Skynet 3.3.0, built 29 December 2023**, while `develop` had
+  moved to 3.5.0. Neither `.miz` had been touched since 30 December 2023, so every in-sim run for
+  close to three years measured code this project had stopped shipping -- including the 118-test run
+  of 2026-09-20, which is what turned this up. The division of labour `test/lua/` was built on --
+  the standalone suite leans on the in-sim one for what a stub cannot answer -- only holds if the
+  in-sim half runs the code we ship, and it did not. Both archives now carry the current build, and
+  `miz-suite.py check` fails if they drift again.
+- Three tests written during 2026 had never run: `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
+  (added 2026-08-23) in `test-skynet-iads.lua`, and `testHighScreenB`, `testClamShell2` and
+  `testSA10BGrumble` in `test-skynet-high-digit-sam-sites.lua`. Each was added to the loose copy and
+  never baked into the archive, which is the same drift running the other way. All are now in.
+- MiST is out of both in-sim mission archives, and the popup it put on the player's screen with it.
+  `fe40c4a` took MiST out of Skynet on 2026-08-30, but the missions still loaded
+  `mist_4_5_107.lua` -- 312 KB -- because the 2023 artifact they carried still called it 33 times.
+  Loading MiST installs MiST's own world event handler, and a `DEAD` event for an object it has no
+  record of ends in `Object.getPosition` on something already gone:
+  `ERROR SCRIPTING (Main): ... mist_4_5_107.lua:1350: Object doesn't exist`, which DCS shows the
+  player. The suites that blow objects up are what set it off. The harness's own five MiST calls
+  become their `SkynetIADSUtils` equivalents -- `round` is the same function character for
+  character, `get2DDist` differs only by a nil warning, and `random` draws from the same
+  distribution. The leak check at the end of `skynet-unit-tests.lua` still works: task ids come
+  from a counter starting at 1, and `removeFunction` still answers whether there was one, so
+  walking the integers is the same sweep.
+- `testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSAMSites` had been measuring nothing since
+  2026-08-23. `0ebbc01` renamed `lastUpdatePosition` to `lastCoverageUpdatePosition`; the in-sim test
+  kept writing the old name, so it set a field nothing reads and
+  `getDistanceTraveledSinceLastUpdate()` answered 0 where the test asserts 763. It stayed green
+  because the mission ran the December 2023 build, where the old name was still the real one --
+  `docs/evolutions.md` had predicted this exact failure on 2026-09-19 and could not prove it.
+  Refreshing the artifact proved it, in one line of the DCS log.
+- 125 assertions pinning a figure that belongs to Eagle Dynamics are out of the in-sim suites --
+  missile reach, firing ceiling, radar detection distance, initial ammunition. They are recorded in
+  `test/lua/dcs-figures.lua` instead, where a change arrives as a pull request rather than as a red
+  test nobody sees for three years. What stays in the `.miz` is what a stub cannot answer: terrain,
+  real detection geometry, how a DCS group is composed, and Skynet's own decisions -- along with the
+  assertions on figures a test fabricates through a mocked `getDCSRepresentation()`, which are not
+  ED's, and the handful asserting that the S-300's radars report no range at all, which is Skynet
+  coping with a unit DCS ships without sensor data.
+- The same in-sim AWACS test also counted calls to `buildRadarCoverageForEarlyWarningRadar` to prove
+  that a moved AWACS triggers a coverage rebuild. `0ebbc01` moved that deliberately -- movement is
+  `refreshRadarCoverage()`'s job now, because the incremental rebuild only ever added, so an AWACS in
+  transit accumulated every battery it had ever flown near -- so the test was counting a function no
+  longer on that path. The behaviour is covered standalone by
+  `test/lua/test_skynet_iads_coverage_refresh.lua`; what stays in the mission is the part that needs
+  the simulator, the distance between two real DCS units.

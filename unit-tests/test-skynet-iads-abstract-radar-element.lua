@@ -1,4 +1,22 @@
 do
+--Figures that belong to Eagle Dynamics are NOT asserted here any more.
+--
+--125 such assertions came out of the in-sim suites, 7 of them from this file. The one that
+--made the case was in test-skynet-iads-red-sam-sites-and-ew-radars.lua: `getRange() == 35000` for
+--the SA-11's missile. ED has since made it 46000, so a Buk battery wakes 11 km further out in
+--every mission that places one -- and the only way anyone found out was running that mission in
+--DCS after three years, where it read as a red test rather than as news.
+--
+--Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
+--Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps
+--the pin and opens a pull request when a figure moves. That is where a changed range shows up now.
+--
+--What stays here is what a stub cannot answer: terrain elevation, real detection geometry, what
+--DCS reports about a group's composition, and Skynet's own decisions. Assertions on figures the
+--test itself fabricates through a mocked getDCSRepresentation() stay too -- those are not ED's.
+--
+--The `--[[ ... ]]` blocks below are captures of getSensors() and getAmmo() taken in 2023. They
+--are kept as documentation of the shape Skynet parses; do not read their numbers as current.
 TestSkynetIADSAbstractRadarElement = {}
 
 function TestSkynetIADSAbstractRadarElement:setUp()
@@ -678,7 +696,7 @@ function TestSkynetIADSAbstractRadarElement:testSlantRangeCalculationForHARMDefe
 	local iadsContact = IADSContactFactory("test-distance-calculation")
 	local radarUnit = self.samSite:getRadars()[1]
 	local distanceSlantRange = self.samSite:getDistanceInMetersToContact(iadsContact, radarUnit:getPosition().p)
-	local straightLine = mist.utils.round(mist.utils.get2DDist(radarUnit:getPosition().p, iadsContact:getPosition().p), 0)
+	local straightLine = SkynetIADSUtils.round(SkynetIADSUtils.get2DDist(radarUnit:getPosition().p, iadsContact:getPosition().p), 0)
 	lu.assertEquals(distanceSlantRange > straightLine, true)
 end
 
@@ -698,10 +716,6 @@ function TestSkynetIADSAbstractRadarElement:testShutDownWhenOutOfMissiles()
 	self:setUp()
 	
 	local launcher = self.samSite:getLaunchers()[1]
-	lu.assertEquals(launcher:getInitialNumberOfMissiles(), 3)
-	lu.assertEquals(launcher:getRemainingNumberOfMissiles(), 3)
-	lu.assertEquals(self.samSite:getInitialNumberOfMissiles(), 3)
-	lu.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 3)
 	
 	local launcherData =
 		{
@@ -851,14 +865,11 @@ function TestSkynetIADSAbstractRadarElement:testSA2InformOfContactTargetInRangeM
 	local searchRadar = self.samSite:getSearchRadars()[1]
 	lu.assertEquals(searchRadar:getTypeName(), 'p-19 s-125 sr')
 	local sensors = Unit.getByName('Unit #005'):getSensors()
-	lu.assertEquals(searchRadar:getMaxRangeFindingTarget(), 53499.2265625)
 
 	local launcher = self.samSite:getLaunchers()[1]
-	lu.assertEquals(launcher:getRange(), 40000)
 	
 	local trackingRadar = self.samSite:getTrackingRadars()[1]
 	--in its current implementation the SA-2 tracking radar returns the values of the search radar, I presume its only a placeholder in DCS
-	lu.assertEquals(trackingRadar:getMaxRangeFindingTarget(), 53499.2265625)	
 		
 	lu.assertEquals(self.samSite:isActive(), true)
 	lu.assertEquals(self.samSite:isTargetInRange(target), true)
@@ -1080,12 +1091,12 @@ function TestSkynetIADSAbstractRadarElement:testShutDownTimes()
 	self.samSiteName = "SAM-SA-6"
 	self:setUp()
 	lu.assertEquals(self.samSite:calculateMinimalShutdownTimeInSeconds(30), 60)
-	local saveRandom = mist.random
-	function mist.random(low, high)
+	local saveRandom = SkynetIADSUtils.random
+	function SkynetIADSUtils.random(low, high)
 		return 10
 	end
 	lu.assertEquals(self.samSite:calculateMaximalShutdownTimeInSeconds(20), 30)
-	mist.random = saveRandom
+	SkynetIADSUtils.random = saveRandom
 end
 
 function TestSkynetIADSAbstractRadarElement:testDaisychainSAMOptions()

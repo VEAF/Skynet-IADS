@@ -52,9 +52,17 @@ own setup and then measures the wrong thing.
 
 **One confirmed case**, found on 2026-09-19 while closing `FIX-COVERAGE-UPDATE-DARKENS-SITES`.
 `0ebbc01` (PR #17) renamed `lastUpdatePosition` to `lastCoverageUpdatePosition`.
-`unit-tests/test-skynet-iads.lua:163` and `:174` still assign the old name, so they set a field
+`unit-tests/test-skynet-iads.lua:163` and `:174` still assigned the old name, so they set a field
 `getDistanceTraveledSinceLastUpdate()` no longer reads — it finds `lastCoverageUpdatePosition` nil,
 adopts the current position and answers 0, where the test asserts 763.
+
+**Proved in DCS and fixed, 2026-09-20.** It was still green in the simulator, because the mission
+carried the December 2023 build where `lastUpdatePosition` was the real name. Refreshing that
+artifact (`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 01) turned it red — `expected: 763, actual:
+0`, exactly as predicted here — and ticket 04 fixed it. A sweep of every field the in-sim suites
+write against what the sources define found no second case, so the lint step proposed below has been
+run once by hand and found one thing; what stands guard now is `miz-suite.py check`, which stops the
+archive from carrying a build old enough to hide a rename.
 
 **How far the drift goes: measured, 2026-09-20.** The suite was run in DCS on Persian Gulf while
 closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. **118 tests, 114 successes, 4 failures**, and
@@ -68,25 +76,33 @@ them pins a figure DCS reports about its own units:
 | `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
 | `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
 | `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
-| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1908 | 1909 |
+| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1909 | 1908 |
 
 Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
 Skynet is wrong; the tests record what DCS said three years ago.
 
-**So the open question is not "what are the numbers today".** It is whether Skynet's own suite
-should pin ED's data at all. Three readings, and they are genuinely different:
+**So the open question was not "what are the numbers today".** It was whether Skynet's own suite
+should pin ED's data at all — and the four were only what was visible that day. Across every in-sim
+suite, **125 assertions** compared an ED figure to a literal, so the next patch decided which of them
+went red. All 125 are gone, into `test/lua/dcs-figures.lua`.
 
-- **It is a canary and it just worked.** Nothing else in this project would have told anyone that
-  the Buk's reach grew by 11 km — a change that moves when a battery wakes, in every mission. The
-  cost is four red tests until somebody re-runs and re-pins them.
-- **It is noise.** A suite that goes red because ED shipped a patch teaches people to ignore it,
-  which is how the drift above happened in the first place.
-- **It is the wrong shape.** What is worth knowing is *that a figure moved*, not that it equals a
-  literal — a check that records the current values and reports the delta would say the same thing
-  without ever failing.
+**Answered, 2026-09-20.** David pointed at
+[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools), which answers the
+same question **without a simulator**: `veaf_build/dcs_data/` sparse-clones
+[`Quaggles/dcs-lua-datamine`](https://github.com/Quaggles/dcs-lua-datamine) at a pinned commit,
+generates a committed artifact, and a CI guard regenerates against the pin and fails on a diff; a
+weekly workflow bumps the pin and opens a pull request when upstream moves.
 
-Whichever is chosen, the two altitude assertions (1929/1930, 1908/1909) are a metre of terrain and
-are worth nothing either way.
+The datamine carries exactly the figures these tests pin — checked at that pin (DCS 2.9.29.27278):
+`getRange()` is `_G/rockets/<missile>.Range_max` (SA-11 **46000**, HQ-7 **15000**, SA-15 12000),
+`getMaximumFiringAltitude()` is its `H_max`, and `getMaxRangeFindingTarget()` is
+`_G/db/Sensors/Sensor/<radar>.detection_distance` times `0.2 ^ 0.25` — detection range goes as the
+fourth root of the reference target's radar cross-section, and both radar samples match to the
+eighth decimal. The two figures the DCS log reported are the two the datamine holds.
+
+So ED's data leaves the simulator entirely: it becomes a generated table and a standalone test.
+`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 03 carries the work.
+
 
 **Worth considering, cheapest first:**
 

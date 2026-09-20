@@ -255,41 +255,102 @@ Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
 
-## Editing the `.miz`
+## The figures DCS states
 
-`unit-tests/skynet-unit-tests.miz` is a zip, and a script baked into one is wired in **four**
-places: the file under `l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`,
-the `a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's
-own structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to
-stay contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
+`dcs-figures.lua` is **generated** -- by `python build-tools/dcs-figures.py generate`, from a pinned
+commit of the [`Quaggles/dcs-lua-datamine`](https://github.com/Quaggles/dcs-lua-datamine) dump of the
+DCS databases. Do not edit it by hand.
+
+It holds the figures that belong to Eagle Dynamics rather than to Skynet: every missile's reach
+(`Range_max`) and firing ceiling (`H_max`), and the raw detection distance of every radar
+`samTypesDB` names. Those are exactly what `SkynetIADSSAMLauncher:getRange()`,
+`getMaximumFiringAltitude()` and `getMaxRangeFindingTarget()` report at runtime.
+
+**Why it exists.** The in-sim suite used to assert those numbers directly -- `getRange() == 35000`
+for the SA-11. ED has since made it 46000, which means a Buk battery now wakes 11 km further out in
+every mission that places one, and nothing here said so: the assertion only went red when somebody
+ran the mission in DCS, which nobody had done since December 2023. Recording the figures turns that
+into a diff instead of a discovery.
+
+Two things keep it honest:
+
+- CI runs `python build-tools/dcs-figures.py check`, which regenerates against the pin and fails on
+  any difference — so the committed file cannot claim a pin it no longer matches.
+- `.github/workflows/dcs-data-drift.yml` bumps the pin every Monday and opens a pull request when a
+  figure moved. **That pull request is the point.** Read the diff; there is nothing to fix.
+
+`test_dcs_figures.lua` guards the generator, not Skynet: a regex that stops matching writes a
+well-formed empty file, and one that matches half of what it should writes a plausible one. It
+checks the table is populated, that every entry states a usable figure, that the figures match what
+a real DCS run reported on 2026-09-20, and — from the Lua side, reading the real `samTypesDB` — that
+no radar Skynet models is missing. That last check is what caught a non-greedy regex reading only
+the first entry of each block, which had silently dropped two radars.
+
+**What the dump cannot say** is which launcher fires which missile: `type_ammunition` is pruned by
+the exporter. So missiles are recorded by missile, unfiltered, and the display name carries the
+connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
+
+## Building and editing the `.miz`
+
+Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
+`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both.
+
+**Neither of them contains the scripts it runs.** Each holds a placeholder for every script, and the
+mission you open in DCS is assembled on demand:
+
+    pwsh -File build-tools/build-compiled-script.ps1     # the deliverable is generated too
+    python build-tools/miz-suite.py build                # writes build/missions/*.miz
+
+Copy what that writes into your DCS `Missions` folder and open it there. `build/` is git-ignored: it
+is output, like the deliverable.
+
+**Why it works that way.** A copy of the code committed beside the code it copies goes stale without
+a sound. Both of these archives held Skynet 3.3.0 from December 2023 until 2026-09-20 while
+`develop` moved to 3.5.0, so every in-sim run for three years measured code this project had stopped
+shipping — and three tests written into the loose copies during 2026 had never run at all, because
+nobody remembered to bake them in. An assembled mission cannot be out of date, and one opened
+unbuilt prints a message on screen instead of quietly measuring the wrong thing.
+
+### The wiring, and the rest of the commands
+
+A `.miz` is a zip, and a script baked into one is wired in **four** places: the file under
+`l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`, the
+`a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's own
+structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to stay
+contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
 mission runs the script while the editor shows an empty trigger, or the reverse.
 
-    python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py check                # wiring, and that git holds no copies
+    python build-tools/miz-suite.py stub                 # placeholders back in (adding a suite)
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
-`check` asserts all four agree; `remove` re-checks the result and refuses to write if anything is
-off, so a failed run leaves the `.miz` untouched.
+Every command works on both archives; `--miz <path>` narrows it to one. `build`, `stub` and `remove`
+re-check the result and refuse to write if anything is off, so a failed run leaves the `.miz`
+untouched. `check` also reports a suite that exists in `unit-tests/` but that no trigger loads —
+which is the drift running the other way, and how three tests sat outside the mission for months.
 
-**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then
-`extract` plus a Lua parse of every file in the archive — including `mission` and `mapResource`,
-which are Lua too and are the two the tool edits. Verified against three deliberate breakages: a
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then a
+build of the deliverable, then `build`, then a Lua parse of every file in the **assembled** missions
+— including `mission` and `mapResource`, which are Lua too and are the two the tool edits. Parsing
+the placeholders instead would prove nothing. Verified against three deliberate breakages: a
 `trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
 caught, and the first two are caught *only* by `check`.
-
-What is left for DCS is narrow: whether the simulator accepts the mission file and runs its
-triggers. The archive being well-formed is no longer one of the things you need DCS to find out.
 
 ## Needs the simulator
 
 Behaviour that stays in `unit-tests/*.miz` on purpose, because a standalone test
 would only be asking the stub to repeat what the fixture told it:
 
-- **What a DCS unit reports about itself.** The detection range in a unit's
-  sensor table, the range and firing ceiling in its ammunition table, the NATO
-  name DCS gives a type. `abstract-radar-element`'s SA-2 tests assert
-  53499.2265625 m for the Flat Face; that figure is ED's, changes when they
-  change the unit, and only the simulator can tell you it has.
+- **How a DCS unit is put together.** How many launchers and radars a group has,
+  which is a search radar and which a tracking one, the NATO name DCS gives a
+  type. A stub asked about that would only repeat its fixture.
+- **The numeric figures ED states about a unit** — a missile's reach, its firing
+  ceiling, a radar's detection distance — used to be asserted here and are not any
+  more. `abstract-radar-element` pinned 53499.2265625 m for the Flat Face and the
+  SA-11's reach at 35000 m; ED made the latter 46000 and the suite read as a red
+  test rather than as news. Those figures now live in `dcs-figures.lua`, where a
+  change to one arrives as a pull request. See *The figures DCS states* above.
 - **Terrain.** Elevation, line of sight, `land.getIP` — the standalone `land`
   stub answers "visible, no intersection" and says so.
 - **Real detection geometry**, as opposed to the range arithmetic Skynet does on

@@ -18,5 +18,13 @@ Thumbs.db
 /luacov.stats.out
 /luacov.report.out
 
+# Playable missions, assembled by build-tools/miz-suite.py build. Output, like the deliverable:
+# the archives in unit-tests/ hold placeholders, and the real scripts are put in on demand.
+/build/
+
+# Python bytecode, from build-tools/*.py
+__pycache__/
+*.pyc
+
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json
