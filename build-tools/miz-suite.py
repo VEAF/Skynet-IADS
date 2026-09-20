@@ -72,9 +72,10 @@ BUILD_SCRIPT = "pwsh -File build-tools/build-compiled-script.ps1"
 #: never match byte for byte. The version stays in the comparison -- only the clock is dropped.
 BUILD_STAMP = re.compile(rb"BUILD TIME: [^-]*---")
 
-#: Scripts that are vendored from elsewhere and have no copy in this repository, so `check` must
-#: not report them as missing a source. MiST is on its way out of both archives entirely.
-NO_SOURCE_IN_REPO = ("mist_4_5_107.lua",)
+#: Scripts vendored from elsewhere, which have no copy in this repository for `check` to compare
+#: against. Empty since 2026-09-20, when MiST left both archives: anything baked in from now on is
+#: reported until it is either given a copy here or listed as a deliberate exception.
+NO_SOURCE_IN_REPO = ()
 
 ACTION_BLOCK = r"([ \t]*)\[(\d+)\] = \r?\n\1\{.*?\r?\n\1\}, -- end of \[\2\]\r?\n"
 ACTIONS_ARRAY = r'\["actions"\] = \r?\n([ \t]*)\{\r?\n(.*?)\r?\n\1\}, -- end of \["actions"\]'

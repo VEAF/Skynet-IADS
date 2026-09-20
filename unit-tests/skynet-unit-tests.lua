@@ -23,10 +23,16 @@ end
 
 lu.LuaUnit.run()
 
---clean mist left over scheduled tasks form unit tests, check there are no left over tasks in the IADS
+--Clean up scheduled tasks the unit tests left behind, and report any the IADS itself left.
+--SkynetIADSUtils hands out task ids from a counter that starts at 1 and never resets, and
+--removeFunction answers whether there was a task under that id -- so walking the integers is
+--the same sweep this did through mist.removeFunction, and it stays valid while fewer than
+--10000 tasks have ever been scheduled in a run.
+--This runs before skynet-unit-test-iads-setup.lua builds the IADS the mission is played with,
+--so it cannot disarm that one.
 local i = 0
 while i < 10000 do
-	local id =  mist.removeFunction(i)
+	local id =  SkynetIADSUtils.removeFunction(i)
 	i = i + 1
 	if id then
 		env.info("WARNING: IADS left over Tasks")

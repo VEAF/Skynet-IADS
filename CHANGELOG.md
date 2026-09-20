@@ -400,3 +400,15 @@ Until that release is cut, the build date in the artifact's first line remains t
   (added 2026-08-23) in `test-skynet-iads.lua`, and `testHighScreenB`, `testClamShell2` and
   `testSA10BGrumble` in `test-skynet-high-digit-sam-sites.lua`. Each was added to the loose copy and
   never baked into the archive, which is the same drift running the other way. All are now in.
+- MiST is out of both in-sim mission archives, and the popup it put on the player's screen with it.
+  `fe40c4a` took MiST out of Skynet on 2026-08-30, but the missions still loaded
+  `mist_4_5_107.lua` -- 312 KB -- because the 2023 artifact they carried still called it 33 times.
+  Loading MiST installs MiST's own world event handler, and a `DEAD` event for an object it has no
+  record of ends in `Object.getPosition` on something already gone:
+  `ERROR SCRIPTING (Main): ... mist_4_5_107.lua:1350: Object doesn't exist`, which DCS shows the
+  player. The suites that blow objects up are what set it off. The harness's own five MiST calls
+  become their `SkynetIADSUtils` equivalents -- `round` is the same function character for
+  character, `get2DDist` differs only by a nil warning, and `random` draws from the same
+  distribution. The leak check at the end of `skynet-unit-tests.lua` still works: task ids come
+  from a counter starting at 1, and `removeFunction` still answers whether there was one, so
+  walking the integers is the same sweep.

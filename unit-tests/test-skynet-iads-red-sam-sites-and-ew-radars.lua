@@ -410,7 +410,7 @@ function TestSkynetIADSREDSAMSitesAndEWRadars:testShilkaGroupLaunchersSearchRada
 	--dcs has no maximum height data for AAA
 	lu.assertEquals(launcher:getMaximumFiringAltitude(), 0)
 	lu.assertEquals(launcher:isWithinFiringHeight(target), true)
-	lu.assertEquals(mist.utils.round(launcher:getHeight(target)), 1909)
+	lu.assertEquals(SkynetIADSUtils.round(launcher:getHeight(target)), 1909)
 
 	--this target is at 25k feet
 	local target = IADSContactFactory("test-not-in-firing-range-of-sa-2")
@@ -486,7 +486,7 @@ function TestSkynetIADSREDSAMSitesAndEWRadars:testSA15LaunchersSearchRadarRangeA
 	
 	lu.assertEquals(launcher:isInRange(target), false)
 
-	lu.assertEquals(mist.utils.round(launcher:getHeight(target)), 1930)
+	lu.assertEquals(SkynetIADSUtils.round(launcher:getHeight(target)), 1930)
 	lu.assertEquals(launcher:getMaximumFiringAltitude(), 6000)
 	lu.assertEquals(launcher:isWithinFiringHeight(target), true)
 	lu.assertEquals(launcher:getRemainingNumberOfMissiles(), 8)
@@ -629,7 +629,7 @@ Launcher:
 --]]
 	lu.assertEquals(self.samSite:getNatoName(), "CSA-4")
 	lu.assertEquals(self.samSite:getLaunchers()[1]:getRange(), 12000)
-	lu.assertEquals(mist.utils.round(self.samSite:getRadars()[1]:getMaxRangeFindingTarget()), 12613)
+	lu.assertEquals(SkynetIADSUtils.round(self.samSite:getRadars()[1]:getMaxRangeFindingTarget()), 12613)
 end
 
 function TestSkynetIADSREDSAMSitesAndEWRadars:testSA5()

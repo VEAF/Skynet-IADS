@@ -678,7 +678,7 @@ function TestSkynetIADSAbstractRadarElement:testSlantRangeCalculationForHARMDefe
 	local iadsContact = IADSContactFactory("test-distance-calculation")
 	local radarUnit = self.samSite:getRadars()[1]
 	local distanceSlantRange = self.samSite:getDistanceInMetersToContact(iadsContact, radarUnit:getPosition().p)
-	local straightLine = mist.utils.round(mist.utils.get2DDist(radarUnit:getPosition().p, iadsContact:getPosition().p), 0)
+	local straightLine = SkynetIADSUtils.round(SkynetIADSUtils.get2DDist(radarUnit:getPosition().p, iadsContact:getPosition().p), 0)
 	lu.assertEquals(distanceSlantRange > straightLine, true)
 end
 
@@ -1080,12 +1080,12 @@ function TestSkynetIADSAbstractRadarElement:testShutDownTimes()
 	self.samSiteName = "SAM-SA-6"
 	self:setUp()
 	lu.assertEquals(self.samSite:calculateMinimalShutdownTimeInSeconds(30), 60)
-	local saveRandom = mist.random
-	function mist.random(low, high)
+	local saveRandom = SkynetIADSUtils.random
+	function SkynetIADSUtils.random(low, high)
 		return 10
 	end
 	lu.assertEquals(self.samSite:calculateMaximalShutdownTimeInSeconds(20), 30)
-	mist.random = saveRandom
+	SkynetIADSUtils.random = saveRandom
 end
 
 function TestSkynetIADSAbstractRadarElement:testDaisychainSAMOptions()
