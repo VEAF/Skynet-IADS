@@ -4,10 +4,88 @@
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
+dofile(base .. "/../insim/runner/log.lua")
 dofile(base .. "/../insim/runner/wait.lua")
 dofile(base .. "/../insim/runner/runner.lua")
 dofile(base .. "/../insim/tools/insim-test-tools.lua")
 dofile(base .. "/../insim/runner/report.lua")
+
+TestInsimLog = {}
+
+function TestInsimLog:setUp()
+  dcsStub.reset()
+  dcsStub.setClock(100)
+  InsimLog.reset()
+end
+
+local function loggedText()
+  local texts = {}
+  for _, entry in ipairs(dcsStub.logs) do
+    texts[#texts + 1] = entry.text
+  end
+  return table.concat(texts, " || ")
+end
+
+function TestInsimLog:testLogStampsTheLineWithSecondsSinceTheRunStarted()
+  dcsStub.advanceClock(41.3)
+  log("target detected")
+
+  local entries = InsimLog.entries()
+  luaunit.assertEquals(#entries, 1)
+  luaunit.assertStrContains(entries[1], "41.3")
+  luaunit.assertStrContains(entries[1], "target detected")
+end
+
+function TestInsimLog:testLogReachesTheDcsLogImmediatelyAndTagged()
+  log("halfway")
+  -- Immediately, not at the end of the run: a hung run must still leave its trace in dcs.log.
+  luaunit.assertStrContains(loggedText(), "SKYNET_INSIM")
+  luaunit.assertStrContains(loggedText(), "halfway")
+end
+
+function TestInsimLog:testLogFormatsWhenGivenArguments()
+  log("added %s at %d m", "SKY-AIR-F18-01", 6000)
+  luaunit.assertStrContains(InsimLog.entries()[1], "added SKY-AIR-F18-01 at 6000 m")
+end
+
+function TestInsimLog:testLogLeavesALoneMessageUnformatted()
+  -- A bare percent is not a format directive when no arguments follow, and string.format
+  -- would raise on it.
+  log("100% of the fixtures are live")
+  luaunit.assertStrContains(InsimLog.entries()[1], "100% of the fixtures are live")
+end
+
+function TestInsimLog:testLogPrefixesTheScenarioContextWhenSet()
+  InsimLog.setContext("Detection")
+  log("SAM went live")
+  luaunit.assertStrContains(InsimLog.entries()[1], "[Detection] SAM went live")
+end
+
+function TestInsimLog:testAnnouncePutsTheLineOnScreenAsWellAsInTheLog()
+  InsimLog.announce("PASS Detection.testThing (12.0s)")
+  luaunit.assertEquals(#dcsStub.outTexts, 1)
+  luaunit.assertStrContains(dcsStub.outTexts[1].text, "PASS Detection.testThing")
+  luaunit.assertStrContains(loggedText(), "PASS Detection.testThing")
+end
+
+function TestInsimLog:testResetClearsTheTimelineAndRestartsTheClock()
+  log("from the previous run")
+  dcsStub.advanceClock(500)
+  InsimLog.reset()
+  log("from this one")
+
+  local entries = InsimLog.entries()
+  luaunit.assertEquals(#entries, 1)
+  luaunit.assertStrContains(entries[1], "from this one")
+  luaunit.assertStrContains(entries[1], "0.0")
+end
+
+function TestInsimLog:testResetClearsTheContextSoOneScenarioNeverTagsAnother()
+  InsimLog.setContext("Detection")
+  InsimLog.reset()
+  log("no owner")
+  luaunit.assertNotStrContains(InsimLog.entries()[1], "Detection")
+end
 
 TestInsimWait = {}
 
@@ -332,6 +410,99 @@ function TestInsimRunner:testASetUpMalformedYieldSkipsTheBodyButStillRunsTearDow
   luaunit.assertStrContains(results.suites[1].tests[1].message, "not a wait descriptor")
 end
 
+function TestInsimRunner:testEachOutcomeRecordsHowLongTheTestTook()
+  local results = runToCompletion({
+    { name = "Timed", suite = { testSleeps = function() waitSeconds(8) end } },
+  })
+
+  -- The number that tells a green run from a nearly-timed-out one.
+  local outcome = results.suites[1].tests[1]
+  luaunit.assertTrue(outcome.duration >= 8, "duration was " .. tostring(outcome.duration))
+  luaunit.assertTrue(outcome.duration < 9, "duration was " .. tostring(outcome.duration))
+end
+
+function TestInsimRunner:testAFailureRecordsWhichPhaseRaised()
+  -- setUp and tearDown failures are otherwise indistinguishable in the results file.
+  local results = runToCompletion({
+    { name = "Broken", suite = {
+        setUp = function() error("no fixture") end,
+        testThing = function() end,
+      } },
+  })
+
+  luaunit.assertEquals(results.suites[1].tests[1].phase, "setUp")
+end
+
+function TestInsimRunner:testATearDownFailureIsAttributedToTearDownNotTheBody()
+  -- The body passed; only cleanup broke. Blaming the body sends you debugging the wrong half.
+  local results = runToCompletion({
+    { name = "Leaky", suite = {
+        testThing = function() end,
+        tearDown = function() error("destroyIfLive: no such group") end,
+      } },
+  })
+
+  local outcome = results.suites[1].tests[1]
+  luaunit.assertEquals(outcome.status, "fail")
+  luaunit.assertEquals(outcome.phase, "tearDown")
+end
+
+function TestInsimRunner:testTheTimelineNamesEveryTestAndItsResult()
+  local results = runToCompletion({
+    { name = "Mixed", suite = {
+        testGood = function() end,
+        testBad = function() luaunit.assertTrue(false) end,
+      } },
+  })
+
+  local timeline = table.concat(results.log, " || ")
+  luaunit.assertStrContains(timeline, "PASS Mixed.testGood")
+  luaunit.assertStrContains(timeline, "FAIL Mixed.testBad")
+end
+
+function TestInsimRunner:testTheTimelineOpensWithTheRunAndClosesWithTheTotals()
+  local results = runToCompletion({
+    { name = "Sync", suite = { testOk = function() end } },
+  })
+
+  local timeline = table.concat(results.log, " || ")
+  luaunit.assertStrContains(timeline, "run start")
+  luaunit.assertStrContains(timeline, "run complete: 1 passed, 0 failed")
+end
+
+function TestInsimRunner:testTheTimelineSaysHowLongAWaitActuallyTook()
+  local flipAt
+  local results = runToCompletion({
+    { name = "Waity", suite = {
+        setUp = function() flipAt = timer.getTime() + 5 end,
+        testWaits = function() waitFor(function() return timer.getTime() >= flipAt end, 60) end,
+      } },
+  })
+
+  local timeline = table.concat(results.log, " || ")
+  luaunit.assertStrContains(timeline, "waitFor")
+  luaunit.assertStrContains(timeline, "satisfied after")
+end
+
+function TestInsimRunner:testEachResultIsAnnouncedOnScreenAsItHappens()
+  -- Otherwise the screen says nothing between "running 1 suite(s)" and the final summary,
+  -- which for a long scenario is minutes of silence.
+  runToCompletion({
+    { name = "Sync", suite = { testOk = function() end } },
+  })
+
+  luaunit.assertEquals(#dcsStub.outTexts, 1)
+  luaunit.assertStrContains(dcsStub.outTexts[1].text, "PASS Sync.testOk")
+end
+
+function TestInsimRunner:testScenarioLogLinesAreTaggedWithTheirSuite()
+  local results = runToCompletion({
+    { name = "Detection", suite = { testLogs = function() log("target airborne") end } },
+  })
+
+  luaunit.assertStrContains(table.concat(results.log, " || "), "[Detection] target airborne")
+end
+
 TestInsimReport = {}
 
 function TestInsimReport:setUp()
@@ -414,6 +585,126 @@ function TestInsimReport:testEmitStillReportsWhenTheResultsFileCannotBeWritten()
   local allLogged = table.concat(logged, "\n")
   luaunit.assertStrContains(allLogged, "SKYNET_INSIM")
   luaunit.assertStrContains(allLogged, "cannot write")
+end
+
+local createdRepos = {}
+
+--- A throwaway repo tree, so emit's real file writing is exercised rather than mocked.
+local function tempRepo()
+  local base = (os.getenv("TEMP") or os.getenv("TMPDIR") or "/tmp"):gsub("[\\/]*$", "")
+  local dir = string.format("%s/skynet-insim-%d-%d", base, os.time(), math.random(1000000))
+  createdRepos[#createdRepos + 1] = dir
+  lfs.mkdir(dir)
+  lfs.mkdir(dir .. "/test")
+  lfs.mkdir(dir .. "/test/insim")
+  lfs.mkdir(dir .. "/test/insim/results")
+  return dir
+end
+
+local function readFile(path)
+  local handle = io.open(path, "r")
+  if not handle then
+    return nil
+  end
+  local text = handle:read("*a")
+  handle:close()
+  return text
+end
+
+local function filesIn(dir)
+  local names = {}
+  local ok = pcall(function()
+    for entry in lfs.dir(dir) do
+      if entry ~= "." and entry ~= ".." then
+        names[#names + 1] = entry
+      end
+    end
+  end)
+  return ok and names or {}
+end
+
+local function removeTree(dir)
+  for entry in lfs.dir(dir) do
+    if entry ~= "." and entry ~= ".." then
+      local path = dir .. "/" .. entry
+      if lfs.attributes(path, "mode") == "directory" then
+        removeTree(path)
+      else
+        os.remove(path)
+      end
+    end
+  end
+  lfs.rmdir(dir)
+end
+
+--- Runs after every report test, including a failing one, so the suite leaves no temp trees.
+function TestInsimReport:tearDown()
+  for _, dir in ipairs(createdRepos) do
+    pcall(removeTree, dir)
+  end
+  createdRepos = {}
+end
+
+function TestInsimReport:testTheResultsFileCarriesTheTimeline()
+  self.results.log = { "t=   0.0 run start: 1 suite(s), 2 test(s)",
+    "t=  41.3 [Detection] SAM went live" }
+
+  local loaded = loadstring(InsimReport.resultsFileText(self.results))()
+
+  luaunit.assertEquals(#loaded.log, 2)
+  luaunit.assertStrContains(loaded.log[2], "SAM went live")
+end
+
+function TestInsimReport:testTheArchiveNameCarriesTheStampAndTheOutcome()
+  local green = InsimReport.archiveName({ passed = 2, failed = 0 }, "20260920-123845")
+  luaunit.assertStrContains(green, "20260920-123845")
+  luaunit.assertStrContains(green, "PASS")
+  luaunit.assertStrContains(green, ".lua")
+end
+
+function TestInsimReport:testTheArchiveNameSaysFailWhenAnythingFailed()
+  local red = InsimReport.archiveName({ passed = 1, failed = 1 }, "20260920-123845")
+  luaunit.assertStrContains(red, "FAIL")
+  luaunit.assertNotStrContains(red, "PASS")
+end
+
+function TestInsimReport:testEmitWritesAnArchiveAlongsideLastRun()
+  local repo = tempRepo()
+
+  InsimReport.emit(self.results, repo)
+
+  local lastRun = readFile(repo .. "/test/insim/results/last-run.lua")
+  luaunit.assertNotNil(lastRun, "last-run.lua was not written")
+  luaunit.assertEquals(loadstring(lastRun)().failed, 1)
+
+  local archived = filesIn(repo .. "/test/insim/results/archive")
+  luaunit.assertEquals(#archived, 1, "expected exactly one archived run")
+  luaunit.assertStrContains(archived[1], "FAIL")
+
+  local archive = readFile(repo .. "/test/insim/results/archive/" .. archived[1])
+  luaunit.assertEquals(archive, lastRun, "the archive and last-run must hold the same run")
+end
+
+function TestInsimReport:testASecondRunArchivesSeparatelyRatherThanOverwriting()
+  local repo = tempRepo()
+
+  InsimReport.emit(self.results, repo)
+  InsimReport.emit({ passed = 9, failed = 0, suites = {} }, repo)
+
+  local archived = filesIn(repo .. "/test/insim/results/archive")
+  luaunit.assertEquals(#archived, 2, "the earlier run was overwritten")
+  luaunit.assertEquals(loadstring(
+    readFile(repo .. "/test/insim/results/last-run.lua"))().passed, 9)
+end
+
+function TestInsimReport:testTheWrittenRunRecordsWhenItFinished()
+  local repo = tempRepo()
+
+  InsimReport.emit(self.results, repo)
+
+  local loaded = loadstring(readFile(repo .. "/test/insim/results/last-run.lua"))()
+  luaunit.assertNotNil(loaded.finishedAt, "a run with no date cannot be placed later")
+  luaunit.assertStrMatches(loaded.finishedAt, "%d%d%d%d%-%d%d%-%d%d .*")
 end
 
 os.exit(luaunit.LuaUnit.run())

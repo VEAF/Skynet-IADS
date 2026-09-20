@@ -96,6 +96,7 @@ local function loadSuites(repoPath, onlyFile)
 
   luaunit = dofile(repoPath .. "/test/common/luaunit.lua")
   dofile(repoPath .. "/test/insim/tools/insim-test-tools.lua")
+  dofile(repoPath .. "/test/insim/runner/log.lua")
   dofile(repoPath .. "/test/insim/runner/wait.lua")
   dofile(repoPath .. "/test/insim/runner/runner.lua")
   dofile(repoPath .. "/test/insim/runner/report.lua")

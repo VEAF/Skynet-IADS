@@ -4,6 +4,16 @@
 --- dcsStub.fireDueTimers() that the real SkynetIADSUtils scheduler runs on, and
 --- dcsStub.stubUtilsScheduler() (a no-fire recorder). Grows as more modules are ported.
 
+-- DCS exposes lfs as a global once MissionScripting.lua is unsanitized, and test/insim uses it
+-- to create the results archive. The real library is used rather than a fake: the code under
+-- test only creates directories, and a fake mkdir would prove nothing about whether it works.
+if not lfs then
+  local ok, real = pcall(require, "lfs")
+  if ok then
+    lfs = real
+  end
+end
+
 local now = 0
 
 local timerTasks = {}

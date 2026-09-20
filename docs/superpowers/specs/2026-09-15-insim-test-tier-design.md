@@ -312,13 +312,20 @@ equivalent to, and where it deliberately is not — rather than attribution.
 
 ### Results
 
-The same data, three outputs:
+The same data, four outputs:
 
 - **On screen** via `trigger.action.outText` — the primary readout, pass/fail without leaving
-  the sim.
-- **`dcs.log`** via `env.info`, prefixed `SKYNET_INSIM`, for failure detail and context.
+  the sim. Each result appears as it happens, so a long scenario shows progress.
+- **`dcs.log`** via `env.info`, prefixed `SKYNET_INSIM`, written as the run proceeds rather than
+  at the end, so a run that hangs still leaves its trace.
 - **`test/insim/results/last-run.lua`** — machine-readable, gitignored. No reader is built here;
   the file is the contract that makes one trivial later.
+- **`test/insim/results/archive/<stamp>-PASS|FAIL.lua`** — the same content, kept. Written on
+  every run rather than copied aside from the previous one.
+
+A run carries a timeline as well as counts: the runner records each test, each wait and how long
+it actually took, and scenarios add their own lines through a global `log`. Each test records
+its duration, and a failure records which phase raised it.
 
 ### Setup cost
 
@@ -358,7 +365,8 @@ test/insim/
   runner/init.lua               entry point: sanitization check, load source, build F10 menu
   runner/runner.lua             coroutine scheduler, result collection
   runner/wait.lua               waitFor / waitSeconds
-  runner/report.lua             outText + env.info + results file
+  runner/log.lua                live timeline: dcs.log as it happens, and log() for scenarios
+  runner/report.lua             outText + env.info + results file + archive
   tools/insim-test-tools.lua    toolbox: pure-Lua helpers (deepCopy, serialize) and
                                 DCS-world helpers (missionGroupData, add, destroy, removeJunk)
   scenarios/scenario_*.lua      suites: luaunit assertions, coroutine bodies

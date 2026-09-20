@@ -37,6 +37,8 @@ function TestDetection:setUp()
   self.iads:addEarlyWarningRadarsByPrefix(EWR)
   self.iads:addSAMSitesByPrefix(SAM)
   self.iads:activate()
+
+  log("arena %s cleared, %s and %s added, IADS active", ZONE, EWR, SAM)
 end
 
 function TestDetection:tearDown()
@@ -79,9 +81,14 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
     speed = TARGET_SPEED,
   })
 
+  log("%s airborne %.0f km out on bearing %d, %d m, %d m/s -- SAM is dark",
+    TARGET, START_RANGE / 1000, INBOUND_BEARING, TARGET_ALTITUDE, TARGET_SPEED)
+
   -- Detection, then the IADS's own evaluation cycle, then the SAM coming up.
   waitFor(function() return sam:isActive() end, 450)
   luaunit.assertTrue(sam:isActive())
+
+  log("%s went live", SAM)
 end
 
 return { name = SCENARIO, suite = TestDetection }

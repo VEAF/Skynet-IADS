@@ -58,8 +58,22 @@ and triggers — instead of "binary files differ".
    positions while a scenario runs. Neutral so it sees both coalitions.
 3. **F10 → Skynet Tests → Run all**.
 
-Results appear on screen, in `dcs.log` tagged `SKYNET_INSIM`, and in
-`test/insim/results/last-run.lua`.
+Each test result appears on screen as it happens, so a long scenario shows progress rather than
+a silent screen. The full picture lands in three places:
+
+```
+dcs.log                                     every line, tagged SKYNET_INSIM, written live
+test/insim/results/last-run.lua             the run that just finished
+test/insim/results/archive/<stamp>-PASS.lua the same run, kept
+```
+
+Both files hold the same thing: counts, every test with its **duration** and — when it failed —
+the **phase** that raised, plus the run's whole timeline. Durations are the number to read on a
+green run: 41.3 s of a 450 s budget and 448 s of it are both "pass" and mean very different
+things.
+
+Nothing is ever overwritten but `last-run.lua`, so the archive is the history of every run you
+have made. It is gitignored and each file is a few KB; delete the directory whenever you like.
 
 Every run re-reads Skynet source and scenario files from disk, so **editing a scenario and
 pressing F10 again is the whole edit→run loop** — no mission restart, no Mission Editor.
@@ -147,7 +161,22 @@ bodies may wait for sim time:
 ```lua
 waitFor(function() return sam:isActive() end, 60)   -- yields until true, fails after 60s
 waitSeconds(30)                                     -- yields for 30 sim-seconds
+log("target airborne %d km out at %d m", 60, 6000)  -- one timeline line, formatted
 ```
+
+`log` is a global like the waits. The runner already records the skeleton — run start, each
+test, every wait and how long it really took, each result — so `log` is for the part only the
+scenario knows: what was placed where, and what just happened. Lines are stamped with seconds
+since the run began and tagged with the scenario name:
+
+```
+t=   0.4 [Detection] SKY-AIR-F18-01 airborne 60 km out on bearing 270, 6000 m, 200 m/s
+t=   0.4 waitFor(450s) started
+t=  41.7 waitFor satisfied after 41.3s
+t=  41.8 PASS Detection.testSAMGoesLiveWhenTheEWRDetectsATarget (41.5s)
+```
+
+Do not call `log` from a `waitFor` predicate — predicates run on every tick, ten times a second.
 
 Every wait is bounded and each test has an overall budget (`InsimRunner.DEFAULT_BUDGET`, or
 `budgetSeconds` on the suite), so a hung test fails rather than wedging the mission. A test that
@@ -193,6 +222,8 @@ All on the global `InsimTestTools`:
 | `destroyIfLive(name)` | live entities only |
 | `removeJunkInZone(zoneName)` / `removeJunkAround(anchor, radius)` | clear wrecks |
 
+And two globals that are not on it: `waitFor` / `waitSeconds` (above) and `log`.
+
 Coordinates are mission-table throughout: **`x` is north, `y` is east**. (`Vec3` differs — there
 `y` is altitude and `z` is east. `getPosition()` differs again — its `.x`/`.y`/`.z` are
 orientation unit vectors, not coordinates at all.)
@@ -212,6 +243,7 @@ Read the `dcs.log` lines tagged `SKYNET_INSIM` first, then look at the Game Mast
 | An aircraft spawns but never flies | Check `speed` and `alt` reached the units; suspect the group task before the route |
 | An aircraft flies the wrong way | Re-read the `atan2` argument order in `bearingBetween` |
 | A rerun shows wrecks | The arena zone is too small, or it is a quad reporting radius 0 |
+| A test passed but you do not trust it | Read its `duration` in `last-run.lua` against its timeout, and the timeline around it |
 | `a run is already in progress` that never clears | A run raised before its guard was released. Restart the mission and report it |
 
 ## Checking the mission itself

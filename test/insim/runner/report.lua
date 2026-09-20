@@ -1,11 +1,18 @@
 do
 
 --[[
-InsimReport -- one result set, three outputs.
+InsimReport -- one finished result set, four outputs.
 
   * on screen via trigger.action.outText -- the primary readout, so a tester never alt-tabs
   * dcs.log via env.info, tagged SKYNET_INSIM -- failure detail and context
   * test/insim/results/last-run.lua -- machine-readable, gitignored
+  * test/insim/results/archive/<stamp>-PASS|FAIL.lua -- the same run, kept
+
+Both files are written every run rather than the previous last-run.lua being copied aside. It
+needs no read-copy-write, cannot fail halfway, and archives the FIRST run too.
+
+Live narration during a run belongs to InsimLog, not here. This file only speaks once the run
+is over.
 
 No reader for the results file is built: the file is the contract that makes one trivial later.
 ]]
@@ -57,7 +64,50 @@ function InsimReport.resultsFileText(results)
     .. InsimTestTools.serialize(results) .. "\n"
 end
 
---- Writes all three. `repoPath` nil (or io unavailable) skips the file and still reports.
+--- Archive file name for a finished run: sortable, and readable at a glance so the directory
+--- listing is itself the history.
+function InsimReport.archiveName(results, stamp)
+  return string.format("%s-%s.lua", stamp, (results.failed or 0) == 0 and "PASS" or "FAIL")
+end
+
+local function writeFile(path, text)
+  local handle, err = io.open(path, "w")
+  if not handle then
+    env.info(string.format("%s: cannot write %s (%s)", TAG, path, tostring(err)))
+    return false
+  end
+  handle:write(text)
+  handle:close()
+  return true
+end
+
+local function exists(path)
+  local handle = io.open(path, "r")
+  if not handle then
+    return false
+  end
+  handle:close()
+  return true
+end
+
+--- Two runs finishing inside the same second would otherwise land on the same name, and the
+--- second would silently destroy the first -- exactly what archiving is meant to prevent.
+local function freePath(dir, name)
+  local path = dir .. "/" .. name
+  local stem = name:gsub("%.lua$", "")
+  local attempt = 2
+  while exists(path) do
+    path = string.format("%s/%s-%d.lua", dir, stem, attempt)
+    attempt = attempt + 1
+  end
+  return path
+end
+
+--- Writes the screen summary, the dcs.log recap, the archive copy and last-run.lua.
+---
+--- `repoPath` nil (or io unavailable) skips both files and still reports. The two file writes
+--- are independent: losing one still leaves the other. Stamps `results.finishedAt` in passing,
+--- so an archived run carries its own date.
 function InsimReport.emit(results, repoPath)
   trigger.action.outText(InsimReport.summaryText(results), SCREEN_SECONDS)
 
@@ -69,14 +119,21 @@ function InsimReport.emit(results, repoPath)
     return
   end
 
-  local path = repoPath .. "/test/insim/results/last-run.lua"
-  local handle, err = io.open(path, "w")
-  if not handle then
-    env.info(string.format("%s: cannot write %s (%s)", TAG, path, tostring(err)))
-    return
+  -- One instant for both the field and the file name, so they can never disagree.
+  local at = os.time()
+  results.finishedAt = os.date("%Y-%m-%d %H:%M:%S", at)
+
+  local dir = repoPath .. "/test/insim/results"
+  local text = InsimReport.resultsFileText(results)
+
+  if lfs then
+    lfs.mkdir(dir)              -- present in a checkout; absent under a fresh or odd repo path
+    lfs.mkdir(dir .. "/archive")
   end
-  handle:write(InsimReport.resultsFileText(results))
-  handle:close()
+
+  writeFile(freePath(dir .. "/archive",
+    InsimReport.archiveName(results, os.date("%Y%m%d-%H%M%S", at))), text)
+  writeFile(dir .. "/last-run.lua", text)
 end
 
 end

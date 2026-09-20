@@ -42,6 +42,9 @@ function InsimRunner.plan(suites)
   local state = { queue = {}, index = 1, phase = nil, results = { passed = 0, failed = 0,
     suites = {} } }
 
+  InsimLog.reset()
+  state.startedAt = timer.getTime()
+
   for _, entry in ipairs(suites) do
     assert(type(entry.name) == "string", "InsimRunner.plan: every suite needs a name")
     assert(type(entry.suite) == "table", "InsimRunner.plan: every suite needs a suite table")
@@ -59,17 +62,34 @@ function InsimRunner.plan(suites)
     end
   end
 
+  InsimLog.write(string.format("run start: %d suite(s), %d test(s)",
+    #state.results.suites, #state.queue))
+
   return state
 end
 
+--- Durations are rounded to a tenth before they are stored. They are read by people, and an
+--- unrounded tick-accumulated float serializes as 8.0000000000000018.
+local function seconds(value)
+  return math.floor(value * 10 + 0.5) / 10
+end
+
 local function recordOutcome(state, item, message)
+  local duration = seconds(timer.getTime() - (item.startedAt or timer.getTime()))
   local outcome = { name = item.testName, status = message and "fail" or "pass",
-    message = message }
+    message = message, duration = duration, phase = item.failurePhase }
   item.record.tests[#item.record.tests + 1] = outcome
   if message then
     state.results.failed = state.results.failed + 1
   else
     state.results.passed = state.results.passed + 1
+  end
+
+  -- On screen as well as in the log: without it a tester watches a silent screen for minutes.
+  InsimLog.announce(string.format("%s %s.%s (%.1fs)",
+    message and "FAIL" or "PASS", item.suiteName, item.testName, duration))
+  if message then
+    InsimLog.write(string.format("  in %s: %s", item.failurePhase or "body", message))
   end
 end
 
@@ -116,11 +136,25 @@ local function advancePhase(state, item, fromIndex)
   return nil
 end
 
+--- Closes the timeline once, whichever path drained the queue.
+local function noteRunComplete(state)
+  if state.loggedComplete then
+    return
+  end
+  state.loggedComplete = true
+  InsimLog.setContext(nil)
+  InsimLog.write(string.format("run complete: %d passed, %d failed in %.1fs",
+    state.results.passed, state.results.failed, seconds(timer.getTime() - state.startedAt)))
+end
+
 local function finishTest(state)
   local item = state.queue[state.index]
   recordOutcome(state, item, item.failure)
   state.index = state.index + 1
   state.phase = nil
+  if not state.queue[state.index] then
+    noteRunComplete(state)
+  end
 end
 
 --- Records a failure for the current test, then moves to the next phase. Every failure path
@@ -128,6 +162,7 @@ end
 --- forgotten in two separate branches before this helper existed.
 local function failPhase(state, item, phase, message)
   item.failure = item.failure or message
+  item.failurePhase = item.failurePhase or phase.name
   if phase.name == "setUp" then
     item.failedSetUp = true
   end
@@ -142,6 +177,7 @@ end
 function InsimRunner.step(state)
   local item = state.queue[state.index]
   if not item then
+    noteRunComplete(state)
     return false
   end
 
@@ -152,6 +188,8 @@ function InsimRunner.step(state)
   if not state.phase then
     item.startedAt = timer.getTime()
     item.budget = item.suite.budgetSeconds or InsimRunner.DEFAULT_BUDGET
+    InsimLog.setContext(item.suiteName)
+    InsimLog.write(item.suiteName .. "." .. item.testName)
     state.phase = beginPhase(state, item, 1) or advancePhase(state, item, 1)
     if not state.phase then
       finishTest(state)
@@ -164,6 +202,7 @@ function InsimRunner.step(state)
 
   -- Overall budget. Checked before resuming so an abandoned coroutine is never touched again.
   if now - item.startedAt > item.budget then
+    item.failurePhase = item.failurePhase or phase.name
     item.failure = item.failure or string.format(
       "%s exceeded its %gs budget while blocked on %s",
       item.testName, item.budget, InsimWait.describe(phase.pending))
@@ -198,10 +237,15 @@ function InsimRunner.step(state)
       satisfied = value and true or false
     end
 
+    local waited = seconds(now - (phase.waitStartedAt or now))
+
     if satisfied then
       resumeValue = true
+      InsimLog.write(string.format("%s satisfied after %.1fs", phase.pending.kind, waited))
     elseif now >= phase.deadline then
       resumeValue = (phase.pending.kind == "waitSeconds")
+      InsimLog.write(string.format("%s %s after %.1fs", InsimWait.describe(phase.pending),
+        resumeValue and "elapsed" or "TIMED OUT", waited))
     else
       return true  -- still waiting; nothing to do this tick
     end
@@ -229,11 +273,14 @@ function InsimRunner.step(state)
   end
   phase.pending = yielded
   phase.deadline = now + yielded.timeout
+  phase.waitStartedAt = now
+  InsimLog.write(InsimWait.describe(yielded) .. " started")
 
   return true
 end
 
 function InsimRunner.results(state)
+  state.results.log = InsimLog.entries()
   return state.results
 end
 

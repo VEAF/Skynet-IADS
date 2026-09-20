@@ -36,8 +36,13 @@ local function serializeScalar(value)
     return string.format("%q", value)
   end
   if kind == "number" then
-    -- A double needs 17 significant digits to be recovered exactly; %g strips trailing
-    -- zeros, so clean values stay short.
+    -- A double needs up to 17 significant digits to be recovered exactly, but 17 renders 41.3
+    -- as 41.299999999999997. Try short first and keep it only when it parses back to the same
+    -- double, so the output is the shortest EXACT form -- never a lossy one.
+    local short = string.format("%.14g", value)
+    if tonumber(short) == value then
+      return short
+    end
     return string.format("%.17g", value)
   end
   if kind == "boolean" then

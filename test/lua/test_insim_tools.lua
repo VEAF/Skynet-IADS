@@ -61,6 +61,15 @@ function TestInsimTools:testSerializeRoundTripsComputedDoublesNeedingSeventeenDi
   luaunit.assertEquals(roundTrip(value), value)
 end
 
+function TestInsimTools:testSerializeWritesTheShortestFormThatStillRoundTrips()
+  -- %.17g renders 41.3 as 41.299999999999997. Durations and log timings land in last-run.lua
+  -- for a human to read, so the serializer must prefer the short form WHEN it is exact.
+  local text = InsimTestTools.serialize({ duration = 41.3 })
+  luaunit.assertStrContains(text, "41.3")
+  luaunit.assertNotStrContains(text, "41.2999")
+  luaunit.assertEquals(roundTrip({ duration = 41.3 }), { duration = 41.3 })
+end
+
 function TestInsimTools:testSerializeSortsKeysSoOutputIsStable()
   local first = InsimTestTools.serialize({ b = 1, a = 2, c = 3 })
   local second = InsimTestTools.serialize({ c = 3, a = 2, b = 1 })
