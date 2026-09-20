@@ -292,6 +292,23 @@ Until that release is cut, the build date in the artifact's first line remains t
   `moose-a2a-connector` tests, for the same reason; and `abstract-radar-element`, whose port is
   complete but which still asserts the ranges DCS reports for the units it models.
 
+- **MIST is out of the demo missions, and out of this repository.** All four archives loaded
+  `mist_4_5_107.lua`, 312 KB of it, because the Skynet they carried was the December 2023 build and
+  it made 33 MIST calls. The current one makes none — `fe40c4a` wrote `SkynetIADSUtils` to replace
+  it on 2026-08-30 — and across the loose setup scripts there was exactly one call left,
+  `mist.scheduleFunction(outputNames, self, 1, 2)` in the MOOSE connector demo, now
+  `SkynetIADSUtils.scheduleFunction(outputNames, nil, 1, 2)`. `self` was nil at that point in the
+  script, so the argument it passed was never a table and never reached `outputNames`.
+
+  `demo-missions/mist_4_5_107.lua` is deleted with them: nothing in this repository used it. The one
+  file in any archive that still names MIST is `dcs-bridge.lua`, vendored from
+  [VEAF/dcs-bridge](https://github.com/VEAF/dcs-bridge), which needs it only for a `spawn` command
+  the mission carrying it never calls — and guards every use (`if mist then`, `if not mist or not
+  mist.dynAdd then`).
+
+  This also takes away the popup: MIST installs a `DEAD` event handler, and an object it does not
+  know about put a message on the player's screen in the in-sim missions.
+
 ### Fixed
 
 - The build was documented wrong in three places written the day before. The deliverable is

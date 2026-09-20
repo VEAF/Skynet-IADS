@@ -382,6 +382,20 @@ def check(entries):
     return problems, mapping, compiled
 
 
+def drop_from_map_resource(map_text, key):
+    """A mapResource with that key's line taken out, or None if there is no such line.
+
+    The key is bracketed by DCS and bare by the editor -- except when it needs quoting, such as
+    `MCP_MapKey_dcs-bridge`, which the editor brackets too. Reading only DCS's shape made `remove`
+    refuse on the one archive the editor had written, which is how this came to be its own function.
+    """
+    quoted = re.escape(key)
+    line = re.search(r'\r?\n[ \t]*(?:\["%s"\]|%s)\s*=[^\n]*\r?\n' % (quoted, quoted), map_text)
+    if line is None:
+        return None
+    return map_text[: line.start()] + "\n" + map_text[line.end() :]
+
+
 def drop_from_trigrules(mission, dead_keys):
     """Drop the trigrules action entries naming dead_keys, renumbering what is left."""
     start, end = trigrules_of(mission)
@@ -573,11 +587,10 @@ def do_remove(miz, entries, order, names):
             return 2
         mission = mission.replace(call, "", 1)
 
-        line = re.search(r'\r?\n[ \t]*\["%s"\][^\n]*\r?\n' % key, map_text)
-        if line is None:
+        map_text = drop_from_map_resource(map_text, key)
+        if map_text is None:
             print("FAIL: no mapResource line for %s" % key)
             return 2
-        map_text = map_text[: line.start()] + "\n" + map_text[line.end() :]
 
         del entries[L10N + name]
         dead.add(key)
@@ -689,8 +702,9 @@ def main(argv):
         elif command == "extract":
             status = max(status, do_extract(miz, entries, rest[0]))
         else:
-            # `remove` names a script, and the same one (MiST) lives in both archives. Skipping the
-            # archives that do not have it lets one command clear it everywhere.
+            # `remove` names a script, and the same one can live in several archives -- MiST was in
+            # all six. Skipping the archives that do not have it lets one command clear it
+            # everywhere.
             mapping = parse_map_resource(entries[MAP_RESOURCE].decode("utf-8"))
             present = [n for n in rest if n in mapping.values()]
             found_somewhere.update(present)

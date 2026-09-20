@@ -207,6 +207,28 @@ class DropFromTrigrules(unittest.TestCase):
         self.assertEqual(after, EDITOR_MISSION)
 
 
+class DropFromMapResource(unittest.TestCase):
+    """Taking a key's line out, whichever tool wrote the file."""
+
+    def test_dcs_brackets_every_key(self):
+        after = ms.drop_from_map_resource(DCS_MAP_RESOURCE, "ResKey_Action_317")
+        self.assertNotIn("ResKey_Action_317", after)
+        self.assertIn('["ResKey_Action_172"] = "skynet-iads-compiled.lua"', after)
+
+    def test_the_editor_leaves_most_keys_bare(self):
+        after = ms.drop_from_map_resource(EDITOR_MAP_RESOURCE, "ResKey_Action_317")
+        self.assertNotIn("ResKey_Action_317", after)
+        self.assertIn('ResKey_Action_172 = "skynet-iads-compiled.lua"', after)
+
+    def test_the_editor_brackets_a_key_that_needs_quoting(self):
+        after = ms.drop_from_map_resource(EDITOR_MAP_RESOURCE, "MCP_MapKey_dcs-bridge")
+        self.assertNotIn("dcs-bridge", after)
+        self.assertIn('ResKey_Action_317 = "mist_4_5_107.lua"', after)
+
+    def test_a_key_that_is_not_there_is_refused_rather_than_ignored(self):
+        self.assertIsNone(ms.drop_from_map_resource(EDITOR_MAP_RESOURCE, "ResKey_Action_999"))
+
+
 class SourceFolders(unittest.TestCase):
     """Where a member is looked for: its archive's directory, then the family's root."""
 

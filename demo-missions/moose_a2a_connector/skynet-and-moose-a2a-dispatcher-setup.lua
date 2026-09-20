@@ -66,6 +66,9 @@ function outputNames()
 	env.info(DetectionSetGroup:GetObjectNames())
 end
 
-mist.scheduleFunction(outputNames, self, 1, 2)
+-- Skynet's own scheduler, since Skynet stopped needing MIST. Same arguments as
+-- mist.scheduleFunction, and the second one was never a table here: `self` is nil at the top level
+-- of this script, so nothing was ever passed to outputNames.
+SkynetIADSUtils.scheduleFunction(outputNames, nil, 1, 2)
 --end test
 end
