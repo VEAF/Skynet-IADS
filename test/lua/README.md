@@ -318,7 +318,10 @@ baked in is reported too — and `sync` writes the repository's version back int
 
 The deliverable is **generated, not committed**, so build it before `check` or `sync`:
 `pwsh -File build-tools/build-compiled-script.ps1`. Its first line stamps the build minute, which is
-left out of the comparison — otherwise every rebuild would look like drift.
+left out of the comparison — otherwise every rebuild would look like drift. Everything else about it
+*is* compared, so **a change to `skynet-iads-source/` makes CI red until you rebuild, run `sync` and
+commit the two archives.** That is deliberate: the alternative is an archive that quietly holds an
+older Skynet, which is the defect this was built for.
 
 `check` asserts all four wirings agree; `remove` and `sync` re-check the result and refuse to write
 if anything is off, so a failed run leaves the `.miz` untouched.

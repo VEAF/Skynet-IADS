@@ -7,9 +7,12 @@ do
 --every mission that places one -- and the only way anyone found out was running that mission in
 --DCS after three years, where it read as a red test rather than as news.
 --
---Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
---Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps
---the pin and opens a pull request when a figure moves. That is where a changed range shows up now.
+--For the other suites, those figures are now recorded in test/lua/dcs-figures.lua and a weekly
+--workflow reports when one moves. NOT FOR THIS ONE. The generator reads the Quaggles datamine,
+--which dumps stock DCS: 14 of the 18 radar types this suite exercises come from the HighDigitSAMs
+--mod and are in no dump. Their figures are watched by nothing, and asserting them here watched
+--them no better -- this mission cannot even be loaded without the mod, which is why its three
+--newest tests had never run once before 2026-09-20.
 --
 --What stays here is what a stub cannot answer: terrain elevation, real detection geometry, what
 --DCS reports about a group's composition, and Skynet's own decisions. Assertions on figures the

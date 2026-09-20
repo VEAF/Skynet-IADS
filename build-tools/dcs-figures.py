@@ -233,6 +233,17 @@ def collect_radars(dump):
             if distance is None:
                 missing.append("%s: sensor %r states no detection distance" % (unit_type, sensor_name))
                 continue
+            # Keyed by both, because a unit may declare several radar sensors and all of them are
+            # worth recording. The rendered Lua table is keyed by unit type alone, though, so two
+            # sensors on one unit would emit two entries under the same key -- Lua takes the last
+            # and nothing goes red. Reported here instead of written out quietly; no unit at the
+            # current pin does it, so this is a trap set for a future bump rather than a bug today.
+            if unit_type in {u for u, _, _ in radars.values()}:
+                missing.append(
+                    "%s declares more than one radar sensor (%s); the generated table is keyed by "
+                    "unit type and cannot hold both" % (unit_type, sensor_name)
+                )
+                continue
             radars["%s|%s" % (unit_type, sensor_name)] = (unit_type, sensor_name, distance)
     return radars, missing
 

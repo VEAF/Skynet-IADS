@@ -148,9 +148,16 @@ GitHub issues are for reports arriving from outside. A report that turns into wo
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
-with its tests → `lua5.1 test/lua/run.lua` → rebuild if the sources changed → update `CHANGELOG.md`
-under `[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
+with its tests → `lua5.1 test/lua/run.lua` → **if the sources changed**: rebuild, then
+`python build-tools/miz-suite.py sync` and commit the two archives → update `CHANGELOG.md` under
+`[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
 `develop` → address review and CI → merge.
+
+**That `sync` is not optional.** The in-sim archives carry a copy of the deliverable, and CI compares
+it against a fresh build: a pull request that touches `skynet-iads-source/` without resyncing goes
+red on the *In-sim mission archive* job. Two binary archives in the diff is the price of the
+guarantee this buys — that nobody opens the test mission in DCS and measures a Skynet from three
+years ago, which is what happened between December 2023 and 2026-09-20.
 
 If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
 

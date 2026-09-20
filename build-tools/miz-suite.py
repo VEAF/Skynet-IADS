@@ -138,8 +138,15 @@ def trigrules_of(mission):
     return start, mission.find('-- end of ["trigrules"]', start)
 
 
-def check_sources(miz, entries):
-    """Every script in the archive is the file this repository ships. Returns a list of problems."""
+def check_sources(miz, entries, both_ways=True):
+    """Every script in the archive is the file this repository ships. Returns a list of problems.
+
+    `both_ways` also reports a loose `unit-tests/*.lua` that no trigger loads. That direction is
+    right for `check` and wrong for `remove`, which spends its whole run in exactly that state: it
+    takes a script out of the archive and the loose copy is still on disk, so re-checking it both
+    ways refused every removal and left the command unusable in either order -- delete the loose
+    copy first and the opening check fails instead, on the same rule read the other way.
+    """
     problems = []
     folder = os.path.dirname(miz)
     in_archive = set()
@@ -161,12 +168,13 @@ def check_sources(miz, entries):
     # The drift also runs the other way: a suite added to the repository and never baked in is a
     # test nobody runs, which is exactly how `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
     # sat outside the mission from August 2026.
-    for entry in sorted(os.listdir(os.path.join(ROOT, folder))):
-        if not entry.endswith(".lua"):
-            continue
-        loose = os.path.normpath(os.path.join(folder, entry))
-        if loose not in in_archive:
-            problems.append("%s is in the repository but no trigger in this archive loads it" % loose)
+    if both_ways:
+        for entry in sorted(os.listdir(os.path.join(ROOT, folder))):
+            if not entry.endswith(".lua"):
+                continue
+            loose = os.path.normpath(os.path.join(folder, entry))
+            if loose not in in_archive:
+                problems.append("%s is in the repository but no trigger in this archive loads it" % loose)
 
     return problems
 
@@ -253,10 +261,10 @@ def write_archive(miz, entries, order):
     print("written: %s" % miz)
 
 
-def do_check(miz, entries, sources=True):
+def do_check(miz, entries, sources=True, both_ways=True):
     problems, _, compiled = check(entries)
     if sources:
-        problems += check_sources(miz, entries)
+        problems += check_sources(miz, entries, both_ways=both_ways)
     for p in problems:
         print("  -", p)
     if problems:
@@ -315,7 +323,10 @@ def do_sync(miz, entries, order):
 
 
 def do_remove(miz, entries, order, names):
-    if do_check(miz, entries) is None:
+    # One way only, here and at the end: removing a script leaves its loose copy on disk until
+    # somebody deletes it, and the archive is meant to be in that state for the length of this
+    # command. `check` still reports it afterwards, which is the reminder to remove both copies.
+    if do_check(miz, entries, both_ways=False) is None:
         print("FAIL: the archive is already inconsistent; not touching it")
         return 2
 
@@ -355,10 +366,14 @@ def do_remove(miz, entries, order, names):
     entries["mission"] = mission.encode("utf-8")
     entries[MAP_RESOURCE] = map_text.encode("utf-8")
 
-    if do_check(miz, entries) is None:
+    if do_check(miz, entries, both_ways=False) is None:
         print("FAIL: the result would be inconsistent; nothing written")
         return 2
     write_archive(miz, entries, order)
+    for name in names:
+        loose = os.path.join(os.path.dirname(miz), name)
+        if os.path.isfile(os.path.join(ROOT, loose)):
+            print("NOTE: %s is still in the repository. A suite is removed from BOTH copies." % loose)
     print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
     return 0
 
@@ -425,6 +440,7 @@ def main(argv):
         return 1
 
     status = 0
+    found_somewhere = set()
     for miz in archives:
         print("== %s" % miz)
         entries, order = read_all(os.path.join(ROOT, miz))
@@ -439,10 +455,18 @@ def main(argv):
             # archives that do not have it lets one command clear it everywhere.
             mapping = parse_map_resource(entries[MAP_RESOURCE].decode("utf-8"))
             present = [n for n in rest if n in mapping.values()]
+            found_somewhere.update(present)
             if not present:
                 print("  - none of %s is in this archive; skipped" % ", ".join(rest))
                 continue
             status = max(status, do_remove(miz, entries, order, present))
+
+    # A name in no archive at all is a typo, and skipping every archive for it used to exit 0 --
+    # the command reported success for having done nothing, which is how a removal gets believed.
+    missing = [n for n in rest if n not in found_somewhere] if command == "remove" else []
+    if missing:
+        print("FAIL: %s is in no archive; nothing was removed for it" % ", ".join(missing))
+        status = max(status, 2)
     return status
 
 

@@ -142,6 +142,19 @@ usable — not the other way round.
 - ⬜ **Pending the next DCS pass.** Removing assertions cannot turn a test red in CI, because nothing
   in CI runs this mission. The run is what proves no test lost the local it needed.
 
+## The high-digit suite is not covered, and says so
+
+`unit-tests/highdigitsams/test-skynet-high-digit-sam-sites.lua` lost 58 assertions to this ticket,
+more than any other file — and **nothing watches those figures**. The generator reads the Quaggles
+datamine, which dumps stock DCS; 14 of the 18 radar unit types that suite exercises come from the
+HighDigitSAMs mod and appear in no dump. Measured, not assumed.
+
+Asserting them in the suite was not watching them either: that mission cannot be loaded without the
+mod, which David does not have, and its three newest tests had never run once. So this is a gap that
+was already there, now written where somebody reading that file will see it, rather than covered by
+a promise the generator cannot keep. Extending the generator to a modded dataset is a different
+piece of work and is not proposed here.
+
 ## The weekly watch
 
 `.github/workflows/dcs-data-drift.yml`, Mondays 06:20 UTC. It reads upstream's HEAD, bumps the pin,
