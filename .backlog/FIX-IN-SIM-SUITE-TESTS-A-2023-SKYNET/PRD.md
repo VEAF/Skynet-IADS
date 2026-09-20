@@ -1,6 +1,6 @@
 # FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET — the in-sim mission has been checking code we stopped shipping
 
-Status: 🔄 in-progress — branch `fix/in-sim-suite-tests-a-2023-skynet`, all four tickets coded; ✅ once merged
+Status: ✅ done — merged 2026-09-20 as [PR #32](https://github.com/VEAF/Skynet-IADS/pull/32), five tickets
 
 Origin: found on 2026-09-20, closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. David ran
 `unit-tests/skynet-unit-tests.miz` in DCS to confirm that removing six legacy suites had not broken
