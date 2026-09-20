@@ -925,8 +925,11 @@ for the connection node, since an aircraft provides its own power.</p>
 <h3 id="ships">Ships</h3>
 <p>Ships will contribute to the IADS the same way AWACS units do. Add them as a regular EW radar.</p>
 <h2 id="using-skynet-in-the-mission-editor">Using Skynet in the mission editor</h2>
-<p>It's quite simple to set up an IADS, have a look at the demo missions in
-<a href="https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions">demo-missions/</a>.</p>
+<p>It's quite simple to set up an IADS, have a look at the setup scripts in
+<a href="https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions">demo-missions/</a> — and at the demo
+missions themselves, which come <a href="https://github.com/VEAF/Skynet-IADS/releases">attached to a release</a>
+rather than committed to the repository. See the <a href="../#quick-start">Quick start</a> for why, and for
+how to assemble one from a clone.</p>
 <h3 id="placing-units">Placing units</h3>
 <p>This tutorial assumes you are familiar with how to set up a SAM site in DCS. If not I suggest you
 watch <a href="https://www.youtube.com/watch?v=YZPh-JNf6Ww">this video</a> by the Grim Reapers.
@@ -945,11 +948,11 @@ manner with a prefix, e.g. <code>EW-center3</code>. Make sure you have only <str
 otherwise Skynet will not be able to control single EW radars.</p>
 <p><img alt="Mission Editor EW radar" src="../images/ew-setup.png" /></p>
 <h3 id="adding-the-skynet-code">Adding the Skynet code</h3>
-<p>Load the compiled skynet code into a mission. Skynet itself no longer requires MIST — the
+<p>Load the compiled skynet code into a mission. Skynet does not require MIST — the
 <a href="https://github.com/VEAF/Skynet-IADS/releases">skynet-iads-compiled.lua</a> attached to each release is
-a drop-in script. However, the demo missions bundle <code>mist_4_5_107.lua</code> for other functionality, and
-you can download the current MIST version
-<a href="https://github.com/mrSkortch/MissionScriptingTools">here</a> if needed.</p>
+a drop-in script, and the demo missions no longer bundle it either. If your own mission uses MIST for
+something else, it still works alongside Skynet; the current version is
+<a href="https://github.com/mrSkortch/MissionScriptingTools">here</a>.</p>
 <p>I recommend you create a text file e.g. <code>my-iads-setup.lua</code> and then add the code needed to get the
 IADS running. When updating the setup remember to reload the file in the mission editor. Otherwise
 changes will not become effective.

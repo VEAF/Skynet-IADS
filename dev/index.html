@@ -572,9 +572,17 @@ by MOOSE to add interceptors to the IADS.</p>
 If you like using it, please consider a donation:</strong></p>
 <p><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=7GSVFH448BWFQ&amp;source=url"><img alt="Skynet IADS donation" src="images/btn_donateCC_LG.gif.png" /></a></p>
 <h2 id="quick-start">Quick start</h2>
-<p>Tired of reading already? Download the <a href="https://github.com/VEAF/Skynet-IADS/raw/master/demo-missions/skynet-test-persian-gulf.miz">demo
-mission</a>
-in the Persian Gulf map and see Skynet in action.</p>
+<p>Tired of reading already? Grab <code>skynet-test-persian-gulf.miz</code> from the <a href="https://github.com/VEAF/Skynet-IADS/releases">latest
+release</a> and see Skynet in action on the Persian Gulf
+map. It is attached to the release beside <code>skynet-iads-compiled.lua</code>, and it carries exactly the
+Skynet that release ships.</p>
+<p>The <code>.miz</code> files in the repository itself are <strong>templates</strong>: they hold a placeholder where each
+script goes, so that a copy of the code committed beside the code cannot quietly fall three years
+behind — which is what happened, until 2026-09-20. If you are working from a clone, assemble the
+playable missions yourself, into <code>build/missions/</code>:</p>
+<div class="highlight"><pre><span></span><code>pwsh -File build-tools/build-compiled-script.ps1
+python build-tools/miz-suite.py build
+</code></pre></div>
 <h2 id="thanks">Thanks</h2>
 <p>Special thanks to Spearzone and Coranthia for researching public available information on IADS
 networks and getting me up to speed on how such a system works.
