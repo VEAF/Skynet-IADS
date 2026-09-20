@@ -188,7 +188,9 @@ Until that release is cut, the build date in the artifact's first line remains t
   if anything is off.
 - A CI job for the in-sim mission archive (`.github/workflows/lua-tests.yml`, *In-sim mission
   archive*). It cannot run the `.miz` -- that needs the simulator -- but it runs `miz-suite.py
-  check` and parses every Lua file inside the archive, `mission` and `mapResource` included. Until
+  check`, assembles both missions and parses every Lua file in them, `mission` and `mapResource`
+  included. (It parsed the committed archives when this job was first written; since the missions
+  became assembled, parsing those would only be parsing placeholders.) Until
   now nothing checked that file at all: it is the one file in this repository no gate looked at,
   and a hand edit that broke it was found by opening DCS, or not at all. Verified against three
   deliberate breakages -- a `trigrules` entry removed, a `mapResource` line removed, a script

@@ -62,26 +62,16 @@ jobs:
       # Syntax only: these scripts call into DCS and MOOSE, so they cannot be executed here. What
       # this catches is a truncated or corrupted file. Run against the ASSEMBLED missions, because
       # those are what DCS loads -- parsing the placeholders would prove nothing.
+      #
+      # `extract` does the walking, rather than a copy of its rules inlined here: it knows which
+      # members are Lua without carrying the extension (`mission`, `mapResource` and the rest), and
+      # a second copy of that list would stop matching the day someone adds to the first.
       - name: Parse every Lua file in the assembled missions
         run: |
-          set -o pipefail
-          python3 - <<'PY'
-          import glob, os, zipfile
-          out = os.path.join(os.environ["RUNNER_TEMP"], "built")
-          for m in glob.glob("build/missions/*.miz"):
-              d = os.path.join(out, os.path.basename(m)[: -len(".miz")])
-              os.makedirs(d, exist_ok=True)
-              with zipfile.ZipFile(m) as z:
-                  for n in z.namelist():
-                      if n.endswith(".lua") or n in ("mission", "options", "warehouses",
-                                                     "l10n/DEFAULT/mapResource", "l10n/DEFAULT/dictionary"):
-                          p = os.path.join(d, n.replace("/", "_"))
-                          if not p.endswith(".lua"):
-                              p += ".lua"
-                          with open(p, "wb") as h:
-                              h.write(z.read(n))
-          PY
           status=0
+          for m in build/missions/*.miz; do
+            python3 build-tools/miz-suite.py extract "$RUNNER_TEMP/built" --miz "$m"
+          done
           for f in "$RUNNER_TEMP"/built/*/*.lua; do
             if lua5.1 -e "assert(loadfile('$f'))" 2>"$RUNNER_TEMP/err"; then
               echo "ok    $(basename "$f")"

@@ -12,8 +12,8 @@ He is right, and it removes a problem rather than arbitrating it.
 
 Ticket 01 put the current deliverable into both archives and added a check that compares the
 committed copy against a fresh build. That works, and it has a standing cost: **every pull request
-touching `skynet-iads-source/` starts red** until somebody rebuilds, re-syncs and commits two 230 KB
-binaries. In a project whose whole subject is that Lua, that is almost every pull request, and the
+touching `skynet-iads-source/` starts red** until somebody rebuilds, re-syncs and commits the two
+archives, 186 KB of binary between them. In a project whose whole subject is that Lua, that is almost every pull request, and the
 diffs get a pair of unreadable blobs each time.
 
 The alternative was to compare only the version number — cheap, but it lets the copy age for months
@@ -38,8 +38,18 @@ so nothing to compare, nothing to remember, and no binary in the diff.
   copy in step with the code beside it.
 - CI assembles both missions and parses the Lua in **those**, not in the placeholders.
 
-The committed archives shrank from 142 KB to 55 KB and from 139 KB to 25 KB — what is left is the
-mission: terrain, units, triggers, wiring. That changes when the mission changes, which is rare.
+Measured, not estimated: `skynet-unit-tests.miz` went from 142 523 to 56 541 bytes and
+`highdigitsams-unit-tests.miz` from 91 554 to 26 067 — roughly 139 KB to 55 KB and 89 KB to 25 KB.
+What is left is the mission: terrain, units, triggers, wiring. That changes when the mission changes,
+which is rare.
+
+The archives are also written **deterministically** now. `writestr(name, blob)` stamps each entry
+with the minute it ran, so rewriting an archive whose contents had not changed still produced a
+different file — a binary diff for nothing, the exact noise this design removes, and it had already
+slipped one into a commit. Entries carry a fixed 1980 stamp instead. Watch the compression when
+touching that: a `ZipInfo` built by hand defaults to `ZIP_STORED` and silently ignores the mode the
+`ZipFile` was opened with, which took one archive from 56 KB to 908 KB before the figures above were
+checked.
 
 ## Watch out for
 

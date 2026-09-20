@@ -191,9 +191,9 @@ then copy `build/missions/<name>.miz` into the DCS `Missions` folder. Opening th
 `unit-tests/` directly gives a placeholder message instead.
 
 **`highdigitsams-unit-tests.miz` cannot be run here.** It needs the HighDigitSAMs mod, which David
-does not have — DCS refuses to load the mission. Its artifact is refreshed and CI checks its wiring
-and parses its scripts, which is strictly more than the nothing it had before, but nobody can say it
-runs. Recorded rather than worked around.
+does not have — DCS refuses to load the mission. It is assembled from the current sources like the
+other one, and CI checks its wiring and parses its scripts, which is strictly more than the nothing
+it had before — but nobody can say it runs. Recorded rather than worked around.
 
 **Every ticket here is judged in DCS.** `CLAUDE.md` says to stop and wait for explicit approval when
 that is the case, and it applies to all three. CI can check the archive is well-formed —
