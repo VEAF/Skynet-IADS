@@ -1,6 +1,6 @@
 # 01 — Assemble the demo missions instead of committing a copy of the code
 
-Status: ⬜ ready — rewritten 2026-09-20 to match ticket 03's decision, **(b)**
+Status: 🔄 in-progress — coded and flown 2026-09-20; see *Flown in DCS* below
 
 Three of the four archives under `demo-missions/` carry `SKYNET VERSION: 3.2 | BUILD TIME: 29.12.2023
 1905Z`, and none of them has been touched since 2023-12-29. `develop` is on 3.5.0.
@@ -117,6 +117,44 @@ written, on 2026-09-19. It should not be attached to a release as a demo, and ar
 the in-sim suite. This ticket **leaves it where it is** and excludes it from the release assets;
 moving it is a rename that touches the `FEAT-LAST-LINE-OF-DEFENSE` record and is David's call.
 
+## Flown in DCS, 2026-09-20
+
+David flew `skynet-test-persian-gulf.miz` as assembled from this branch, from the
+`Hornet SA-11-2 jammer support` slot. Watched live through VEAF's build of dcs-fiddle -- a hook, so
+nothing had to be injected into the mission under test -- and against the whole `dcs.log`.
+
+**The mission carried the right Skynet**: `SKYNET VERSION: 3.5.0 | BUILD TIME: 20.09.2026 1704Z`,
+the artifact built from these sources. **Zero** script errors in the log, **zero** placeholder
+messages, **zero** mentions of MIST.
+
+**It still demonstrates an IADS.** The cycle, from the `GOING LIVE` / `GOING DARK` lines:
+
+| mission time | what happened |
+|---|---|
+| 17:40:45 | start -- 8 EW radars live, 13 SAM sites settle dark under network control |
+| 17:40:46 | except the two SA-10s (`setActAsEW(true)`) and the SA-15 point defence |
+| **17:44:00** | `EW-east-2` picks up one contact |
+| **17:44:20** | `SAM-SA-11` **goes live** -- designated by the network, 20 s after the detection |
+| **17:45:28** | `SAM-SA-11` **goes dark** |
+| 17:45:30 | `EW-east-2` has lost the contact |
+| 17:45:52 | `EW-west3` and `EW-Near-SA-11` pick it up in turn |
+
+A battery woken on a contact it cannot see itself, and handed back to the dark when the contact
+leaves. That is the thing the demo exists to show, and it still shows it.
+
+**What this run does not answer**: how 3.5.0 differs from 3.2 *in the air*. No 3.2 baseline was
+flown, so there is nothing to compare against -- only the assertion that the demo works, which is
+what the lot needed. Writing down three years of difference would need the same profile flown twice,
+and that is not what this session did. Said plainly rather than dressed up as a comparison.
+
+**One defect found, and deliberately not fixed here.** The demo destroys its own jammer aircraft at
+mission start: a guard in `skynet-iads-setup-persian-gulf.lua:77` checks for a client slot at `t=0`,
+before it has spawned, and the `else` branch it falls into destroys the emitter and removes its radio
+menu. Proven from the F10 menu and the setup script's ordering, measured as byte-identical in the
+December 2023 archive, so not a regression. David's call, 2026-09-20: record it, keep the lot on its
+subject. Written up in `docs/evolutions.md` under *The Persian Gulf demo destroys its own jammer at
+mission start*.
+
 ## Definition of done
 
 - The four demo archives hold placeholders, and `check` fails if one holds a script.
@@ -128,7 +166,8 @@ moving it is a rename that touches the `FEAT-LAST-LINE-OF-DEFENSE` record and is
 - `release.yml` attaches the assembled demo missions.
 - `documentation/index.md` no longer sends a newcomer to a raw `.miz` in the repository.
 - `CLAUDE.md`, `test/lua/README.md` and the tool's own docstring describe six archives, not two.
-- `skynet-test-persian-gulf.miz` has been flown in DCS and still demonstrates an IADS: sites wake,
-  sites go dark, no error in the log.
-- What changed in behaviour between 3.2 and 3.5.0, as observed, is written down here — that is the
-  first honest description this project will have of what three years did.
+- ✅ `skynet-test-persian-gulf.miz` has been flown in DCS and still demonstrates an IADS: sites wake,
+  sites go dark, no error in the log. 2026-09-20, `SAM-SA-11` lit at 17:44:20 and dark at 17:45:28.
+- 🚫 What changed in behaviour between 3.2 and 3.5.0, as observed. Dropped: it would need the same
+  profile flown on both builds, and only 3.5.0 was flown. Claiming a comparison from one run would be
+  the kind of unmeasured assertion this lot was opened over.
