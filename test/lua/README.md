@@ -257,25 +257,42 @@ milestone): `early-warning-radar`, most of `iads`,
 
 ## Editing the `.miz`
 
-`unit-tests/skynet-unit-tests.miz` is a zip, and a script baked into one is wired in **four**
-places: the file under `l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`,
-the `a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's
-own structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to
-stay contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
+Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
+`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both.
+
+A `.miz` is a zip, and a script baked into one is wired in **four** places: the file under
+`l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`, the
+`a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's own
+structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to stay
+contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
 mission runs the script while the editor shows an empty trigger, or the reverse.
 
     python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py sync
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
-`check` asserts all four agree; `remove` re-checks the result and refuses to write if anything is
-off, so a failed run leaves the `.miz` untouched.
+Every command works on both archives; `--miz <path>` narrows it to one.
 
-**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then
-`extract` plus a Lua parse of every file in the archive — including `mission` and `mapResource`,
-which are Lua too and are the two the tool edits. Verified against three deliberate breakages: a
-`trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
-caught, and the first two are caught *only* by `check`.
+A script inside an archive is also a **copy** of a file that lives in the repository, and the copies
+drift. Both archives carried Skynet 3.3.0 from December 2023 until 2026-09-20, so every in-sim run
+for three years measured code this project had stopped shipping. Three tests written into loose
+copies during 2026 were never baked in, so they had never run at all. `check` compares every script
+against the file it is a copy of — in both directions, so a suite added to the repository and never
+baked in is reported too — and `sync` writes the repository's version back into the archives.
+
+The deliverable is **generated, not committed**, so build it before `check` or `sync`:
+`pwsh -File build-tools/build-compiled-script.ps1`. Its first line stamps the build minute, which is
+left out of the comparison — otherwise every rebuild would look like drift.
+
+`check` asserts all four wirings agree; `remove` and `sync` re-check the result and refuse to write
+if anything is off, so a failed run leaves the `.miz` untouched.
+
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): build, `check`,
+then `extract` plus a Lua parse of every file in both archives — including `mission` and
+`mapResource`, which are Lua too and are the two the tool edits. Verified against three deliberate
+breakages: a `trigrules` entry removed by hand, a `mapResource` line removed, and a script
+truncated. Each is caught, and the first two are caught *only* by `check`.
 
 What is left for DCS is narrow: whether the simulator accepts the mission file and runs its
 triggers. The archive being well-formed is no longer one of the things you need DCS to find out.

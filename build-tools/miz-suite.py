@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Check, or remove a test suite from, unit-tests/skynet-unit-tests.miz.
+"""Check, sync, or remove a test suite from the in-sim mission archives.
+
+Two `.miz` files carry an in-sim suite, and both are handled here:
+
+  * `unit-tests/skynet-unit-tests.miz`
+  * `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`
 
 A `.miz` is a zip, and a script baked into one is wired in FOUR places. All four have to move
 together or the mission loads a resource key that names nothing:
@@ -16,19 +21,29 @@ Forgetting (4) is the trap: the two copies of the trigger disagree, and dependin
 reads it you get a mission that runs the script but shows an empty trigger in the editor, or the
 reverse. `check` asserts that they agree, entry for entry and in order.
 
-Usage, from the repository root:
+A script inside an archive is also a COPY of a file that lives in the repository, and the copies
+drift. `unit-tests/skynet-unit-tests.miz` carried Skynet 3.3.0 from December 2023 until
+2026-09-20, so every in-sim run for three years measured code this project had stopped shipping;
+`test-skynet-iads.lua` inside it was missing a test its loose copy gained in August 2026. `check`
+now compares every script against the file it is a copy of, and `sync` writes the repository's
+version back into the archives.
+
+Usage, from anywhere:
 
     python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py sync
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua [...]
 
-`remove` re-runs every check against the result and refuses to write if anything is off, so a
-failed run leaves the `.miz` untouched. `extract` writes every Lua file in the archive to a
-directory, so something that knows Lua can parse them — `.github/workflows/lua-tests.yml` runs
-both on every pull request.
+Every command works on both archives unless `--miz <path>` narrows it to one. `remove` and `sync`
+re-run every check against the result and refuse to write if anything is off, so a failed run
+leaves the `.miz` untouched. `extract` writes every Lua file to `<dir>/<archive name>/`, so
+something that knows Lua can parse them — `.github/workflows/lua-tests.yml` runs both on every
+pull request.
 
 What is left that only DCS can answer is narrow: whether the simulator accepts the mission file
-and runs its triggers. The wiring, and the syntax of every script inside, are checked here.
+and runs its triggers. The wiring, the syntax of every script inside, and whether those scripts
+are the ones this repository ships are all checked here.
 """
 
 import os
@@ -37,9 +52,29 @@ import sys
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MIZ = os.path.join(ROOT, "unit-tests", "skynet-unit-tests.miz")
 L10N = "l10n/DEFAULT/"
 MAP_RESOURCE = L10N + "mapResource"
+
+#: Every archive carrying an in-sim suite, repository-relative.
+ARCHIVES = (
+    os.path.join("unit-tests", "skynet-unit-tests.miz"),
+    os.path.join("unit-tests", "highdigitsams", "highdigitsams-unit-tests.miz"),
+)
+
+#: The deliverable. Both archives carry a copy of it under this member name, and that copy is what
+#: the in-sim suite actually exercises -- so it is the one that matters most to keep current. It is
+#: NOT committed (`.gitignore` line 12): it has to be built before `check` or `sync` can see it.
+ARTIFACT = "skynet-iads-compiled.lua"
+ARTIFACT_SOURCE = os.path.join("demo-missions", ARTIFACT)
+BUILD_SCRIPT = "pwsh -File build-tools/build-compiled-script.ps1"
+
+#: The artifact's first line stamps the minute it was built, so two builds of identical sources
+#: never match byte for byte. The version stays in the comparison -- only the clock is dropped.
+BUILD_STAMP = re.compile(rb"BUILD TIME: [^-]*---")
+
+#: Scripts that are vendored from elsewhere and have no copy in this repository, so `check` must
+#: not report them as missing a source. MiST is on its way out of both archives entirely.
+NO_SOURCE_IN_REPO = ("mist_4_5_107.lua",)
 
 ACTION_BLOCK = r"([ \t]*)\[(\d+)\] = \r?\n\1\{.*?\r?\n\1\}, -- end of \[\2\]\r?\n"
 ACTIONS_ARRAY = r'\["actions"\] = \r?\n([ \t]*)\{\r?\n(.*?)\r?\n\1\}, -- end of \["actions"\]'
@@ -49,6 +84,42 @@ def read_all(path):
     with zipfile.ZipFile(path) as z:
         order = [i.filename for i in z.infolist()]
         return {n: z.read(n) for n in order}, order
+
+
+def source_of(miz, member):
+    """The repository file a `l10n/DEFAULT/*.lua` member is a copy of, or None.
+
+    Looked up in the archive's own directory first, so `highdigitsams/` wins for its own scripts,
+    then in `unit-tests/` for what the two archives share (`luaunit.lua` sits there and nowhere
+    else).
+    """
+    name = member[len(L10N) :]
+    if name == ARTIFACT:
+        # Built, not committed, so it is missing on a fresh checkout until the build has run.
+        return ARTIFACT_SOURCE if os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)) else None
+    for folder in (os.path.dirname(miz), os.path.join("unit-tests")):
+        candidate = os.path.join(folder, name)
+        if os.path.isfile(os.path.join(ROOT, candidate)):
+            return candidate
+    return None
+
+
+def normalised(blob):
+    """Bytes with line endings flattened, for comparing a member against a working-tree file.
+
+    The archives hold CRLF throughout, and so does a Windows checkout with `core.autocrlf=true` --
+    but a CI runner checks the same files out with LF. Comparing raw bytes would report every
+    script as drifted on Linux and none on Windows, which is worse than not comparing at all.
+    """
+    return blob.replace(b"\r\n", b"\n")
+
+
+def comparable(name, blob):
+    """`normalised`, plus the artifact's build stamp dropped so two builds can be compared."""
+    blob = normalised(blob)
+    if name == ARTIFACT:
+        blob = BUILD_STAMP.sub(b"BUILD TIME: ---", blob, count=1)
+    return blob
 
 
 def parse_map_resource(text):
@@ -64,6 +135,39 @@ def trigrules_of(mission):
     if start < 0:
         raise SystemExit("FAIL: the mission has no trigrules section")
     return start, mission.find('-- end of ["trigrules"]', start)
+
+
+def check_sources(miz, entries):
+    """Every script in the archive is the file this repository ships. Returns a list of problems."""
+    problems = []
+    folder = os.path.dirname(miz)
+    in_archive = set()
+
+    for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
+        name = member[len(L10N) :]
+        source = source_of(miz, member)
+        if source is None:
+            if name == ARTIFACT:
+                problems.append("%s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
+            elif name not in NO_SOURCE_IN_REPO:
+                problems.append("%s has no copy in the repository to be checked against" % name)
+            continue
+        in_archive.add(os.path.normpath(source))
+        with open(os.path.join(ROOT, source), "rb") as handle:
+            if comparable(name, handle.read()) != comparable(name, entries[member]):
+                problems.append("%s differs from %s -- run `miz-suite.py sync`" % (name, source))
+
+    # The drift also runs the other way: a suite added to the repository and never baked in is a
+    # test nobody runs, which is exactly how `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
+    # sat outside the mission from August 2026.
+    for entry in sorted(os.listdir(os.path.join(ROOT, folder))):
+        if not entry.endswith(".lua"):
+            continue
+        loose = os.path.normpath(os.path.join(folder, entry))
+        if loose not in in_archive:
+            problems.append("%s is in the repository but no trigger in this archive loads it" % loose)
+
+    return problems
 
 
 def check(entries):
@@ -140,8 +244,18 @@ def drop_from_trigrules(mission, dead_keys):
     return mission[:start] + section + mission[end:], removed
 
 
-def do_check(entries):
+def write_archive(miz, entries, order):
+    with zipfile.ZipFile(os.path.join(ROOT, miz), "w", zipfile.ZIP_DEFLATED) as z:
+        for name in order:
+            if name in entries:
+                z.writestr(name, entries[name])
+    print("written: %s" % miz)
+
+
+def do_check(miz, entries, sources=True):
     problems, _, compiled = check(entries)
+    if sources:
+        problems += check_sources(miz, entries)
     for p in problems:
         print("  -", p)
     if problems:
@@ -153,8 +267,54 @@ def do_check(entries):
     return compiled
 
 
-def do_remove(entries, order, names):
-    if do_check(entries) is None:
+def do_sync(miz, entries, order):
+    """Write the repository's copy of every script back into the archive."""
+    if L10N + ARTIFACT in entries and not os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)):
+        print("FAIL: %s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
+        return 2
+    # Wiring only: the source comparison is the thing this command is about to fix, so refusing to
+    # run while it fails would make the command unable to do its job.
+    if do_check(miz, entries, sources=False) is None:
+        print("FAIL: the archive is already inconsistent; not touching it")
+        return 2
+
+    refreshed = []
+    for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
+        name = member[len(L10N) :]
+        source = source_of(miz, member)
+        if source is None:
+            if name == ARTIFACT:
+                print("FAIL: %s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
+                return 2
+            continue
+        with open(os.path.join(ROOT, source), "rb") as handle:
+            wanted = handle.read()
+        # Written as CRLF whatever the checkout looks like, so that syncing on Linux and syncing on
+        # Windows produce the same archive. The rest of these files are CRLF already.
+        wanted = normalised(wanted).replace(b"\n", b"\r\n")
+        # Compared the way `check` compares, so that rebuilding the artifact -- which restamps its
+        # first line every minute -- does not make every `sync` rewrite the archive for nothing.
+        if comparable(name, wanted) != comparable(name, entries[member]):
+            entries[member] = wanted
+            refreshed.append("%s <- %s" % (name, source))
+
+    if not refreshed:
+        print("%s: already in sync" % miz)
+        return 0
+
+    for line in refreshed:
+        print("  refreshed %s" % line)
+
+    if do_check(miz, entries) is None:
+        print("FAIL: the result would be inconsistent; nothing written")
+        return 2
+    write_archive(miz, entries, order)
+    print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
+    return 0
+
+
+def do_remove(miz, entries, order, names):
+    if do_check(miz, entries) is None:
         print("FAIL: the archive is already inconsistent; not touching it")
         return 2
 
@@ -194,15 +354,10 @@ def do_remove(entries, order, names):
     entries["mission"] = mission.encode("utf-8")
     entries[MAP_RESOURCE] = map_text.encode("utf-8")
 
-    if do_check(entries) is None:
+    if do_check(miz, entries) is None:
         print("FAIL: the result would be inconsistent; nothing written")
         return 2
-
-    with zipfile.ZipFile(MIZ, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in order:
-            if name in entries:
-                z.writestr(name, entries[name])
-    print("written: %s" % os.path.relpath(MIZ, ROOT))
+    write_archive(miz, entries, order)
     print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
     return 0
 
@@ -213,12 +368,14 @@ def do_remove(entries, order, names):
 LUA_WITHOUT_EXTENSION = ("mission", "options", "warehouses", L10N + "mapResource", L10N + "dictionary")
 
 
-def do_extract(entries, target):
-    """Write every Lua file in the archive to target/, flattening the paths.
+def do_extract(miz, entries, target):
+    """Write every Lua file in the archive to target/<archive name>/, flattening the paths.
 
     Members that are Lua but carry no extension get a `.lua` suffix, so a caller can parse the
-    whole directory with one glob.
+    whole directory with one glob. Each archive gets its own subdirectory because both carry a
+    `skynet-iads-compiled.lua` and one would otherwise silently overwrite the other.
     """
+    target = os.path.join(target, os.path.basename(miz)[: -len(".miz")])
     if not os.path.isdir(target):
         os.makedirs(target)
     written = 0
@@ -236,22 +393,56 @@ def do_extract(entries, target):
     return 0
 
 
+def selected(argv):
+    """The archives to work on, and argv with `--miz <path>` taken out."""
+    rest = list(argv)
+    if "--miz" not in rest:
+        return list(ARCHIVES), rest
+    at = rest.index("--miz")
+    if at + 1 >= len(rest):
+        raise SystemExit("FAIL: --miz needs a path")
+    wanted = os.path.normpath(rest[at + 1])
+    del rest[at : at + 2]
+    for miz in ARCHIVES:
+        if os.path.normpath(miz) == wanted:
+            return [miz], rest
+    raise SystemExit("FAIL: %s is not one of the known archives: %s" % (wanted, ", ".join(ARCHIVES)))
+
+
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ("check", "extract", "remove"):
+    if len(argv) < 2 or argv[1] not in ("check", "sync", "extract", "remove"):
         print(__doc__)
         return 1
-    entries, order = read_all(MIZ)
-    if argv[1] == "check":
-        return 0 if do_check(entries) is not None else 2
-    if argv[1] == "extract":
-        if len(argv) < 3:
-            print("FAIL: extract needs a target directory")
-            return 1
-        return do_extract(entries, argv[2])
-    if len(argv) < 3:
+    command = argv[1]
+    archives, rest = selected(argv[2:])
+
+    if command == "remove" and not rest:
         print("FAIL: remove needs at least one script name")
         return 1
-    return do_remove(entries, order, argv[2:])
+    if command == "extract" and not rest:
+        print("FAIL: extract needs a target directory")
+        return 1
+
+    status = 0
+    for miz in archives:
+        print("== %s" % miz)
+        entries, order = read_all(os.path.join(ROOT, miz))
+        if command == "check":
+            status = max(status, 0 if do_check(miz, entries) is not None else 2)
+        elif command == "sync":
+            status = max(status, do_sync(miz, entries, order))
+        elif command == "extract":
+            status = max(status, do_extract(miz, entries, rest[0]))
+        else:
+            # `remove` names a script, and the same one (MiST) lives in both archives. Skipping the
+            # archives that do not have it lets one command clear it everywhere.
+            mapping = parse_map_resource(entries[MAP_RESOURCE].decode("utf-8"))
+            present = [n for n in rest if n in mapping.values()]
+            if not present:
+                print("  - none of %s is in this archive; skipped" % ", ".join(rest))
+                continue
+            status = max(status, do_remove(miz, entries, order, present))
+    return status
 
 
 if __name__ == "__main__":

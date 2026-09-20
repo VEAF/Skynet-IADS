@@ -194,6 +194,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   deliberate breakages -- a `trigrules` entry removed, a `mapResource` line removed, a script
   truncated -- each caught.
 
+- `miz-suite.py sync`, and a `check` that compares every script inside an in-sim archive against
+  the file in this repository it is a copy of -- in both directions, so a suite added to the
+  repository and never baked in is reported too. The CI job builds the deliverable first and runs
+  the comparison, so the three-year drift below turns into a red build rather than a discovery. Both
+  archives are covered, `unit-tests/skynet-unit-tests.miz` and
+  `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`; `--miz <path>` narrows any command to one.
+
 ### Changed
 
 - `develop` is the default branch, and the Lua suite runs on it.
@@ -382,3 +389,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   jammer stops jamming it — shot down, switched off, out of range, or line of sight lost. That has
   always worked, through a timeout on the anti-radiation-missile scan every live battery runs, but
   no test covered it and `documentation/api.md` never mentioned it. Both now do.
+- Both in-sim mission archives carried **Skynet 3.3.0, built 29 December 2023**, while `develop` had
+  moved to 3.5.0. Neither `.miz` had been touched since 30 December 2023, so every in-sim run for
+  close to three years measured code this project had stopped shipping -- including the 118-test run
+  of 2026-09-20, which is what turned this up. The division of labour `test/lua/` was built on --
+  the standalone suite leans on the in-sim one for what a stub cannot answer -- only holds if the
+  in-sim half runs the code we ship, and it did not. Both archives now carry the current build, and
+  `miz-suite.py check` fails if they drift again.
+- Three tests written during 2026 had never run: `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
+  (added 2026-08-23) in `test-skynet-iads.lua`, and `testHighScreenB`, `testClamShell2` and
+  `testSA10BGrumble` in `test-skynet-high-digit-sam-sites.lua`. Each was added to the loose copy and
+  never baked into the archive, which is the same drift running the other way. All are now in.
