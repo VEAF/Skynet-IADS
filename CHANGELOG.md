@@ -412,3 +412,10 @@ Until that release is cut, the build date in the artifact's first line remains t
   distribution. The leak check at the end of `skynet-unit-tests.lua` still works: task ids come
   from a counter starting at 1, and `removeFunction` still answers whether there was one, so
   walking the integers is the same sweep.
+- `testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSAMSites` had been measuring nothing since
+  2026-08-23. `0ebbc01` renamed `lastUpdatePosition` to `lastCoverageUpdatePosition`; the in-sim test
+  kept writing the old name, so it set a field nothing reads and
+  `getDistanceTraveledSinceLastUpdate()` answered 0 where the test asserts 763. It stayed green
+  because the mission ran the December 2023 build, where the old name was still the real one --
+  `docs/evolutions.md` had predicted this exact failure on 2026-09-19 and could not prove it.
+  Refreshing the artifact proved it, in one line of the DCS log.

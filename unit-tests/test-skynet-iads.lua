@@ -160,7 +160,7 @@ function TestSkynetIADS:testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSA
 	
 	--test distance calculation by giving the awacs a different position:
 	local firstPos = Unit.getByName('EW-AWACS-KJ-2000'):getPosition().p
-	awacs.lastUpdatePosition = firstPos
+	awacs.lastCoverageUpdatePosition = firstPos
 	
 	lu.assertEquals(awacs:getDistanceTraveledSinceLastUpdate(), 763)
 	lu.assertEquals(awacs:isUpdateOfAutonomousStateOfSAMSitesRequired(), true)
@@ -169,9 +169,9 @@ function TestSkynetIADS:testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSA
 	lu.assertEquals(awacs:getDistanceTraveledSinceLastUpdate(), 0)
 	lu.assertEquals(awacs:isUpdateOfAutonomousStateOfSAMSitesRequired(), false)
 	
-	--we reset lastUpdatePosition to firstPos to test call in the IADS code
+	--we reset lastCoverageUpdatePosition to firstPos to test call in the IADS code
 	-- TODO: when refactoring move this test to te AWACS Radar and use mock objects for integration tests in the IADS
-	awacs.lastUpdatePosition = firstPos
+	awacs.lastCoverageUpdatePosition = firstPos
 	iads:evaluateContacts()
 	lu.assertEquals(updateCalls, 1)
 	iads:deactivate()

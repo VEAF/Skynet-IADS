@@ -1,6 +1,6 @@
 # 02 — Take MiST out of the mission, and the popup with it
 
-Status: ⬜ ready — depends on ticket 01
+Status: ✅ done — 2026-09-20
 
 Skynet stopped using MiST on 2026-08-30 (`fe40c4a`, *refactor: run without MiST*), which wrote
 `SkynetIADSUtils` to replace it. The current sources make zero MiST calls. The test mission still
@@ -61,6 +61,19 @@ assuming it (`SkynetIADSUtils.round` takes an optional precision, `mist.utils.ro
 confirm the default behaviour matches at the two call sites).
 
 **The `.miz` is judged in DCS.** The popup is the observable: run the mission and confirm it is gone.
+
+## What the run said
+
+`unit-tests/skynet-unit-tests.miz` in DCS, 2026-09-20 09:04: **no `ERROR SCRIPTING` line at all**, and
+no mention of MiST anywhere in the log after the mission loaded. The popup is gone. The only two
+`ERROR` lines in that stretch are `DX11BACKEND` texture warnings with nothing to do with scripting.
+
+`testShutDownTimes` passes, which is the check that the `mist.random` → `SkynetIADSUtils.random` swap
+landed where it had to: ticket 01 alone would have broken it, since Skynet 3.5.0 no longer reads the
+function that test was stubbing.
+
+The `skynet-unit-test-iads-setup.lua` call the table below lists turned out to be commented out, so
+four swaps were made, not five.
 
 ## Definition of done
 

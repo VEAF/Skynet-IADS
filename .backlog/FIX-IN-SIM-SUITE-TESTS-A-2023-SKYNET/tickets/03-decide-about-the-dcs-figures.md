@@ -10,7 +10,7 @@ last touched 2023-12-29:
 | `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
 | `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
 | `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
-| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1908 | 1909 |
+| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1909 | 1908 |
 
 Two missile ranges ED has changed, and two altitudes that moved by a metre. Nothing in Skynet is
 wrong.

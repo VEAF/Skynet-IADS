@@ -1,6 +1,6 @@
 # 01 — Refresh the deliverable the mission carries, and keep it fresh
 
-Status: ⬜ ready
+Status: ✅ done — 2026-09-20
 
 `unit-tests/skynet-unit-tests.miz` holds its own copy of `skynet-iads-compiled.lua`, loaded first by
 the mission's opening trigger (`ResKey_Action_822`). That copy says:
@@ -50,9 +50,51 @@ a pile of blind fixes to a suite nobody has read in three years is how the drift
 **A `.miz` is judged in DCS.** Run the mission after the swap; `miz-suite.py check` and the CI job
 prove the archive is well-formed, not that the mission loads.
 
+## What the run said
+
+`unit-tests/skynet-unit-tests.miz` in DCS, 2026-09-20 09:04, against the artifact built that morning:
+
+```
+--- SKYNET VERSION: 3.5.0 | BUILD TIME: 20.09.2026 0847Z ---
+Ran 119 tests in 1.801 seconds, 114 successes, 5 failures
+```
+
+| | before (3.3.0) | after (3.5.0) |
+|---|---|---|
+| tests | 118 | 119 |
+| successes | 114 | 114 |
+| failures | 4 | 5 |
+
+The budget for a wall of red was not spent. Read one by one:
+
+- **Four failures are the same four**, line for line and value for value, as the 3.3.0 run an hour
+  earlier: the ED figures in `test-skynet-iads-red-sam-sites-and-ew-radars.lua`. Ticket 03.
+- **One is new**, and it is the third kind this ticket listed — an API that moved.
+  `test-skynet-iads.lua:165` asserts 763 and got 0, because `0ebbc01` renamed `lastUpdatePosition` to
+  `lastCoverageUpdatePosition` on 2026-08-23 and the test still wrote the old name. It had been green
+  for a month only because the mission ran the 2023 build. Ticket 04.
+- **The extra test passes.** `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage` was added to the
+  loose copy on 2026-08-23 and never baked in, so it had never run; the sync put it in.
+- **No regression in Skynet.** Three years of source changes, and nothing the refresh exposed is a
+  defect in the shipped code.
+
+## Two archives, not one
+
+`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` had the same defect — Skynet 3.3.0 built
+29.12.2023 2059Z, untouched since 2023-12-29 — and is not in this ticket's text. It is handled here
+rather than left behind: every `miz-suite.py` command works on both archives, `--miz <path>` narrows
+it to one.
+
+**It cannot be run.** It needs the HighDigitSAMs mod, which David does not have, so DCS refuses to
+load it. Its artifact is current and CI checks its wiring and parses its scripts, which is more than
+it had; nobody can say it runs.
+
 ## Definition of done
 
 - The `.miz` carries the artifact built from `develop`, and the build date in its first line says so.
-- `miz-suite.py` gained the command that did it, rather than a throwaway script.
-- Something fails when the two drift again.
-- The mission has been loaded once in DCS, and what turned red is written down here.
+  ✅ both archives.
+- `miz-suite.py` gained the command that did it, rather than a throwaway script. ✅ `sync`.
+- Something fails when the two drift again. ✅ `check` compares every script against the file it
+  copies, in both directions, and CI runs it after building the deliverable.
+- The mission has been loaded once in DCS, and what turned red is written down here. ✅ above, for
+  `skynet-unit-tests.miz`; `highdigitsams-unit-tests.miz` cannot be loaded here.

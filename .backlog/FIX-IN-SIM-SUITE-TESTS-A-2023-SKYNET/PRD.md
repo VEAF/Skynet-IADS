@@ -67,7 +67,7 @@ The same run reported 114 successes and **4 failures**, all in
 | `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
 | `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
 | `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
-| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1908 | 1909 |
+| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1909 | 1908 |
 
 Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
 Skynet is wrong. These are the second kind of drift `docs/evolutions.md` predicted and could not
@@ -104,18 +104,52 @@ The datamine carries exactly these figures — `Range_max`, `H_max`, and `detect
 simulator: ticket 03 builds the generator, the committed table and the standalone tests, and the
 in-sim suites stop asserting figures a stub can now check.
 
+## What the refreshed mission actually did
+
+Run in DCS on 2026-09-20 at 09:04, against the artifact built that morning. The ticket budgeted for a
+wall of red. There was none:
+
+| | before (3.3.0) | after (3.5.0) |
+|---|---|---|
+| tests | 118 | **119** |
+| successes | 114 | 114 |
+| failures | 4 | **5** |
+| `ERROR SCRIPTING` lines | 1, every run | **none** |
+
+The extra test is `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`, which the sync baked in
+for the first time, and it passes. The four original failures are unchanged, line for line and value
+for value — they are the ED figures ticket 03 is about.
+
+**One new failure, and it is the rename `docs/evolutions.md` already predicted**: `0ebbc01` renamed
+`lastUpdatePosition` to `lastCoverageUpdatePosition`, and `test-skynet-iads.lua` still wrote the old
+name — so it set a field nothing reads, `getDistanceTraveledSinceLastUpdate()` found nil, adopted the
+current position and answered 0 where the test asserts 763. It had been passing only because the
+mission ran the 2023 build, where the old name was still the real one. Ticket 04.
+
+**No regression in Skynet.** Three years of source changes, and the only thing the refresh broke was
+a test writing to a field that had been renamed a month earlier.
+
+A sweep of every field the in-sim suites write, checked against what the sources define, turned up no
+second case.
+
 ## Tickets
 
 | # | Title | Status |
 |---|-------|--------|
-| 01 | [Refresh the deliverable the mission carries](tickets/01-refresh-the-embedded-deliverable.md) | ⬜ |
-| 02 | [Take MiST out of the mission](tickets/02-take-mist-out-of-the-mission.md) | ⬜ |
+| 01 | [Refresh the deliverable the mission carries](tickets/01-refresh-the-embedded-deliverable.md) | ✅ |
+| 02 | [Take MiST out of the mission](tickets/02-take-mist-out-of-the-mission.md) | ✅ |
 | 03 | [Take ED's figures out of DCS, and check them against the datamine](tickets/03-decide-about-the-dcs-figures.md) | ⬜ |
+| 04 | [Fix the renamed field the refresh exposed](tickets/04-fix-the-renamed-coverage-field.md) | ✅ |
 
 Order matters between 01 and 02: MiST cannot leave while the artifact in the mission still calls it.
 03 needs 01 first — measuring ED's figures against the 2023 build would measure the wrong thing twice.
 
 ## Watch out for
+
+**`highdigitsams-unit-tests.miz` cannot be run here.** It needs the HighDigitSAMs mod, which David
+does not have — DCS refuses to load the mission. Its artifact is refreshed and CI checks its wiring
+and parses its scripts, which is strictly more than the nothing it had before, but nobody can say it
+runs. Recorded rather than worked around.
 
 **Every ticket here is judged in DCS.** `CLAUDE.md` says to stop and wait for explicit approval when
 that is the case, and it applies to all three. CI can check the archive is well-formed —

@@ -52,9 +52,17 @@ own setup and then measures the wrong thing.
 
 **One confirmed case**, found on 2026-09-19 while closing `FIX-COVERAGE-UPDATE-DARKENS-SITES`.
 `0ebbc01` (PR #17) renamed `lastUpdatePosition` to `lastCoverageUpdatePosition`.
-`unit-tests/test-skynet-iads.lua:163` and `:174` still assign the old name, so they set a field
+`unit-tests/test-skynet-iads.lua:163` and `:174` still assigned the old name, so they set a field
 `getDistanceTraveledSinceLastUpdate()` no longer reads — it finds `lastCoverageUpdatePosition` nil,
 adopts the current position and answers 0, where the test asserts 763.
+
+**Proved in DCS and fixed, 2026-09-20.** It was still green in the simulator, because the mission
+carried the December 2023 build where `lastUpdatePosition` was the real name. Refreshing that
+artifact (`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 01) turned it red — `expected: 763, actual:
+0`, exactly as predicted here — and ticket 04 fixed it. A sweep of every field the in-sim suites
+write against what the sources define found no second case, so the lint step proposed below has been
+run once by hand and found one thing; what stands guard now is `miz-suite.py check`, which stops the
+archive from carrying a build old enough to hide a rename.
 
 **How far the drift goes: measured, 2026-09-20.** The suite was run in DCS on Persian Gulf while
 closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. **118 tests, 114 successes, 4 failures**, and
@@ -68,7 +76,7 @@ them pins a figure DCS reports about its own units:
 | `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
 | `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
 | `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
-| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1908 | 1909 |
+| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1909 | 1908 |
 
 Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
 Skynet is wrong; the tests record what DCS said three years ago.
