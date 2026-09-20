@@ -1,6 +1,6 @@
 # 02 — Take MiST out of the demo missions
 
-Status: ⬜ ready — depends on ticket 01
+Status: ✅ done — 2026-09-20, merged in PR #33
 
 All four demo missions load `mist_4_5_107.lua`, 312 KB of it. Skynet stopped needing MiST on
 2026-08-30 (`fe40c4a`, *refactor: run without MiST*), which wrote `SkynetIADSUtils` to replace it.

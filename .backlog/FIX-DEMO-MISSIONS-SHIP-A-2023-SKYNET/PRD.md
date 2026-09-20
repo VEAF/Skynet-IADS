@@ -1,7 +1,6 @@
 # FIX-DEMO-MISSIONS-SHIP-A-2023-SKYNET — the missions newcomers open run Skynet 3.2
 
-Status: 🔄 in-progress — ticket 03 decided 2026-09-20: **(b)**, the demos are assembled and the
-release ships them
+Status: ✅ done — merged 2026-09-20 as [PR #33](https://github.com/VEAF/Skynet-IADS/pull/33)
 
 Origin: found on 2026-09-20 while closing `FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET`. That lot fixed the
 same defect in the *test* missions; this one is about the *demo* missions, which are worse placed —
@@ -86,8 +85,8 @@ to different work. That is David's call, not something to settle while doing the
 
 | # | Title | Status |
 |---|-------|--------|
-| 01 | [Assemble the demo missions instead of committing a copy of the code](tickets/01-refresh-what-the-demos-carry.md) | ⬜ |
-| 02 | [Take MiST out of the demo missions](tickets/02-take-mist-out-of-the-demos.md) | ⬜ |
+| 01 | [Assemble the demo missions instead of committing a copy of the code](tickets/01-refresh-what-the-demos-carry.md) | ✅ |
+| 02 | [Take MiST out of the demo missions](tickets/02-take-mist-out-of-the-demos.md) | ✅ |
 | 03 | [Decide whether a demo may need assembling](tickets/03-decide-if-a-demo-may-need-assembling.md) | ✅ |
 
 Order: **03 first** — it decided the shape of 01, and 01 was rewritten to match. Then 01, then 02,

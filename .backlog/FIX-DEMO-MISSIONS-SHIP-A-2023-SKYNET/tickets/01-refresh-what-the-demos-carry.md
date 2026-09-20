@@ -1,6 +1,6 @@
 # 01 — Assemble the demo missions instead of committing a copy of the code
 
-Status: 🔄 in-progress — coded and flown 2026-09-20; see *Flown in DCS* below
+Status: ✅ done — coded, flown 2026-09-20 and merged in PR #33; see *Flown in DCS* below
 
 Three of the four archives under `demo-missions/` carry `SKYNET VERSION: 3.2 | BUILD TIME: 29.12.2023
 1905Z`, and none of them has been touched since 2023-12-29. `develop` is on 3.5.0.
