@@ -360,6 +360,12 @@ function dcsStub.makeGroup(groupSpec)
   function g:getController()
     return controller
   end
+  --- The real DCS Group:destroy(). Removes the group and every unit from the world, which is
+  --- what InsimTestTools.destroyIfLive calls.
+  function g:destroy()
+    g:__destroy()
+    dcsStub.world[g:getName()] = nil
+  end
   function g:__destroy()
     for i = 1, #units do
       units[i]:__destroy()

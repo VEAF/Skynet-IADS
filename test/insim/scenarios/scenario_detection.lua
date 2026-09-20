@@ -34,7 +34,7 @@ function TestDetection:setUp()
   InsimTestTools.addFromMission(SAM)
 
   self.iads = SkynetIADS:create("insim_" .. SCENARIO)
-  InsimTestTools.skynetNetworkDisplayState(self.iads, true)
+  InsimSkynet.networkDisplayState(self.iads, true)
 
   self.iads:addEarlyWarningRadarsByPrefix(EWR)
   self.iads:addSAMSitesByPrefix(SAM)
@@ -102,11 +102,32 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
   log("%s airborne %.0f km out on bearing %d, %d m, %d m/s -- SAM is dark",
     TARGET, START_RANGE / 1000, INBOUND_BEARING, TARGET_ALTITUDE, TARGET_SPEED)
 
-  -- Detection, then the IADS's own evaluation cycle, then the SAM coming up.
+  -- The EWR sees the target from the moment it spawns, so what follows is NOT detection
+  -- latency: it is the target closing to the range at which Skynet lets the site engage.
+  local targetGroup = Group.getByName(TARGET)
+  luaunit.assertNotNil(targetGroup, "the target group was not added")
+  local target = targetGroup:getUnit(1)
+
+  log("predicted: %s", InsimSkynet.describeEngagement(sam, target))
+
   waitFor(function() return sam:isActive() end, 450)
   luaunit.assertTrue(sam:isActive())
 
+  -- Measured before anything else can change it. A dead target would make every range call
+  -- below raise, so it is checked rather than assumed.
+  luaunit.assertTrue(target:isExist(), "the target did not survive to the go-live moment")
+  local atGoLive = InsimSkynet.engagementReport(sam, target)
+
+  log("%s went live: %s", SAM, InsimSkynet.describeEngagement(sam, target))
   log("%s went live -- DCS: %s", SAM, InsimTestTools.describeRadarState(SAM))
+
+  luaunit.assertNotNil(atGoLive.gate, "no engagement gate could be computed for " .. SAM)
+
+  -- Skynet must not bring a site up before the target is inside its kill zone. How far INSIDE
+  -- it came up is the evaluation-cycle lag: logged rather than asserted until we have numbers.
+  luaunit.assertTrue(atGoLive.distance <= atGoLive.gate, string.format(
+    "%s went live at %.0f m but its gate is %.0f m (%s) -- it came up too early",
+    SAM, atGoLive.distance, atGoLive.gate, tostring(atGoLive.gateKind)))
 
   -- And the sim agrees. goLive() calls enableEmission(true) before it sets aiState, so this
   -- should already hold; the wait only tolerates the sim applying it a tick late.

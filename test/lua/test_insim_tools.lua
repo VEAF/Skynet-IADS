@@ -156,54 +156,76 @@ function TestInsimTools:testDescribeRadarStateSaysDarkWhenNothingEmits()
   luaunit.assertStrContains(InsimTestTools.describeRadarState("SAM-QUIET"), "dark")
 end
 
---- Stands in for a SkynetIADS: only the two members skynetNetworkDisplayState touches. The
---- behaviour under test is our wiring, not Skynet's.
-local function fakeIads()
-  local settings = {}
-  return {
-    logger = { printOutputToLog = function(_, text) settings.lastNative = text end },
-    getDebugSettings = function() return settings end,
-  }, settings
+--- A mission table holding fixtures, a playable slot, and a group that is neither.
+local function missionWith(groups)
+  env.mission = { coalition = { blue = { country = { { id = 2, name = "USA", plane = {
+    group = groups } } } } } }
 end
 
-function TestInsimTools:testSkynetOutputIsRoutedIntoTheRunTimeline()
-  local captured = {}
-  local previousLog = log
-  log = function(format, ...) captured[#captured + 1] = string.format(format, ...) end
-
-  local iads = fakeIads()
-  InsimTestTools.skynetNetworkDisplayState(iads, true)
-  iads.logger:printOutputToLog("GOING LIVE: SAM SITE SKY-Z01-SA6-01")
-
-  log = previousLog
-  luaunit.assertEquals(#captured, 1)
-  luaunit.assertStrContains(captured[1], "GOING LIVE: SAM SITE SKY-Z01-SA6-01")
+local function playableGroup(name)
+  return { name = name, units = { { name = name .. "-1", skill = "Client" } } }
 end
 
-function TestInsimTools:testTurningTheDisplayOffPutsSkynetsOwnLoggerBack()
-  local captured = {}
-  local previousLog = log
-  log = function(format, ...) captured[#captured + 1] = string.format(format, ...) end
-
-  local iads, settings = fakeIads()
-  InsimTestTools.skynetNetworkDisplayState(iads, true)
-  InsimTestTools.skynetNetworkDisplayState(iads, false)
-  iads.logger:printOutputToLog("GOING DARK: SAM SITE")
-
-  log = previousLog
-  luaunit.assertEquals(#captured, 0, "the timeline should no longer be receiving Skynet output")
-  luaunit.assertEquals(settings.lastNative, "GOING DARK: SAM SITE")
+local function fixtureGroup(name)
+  return { name = name, units = { { name = name .. "-1", skill = "Excellent" } } }
 end
 
-function TestInsimTools:testTheDisplayFlagsSkynetActuallyReadsAreSet()
-  local iads, settings = fakeIads()
+function TestInsimTools:testFixtureNamesAreOnlyThoseCarryingThePrefix()
+  missionWith({
+    fixtureGroup("SKY-Z01-SA6-01"),
+    fixtureGroup("SKY-AIR-F18-01"),
+    fixtureGroup("SCENERY-FARM-01"),
+  })
 
-  InsimTestTools.skynetNetworkDisplayState(iads, true)
+  local names = InsimTestTools.missionFixtureNames()
 
-  -- goDark() reads radarWentDark and goLive() reads radarWentLive; the logger's own
-  -- samWentDark default is vestigial and read by nothing.
-  luaunit.assertTrue(settings.radarWentDark)
-  luaunit.assertTrue(settings.radarWentLive)
+  table.sort(names)
+  luaunit.assertEquals(names, { "SKY-AIR-F18-01", "SKY-Z01-SA6-01" })
+end
+
+function TestInsimTools:testAPlayableGroupIsNeverAFixtureEvenWithThePrefix()
+  -- The mistake a naming convention cannot catch: a slot that happens to carry the prefix.
+  missionWith({ fixtureGroup("SKY-Z01-SA6-01"), playableGroup("SKY-SLOT-GM-01") })
+
+  luaunit.assertEquals(InsimTestTools.missionFixtureNames(), { "SKY-Z01-SA6-01" })
+end
+
+function TestInsimTools:testAGroupWithAPlayerUnitIsProtectedToo()
+  missionWith({ { name = "SKY-SLOT-01", units = {
+    { name = "a", skill = "Excellent" }, { name = "b", skill = "Player" } } } })
+
+  luaunit.assertEquals(#InsimTestTools.missionFixtureNames(), 0)
+end
+
+function TestInsimTools:testAddFromMissionRefusesAPlayableGroup()
+  missionWith({ playableGroup("SKY-SLOT-GM-01") })
+
+  local ok, err = pcall(InsimTestTools.addFromMission, "SKY-SLOT-GM-01")
+
+  luaunit.assertFalse(ok, "adding over a slot would throw the player out of their aircraft")
+  luaunit.assertStrContains(tostring(err), "playable")
+end
+
+function TestInsimTools:testAddAirFromMissionRefusesAPlayableGroup()
+  missionWith({ playableGroup("SKY-SLOT-GM-01") })
+
+  local ok, err = pcall(InsimTestTools.addAirFromMission, "SKY-SLOT-GM-01",
+    { from = { x = 0, y = 0 }, to = { x = 1000, y = 0 }, altitude = 3000, speed = 150 })
+
+  luaunit.assertFalse(ok)
+  luaunit.assertStrContains(tostring(err), "playable")
+end
+
+function TestInsimTools:testDestroyAllFixturesLeavesPlayableSlotsAlone()
+  missionWith({ fixtureGroup("SKY-Z01-SA6-01"), playableGroup("SKY-SLOT-GM-01") })
+  dcsStub.reset()
+  dcsStub.makeGroup({ name = "SKY-Z01-SA6-01", units = { { name = "SKY-Z01-SA6-01-1" } } })
+  dcsStub.makeGroup({ name = "SKY-SLOT-GM-01", units = { { name = "SKY-SLOT-GM-01-1" } } })
+
+  local destroyed = InsimTestTools.destroyAllFixtures()
+
+  luaunit.assertEquals(destroyed, { "SKY-Z01-SA6-01" })
+  luaunit.assertNotNil(Group.getByName("SKY-SLOT-GM-01"), "the slot was despawned")
 end
 
 function TestInsimTools:testOffsetFromGoesNorthOnBearingZero()

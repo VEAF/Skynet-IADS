@@ -10,10 +10,9 @@ Two halves, deliberately in one file while it stays small:
   * DCS-world     -- missionGroupData, addFromMission, addAirFromMission, destroyIfLive,
                      removeJunkAround, removeJunkInZone. Need a running sim.
 
-Scope rules: nothing Skynet-specific except wiring up its debug output, which every scenario
-wants the same way (skynetNetworkDisplayState); check
-SkynetIADSUtils before adding arithmetic, since test/lua already covers it; split this file
-once it passes roughly 300 lines.
+Scope rules: nothing Skynet-specific -- that lives in insim-skynet-tools.lua, so this file
+stays usable by a scenario that does not load Skynet at all; check SkynetIADSUtils before
+adding arithmetic, since test/lua already covers it.
 ]]
 
 InsimTestTools = {}
@@ -141,6 +140,68 @@ local function groupCategoryFor(kind)
   return Group.Category.GROUND
 end
 
+--- Only groups carrying this prefix are ever added or destroyed. Everything else in the mission
+--- -- playable slots, observers, scenery, a group half-built in the editor -- is untouchable,
+--- which means forgetting to mark something protects it rather than exposing it.
+InsimTestTools.FIXTURE_PREFIX = "SKY-"
+
+--- True when any unit is flyable by a human. Such a group is never a fixture whatever it is
+--- named: a naming convention cannot catch a slot that was accidentally given the prefix, and
+--- the cost of that mistake is a player thrown out of their aircraft mid-flight.
+local function isPlayable(groupData)
+  for _, unit in pairs(groupData.units or {}) do
+    if unit.skill == "Client" or unit.skill == "Player" then
+      return true
+    end
+  end
+  return false
+end
+
+--- Walks every group in the mission, whatever its category or coalition.
+local function eachMissionGroup(visit)
+  assert(env and env.mission and env.mission.coalition,
+    "env.mission is unavailable -- is this running inside a mission?")
+
+  for _, coalitionData in pairs(env.mission.coalition) do
+    for _, country in pairs(coalitionData.country or {}) do
+      for _, kind in ipairs({ "vehicle", "static", "plane", "helicopter" }) do
+        for _, group in pairs((country[kind] or {}).group or {}) do
+          visit(group, country, kind)
+        end
+      end
+    end
+  end
+end
+
+--- Every group a scenario may add or destroy: prefixed, and not playable.
+function InsimTestTools.missionFixtureNames()
+  local names = {}
+  local prefix = InsimTestTools.FIXTURE_PREFIX
+
+  eachMissionGroup(function(group)
+    if type(group.name) == "string" and group.name:sub(1, #prefix) == prefix
+      and not isPlayable(group) then
+      names[#names + 1] = group.name
+    end
+  end)
+
+  return names
+end
+
+--- Blanket teardown: destroys every live fixture and returns the names it took. Playable slots
+--- and anything without the prefix survive.
+function InsimTestTools.destroyAllFixtures()
+  local destroyed = {}
+
+  for _, name in ipairs(InsimTestTools.missionFixtureNames()) do
+    if InsimTestTools.destroyIfLive(name) then
+      destroyed[#destroyed + 1] = name
+    end
+  end
+
+  return destroyed
+end
+
 --- The mission's own definition of an editor-placed group, by name, plus the country that owns
 --- it and the mission-table category it lives under ("vehicle", "static", "plane" or
 --- "helicopter"). `env.mission` is the entire mission table, available to any mission script --
@@ -168,11 +229,20 @@ function InsimTestTools.missionGroupData(groupName)
   error("missionGroupData: no group named '" .. tostring(groupName) .. "' in the mission")
 end
 
+--- Guards both add paths. Adding over a live playable group replaces it, which throws whoever
+--- is sitting in it back to the slot screen -- and the slots exist precisely so a human can
+--- watch a scenario run.
+local function refuseIfPlayable(groupData, groupName)
+  assert(not isPlayable(groupData),
+    "'" .. tostring(groupName) .. "' is playable -- scenarios never add or destroy a slot")
+end
+
 --- Adds an editor-placed group or static under its own name, exactly where the Mission Editor
 --- put it. Re-adding replaces a LIVE entity, so this doubles as the respawn that gives each
 --- test fresh units; a wreck is not replaced, which is why setUp clears junk first.
 function InsimTestTools.addFromMission(groupName)
   local data, countryId, kind = InsimTestTools.missionGroupData(groupName)
+  refuseIfPlayable(data, groupName)
 
   -- Fixtures are authored late-activated so a normal mission start leaves them dormant. An
   -- added copy must not inherit that: Skynet's prefix discovery skips units that are not active.
@@ -235,6 +305,7 @@ function InsimTestTools.addAirFromMission(groupName, opts)
     "addAirFromMission: opts.speed is metres per second, not knots (200 m/s is about 390 kt)")
 
   local data, countryId, kind = InsimTestTools.missionGroupData(groupName)
+  refuseIfPlayable(data, groupName)
 
   -- Fixtures are authored late-activated so a normal mission start leaves them dormant. An
   -- added copy must not inherit that: Skynet's prefix discovery skips units that are not active.
@@ -388,53 +459,5 @@ function InsimTestTools.removeJunkInZone(zoneName)
   return InsimTestTools.removeJunkAround({ x = zone.point.x, y = zone.point.z }, zone.radius)
 end
 
---- Skynet writes its own narration through its logger's printOutputToLog, as
---- env.info("SKYNET: ..."). That reaches dcs.log but not the run timeline, so it is absent from
---- last-run.lua and the archive. Pointing this instance's logger at log() puts "GOING LIVE" and
---- friends in the timeline, stamped and interleaved with the scenario's own lines.
----
---- The replacement carries the same text, so grepping dcs.log for "SKYNET:" still finds it. The
---- logger belongs to one SkynetIADS instance, so nothing global is touched and the patch dies
---- with the IADS in tearDown.
-local function routeSkynetOutputToTimeline(iads, enabled)
-  local logger = iads.logger
-  if type(logger) ~= "table" then
-    return
-  end
-
-  if enabled then
-    if not logger.insimNativeOutput then
-      logger.insimNativeOutput = logger.printOutputToLog
-      logger.printOutputToLog = function(_, output)
-        log("SKYNET: %s", tostring(output))
-      end
-    end
-  elseif logger.insimNativeOutput then
-    logger.printOutputToLog = logger.insimNativeOutput
-    logger.insimNativeOutput = nil
-  end
-end
-
---- Turns on the Skynet debug output a scenario wants to see, and routes it into the timeline.
----
---- Two keys deliberately absent: noWorkingCommmandCenter and ewRadarNoConnection appear in
---- README_source.md but are read nowhere in the source, so setting them does nothing.
-function InsimTestTools.skynetNetworkDisplayState(iads, bDisplay)
-    local iadsDebug = iads:getDebugSettings()
-
-    iadsDebug.IADSStatus = bDisplay
-    iadsDebug.radarWentDark = bDisplay
-    iadsDebug.contacts = bDisplay
-    iadsDebug.radarWentLive = bDisplay
-    iadsDebug.samNoConnection = false
-    iadsDebug.jammerProbability = false
-    iadsDebug.addedEWRadar = false
-    iadsDebug.hasNoPower = false
-    iadsDebug.harmDefence = bDisplay
-    iadsDebug.samSiteStatusEnvOutput = false
-    iadsDebug.earlyWarningRadarStatusEnvOutput = false
-
-    routeSkynetOutputToTimeline(iads, bDisplay)
-end
 
 end

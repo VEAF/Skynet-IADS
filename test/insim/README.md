@@ -94,10 +94,16 @@ mission table, which DCS exposes to any mission script — and adds it.
 InsimTestTools.addFromMission("SKY-Z01-SA6-01")     -- ground/static, exactly as placed
 ```
 
-**Names are free-form.** This mission exists only to be tested against, so every group in it is
-a fixture and nothing needs distinguishing from anything else. The one rule is that the names in
-a scenario's Lua match the `.miz` exactly, case included. A mismatch says
-`missionGroupData: no group named '...'`.
+**Only `SKY-` groups are fixtures.** A scenario may add or destroy those and nothing else, so
+anything you do not prefix — a playable slot, an observer, scenery, a group half-built in the
+editor — is protected by default. Forgetting to mark something makes it safer, not more
+exposed. Within the prefix, names are free-form; the one rule is that they match the `.miz`
+exactly, case included. A mismatch says `missionGroupData: no group named '...'`.
+
+A group with a `Client` or `Player` unit is **never** a fixture, whatever it is named. That is
+the second, independent guard: a naming convention cannot catch a slot that accidentally got the
+prefix, and the cost of that mistake is a player thrown back to the slot screen mid-flight.
+`addFromMission` refuses such a group outright, and `destroyAllFixtures()` skips it.
 
 The scheme in use keys ground fixtures to their arena and leaves air assets free:
 
@@ -145,6 +151,16 @@ Because the scenario owns the geometry, one airframe template can serve several 
 
 `speed` is metres per second, as the mission table stores it. Writing `400` meaning knots gives
 you 778 kt and it will not be rejected.
+
+### Playable slots
+
+Slots are what make a human observation possible — sitting in a cockpit to watch an RWR is the
+only way to settle some questions the tier cannot assert. Add as many as you need; the rules
+above mean a scenario will never despawn one.
+
+Two things a scenario cannot do for you: the aircraft has to be somewhere useful when the event
+happens, and nothing in `results/last-run.lua` will record what you saw. Automation for the
+setup, eyes for the verdict.
 
 ### Arena zones
 
@@ -246,6 +262,21 @@ All on the global `InsimTestTools`:
 | `skynetNetworkDisplayState(iads, on)` | Skynet's debug output, routed into the timeline |
 
 And two globals that are not on it: `waitFor` / `waitSeconds` (above) and `log`.
+
+Skynet-aware helpers live on `InsimSkynet`, in `tools/insim-skynet-tools.lua`, so the toolbox
+above stays usable by a scenario that never loads Skynet:
+
+| | |
+|---|---|
+| `engagementReport(samSite, targetUnit)` | → `{ gate, gateKind, distance, inRange, kinds }` |
+| `describeEngagement(samSite, targetUnit)` | the same as one timeline line |
+| `networkDisplayState(iads, on)` | Skynet's debug output, routed into the timeline |
+
+`engagementReport` answers *why* a site came up when it did. Skynet's `isTargetInRange` needs
+the search radar **and** tracking radar **and** launcher all in range, and within each kind any
+one element suffices — so the gate is the smallest of the three kinds' best ranges, usually the
+launcher's missile range. Log it before the target flies and it is a prediction; read it when
+the site goes live and it is the measurement.
 
 Coordinates are mission-table throughout: **`x` is north, `y` is east**. (`Vec3` differs — there
 `y` is altitude and `z` is east. `getPosition()` differs again — its `.x`/`.y`/`.z` are
