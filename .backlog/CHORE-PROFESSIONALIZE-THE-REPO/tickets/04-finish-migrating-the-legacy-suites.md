@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — port complete, six legacy suites removed; one question left for David
+Status: ✅ done — port complete, six legacy suites removed, verified in DCS on 2026-09-20
 
 ## Progress
 
@@ -110,6 +110,36 @@ Decide: port a slice of that suite, or write a narrow standalone test"*. That fi
 tests, and it covers `SkynetIADSAbstractRadarElement` — the class carrying `goLive`, `goDark`,
 `setToCorrectAutonomousState` and the HARM evasion. In other words, the class both tickets of
 `FEAT-LAST-LINE-OF-DEFENSE` modify.
+
+## Verified in DCS, 2026-09-20
+
+David loaded `unit-tests/skynet-unit-tests.miz` on Persian Gulf and sent the log.
+
+**The removal is sound.** The in-sim suite ran **118 tests**, which is exactly 168 − 50: the 168 it
+ran before, minus the 50 tests of the six removed suites (5 + 8 + 12 + 6 + 7 + 12). All six
+remaining suites loaded, and the log carries **no resource or script-loading error** — which is
+what the four-place wiring had to get right.
+
+**Four tests failed, and none of them is ours.** All four are in
+`test-skynet-iads-red-sam-sites-and-ew-radars.lua`, byte-identical to `develop`'s copy — a hash of
+every member of the archive shows only `mission` and `mapResource` changed. They assert figures
+**DCS reports about its own units**, and they were last touched on **2023-12-29**:
+
+| test | asserts | DCS answers today |
+|---|---|---|
+| `testCheckSA11Group…` | SA-11 launcher range 35000 | 46000 |
+| `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
+| `testSA15Launchers…` | target height 1930 | 1929 |
+| `testShilkaGroup…` | target height 1908 | 1909 |
+
+Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. This is the
+canary this ticket argued for firing for the first time: it is exactly the class of assertion a
+standalone test cannot make, and the reason those suites stay in the `.miz`. Fixing the four
+numbers is a lot of its own — the question is not "what does DCS say today" but "should Skynet's
+own tests pin ED's data at all, and who re-runs them".
+
+The `mist ... Object doesn't exist` error in the log lands **after** the summary line: it is mist's
+event handler reading a unit the suites had just destroyed. Pre-existing, unrelated to the wiring.
 
 ## What to do
 

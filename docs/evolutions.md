@@ -56,10 +56,37 @@ own setup and then measures the wrong thing.
 `getDistanceTraveledSinceLastUpdate()` no longer reads — it finds `lastCoverageUpdatePosition` nil,
 adopts the current position and answers 0, where the test asserts 763.
 
-**How far the drift goes is unknown.** A regex sweep of `unit-tests/` against the methods and fields
-the sources actually define turned up that one and nothing else, but it is a sounding, not an audit:
-it cannot see a test whose *expectation* has gone stale while its spelling is still valid, which is
-the more likely kind. Running the suite is the only way to know, and that needs DCS.
+**How far the drift goes: measured, 2026-09-20.** The suite was run in DCS on Persian Gulf while
+closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. **118 tests, 114 successes, 4 failures**, and
+all four are the second kind of drift — a stale *expectation* whose spelling is still valid, which
+the regex sweep could never have seen. All four are in
+`test-skynet-iads-red-sam-sites-and-ew-radars.lua`, last touched **2023-12-29**, and every one of
+them pins a figure DCS reports about its own units:
+
+| test | asserts | DCS answers today |
+|---|---|---|
+| `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
+| `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
+| `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
+| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1908 | 1909 |
+
+Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
+Skynet is wrong; the tests record what DCS said three years ago.
+
+**So the open question is not "what are the numbers today".** It is whether Skynet's own suite
+should pin ED's data at all. Three readings, and they are genuinely different:
+
+- **It is a canary and it just worked.** Nothing else in this project would have told anyone that
+  the Buk's reach grew by 11 km — a change that moves when a battery wakes, in every mission. The
+  cost is four red tests until somebody re-runs and re-pins them.
+- **It is noise.** A suite that goes red because ED shipped a patch teaches people to ignore it,
+  which is how the drift above happened in the first place.
+- **It is the wrong shape.** What is worth knowing is *that a figure moved*, not that it equals a
+  literal — a check that records the current values and reports the delta would say the same thing
+  without ever failing.
+
+Whichever is chosen, the two altitude assertions (1929/1930, 1908/1909) are a metre of terrain and
+are worth nothing either way.
 
 **Worth considering, cheapest first:**
 
@@ -70,7 +97,11 @@ the more likely kind. Running the suite is the only way to know, and that needs 
   a gate.
 - Retire `unit-tests/` as the migration to `test/lua/` advances, deleting each file as its behaviour
   is covered — `test/lua/README.md` already tracks what is ported and what is not. That is the only
-  option that ends the drift rather than measuring it.
+  option that ends the drift rather than measuring it. **Started, 2026-09-20**: six suites are gone
+  from both copies, and `build-tools/miz-suite.py` plus a CI job now keep the `.miz` consistent —
+  the archive itself was, until then, the one file no gate in this repository looked at. What is
+  left in it is what a stub cannot answer for, which is exactly where the four failures above live.
+  So this option ends the *silent* drift; it does not end this one.
 
 Related to *Smoke tests* below: both are about the same suite, from opposite ends — this one asks
 what to do with it as it rots, that one asks what to replace it with.
