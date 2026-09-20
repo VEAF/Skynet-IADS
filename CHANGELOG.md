@@ -439,3 +439,10 @@ Until that release is cut, the build date in the artifact's first line remains t
   assertions on figures a test fabricates through a mocked `getDCSRepresentation()`, which are not
   ED's, and the handful asserting that the S-300's radars report no range at all, which is Skynet
   coping with a unit DCS ships without sensor data.
+- The same in-sim AWACS test also counted calls to `buildRadarCoverageForEarlyWarningRadar` to prove
+  that a moved AWACS triggers a coverage rebuild. `0ebbc01` moved that deliberately -- movement is
+  `refreshRadarCoverage()`'s job now, because the incremental rebuild only ever added, so an AWACS in
+  transit accumulated every battery it had ever flown near -- so the test was counting a function no
+  longer on that path. The behaviour is covered standalone by
+  `test/lua/test_skynet_iads_coverage_refresh.lua`; what stays in the mission is the part that needs
+  the simulator, the distance between two real DCS units.

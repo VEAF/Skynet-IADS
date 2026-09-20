@@ -144,19 +144,18 @@ function TestSkynetIADS:testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSA
 	local iads = SkynetIADS:create()
 	local awacs = iads:addEarlyWarningRadar('EW-AWACS-A-50')
 
-	local updateCalls = 0
-	function iads:buildRadarCoverageForEarlyWarningRadar(ewRadar)
-		SkynetIADS.buildRadarCoverageForEarlyWarningRadar(self, ewRadar)
-		updateCalls = updateCalls + 1
-	end
-	
+	--This test used to count calls to buildRadarCoverageForEarlyWarningRadar, on the assumption
+	--that a moved AWACS is what triggers a coverage rebuild. `0ebbc01` moved that deliberately:
+	--movement is refreshRadarCoverage()'s job now, because the incremental rebuild only ever
+	--added, so an AWACS in transit accumulated every battery it had ever flown near. The fact of
+	--moving is covered standalone by test/lua/test_skynet_iads_coverage_refresh.lua; what needs
+	--the simulator, and stays here, is the distance between two real DCS units.
 	lu.assertEquals(awacs:getDistanceTraveledSinceLastUpdate(), 0)
 	lu.assertEquals(getmetatable(awacs), SkynetIADSAWACSRadar)
 	lu.assertEquals(awacs:getMaxAllowedMovementForAutonomousUpdateInNM(), 10)
 	lu.assertEquals(awacs:isUpdateOfAutonomousStateOfSAMSitesRequired(), false)
 	
 	iads:evaluateContacts()
-	lu.assertEquals(updateCalls, 0)
 	
 	--test distance calculation by giving the awacs a different position:
 	local firstPos = Unit.getByName('EW-AWACS-KJ-2000'):getPosition().p
@@ -169,11 +168,6 @@ function TestSkynetIADS:testAWACSHasMovedAndThereforeRebuildAutonomousStatesOfSA
 	lu.assertEquals(awacs:getDistanceTraveledSinceLastUpdate(), 0)
 	lu.assertEquals(awacs:isUpdateOfAutonomousStateOfSAMSitesRequired(), false)
 	
-	--we reset lastCoverageUpdatePosition to firstPos to test call in the IADS code
-	-- TODO: when refactoring move this test to te AWACS Radar and use mock objects for integration tests in the IADS
-	awacs.lastCoverageUpdatePosition = firstPos
-	iads:evaluateContacts()
-	lu.assertEquals(updateCalls, 1)
 	iads:deactivate()
 end
 

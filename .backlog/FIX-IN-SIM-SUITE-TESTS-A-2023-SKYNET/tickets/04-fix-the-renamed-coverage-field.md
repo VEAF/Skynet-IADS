@@ -37,8 +37,27 @@ and tables local to the tests. That sweep is the cheap lint step `docs/evolution
 run by hand here rather than wired into CI, because one run of it found one thing and the standing
 guard that matters (`miz-suite.py check`) now covers the drift that let it hide.
 
+## And a second thing in the same test, found by the next run
+
+The 2026-09-20 16:14 run took the failures from 5 to **1**, and the one left was the same test, four
+lines further down: `test-skynet-iads.lua:176: expected: 1, actual: 0`. The 763 held, so the rename
+was right; what failed was the last part, which counted calls to
+`buildRadarCoverageForEarlyWarningRadar` to prove that a moved AWACS triggers a coverage rebuild.
+
+**Not a regression.** `0ebbc01` moved that on purpose, and says so where the code used to be:
+
+> an element that has moved is picked up by `SkynetIADS:refreshRadarCoverage()`. It used to be
+> handled here, for AWACS only, by `buildRadarCoverageForEarlyWarningRadar` — which only ever adds,
+> so an AWACS in transit accumulated every battery it had ever flown near
+
+So the test was counting a function that is no longer on that path. The behaviour it meant to check
+is covered standalone by `test/lua/test_skynet_iads_coverage_refresh.lua`, whose own header records
+that the old check "tested the AWACS class rather than the fact of moving". The counter and its two
+assertions are gone, with that reason written where they were; what stays is the part that needs the
+simulator — the distance between two real DCS units.
+
 ## Definition of done
 
-- The field is spelled the way the sources spell it, in both copies.
-- ~~The mission has been run again and the test is green.~~ **Pending the next DCS pass** — 763 is the
-  distance between two statically placed AWACS, so it should hold, but it has not been observed.
+- The field is spelled the way the sources spell it, in both copies. ✅ and the 763 was observed
+  passing on 2026-09-20 at 16:14.
+- ⬜ **The one remaining failure is fixed but not yet observed green.** It needs one more pass.
