@@ -4,8 +4,9 @@ do
 test/insim entry point. The mission's embedded bootstrap dofile's this; everything else is read
 from disk on every run, so a scenario edit needs no mission restart and no Mission Editor.
 
-Preflights the MissionScripting.lua sanitization edit first. DCS updates and repairs silently
-revert that edit, so failing with an explicit message beats failing obscurely later.
+Checks the MissionScripting.lua sanitization edit is still in place before anything else. DCS
+updates and repairs silently revert that edit, so failing with an explicit message beats failing
+obscurely later.
 ]]
 
 InsimInit = {}
@@ -26,7 +27,7 @@ end
 --- how the repo path is found at all -- and luaunit calls require at its very first line, so a
 --- half-applied edit is worth naming here rather than surfacing as a load error from a vendored
 --- file.
-local function preflight()
+local function sanitizationCheck()
   local missing = {}
   if not io then missing[#missing + 1] = "io" end
   if not os then missing[#missing + 1] = "os" end
@@ -167,7 +168,7 @@ function InsimInit.start()
     return   -- already bootstrapped; a second dofile must not build a second menu
   end
 
-  if not preflight() then
+  if not sanitizationCheck() then
     return
   end
 

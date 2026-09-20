@@ -322,14 +322,14 @@ The same data, three outputs:
 
 ### Setup cost
 
-`Scripts/MissionScripting.lua` sanitizes `io`, `os` and `lfs` out of the mission environment.
-Unlocking all three is required — disk loading is the entire design — and is the same one-time
+`Scripts/MissionScripting.lua` sanitizes `io`, `os`, `lfs` and `require` out of the mission
+environment. Unlocking them is required — disk loading is the entire design — and is the same one-time
 edit MOOSE/MIST/CTLD-class frameworks have long needed. It is install-wide, affects every
 mission on that install including multiplayer integrity checks, and is the user's explicit
 choice.
 
-**DCS updates and repairs silently revert this edit.** The bootstrap preflights `io`, `os` and
-`lfs` and, when they are missing, puts an explicit "re-apply the MissionScripting.lua edit"
+**DCS updates and repairs silently revert this edit.** The bootstrap checks for `io`, `os`,
+`lfs` and `require` and, when any are missing, puts an explicit "re-apply the MissionScripting.lua edit"
 message on screen rather than failing obscurely. `test/insim/README.md` documents the edit, the
 revert path, the multiplayer consequence, and the config file.
 
@@ -355,7 +355,7 @@ test/common/                    shared by both Lua tiers (moved out of test/lua/
   luaunit.lua                   vendored luaunit 3.4
 
 test/insim/
-  runner/init.lua               entry point: preflight, load source, build F10 menu
+  runner/init.lua               entry point: sanitization check, load source, build F10 menu
   runner/runner.lua             coroutine scheduler, result collection
   runner/wait.lua               waitFor / waitSeconds
   runner/report.lua             outText + env.info + results file
