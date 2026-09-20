@@ -33,6 +33,24 @@ commented out.
 Then `build-tools/miz-suite.py remove mist_4_5_107.lua` per archive, which takes the `mapResource`
 key, the `a_do_script_file` call and the `trigrules` entry with it.
 
+### One file in an archive does call MiST, and it is not a setup script
+
+`dcs-bridge.lua`, baked into `skynet-insim-last-line-of-defence.miz` and belonging to
+[VEAF/dcs-bridge](https://github.com/VEAF/dcs-bridge), calls `mist.dynAdd`, `mist.build`,
+`mist.version`, `mist.majorVersion` and `mist.minorVersion`. Its own header says MIST is *"only
+required for the spawn command"*, and the call site is guarded:
+
+```lua
+if not mist or not mist.dynAdd then
+```
+
+The check mission that loads it does not use that command — it spawns through `coalition.addGroup`
+directly, three times, and never through the bridge. So MiST can leave that archive: what goes with
+it is the bridge's `spawn` command, which nothing here calls, and the MIST version line in the
+bridge's handshake. Measured 2026-09-20 by grepping every member of every demo archive, the artifact
+and MiST itself excluded — this was the only hit outside the setup scripts, and `mission` had none
+in any of the four.
+
 ## Watch out for
 
 **`demo-missions/mist_4_5_107.lua` is committed, and the documentation points at it.**

@@ -1,6 +1,6 @@
 # 03 — Decide whether a demo mission may need assembling
 
-Status: ⬜ ready — **needs David's decision before ticket 01**
+Status: ✅ done — 2026-09-20, David chose **(b)**
 
 `FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 05 settled this for the *test* missions: the archives
 in git hold a placeholder for every script, and `miz-suite.py build` assembles the playable mission
@@ -48,6 +48,26 @@ that weighs more than the guarantee, **(c)** is the honest compromise and I woul
 (a) pays the cost of a committed copy in every pull request, forever, to protect a case (c) protects
 for free.
 
+## Decision — (b), 2026-09-20
+
+David chose **(b)**: every demo becomes a template, `miz-suite.py build` assembles, and the playable
+missions are attached to the release.
+
+He was given one figure the write-up above did not have. **This repository has published no GitHub
+release at all** — `gh release list` on `VEAF/Skynet-IADS` is empty, and the release workflow is
+manual (`CHORE-PROFESSIONALIZE-THE-REPO` ticket 03). So the argument "the Releases page already
+works this way" is true of the design and not yet true of the facts, and (b) has a consequence that
+has to be said plainly rather than discovered:
+
+- **Until a release is cut, there is nowhere to download a playable demo from.** The Quick start in
+  `documentation/index.md` links to `raw/master/demo-missions/skynet-test-persian-gulf.miz`. Under
+  (b) that link hands a newcomer a template whose first script calls `env.error`.
+- Ticket 01 therefore has to repoint that link and say, in the page a newcomer reads first, how to
+  assemble a demo from a checkout. **Cutting the first release is not in this lot**, and it is the
+  thing that closes the gap — recorded at the bottom of the PRD as a blocker on nobody.
+
+He chose it anyway, with that on the table. Nothing else in the lot is affected by the caveat.
+
 ## Watch out for
 
 **Whatever wins, the setup scripts are the easy half.** They are small, they are already committed
@@ -59,5 +79,5 @@ template as-is and go in `NO_SOURCE_IN_REPO`; under (a) nothing changes for them
 
 ## Definition of done
 
-- David has chosen a, b or c, and the reason is written here.
-- Ticket 01 is rewritten to match before any code is written.
+- David has chosen a, b or c, and the reason is written here. ✅ — (b), 2026-09-20
+- Ticket 01 is rewritten to match before any code is written. ✅

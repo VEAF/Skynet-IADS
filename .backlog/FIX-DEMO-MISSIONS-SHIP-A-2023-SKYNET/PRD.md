@@ -1,6 +1,7 @@
 # FIX-DEMO-MISSIONS-SHIP-A-2023-SKYNET — the missions newcomers open run Skynet 3.2
 
-Status: ⬜ ready — **ticket 03 needs a decision before any code**
+Status: 🔄 in-progress — ticket 03 decided 2026-09-20: **(b)**, the demos are assembled and the
+release ships them
 
 Origin: found on 2026-09-20 while closing `FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET`. That lot fixed the
 same defect in the *test* missions; this one is about the *demo* missions, which are worse placed —
@@ -85,12 +86,12 @@ to different work. That is David's call, not something to settle while doing the
 
 | # | Title | Status |
 |---|-------|--------|
-| 01 | [Refresh what the demo missions carry](tickets/01-refresh-what-the-demos-carry.md) | ⬜ |
+| 01 | [Assemble the demo missions instead of committing a copy of the code](tickets/01-refresh-what-the-demos-carry.md) | ⬜ |
 | 02 | [Take MiST out of the demo missions](tickets/02-take-mist-out-of-the-demos.md) | ⬜ |
-| 03 | [Decide whether a demo may need assembling](tickets/03-decide-if-a-demo-may-need-assembling.md) | ⬜ |
+| 03 | [Decide whether a demo may need assembling](tickets/03-decide-if-a-demo-may-need-assembling.md) | ✅ |
 
-Order: **03 first** — it decides the shape of 01. Then 01, then 02, because MiST cannot leave while
-the artifact in the mission still calls it.
+Order: **03 first** — it decided the shape of 01, and 01 was rewritten to match. Then 01, then 02,
+because MiST cannot leave while the artifact in the mission still calls it.
 
 ## Watch out for
 
@@ -107,3 +108,14 @@ one where a wrong answer is least visible.
 **`skynet-insim-last-line-of-defence.miz` is current and was built on 2026-09-19.** It is in this lot
 for MiST and for its drifted setup script, not for a stale artifact. Do not "refresh" it into
 something nobody has run.
+
+## Blocked on nobody, and worth saying out loud
+
+**This repository has published no GitHub release** — `gh release list` on `VEAF/Skynet-IADS` is
+empty, and cutting one is manual (`CHORE-PROFESSIONALIZE-THE-REPO` ticket 03). Under (b) the playable
+demos are release assets, so until a first release exists there is nowhere to download one from:
+somebody who wants to fly a demo has to clone and run the build. Ticket 01 says so in the page a
+newcomer reads first rather than leaving them to find out.
+
+Cutting that release is not this lot's work. It is the thing that closes the gap, and it is the
+reason to cut it.
