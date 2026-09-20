@@ -152,11 +152,17 @@ second case.
 | 02 | [Take MiST out of the mission](tickets/02-take-mist-out-of-the-mission.md) | ✅ |
 | 03 | [Take ED's figures out of DCS, and check them against the datamine](tickets/03-decide-about-the-dcs-figures.md) | ✅ |
 | 04 | [Fix the renamed field the refresh exposed](tickets/04-fix-the-renamed-coverage-field.md) | ✅ |
+| 05 | [Assemble the mission instead of committing a copy of the code](tickets/05-assemble-the-mission-instead-of-committing-it.md) | ✅ |
 
 Order matters between 01 and 02: MiST cannot leave while the artifact in the mission still calls it.
 03 needs 01 first — measuring ED's figures against the 2023 build would measure the wrong thing twice.
 
 ## Watch out for
+
+**The missions are assembled now, not committed complete** (ticket 05). To run one in DCS:
+`pwsh -File build-tools/build-compiled-script.ps1`, then `python build-tools/miz-suite.py build`,
+then copy `build/missions/<name>.miz` into the DCS `Missions` folder. Opening the archive from
+`unit-tests/` directly gives a placeholder message instead.
 
 **`highdigitsams-unit-tests.miz` cannot be run here.** It needs the HighDigitSAMs mod, which David
 does not have — DCS refuses to load the mission. Its artifact is refreshed and CI checks its wiring

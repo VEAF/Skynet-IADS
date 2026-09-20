@@ -290,10 +290,28 @@ the first entry of each block, which had silently dropped two radars.
 the exporter. So missiles are recorded by missile, unfiltered, and the display name carries the
 connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
 
-## Editing the `.miz`
+## Building and editing the `.miz`
 
 Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
 `unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both.
+
+**Neither of them contains the scripts it runs.** Each holds a placeholder for every script, and the
+mission you open in DCS is assembled on demand:
+
+    pwsh -File build-tools/build-compiled-script.ps1     # the deliverable is generated too
+    python build-tools/miz-suite.py build                # writes build/missions/*.miz
+
+Copy what that writes into your DCS `Missions` folder and open it there. `build/` is git-ignored: it
+is output, like the deliverable.
+
+**Why it works that way.** A copy of the code committed beside the code it copies goes stale without
+a sound. Both of these archives held Skynet 3.3.0 from December 2023 until 2026-09-20 while
+`develop` moved to 3.5.0, so every in-sim run for three years measured code this project had stopped
+shipping — and three tests written into the loose copies during 2026 had never run at all, because
+nobody remembered to bake them in. An assembled mission cannot be out of date, and one opened
+unbuilt prints a message on screen instead of quietly measuring the wrong thing.
+
+### The wiring, and the rest of the commands
 
 A `.miz` is a zip, and a script baked into one is wired in **four** places: the file under
 `l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`, the
@@ -302,38 +320,22 @@ structured copy of the same trigger in `mission`'s `trigrules` — an array whos
 contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
 mission runs the script while the editor shows an empty trigger, or the reverse.
 
-    python build-tools/miz-suite.py check
-    python build-tools/miz-suite.py sync
+    python build-tools/miz-suite.py check                # wiring, and that git holds no copies
+    python build-tools/miz-suite.py stub                 # placeholders back in (adding a suite)
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
-Every command works on both archives; `--miz <path>` narrows it to one.
+Every command works on both archives; `--miz <path>` narrows it to one. `build`, `stub` and `remove`
+re-check the result and refuse to write if anything is off, so a failed run leaves the `.miz`
+untouched. `check` also reports a suite that exists in `unit-tests/` but that no trigger loads —
+which is the drift running the other way, and how three tests sat outside the mission for months.
 
-A script inside an archive is also a **copy** of a file that lives in the repository, and the copies
-drift. Both archives carried Skynet 3.3.0 from December 2023 until 2026-09-20, so every in-sim run
-for three years measured code this project had stopped shipping. Three tests written into loose
-copies during 2026 were never baked in, so they had never run at all. `check` compares every script
-against the file it is a copy of — in both directions, so a suite added to the repository and never
-baked in is reported too — and `sync` writes the repository's version back into the archives.
-
-The deliverable is **generated, not committed**, so build it before `check` or `sync`:
-`pwsh -File build-tools/build-compiled-script.ps1`. Its first line stamps the build minute, which is
-left out of the comparison — otherwise every rebuild would look like drift. Everything else about it
-*is* compared, so **a change to `skynet-iads-source/` makes CI red until you rebuild, run `sync` and
-commit the two archives.** That is deliberate: the alternative is an archive that quietly holds an
-older Skynet, which is the defect this was built for.
-
-`check` asserts all four wirings agree; `remove` and `sync` re-check the result and refuse to write
-if anything is off, so a failed run leaves the `.miz` untouched.
-
-**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): build, `check`,
-then `extract` plus a Lua parse of every file in both archives — including `mission` and
-`mapResource`, which are Lua too and are the two the tool edits. Verified against three deliberate
-breakages: a `trigrules` entry removed by hand, a `mapResource` line removed, and a script
-truncated. Each is caught, and the first two are caught *only* by `check`.
-
-What is left for DCS is narrow: whether the simulator accepts the mission file and runs its
-triggers. The archive being well-formed is no longer one of the things you need DCS to find out.
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then a
+build of the deliverable, then `build`, then a Lua parse of every file in the **assembled** missions
+— including `mission` and `mapResource`, which are Lua too and are the two the tool edits. Parsing
+the placeholders instead would prove nothing. Verified against three deliberate breakages: a
+`trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
+caught, and the first two are caught *only* by `check`.
 
 ## Needs the simulator
 

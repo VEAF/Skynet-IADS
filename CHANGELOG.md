@@ -194,12 +194,15 @@ Until that release is cut, the build date in the artifact's first line remains t
   deliberate breakages -- a `trigrules` entry removed, a `mapResource` line removed, a script
   truncated -- each caught.
 
-- `miz-suite.py sync`, and a `check` that compares every script inside an in-sim archive against
-  the file in this repository it is a copy of -- in both directions, so a suite added to the
-  repository and never baked in is reported too. The CI job builds the deliverable first and runs
-  the comparison, so the three-year drift below turns into a red build rather than a discovery. Both
-  archives are covered, `unit-tests/skynet-unit-tests.miz` and
-  `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`; `--miz <path>` narrows any command to one.
+- `miz-suite.py build`: the in-sim missions are **assembled** now, not committed complete. Both
+  archives hold a placeholder for every script and `build` puts the real files in, writing to the
+  git-ignored `build/missions/`. A copy of the code committed beside the code it copies goes stale
+  without a sound -- which is the defect below -- and an assembled mission cannot; one opened
+  unbuilt prints a message on screen instead of quietly measuring the wrong thing. `check` fails if
+  git is holding a copy of anything, in either direction, so a suite added to the repository and
+  never wired in is reported too. Both archives are covered,
+  `unit-tests/skynet-unit-tests.miz` and `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`;
+  `--miz <path>` narrows any command to one.
 
 - `test/lua/dcs-figures.lua` and `build-tools/dcs-figures.py`: a record of what Eagle Dynamics says
   about the units Skynet models -- missile reach, firing ceiling, radar detection distance -- read

@@ -93,7 +93,9 @@ it had; nobody can say it runs.
 
 - The `.miz` carries the artifact built from `develop`, and the build date in its first line says so.
   ✅ both archives.
-- `miz-suite.py` gained the command that did it, rather than a throwaway script. ✅ `sync`.
+- `miz-suite.py` gained the command that did it, rather than a throwaway script. ✅ first `sync`,
+  then `build` — ticket 05 replaced refreshing a committed copy with assembling the mission, which
+  removes the thing that could go stale rather than keeping it in step.
 - Something fails when the two drift again. ✅ `check` compares every script against the file it
   copies, in both directions, and CI runs it after building the deliverable.
 - The mission has been loaded once in DCS, and what turned red is written down here. ✅ above, for

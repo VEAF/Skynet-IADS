@@ -93,14 +93,17 @@ instead of extending it — it exists to erode, never to grow.
   unit do not**: a missile's reach, its firing ceiling, a radar's detection distance are recorded in
   `test/lua/dcs-figures.lua`, generated from a pinned datamine commit, and a weekly workflow opens a
   pull request when one moves. A suite whose every assertion runs standalone is removed from both
-  copies, the loose `unit-tests/*.lua` and the one inside the `.miz`. Never edit the `.miz` by hand:
-  a script is wired into it in four places, and `build-tools/miz-suite.py` (`check`, `sync`,
-  `extract`, `remove`) is what keeps them consistent; every command covers both archives unless
-  `--miz <path>` narrows it. **A script inside an archive is a copy**, and copies drift: both
-  archives ran Skynet 3.3.0 from December 2023 to 2026-09-20. `check` compares every script against
-  the file it copies, `sync` refreshes them, and CI runs `check` and parses every Lua file on every
-  pull request. Build the deliverable first — it is generated, not committed, and the archives carry
-  a copy of it. See `test/lua/README.md`.
+  copies, the loose `unit-tests/*.lua` and the one inside the `.miz`.
+- **The archives in git do not contain the scripts they run.** Each holds a placeholder, and
+  `python build-tools/miz-suite.py build` assembles the playable mission into `build/missions/`,
+  which is git-ignored — build the deliverable first, it is generated too. A committed copy of the
+  code goes stale in silence: both archives ran Skynet 3.3.0 from December 2023 to 2026-09-20, so
+  three years of in-sim runs measured code this project had stopped shipping. An assembled mission
+  cannot, and one opened unbuilt says so on screen. Never edit a `.miz` by hand: a script is wired
+  into it in four places, and `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`,
+  `remove`) is what keeps them consistent; every command covers both archives unless `--miz <path>`
+  narrows it. CI runs `check`, assembles both missions and parses every Lua file in them on every
+  pull request. See `test/lua/README.md`.
 - **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
   its tests.
 - **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):
@@ -148,16 +151,13 @@ GitHub issues are for reports arriving from outside. A report that turns into wo
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
-with its tests → `lua5.1 test/lua/run.lua` → **if the sources changed**: rebuild, then
-`python build-tools/miz-suite.py sync` and commit the two archives → update `CHANGELOG.md` under
-`[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
+with its tests → `lua5.1 test/lua/run.lua` → rebuild if the sources changed → update `CHANGELOG.md`
+under `[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
 `develop` → address review and CI → merge.
 
-**That `sync` is not optional.** The in-sim archives carry a copy of the deliverable, and CI compares
-it against a fresh build: a pull request that touches `skynet-iads-source/` without resyncing goes
-red on the *In-sim mission archive* job. Two binary archives in the diff is the price of the
-guarantee this buys — that nobody opens the test mission in DCS and measures a Skynet from three
-years ago, which is what happened between December 2023 and 2026-09-20.
+Nothing to do about the in-sim archives: they hold placeholders, and the mission DCS opens is
+assembled on demand by `python build-tools/miz-suite.py build`. That is the step to run **before**
+testing in DCS, not before committing.
 
 If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
 

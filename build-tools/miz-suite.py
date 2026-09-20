@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""Check, sync, or remove a test suite from the in-sim mission archives.
+"""Build, check, or edit the in-sim mission archives.
 
 Two `.miz` files carry an in-sim suite, and both are handled here:
 
   * `unit-tests/skynet-unit-tests.miz`
   * `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`
+
+**The archives in git do not contain the scripts they run.** Each holds a placeholder, and `build`
+puts the real files in to produce the mission DCS opens. That is deliberate. A copy of the code
+committed beside the code it copies goes stale without a sound: both of these archives ran Skynet
+3.3.0 from December 2023 to 2026-09-20 while `develop` moved to 3.5.0, so three years of in-sim runs
+measured code this project had stopped shipping, and nothing said so. An assembled mission cannot be
+out of date, and one opened unbuilt says so on screen rather than quietly measuring the wrong thing.
 
 A `.miz` is a zip, and a script baked into one is wired in FOUR places. All four have to move
 together or the mission loads a resource key that names nothing:
@@ -21,29 +28,27 @@ Forgetting (4) is the trap: the two copies of the trigger disagree, and dependin
 reads it you get a mission that runs the script but shows an empty trigger in the editor, or the
 reverse. `check` asserts that they agree, entry for entry and in order.
 
-A script inside an archive is also a COPY of a file that lives in the repository, and the copies
-drift. `unit-tests/skynet-unit-tests.miz` carried Skynet 3.3.0 from December 2023 until
-2026-09-20, so every in-sim run for three years measured code this project had stopped shipping;
-`test-skynet-iads.lua` inside it was missing a test its loose copy gained in August 2026. `check`
-now compares every script against the file it is a copy of, and `sync` writes the repository's
-version back into the archives.
-
 Usage, from anywhere:
 
-    python build-tools/miz-suite.py check
-    python build-tools/miz-suite.py sync
+    python build-tools/miz-suite.py build              # assemble the playable missions
+    python build-tools/miz-suite.py check              # wiring, and that git holds no copies
+    python build-tools/miz-suite.py stub               # put placeholders back (adding a suite)
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua [...]
 
-Every command works on both archives unless `--miz <path>` narrows it to one. `remove` and `sync`
-re-run every check against the result and refuse to write if anything is off, so a failed run
+`build` writes to `build/missions/`, which is git-ignored, and needs the deliverable built first
+(`pwsh -File build-tools/build-compiled-script.ps1`) because that is generated too. Copy what it
+writes into the DCS `Missions` folder under `Saved Games` and open it there.
+
+Every command works on both archives unless `--miz <path>` narrows it to one. `remove`, `stub` and
+`build` re-run the checks against the result and refuse to write if anything is off, so a failed run
 leaves the `.miz` untouched. `extract` writes every Lua file to `<dir>/<archive name>/`, so
 something that knows Lua can parse them — `.github/workflows/lua-tests.yml` runs both on every
 pull request.
 
-What is left that only DCS can answer is narrow: whether the simulator accepts the mission file
-and runs its triggers. The wiring, the syntax of every script inside, and whether those scripts
-are the ones this repository ships are all checked here.
+What is left that only DCS can answer is narrow: whether the simulator accepts the mission file and
+runs its triggers. The wiring, the syntax of every file inside, and whether git is holding a stale
+copy of anything are all checked here.
 """
 
 import os
@@ -61,21 +66,28 @@ ARCHIVES = (
     os.path.join("unit-tests", "highdigitsams", "highdigitsams-unit-tests.miz"),
 )
 
-#: The deliverable. Both archives carry a copy of it under this member name, and that copy is what
-#: the in-sim suite actually exercises -- so it is the one that matters most to keep current. It is
-#: NOT committed (`.gitignore` line 12): it has to be built before `check` or `sync` can see it.
+#: The deliverable, which is what the in-sim suite actually exercises. It is generated, not
+#: committed, so `build` needs it built first; `check` only needs to know where it would come from.
 ARTIFACT = "skynet-iads-compiled.lua"
 ARTIFACT_SOURCE = os.path.join("demo-missions", ARTIFACT)
 BUILD_SCRIPT = "pwsh -File build-tools/build-compiled-script.ps1"
 
-#: The artifact's first line stamps the minute it was built, so two builds of identical sources
-#: never match byte for byte. The version stays in the comparison -- only the clock is dropped.
-BUILD_STAMP = re.compile(rb"BUILD TIME: [^-]*---")
+#: Where `build` writes the playable missions. Git-ignored: it is output, like the deliverable.
+BUILD_DIR = os.path.join("build", "missions")
 
-#: Scripts vendored from elsewhere, which have no copy in this repository for `check` to compare
-#: against. Empty since 2026-09-20, when MiST left both archives: anything baked in from now on is
-#: reported until it is either given a copy here or listed as a deliberate exception.
+#: Scripts vendored from elsewhere, which have no copy in this repository. Empty since 2026-09-20,
+#: when MiST left both archives: anything baked in from now on is reported until it is either given
+#: a copy here or listed as a deliberate exception.
 NO_SOURCE_IN_REPO = ()
+
+#: The line that marks a member as a placeholder rather than a copy of a script.
+#:
+#: The archives in git hold one of these for every script, and `build` swaps in the real files to
+#: produce the mission DCS opens. That is the whole point: a copy committed next to the code it
+#: copies goes stale silently, and both of these archives ran Skynet 3.3.0 from December 2023 to
+#: 2026-09-20 with nothing saying so. A placeholder cannot go stale, and a mission opened unbuilt
+#: says so on screen instead of quietly measuring the wrong thing.
+PLACEHOLDER_MARK = "--SKYNET-PLACEHOLDER"
 
 ACTION_BLOCK = r"([ \t]*)\[(\d+)\] = \r?\n\1\{.*?\r?\n\1\}, -- end of \[\2\]\r?\n"
 ACTIONS_ARRAY = r'\["actions"\] = \r?\n([ \t]*)\{\r?\n(.*?)\r?\n\1\}, -- end of \["actions"\]'
@@ -87,7 +99,7 @@ def read_all(path):
         return {n: z.read(n) for n in order}, order
 
 
-def source_of(miz, member):
+def source_of(miz, member, must_exist=True):
     """The repository file a `l10n/DEFAULT/*.lua` member is a copy of, or None.
 
     Looked up in the archive's own directory first, so `highdigitsams/` wins for its own scripts,
@@ -96,8 +108,11 @@ def source_of(miz, member):
     """
     name = member[len(L10N) :]
     if name == ARTIFACT:
-        # Built, not committed, so it is missing on a fresh checkout until the build has run.
-        return ARTIFACT_SOURCE if os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)) else None
+        # Built, not committed, so it is absent on a fresh checkout. `check` still wants to know
+        # where it WOULD come from; only `build` needs it to be there.
+        if must_exist and not os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)):
+            return None
+        return ARTIFACT_SOURCE
     for folder in (os.path.dirname(miz), os.path.join("unit-tests")):
         candidate = os.path.join(folder, name)
         if os.path.isfile(os.path.join(ROOT, candidate)):
@@ -115,12 +130,33 @@ def normalised(blob):
     return blob.replace(b"\r\n", b"\n")
 
 
-def comparable(name, blob):
-    """`normalised`, plus the artifact's build stamp dropped so two builds can be compared."""
-    blob = normalised(blob)
-    if name == ARTIFACT:
-        blob = BUILD_STAMP.sub(b"BUILD TIME: ---", blob, count=1)
-    return blob
+def is_placeholder(blob):
+    return normalised(blob).startswith(PLACEHOLDER_MARK.encode("utf-8"))
+
+
+def placeholder(name, loud=False):
+    """The stand-in a committed archive carries in place of a script.
+
+    Valid Lua, because CI parses every file in the archive, and it says the same thing twice: in a
+    comment for whoever opens the zip, and through `env.error` for whoever opens the mission without
+    building it. Only the first one loaded shouts on screen -- ten popups would say it no better.
+    """
+    lines = [
+        PLACEHOLDER_MARK,
+        "--",
+        "--This is not %s. The archives in git carry a placeholder for every script, and the real" % name,
+        "--files are put in by:",
+        "--",
+        "--    python build-tools/miz-suite.py build",
+        "--",
+        "--which writes the mission to open in DCS. A copy of a script committed beside the script it",
+        "--copies goes stale in silence -- both of these archives ran Skynet 3.3.0 from December 2023",
+        "--to 2026-09-20, and nothing said so. A placeholder cannot.",
+        'env.error("SKYNET: this mission was opened unbuilt -- %s is a placeholder. Run: python build-tools/miz-suite.py build"%s)'
+        % (name, ", true" if loud else ""),
+        "",
+    ]
+    return "\r\n".join(lines).encode("utf-8")
 
 
 def parse_map_resource(text):
@@ -139,7 +175,13 @@ def trigrules_of(mission):
 
 
 def check_sources(miz, entries, both_ways=True):
-    """Every script in the archive is the file this repository ships. Returns a list of problems.
+    """The committed archive holds a placeholder for every script, and one per script in the
+    repository. Returns a list of problems.
+
+    This used to compare each member against the file it copied, which meant a committed copy that
+    had to be refreshed by hand -- and re-refreshed in every pull request that touched the sources,
+    two 230 KB binaries at a time. The archives carry placeholders now and `build` puts the real
+    files in, so there is nothing left to go stale and nothing to compare.
 
     `both_ways` also reports a loose `unit-tests/*.lua` that no trigger loads. That direction is
     right for `check` and wrong for `remove`, which spends its whole run in exactly that state: it
@@ -149,21 +191,23 @@ def check_sources(miz, entries, both_ways=True):
     """
     problems = []
     folder = os.path.dirname(miz)
-    in_archive = set()
+    wired = set()
 
     for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
         name = member[len(L10N) :]
-        source = source_of(miz, member)
+        if not is_placeholder(entries[member]):
+            problems.append(
+                "%s is a real script in a committed archive -- run `miz-suite.py stub`. "
+                "Committed archives hold placeholders; `build` makes the playable mission." % name
+            )
+        source = source_of(miz, member, must_exist=False)
         if source is None:
-            if name == ARTIFACT:
-                problems.append("%s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
-            elif name not in NO_SOURCE_IN_REPO:
-                problems.append("%s has no copy in the repository to be checked against" % name)
+            if name not in NO_SOURCE_IN_REPO:
+                problems.append("%s has no file in the repository for `build` to put in" % name)
             continue
-        in_archive.add(os.path.normpath(source))
-        with open(os.path.join(ROOT, source), "rb") as handle:
-            if comparable(name, handle.read()) != comparable(name, entries[member]):
-                problems.append("%s differs from %s -- run `miz-suite.py sync`" % (name, source))
+        wired.add(os.path.normpath(source))
+        if name != ARTIFACT and not os.path.isfile(os.path.join(ROOT, source)):
+            problems.append("%s names %s, which is not in the repository" % (name, source))
 
     # The drift also runs the other way: a suite added to the repository and never baked in is a
     # test nobody runs, which is exactly how `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
@@ -173,7 +217,7 @@ def check_sources(miz, entries, both_ways=True):
             if not entry.endswith(".lua"):
                 continue
             loose = os.path.normpath(os.path.join(folder, entry))
-            if loose not in in_archive:
+            if loose not in wired:
                 problems.append("%s is in the repository but no trigger in this archive loads it" % loose)
 
     return problems
@@ -276,18 +320,53 @@ def do_check(miz, entries, sources=True, both_ways=True):
     return compiled
 
 
-def do_sync(miz, entries, order):
-    """Write the repository's copy of every script back into the archive."""
-    if L10N + ARTIFACT in entries and not os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)):
-        print("FAIL: %s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
-        return 2
-    # Wiring only: the source comparison is the thing this command is about to fix, so refusing to
-    # run while it fails would make the command unable to do its job.
+def do_stub(miz, entries, order):
+    """Put a placeholder in the committed archive for every script, replacing any real copy.
+
+    Run when a suite is added to an archive, or once to convert an archive that still holds copies.
+    Day to day nothing calls it: there is nothing to refresh, which is the point.
+    """
+    # Wiring only. Whether the archive holds copies is exactly what this command is here to fix.
     if do_check(miz, entries, sources=False) is None:
         print("FAIL: the archive is already inconsistent; not touching it")
         return 2
 
-    refreshed = []
+    stubbed = []
+    first = True
+    for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
+        name = member[len(L10N) :]
+        # The artifact is loaded first by the mission, so its placeholder is the one that shouts.
+        wanted = placeholder(name, loud=(name == ARTIFACT))
+        if entries[member] != wanted:
+            entries[member] = wanted
+            stubbed.append(name)
+        first = False
+
+    if not stubbed:
+        print("%s: already stubbed" % miz)
+        return 0
+    for name in stubbed:
+        print("  stubbed %s" % name)
+
+    if do_check(miz, entries) is None:
+        print("FAIL: the result would be inconsistent; nothing written")
+        return 2
+    write_archive(miz, entries, order)
+    return 0
+
+
+def do_build(miz, entries, order, out_dir):
+    """Write the playable mission: the committed archive with the real scripts put in.
+
+    This is what replaces a committed copy of the code. The mission DCS opens is assembled from the
+    sources at the moment it is asked for, so it cannot be out of date -- which is the whole defect
+    this lot was opened for, and the reason nothing has to be remembered or re-committed.
+    """
+    if do_check(miz, entries, sources=False) is None:
+        print("FAIL: the archive is inconsistent; not building from it")
+        return 2
+
+    built = []
     for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
         name = member[len(L10N) :]
         source = source_of(miz, member)
@@ -295,30 +374,31 @@ def do_sync(miz, entries, order):
             if name == ARTIFACT:
                 print("FAIL: %s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
                 return 2
-            continue
+            if name in NO_SOURCE_IN_REPO:
+                continue
+            print("FAIL: %s has no file in the repository to put in" % name)
+            return 2
         with open(os.path.join(ROOT, source), "rb") as handle:
-            wanted = handle.read()
-        # Written as CRLF whatever the checkout looks like, so that syncing on Linux and syncing on
-        # Windows produce the same archive. The rest of these files are CRLF already.
-        wanted = normalised(wanted).replace(b"\n", b"\r\n")
-        # Compared the way `check` compares, so that rebuilding the artifact -- which restamps its
-        # first line every minute -- does not make every `sync` rewrite the archive for nothing.
-        if comparable(name, wanted) != comparable(name, entries[member]):
-            entries[member] = wanted
-            refreshed.append("%s <- %s" % (name, source))
+            # CRLF whatever the checkout looks like, so a mission built on Linux and one built on
+            # Windows are the same file.
+            entries[member] = normalised(handle.read()).replace(b"\n", b"\r\n")
+        built.append("%s <- %s" % (name, source))
 
-    if not refreshed:
-        print("%s: already in sync" % miz)
-        return 0
-
-    for line in refreshed:
-        print("  refreshed %s" % line)
-
-    if do_check(miz, entries) is None:
-        print("FAIL: the result would be inconsistent; nothing written")
+    if do_check(miz, entries, sources=False) is None:
+        print("FAIL: the assembled mission would be inconsistent; nothing written")
         return 2
-    write_archive(miz, entries, order)
-    print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
+
+    out = os.path.join(ROOT, out_dir)
+    if not os.path.isdir(out):
+        os.makedirs(out)
+    target = os.path.join(out, os.path.basename(miz))
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+        for name in order:
+            if name in entries:
+                z.writestr(name, entries[name])
+    for line in built:
+        print("  put in %s" % line)
+    print("built: %s" % os.path.relpath(target, ROOT))
     return 0
 
 
@@ -426,7 +506,7 @@ def selected(argv):
 
 
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ("check", "sync", "extract", "remove"):
+    if len(argv) < 2 or argv[1] not in ("check", "build", "stub", "extract", "remove"):
         print(__doc__)
         return 1
     command = argv[1]
@@ -446,8 +526,10 @@ def main(argv):
         entries, order = read_all(os.path.join(ROOT, miz))
         if command == "check":
             status = max(status, 0 if do_check(miz, entries) is not None else 2)
-        elif command == "sync":
-            status = max(status, do_sync(miz, entries, order))
+        elif command == "build":
+            status = max(status, do_build(miz, entries, order, rest[0] if rest else BUILD_DIR))
+        elif command == "stub":
+            status = max(status, do_stub(miz, entries, order))
         elif command == "extract":
             status = max(status, do_extract(miz, entries, rest[0]))
         else:
@@ -467,6 +549,8 @@ def main(argv):
     if missing:
         print("FAIL: %s is in no archive; nothing was removed for it" % ", ".join(missing))
         status = max(status, 2)
+    if command == "build" and status == 0:
+        print("\nCopy the mission you want into the DCS Missions folder under Saved Games.")
     return status
 
 
