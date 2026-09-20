@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — slices 1 and 2 done; 23 real tests of `abstract-radar-element` left
+Status: 🔄 in-progress — slices 1 to 3 done; 7 real tests of `abstract-radar-element` left
 
 ## Progress
 
@@ -13,12 +13,19 @@ Status: 🔄 in-progress — slices 1 and 2 done; 23 real tests of `abstract-rad
   `FEAT-LAST-LINE-OF-DEFENSE` modifies. Slice 2 ports 15 more: HARM timing and defence states, the
   two engagement flags, the parent / child radar bookkeeping.
 
-  Of the 27 methods left, **3 are commented out in the legacy file** (the two
+  Slice 3 ports 16 more: ammunition and missiles in flight, and the engagement zone.
+
+  Of the 11 methods left, **3 are commented out in the legacy file** (the two
   `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
   `testCallMethodOnTableElements`) and **1 has an empty body**
   (`testPointDefenceWhenOnlyOneEWRadarIsActiveAndAmmoIsStillAvailable`, a `--TODO: write Unit test`
-  that was never written). So **23 real tests remain**: ammo and missiles-in-flight, the SA-2
-  range / engagement-zone tests, point defence, cached targets. `test/lua/README.md` lists them.
+  that was never written). So **7 real tests remain**: point defence (5) and cached targets (2).
+  `test/lua/README.md` lists them.
+
+  Slice 3 also drew the first entries on the **"needs the simulator"** list the removal decision
+  turns on: the `.miz` SA-2 range tests assert the figures DCS units report about themselves
+  (53499.2265625 m for the Flat Face). Those are ED's numbers, not Skynet's, and a standalone test
+  asking the stub would only prove `dcs-fixtures.lua` repeats itself. They stay.
 
   One thing the port keeps finding: a legacy test that cannot fail. Two of slice 2's originals
   compared bare `{}` mocks with `assertEquals`, and luaunit compares tables by value — so the order

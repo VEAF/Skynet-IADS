@@ -62,12 +62,12 @@ in the same pull request. The report tells you when it can be raised and to what
 
 ## What stays uncovered, and why
 
-Measured at **93.51%**. Everything reachable is covered except the five entries below, so
+Measured at **93.97%**. Everything reachable is covered except the five entries below, so
 nothing is left in the report with nobody having looked at it. Re-check this list whenever the
 figure moves for a reason you did not expect.
 
-**`skynet-iads-abstract-radar-element.lua` — 116 lines.** The point defence, engagement zone and
-ammunition tests that still live only in `unit-tests/*.miz`. Porting them is
+**`skynet-iads-abstract-radar-element.lua` — 105 lines.** The point defence and cached-target
+tests that still live only in `unit-tests/*.miz`. Porting them is
 `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04; `CHORE-TEST-COVERAGE-FLOOR` ticket 04 tracks what it
 buys. This is the one block still worth real work.
 
@@ -162,23 +162,71 @@ methods:
   `testAddChildRadarAndClearChildRadars`, `testGetUsableChildRadars`,
   `testDaisychainSAMOptions`.
 
-Three of that slice are **not** faithful copies, on purpose. The two order
-assertions on `addParentRadar`/`addChildRadar` compared bare `{}` mocks with
-`assertEquals`, and luaunit compares tables by value — two empty tables are
-equal, so those assertions could not fail whatever order the code produced.
-They use `assertIs` here, and a mutation that reverses the insertion order
-turns both red. `testCleanUpOldObjectsIdentifiedAsHARMS` never called the
-method it is named after; here it pins the 60-second age boundary the method
-actually enforces.
+- **slice 3 — ammunition, missiles in flight and the engagement zone**
+  (16 tests): `testUpdateMissilesInFlight`, `testShutDownWhenOutOfMissiles`,
+  `testShutDownShilkaWhenOutOfAmmo`,
+  `testWillSAMShutDownWhenItLoosesPowerAndAMissileIsInFlight`,
+  `testCreateSamSiteFromInvalidGroup`,
+  `testSamSiteGroupContainingOfOneUnitOnlySA8`,
+  `testInformOfContactInRangeWhenEarlyWaringRadar`,
+  `testSA2InformOfContactTargetInRangeMethod`,
+  `testSA2WillNotGoDarkIfTargetIsInRange`,
+  `testSA2WillNotGoDarkIfOutOfMisslesAndMissilesAreStillInFlight`,
+  `testSA2WillGoDarkWithTargetsInRangeAndHARMDetected`,
+  `testSA2WillgoDarkIfOutOfAmmoNoMissilesAreInFlightAndTargetStillInRange`,
+  `testSA2OutOfMissilesNoMissilesInFlightIsInformedOfTargetByIADSHasNotDetectedTargetWithOwnRadar`,
+  `testSA2GoLiveRangeInPercentInKillZone`,
+  `testSA2GoLiveRangeInPercentSearchRange`, `testSA8GoLiveRangeInPercent`.
 
-Still to port out of `abstract-radar-element` (27 methods, of which 3 are
-commented out in the legacy file and 1 has an empty body — so **23 real
-tests**, grouped as they sit in the file): ammo and missiles-in-flight, the
-SA-2 range / engagement-zone tests, point defence, and cached targets.
+Several of those are **not** faithful copies, on purpose, and each departure is
+argued in a comment where it happens:
+
+- The slice-2 order assertions on `addParentRadar`/`addChildRadar` compared bare
+  `{}` mocks with `assertEquals`, and luaunit compares tables by value — two
+  empty tables are equal, so those assertions could not fail whatever order the
+  code produced. They use `assertIs` here, and a mutation that reverses the
+  insertion order turns both red.
+- `testCleanUpOldObjectsIdentifiedAsHARMS` never called the method it is named
+  after; here it pins the 60-second age boundary the method actually enforces.
+- `testSA8GoLiveRangeInPercent` informed the site a second time without
+  reopening the target cycle, so `informOfContact()` returned on its
+  `targetsInRange == false` guard: the site was never going to light up whatever
+  the range said. Here each half runs through a real `targetCycleUpdateStart()`.
+- The ammunition tests change what a launcher carries through the stub's
+  `__setAmmo` rather than through a mock `getAmmo()` that rewrites its own
+  counts as a side effect of being called.
+
+**What did not come with them.** The `.miz` versions of the SA-2 range tests
+assert the figures the real DCS units report — 53499.2265625 m for the Flat
+Face's detection range. That number belongs to DCS, not to Skynet, and asking
+the stub the same question would only prove that `dcs-fixtures.lua` says what
+`dcs-fixtures.lua` says. Those assertions stay in the `.miz`; what came across
+is the decision built on top of them — which of the search radar, tracking radar
+and launcher has to reach a contact, and what `setGoLiveRangeInPercent()` does
+to that.
+
+Still to port out of `abstract-radar-element` (11 methods, of which 3 are
+commented out in the legacy file and 1 has an empty body — so **7 real tests**):
+point defence (5) and the cached-target behaviour (2).
 
 Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
+
+## Needs the simulator
+
+Behaviour that stays in `unit-tests/*.miz` on purpose, because a standalone test
+would only be asking the stub to repeat what the fixture told it:
+
+- **What a DCS unit reports about itself.** The detection range in a unit's
+  sensor table, the range and firing ceiling in its ammunition table, the NATO
+  name DCS gives a type. `abstract-radar-element`'s SA-2 tests assert
+  53499.2265625 m for the Flat Face; that figure is ED's, changes when they
+  change the unit, and only the simulator can tell you it has.
+- **Terrain.** Elevation, line of sight, `land.getIP` — the standalone `land`
+  stub answers "visible, no intersection" and says so.
+- **Real detection geometry**, as opposed to the range arithmetic Skynet does on
+  top of it: what a DCS radar actually holds, and when.
 
 ## Files
 

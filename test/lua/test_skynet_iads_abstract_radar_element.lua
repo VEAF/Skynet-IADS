@@ -4,9 +4,9 @@
 --- setToCorrectAutonomousState and the HARM evasion and both tickets of
 --- FEAT-LAST-LINE-OF-DEFENSE modify that class. Slice 2 takes the HARM timing
 --- and defence states, the two engagement flags and the parent / child radar
---- bookkeeping. The remaining clusters (ammunition and missiles in flight, the
---- SA-2 range tests, point defence, cached targets) are still DCS-only; see
---- test/lua/README.md for what is left.
+--- bookkeeping. Slice 3 takes ammunition and missiles in flight, and the
+--- engagement zone. Point defence and the cached-target behaviour are still
+--- DCS-only; see test/lua/README.md for what is left.
 ---
 --- The .miz version reads SAM groups, connection nodes, power sources and a
 --- command centre baked into skynet-unit-tests.miz, and kills them with
@@ -15,20 +15,11 @@
 --- no-op, so destroying the object directly is what stands in for the blast.
 --- Everything else (the mocks, the assertions, their order) is the .miz test,
 --- except where a comment above a test says otherwise. Those departures are
---- deliberate and each one is argued where it happens:
----
----   * slice 1, testGoDark / testGoLive — the .miz's enableEmission mocks set
----     their flag to a hard-coded true/false and ignore the argument, so
----     `emissionState` only ever recorded *that* the call happened. Here the
----     mock records the argument, which is what the assertion reads as.
----   * slice 2, testAddParentRadar… / testAddChildRadar… — the .miz order
----     assertions compared bare `{}` mocks with assertEquals, and luaunit
----     compares tables by value, so they could not fail. They use assertIs here.
----   * slice 2, testCleanUpOldObjectsIdentifiedAsHARMS — the .miz test never
----     called the method it is named after. Here it does.
----   * slice 2, testCanEngageAirWeapons — the .miz replaces
----     getDCSRepresentation() with a mock whose setOption asserts its own
----     arguments. Here the assertions read the calls the fixture recorded.
+--- deliberate, each one is argued in the comment above the test it affects, and
+--- test/lua/README.md lists them in one place — with what did NOT come across
+--- and why. Porting a test is not copying it: a .miz test that only ever passed
+--- because it ran against real DCS objects is not covered by a standalone test
+--- asking the stub the same question.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
@@ -48,6 +39,8 @@ local GROUPS = {
 	["SAM-SA-2"] = "SA-2",
 	["SAM-SA-10"] = "SA-10",
 	["SAM-SA-11"] = "SA-11",
+	["SAM-SA-8"] = "SA-8",
+	["SAM-Shilka"] = "Shilka",
 }
 
 --- The value of the last setOption(optionId, ...) the element's DCS representation was given, or
@@ -837,6 +830,389 @@ function TestSkynetIADSAbstractRadarElement:testDaisychainSAMOptions()
 	luaunit.assertEquals(self.samSite:getAutonomousBehaviour(), SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
 	luaunit.assertIs(self.samSite:getConnectionNodes()[1], connectionNode)
 	luaunit.assertIs(self.samSite:getPowerSources()[1], powerSource)
+end
+
+-- ---- slice 3: ammunition and missiles in flight -------------------------------------------
+--
+-- A battery that has nothing left to shoot with stops emitting: staying lit only tells the strike
+-- package where it is. goDarkIfOutOfAmmo() is what enforces that, and it is polled from the HARM
+-- scan rather than driven by an event, because DCS sends none when a missile leaves the rail.
+--
+-- Departure from the .miz, and it is the whole reason these read differently: the .miz tests
+-- replace the launcher's getDCSRepresentation() with a mock whose getAmmo() rewrites the counts as
+-- a side effect of being called. Here the fixture unit's ammunition is changed directly, with
+-- dcsStub's __setAmmo, so the site is asked the question through the real DCS call it uses in the
+-- mission. Note what "empty" means on that call: a launcher out of missiles answers **nil**, not a
+-- table of zeroes, while a gun out of shells answers zeroes -- both cases are below.
+
+function TestSkynetIADSAbstractRadarElement:testUpdateMissilesInFlight()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+
+	local stillFlying = {
+		isExist = function()
+			return true
+		end,
+	}
+	local alreadyGone = {
+		isExist = function()
+			return false
+		end,
+	}
+
+	self.samSite.missilesInFlight = { alreadyGone, stillFlying }
+	luaunit.assertEquals(self.samSite:getNumberOfMissilesInFlight(), 2)
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), true)
+
+	self.samSite:updateMissilesInFlight()
+	luaunit.assertEquals(self.samSite:getNumberOfMissilesInFlight(), 1)
+	luaunit.assertIs(self.samSite.missilesInFlight[1], stillFlying, "the one that still exists is the one kept")
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), true)
+
+	self.samSite.missilesInFlight = { alreadyGone }
+	self.samSite:updateMissilesInFlight()
+	luaunit.assertEquals(self.samSite:getNumberOfMissilesInFlight(), 0)
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), false)
+end
+
+--- What a site has left is the sum over its launchers, and it goes dark only when the last one is
+--- empty. The fixture SA-6 has two launchers, which is what makes the sum worth asserting.
+function TestSkynetIADSAbstractRadarElement:testShutDownWhenOutOfMissiles()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+
+	local launchers = self.samSite:getLaunchers()
+	luaunit.assertEquals(#launchers, 2)
+	luaunit.assertEquals(launchers[1]:getInitialNumberOfMissiles(), 3)
+	luaunit.assertEquals(self.samSite:getInitialNumberOfMissiles(), 6)
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 6)
+
+	--simulate firing of 1 missile
+	launchers[1]:getDCSRepresentation():__setAmmo(F.launcherAmmo(2))
+	luaunit.assertEquals(launchers[1]:getRemainingNumberOfMissiles(), 2)
+	luaunit.assertEquals(self.samSite:getInitialNumberOfMissiles(), 6, "what it started with does not move")
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 5)
+	luaunit.assertEquals(self.samSite:hasRemainingAmmo(), true)
+	self.samSite:goDarkIfOutOfAmmo()
+	luaunit.assertEquals(self.samSite:isActive(), true)
+
+	--DCS missile info is nil when no ammo is remaining
+	launchers[1]:getDCSRepresentation():__setAmmo(nil)
+	luaunit.assertEquals(launchers[1]:getRemainingNumberOfMissiles(), 0)
+	luaunit.assertEquals(launchers[1]:getInitialNumberOfMissiles(), 3, "an empty rail still remembers its load")
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 3)
+	self.samSite:goDarkIfOutOfAmmo()
+	luaunit.assertEquals(self.samSite:isActive(), true, "the other launcher still has missiles")
+
+	launchers[2]:getDCSRepresentation():__setAmmo(nil)
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 0)
+	luaunit.assertEquals(self.samSite:hasRemainingAmmo(), false)
+	self.samSite:goDarkIfOutOfAmmo()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+
+	self.samSite:goLive()
+	luaunit.assertEquals(self.samSite:isActive(), false, "and the network cannot wake an empty site")
+end
+
+--- The same rule for a radar-guided gun, which counts shells instead of missiles and answers a
+--- table of zeroes rather than nil when the belts run out.
+function TestSkynetIADSAbstractRadarElement:testShutDownShilkaWhenOutOfAmmo()
+	self.samSiteName = "SAM-Shilka"
+	self:setUp()
+
+	local launcher = self.samSite:getLaunchers()[1]
+	luaunit.assertEquals(launcher:getInitialNumberOfShells(), 2004)
+	luaunit.assertEquals(self.samSite:getInitialNumberOfShells(), 2004)
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfMissiles(), 0, "a gun carries no missiles")
+
+	launcher:getDCSRepresentation():__setAmmo(F.launcherShells(300, 200))
+	luaunit.assertEquals(launcher:getRemainingNumberOfShells(), 500)
+	luaunit.assertEquals(self.samSite:getInitialNumberOfShells(), 2004)
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfShells(), 500)
+	luaunit.assertEquals(self.samSite:hasRemainingAmmo(), true)
+
+	luaunit.assertEquals(self.samSite:isActive(), true)
+	self.samSite:goDarkIfOutOfAmmo()
+	luaunit.assertEquals(self.samSite:isActive(), true)
+
+	launcher:getDCSRepresentation():__setAmmo(F.launcherShells(0, 0))
+	luaunit.assertEquals(self.samSite:getRemainingNumberOfShells(), 0)
+	luaunit.assertEquals(self.samSite:hasRemainingAmmo(), false)
+
+	self.samSite:goDarkIfOutOfAmmo()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+--- Losing power puts a site out whatever else is going on -- including with one of its own missiles
+--- still in the air, which is the case this test exists for.
+function TestSkynetIADSAbstractRadarElement:testWillSAMShutDownWhenItLoosesPowerAndAMissileIsInFlight()
+	self.samSiteName = "SAM-SA-11"
+	self:setUp()
+	local powerSource = F.powerSourceStatic("SA-11-power-source")
+	self.samSite:addPowerSource(powerSource)
+	self.samSite:goLive()
+
+	luaunit.assertEquals(self.samSite:hasWorkingPowerSource(), true)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+
+	-- simulate that the SAM site has a missile in flight
+	function self.samSite:hasMissilesInFlight()
+		return true
+	end
+
+	-- .miz: trigger.action.explosion(powerSource:getPosition().p, 100)
+	powerSource:__destroy()
+	--we simulate a call to the event, since in game will be triggered to late to for later checks in this unit test
+	self.samSite:onEvent(createDeadEvent())
+	luaunit.assertEquals(self.samSite:hasWorkingPowerSource(), false)
+	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+--- A mission writer pointing addSAMSite() at the wrong group. Skynet builds the object anyway; it
+--- just recognises nothing in it.
+function TestSkynetIADSAbstractRadarElement:testCreateSamSiteFromInvalidGroup()
+	self:setUp()
+	self.samSite = SkynetIADSSamSite:create(F.unsupportedGroup("Invalid-for-sam"), self.skynetIADS)
+	self.samSite:setupElements()
+
+	luaunit.assertEquals(self.samSite:getNatoName(), "UNKNOWN")
+	luaunit.assertEquals(#self.samSite:getRadars(), 0)
+	luaunit.assertEquals(#self.samSite:getLaunchers(), 0)
+	luaunit.assertEquals(#self.samSite:getSearchRadars(), 0)
+	luaunit.assertEquals(#self.samSite:getTrackingRadars(), 0)
+end
+
+--- The all-in-one vehicles: one unit that is its own search radar and its own launcher, so the
+--- same unit is found twice and there is no tracking radar to find.
+function TestSkynetIADSAbstractRadarElement:testSamSiteGroupContainingOfOneUnitOnlySA8()
+	self.samSiteName = "SAM-SA-8"
+	self:setUp()
+	luaunit.assertEquals(#self.samSite:getRadars(), 1)
+	luaunit.assertEquals(#self.samSite:getLaunchers(), 1)
+	luaunit.assertEquals(#self.samSite:getSearchRadars(), 1)
+	luaunit.assertEquals(#self.samSite:getTrackingRadars(), 0)
+	luaunit.assertEquals(self.samSite:getNatoName(), "SA-8")
+end
+
+-- ---- slice 3: the engagement zone, and when a site stays dark ------------------------------
+--
+-- Departure from the .miz, and the one place where a ported test would have been worth nothing:
+-- the .miz versions assert the ranges the real DCS units report -- 53499.2265625 m for the SA-2's
+-- Flat Face, read out of that unit's own sensor table. Those figures belong to DCS, not to Skynet,
+-- and asking the stub the same question would only prove that dcs-fixtures says what dcs-fixtures
+-- says. They stay in the .miz, and test/lua/README.md lists them under what needs the simulator.
+--
+-- What is Skynet's own, and is what these test, is the *decision*: which of the search radar, the
+-- tracking radar and the launcher has to reach the contact before the site lights up, and what
+-- setGoLiveRangeInPercent() does to that. The fixture's figures are stated here once so the
+-- distances below can be read: search radar 120 km, launcher 40 km, maximum firing altitude 12 km.
+
+local FIXTURE_SEARCH_RADAR_RANGE_M = 120000
+local FIXTURE_LAUNCHER_RANGE_M = 40000
+
+--- A contact 30 km out at 5000 m: inside the launcher's 40 km, inside its 12 km firing ceiling,
+--- and well inside the search radar. The site's whole kill zone holds it.
+local function contactInFiringRange(name)
+	F.aircraftGroup(name, { pos = { x = 30000, y = 5000, z = 0 } })
+	return F.iadsContact(name .. "-1")
+end
+
+function TestSkynetIADSAbstractRadarElement:testInformOfContactInRangeWhenEarlyWaringRadar()
+	self.samSiteName = "SAM-SA-6"
+	self:setUp()
+	self.samSite:setActAsEW(true)
+	local mockContact = {
+		isIdentifiedAsHARM = function()
+			return false
+		end,
+	}
+
+	local askedAbout = nil
+	function self.samSite:isTargetInRange(target)
+		askedAbout = target
+		return false
+	end
+
+	self.samSite:targetCycleUpdateStart()
+	luaunit.assertEquals(self.samSite:isActive(), true)
+	self.samSite:informOfContact(mockContact)
+	luaunit.assertIs(askedAbout, mockContact)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+	self.samSite:targetCycleUpdateEnd()
+	luaunit.assertEquals(self.samSite:isActive(), true, "a site acting as an EW radar never goes dark on its own")
+end
+
+--- A dark site told about a contact inside its kill zone lights up. This is the door the network
+--- uses on every cycle.
+function TestSkynetIADSAbstractRadarElement:testSA2InformOfContactTargetInRangeMethod()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+
+	luaunit.assertEquals(self.samSite:getEngagementZone(), SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_KILL_ZONE)
+	luaunit.assertEquals(self.samSite:getSearchRadars()[1]:getTypeName(), "p-19 s-125 sr")
+
+	-- Not a port of the .miz figures, which are DCS's: these pin the *fixture's* ranges, so that
+	-- changing dcs-fixtures.lua breaks loudly here instead of quietly turning the distances the
+	-- tests below reason about into something else. The site has all three kinds of element, and
+	-- in kill-zone mode all three have to reach the contact.
+	luaunit.assertEquals(self.samSite:getSearchRadars()[1]:getMaxRangeFindingTarget(), FIXTURE_SEARCH_RADAR_RANGE_M)
+	luaunit.assertEquals(self.samSite:getTrackingRadars()[1]:getMaxRangeFindingTarget(), FIXTURE_SEARCH_RADAR_RANGE_M)
+	luaunit.assertEquals(self.samSite:getLaunchers()[1]:getRange(), FIXTURE_LAUNCHER_RANGE_M)
+
+	luaunit.assertEquals(self.samSite:isTargetInRange(target), true)
+	self.samSite:informOfContact(target)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+end
+
+--- goDark() refuses while the site's own radar still holds something: the site is shooting.
+function TestSkynetIADSAbstractRadarElement:testSA2WillNotGoDarkIfTargetIsInRange()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+
+	--we return a detected target, to pervent SAM site going dark
+	function self.samSite:getDetectedTargets()
+		return { target }
+	end
+
+	self.samSite:informOfContact(target)
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:isActive(), true)
+end
+
+--- And it refuses while one of its missiles is still in the air, even with nothing on the scope:
+--- going dark then would abandon the missile.
+function TestSkynetIADSAbstractRadarElement:testSA2WillNotGoDarkIfOutOfMisslesAndMissilesAreStillInFlight()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), false)
+
+	self.samSite.missilesInFlight = {
+		{
+			isExist = function()
+				return true
+			end,
+		},
+	}
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), true)
+	luaunit.assertEquals(#self.samSite:getDetectedTargets(), 0)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:isActive(), true)
+end
+
+--- A HARM outranks both: a site evading one goes dark with the target still on the scope.
+function TestSkynetIADSAbstractRadarElement:testSA2WillGoDarkWithTargetsInRangeAndHARMDetected()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+	function self.samSite:getDetectedTargets()
+		return { target }
+	end
+
+	self.samSite:informOfContact(target)
+	self.samSite:goSilentToEvadeHARM(5)
+	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+--- So does being out of ammunition with nothing in the air: holding the target is pointless when
+--- there is nothing left to send at it.
+function TestSkynetIADSAbstractRadarElement:testSA2WillgoDarkIfOutOfAmmoNoMissilesAreInFlightAndTargetStillInRange()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+	function self.samSite:getDetectedTargets()
+		return { target }
+	end
+	function self.samSite:getRemainingNumberOfMissiles()
+		return 0
+	end
+
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), false)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+--- An empty site stays dark when the network offers it a target it never saw itself.
+function TestSkynetIADSAbstractRadarElement:testSA2OutOfMissilesNoMissilesInFlightIsInformedOfTargetByIADSHasNotDetectedTargetWithOwnRadar()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	function self.samSite:getRemainingNumberOfMissiles()
+		return 0
+	end
+
+	self.samSite:goDark()
+	luaunit.assertEquals(self.samSite:hasMissilesInFlight(), false)
+	luaunit.assertEquals(self.samSite:isActive(), false)
+
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+	self.samSite:informOfContact(target)
+	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+--- setGoLiveRangeInPercent() shrinks the range the site is willing to light up at. In the default
+--- kill-zone mode it is the launcher's reach that shrinks: 60% of 40 km puts a contact at 30 km
+--- outside it, where 100% held it -- which is the assertion above, on the same distance.
+function TestSkynetIADSAbstractRadarElement:testSA2GoLiveRangeInPercentInKillZone()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	luaunit.assertIs(self.samSite:getEngagementZone(), SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_KILL_ZONE)
+	local target = contactInFiringRange("test-in-firing-range-of-sa-2")
+	luaunit.assertEquals(self.samSite:getLaunchers()[1]:isInRange(target), true, "at 100% the launcher holds it")
+
+	self.samSite:setGoLiveRangeInPercent(60)
+	luaunit.assertEquals(self.samSite:getLaunchers()[1]:isInRange(target), false)
+	luaunit.assertEquals(self.samSite:isTargetInRange(target), false)
+end
+
+--- In search-range mode it is the search radar's reach that shrinks, and the launcher stops
+--- counting altogether: 80% of 120 km leaves a contact at 100 km outside.
+function TestSkynetIADSAbstractRadarElement:testSA2GoLiveRangeInPercentSearchRange()
+	self.samSiteName = "SAM-SA-2"
+	self:setUp()
+	self.samSite:setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE)
+	F.aircraftGroup("test-outer-search-range", { pos = { x = 100000, y = 5000, z = 0 } })
+	local target = F.iadsContact("test-outer-search-range-1")
+
+	luaunit.assertEquals(
+		self.samSite:isTargetInRange(target),
+		true,
+		"at 100% the search radar reaches 100 km, and the launcher is not consulted in this mode"
+	)
+
+	self.samSite:setGoLiveRangeInPercent(80)
+	local radars = self.samSite:getSearchRadars()
+	for i = 1, #radars do
+		luaunit.assertEquals(radars[i]:isInRange(target), false)
+	end
+	luaunit.assertEquals(self.samSite:isTargetInRange(target), false)
+end
+
+--- Departure from the .miz: the original goes dark and informs the site a second time without
+--- reopening the target cycle, so informOfContact() returns on its `targetsInRange == false` guard
+--- and the site was never going to light up whatever the range was. Here each half runs through a
+--- real targetCycleUpdateStart(), so the second one fails on the range and not on the guard.
+function TestSkynetIADSAbstractRadarElement:testSA8GoLiveRangeInPercent()
+	self.samSiteName = "SAM-SA-8"
+	self:setUp()
+	local target = contactInFiringRange("test-sa-8-will-go-active")
+
+	self.samSite:goDark()
+	self.samSite:targetCycleUpdateStart()
+	self.samSite:informOfContact(target)
+	luaunit.assertEquals(self.samSite:isActive(), true)
+
+	self.samSite:setGoLiveRangeInPercent(20)
+	self.samSite:goDark()
+	self.samSite:targetCycleUpdateStart()
+	self.samSite:informOfContact(target)
+	luaunit.assertEquals(self.samSite:getLaunchers()[1]:isInRange(target), false)
+	luaunit.assertEquals(self.samSite:isActive(), false)
 end
 
 os.exit(luaunit.LuaUnit.run())

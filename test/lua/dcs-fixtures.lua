@@ -38,6 +38,20 @@ local function launcherAmmo(count)
 	}
 end
 
+--- What a radar-guided gun carries instead of missiles: shells, in two belts.
+---
+--- Shape and figures are the ZSU-23-4's, from the .miz suite's own
+--- testShutDownShilkaWhenOutOfAmmo: 23 mm AP and 23 mm HE, category SHELL rather than MISSILE, and
+--- no range fields at all — which is what sends SkynetIADSSAMLauncher:setupRangeData() back to the
+--- search radar's sensors for the range, the branch its comment calls "all in one units like the
+--- shilka".
+local function launcherShells(armourPiercing, highExplosive)
+	return {
+		{ desc = { category = Weapon.Category.SHELL, displayName = "23mm AP" }, count = armourPiercing },
+		{ desc = { category = Weapon.Category.SHELL, displayName = "23mm HE" }, count = highExplosive },
+	}
+end
+
 -- natoShort -> ordered unit specs (types verbatim from samTypesDB)
 local SAM_COMPOSITIONS = {
 	["SA-6"] = function(groupName)
@@ -79,6 +93,30 @@ local SAM_COMPOSITIONS = {
 			{ name = groupName .. "-ln1", type = "SA-11 Buk LN 9A310M1", ammo = launcherAmmo(3) },
 		}
 	end,
+	-- samTypesDB "Osa": one vehicle that is its own search radar and its own launcher, so
+	-- setupElements() finds the same unit twice and the site has one radar, one launcher and no
+	-- tracking radar. The fixture therefore carries both sensors and ammo on a single unit.
+	["SA-8"] = function(groupName)
+		return {
+			{
+				name = groupName .. "-1",
+				type = "Osa 9A33 ln",
+				sensors = searchRadarSensors(),
+				ammo = launcherAmmo(3),
+			},
+		}
+	end,
+	-- samTypesDB "ZSU-23-4 Shilka": the same all-in-one shape as the SA-8, but it shoots shells.
+	["Shilka"] = function(groupName)
+		return {
+			{
+				name = groupName .. "-1",
+				type = "ZSU-23-4 Shilka",
+				sensors = searchRadarSensors(),
+				ammo = launcherShells(503, 1501),
+			},
+		}
+	end,
 }
 
 --- F.samGroup(natoShort, groupName [, opts])
@@ -103,6 +141,28 @@ function F.samGroup(natoShort, groupName, opts)
 		units = units,
 		coalition = opts.coalition,
 		category = Group.Category.GROUND,
+	})
+end
+
+--- The two ammunition tables above, for a test that needs to change what a launcher is carrying
+--- after the site was built — `<launcher>:getDCSRepresentation():__setAmmo(F.launcherAmmo(2))` is
+--- one missile fired. `__setAmmo(nil)` is a launcher that has run dry, which is what DCS reports.
+F.launcherAmmo = launcherAmmo
+F.launcherShells = launcherShells
+
+--- A ground group of units no `samTypesDB` entry names — an infantry squad here.
+---
+--- Skynet builds a SAM site object out of whatever group a mission hands it, so this is what one
+--- looks like when `addSAMSite()` is pointed at the wrong group: setupElements() matches nothing,
+--- the site keeps the "UNKNOWN" NATO name it was created with, and it has no radars and no
+--- launchers. A mission writer's typo, in other words.
+function F.unsupportedGroup(groupName)
+	return dcsStub.makeGroup({
+		name = groupName,
+		category = Group.Category.GROUND,
+		units = {
+			{ name = groupName .. "-1", type = "Infantry AK", pos = { x = 0, y = 0, z = 0 } },
+		},
 	})
 end
 
