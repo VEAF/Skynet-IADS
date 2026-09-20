@@ -22,13 +22,16 @@ local function fail(message)
   end
 end
 
---- The sanitization edit unlocks io, os and lfs together. lfs is load-bearing: it is how the
---- repo path is found at all.
+--- The sanitization edit unlocks io, os, lfs and require together. lfs is load-bearing -- it is
+--- how the repo path is found at all -- and luaunit calls require at its very first line, so a
+--- half-applied edit is worth naming here rather than surfacing as a load error from a vendored
+--- file.
 local function preflight()
   local missing = {}
   if not io then missing[#missing + 1] = "io" end
   if not os then missing[#missing + 1] = "os" end
   if not lfs then missing[#missing + 1] = "lfs" end
+  if not require then missing[#missing + 1] = "require" end
 
   if #missing > 0 then
     fail("re-apply the edit in <DCS install>\\Scripts\\MissionScripting.lua -- missing: "

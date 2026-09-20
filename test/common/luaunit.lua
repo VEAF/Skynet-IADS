@@ -250,7 +250,12 @@ end
 M.private.sortedPairs = sortedPairs
 
 -- seed the random with a strongly varying seed
-math.randomseed(math.floor(os.clock() * 1E11))
+-- FGA: DCS's mission environment has no math.randomseed, and this module-level call aborted
+-- FGA: the whole load there. Only randomizeTable depends on the seed, and the in-sim runner
+-- FGA: never shuffles, so skipping it costs nothing where the function is absent.
+if math.randomseed then
+  math.randomseed(math.floor(os.clock() * 1E11))
+end
 
 local function randomizeTable(t)
   -- randomize the item orders of the table t
