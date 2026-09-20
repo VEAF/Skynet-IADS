@@ -185,7 +185,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   stay contiguous. Missing the fourth leaves the two copies of the trigger disagreeing, so the
   mission runs the script while the editor shows an empty trigger, or the reverse. `check` asserts
   all four agree, entry for entry and in order; `remove` re-checks the result and refuses to write
-  if anything is off. Neither can tell you the mission still loads in DCS, and the tool says so.
+  if anything is off.
+- A CI job for the in-sim mission archive (`.github/workflows/lua-tests.yml`, *In-sim mission
+  archive*). It cannot run the `.miz` -- that needs the simulator -- but it runs `miz-suite.py
+  check` and parses every Lua file inside the archive, `mission` and `mapResource` included. Until
+  now nothing checked that file at all: it is the one file in this repository no gate looked at,
+  and a hand edit that broke it was found by opening DCS, or not at all. Verified against three
+  deliberate breakages -- a `trigrules` entry removed, a `mapResource` line removed, a script
+  truncated -- each caught.
 
 ### Changed
 

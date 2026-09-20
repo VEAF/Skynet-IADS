@@ -61,6 +61,12 @@ Status: 🔄 in-progress — port complete, six legacy suites removed; one quest
   whose indices have to stay contiguous. The first attempt removed three of the four and the tool's
   own check caught it.
 
+  That check now runs in CI (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*),
+  together with a Lua parse of every file in the archive. Until now **nothing** checked the `.miz`:
+  it is the one file in this repository that no gate looked at, and a hand edit that broke it was
+  found by opening DCS, or not at all. What still needs the simulator is only whether DCS accepts
+  the mission and runs its triggers.
+
   **What stays, and why.** `iads`, `early-warning-radar` and `red`/`blue-sam-sites-and-ew-radars`
   enumerate the demo world. Two of the three `moose-a2a-connector` tests do the same.
   `abstract-radar-element` is fully ported but still asserts the ranges DCS reports for the units it

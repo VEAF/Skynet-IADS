@@ -19,11 +19,16 @@ reverse. `check` asserts that they agree, entry for entry and in order.
 Usage, from the repository root:
 
     python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua [...]
 
 `remove` re-runs every check against the result and refuses to write if anything is off, so a
-failed run leaves the `.miz` untouched. What it cannot check is DCS itself: load the mission once
-in the simulator after a removal.
+failed run leaves the `.miz` untouched. `extract` writes every Lua file in the archive to a
+directory, so something that knows Lua can parse them — `.github/workflows/lua-tests.yml` runs
+both on every pull request.
+
+What is left that only DCS can answer is narrow: whether the simulator accepts the mission file
+and runs its triggers. The wiring, and the syntax of every script inside, are checked here.
 """
 
 import os
@@ -198,17 +203,51 @@ def do_remove(entries, order, names):
             if name in entries:
                 z.writestr(name, entries[name])
     print("written: %s" % os.path.relpath(MIZ, ROOT))
-    print("Load the mission once in DCS: nothing here can check that for you.")
+    print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
+    return 0
+
+
+#: Archive members that are Lua without carrying the extension. `mission` and `mapResource` are
+#: the two this tool edits, so they are the two it most needs parsed; `dictionary` and the rest
+#: come along because they are Lua too and a corrupted one is just as fatal.
+LUA_WITHOUT_EXTENSION = ("mission", "options", "warehouses", L10N + "mapResource", L10N + "dictionary")
+
+
+def do_extract(entries, target):
+    """Write every Lua file in the archive to target/, flattening the paths.
+
+    Members that are Lua but carry no extension get a `.lua` suffix, so a caller can parse the
+    whole directory with one glob.
+    """
+    if not os.path.isdir(target):
+        os.makedirs(target)
+    written = 0
+    for name, blob in sorted(entries.items()):
+        if name.endswith(".lua"):
+            out = name.replace("/", "_")
+        elif name in LUA_WITHOUT_EXTENSION:
+            out = name.replace("/", "_") + ".lua"
+        else:
+            continue
+        with open(os.path.join(target, out), "wb") as handle:
+            handle.write(blob)
+        written += 1
+    print("extracted %d Lua files to %s" % (written, target))
     return 0
 
 
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ("check", "remove"):
+    if len(argv) < 2 or argv[1] not in ("check", "extract", "remove"):
         print(__doc__)
         return 1
     entries, order = read_all(MIZ)
     if argv[1] == "check":
         return 0 if do_check(entries) is not None else 2
+    if argv[1] == "extract":
+        if len(argv) < 3:
+            print("FAIL: extract needs a target directory")
+            return 1
+        return do_extract(entries, argv[2])
     if len(argv) < 3:
         print("FAIL: remove needs at least one script name")
         return 1

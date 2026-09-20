@@ -91,7 +91,9 @@ instead of extending it — it exists to erode, never to grow.
   units report about themselves — stays there. A suite whose every assertion runs standalone is
   removed from both copies, the loose `unit-tests/*.lua` and the one inside the `.miz`. Never edit
   the `.miz` by hand: a script is wired into it in four places, and `build-tools/miz-suite.py`
-  (`check`, `remove`) is what keeps them consistent. See `test/lua/README.md`.
+  (`check`, `extract`, `remove`) is what keeps them consistent. CI runs `check` on every pull
+  request and parses every Lua file in the archive, so a broken `.miz` is caught without opening
+  DCS. See `test/lua/README.md`.
 - **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
   its tests.
 - **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):

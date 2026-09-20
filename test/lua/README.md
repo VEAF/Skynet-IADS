@@ -265,11 +265,20 @@ stay contiguous. Forgetting the fourth is the trap: the two copies of the trigge
 mission runs the script while the editor shows an empty trigger, or the reverse.
 
     python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
 `check` asserts all four agree; `remove` re-checks the result and refuses to write if anything is
-off, so a failed run leaves the `.miz` untouched. Neither can tell you the mission still loads —
-open it once in DCS after a removal.
+off, so a failed run leaves the `.miz` untouched.
+
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then
+`extract` plus a Lua parse of every file in the archive — including `mission` and `mapResource`,
+which are Lua too and are the two the tool edits. Verified against three deliberate breakages: a
+`trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
+caught, and the first two are caught *only* by `check`.
+
+What is left for DCS is narrow: whether the simulator accepts the mission file and runs its
+triggers. The archive being well-formed is no longer one of the things you need DCS to find out.
 
 ## Needs the simulator
 
