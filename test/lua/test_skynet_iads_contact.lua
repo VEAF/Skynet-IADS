@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-contact.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- The DCS-mission version reads fixtures baked into skynet-unit-tests.miz and
 --- asserts the resulting magic numbers ("AH-1W", 989, 5015, 347). Here the
 --- fixtures are code-defined and every expected value is recomputed from them

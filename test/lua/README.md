@@ -105,9 +105,15 @@ It is not dead: it is what keeps the file loadable under a newer interpreter.
 
 ## Ported suites
 
-These `unit-tests/` suites now also run standalone (their `.miz` copies are kept):
-`harm-detection`, `abstract-dcs-object-wrapper`, `moose-a2a-connector` (1 test),
-`jammer`, `abstract-element`, `sam-site`, plus the M1 `contact` pilot.
+**Six legacy suites are gone**, both copies — the loose `unit-tests/*.lua` and
+the one baked into `skynet-unit-tests.miz`: `abstract-dcs-object-wrapper`,
+`abstract-element`, `contact`, `harm-detection`, `jammer` and `sam-site`. Every
+test each of them asserted runs here, none of them asserted anything only DCS
+can answer, and two copies that drift are worse than one. David's call,
+2026-09-19; done by `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04.
+
+`moose-a2a-connector` stays: one of its three tests is ported and the other two
+enumerate the 17-EW / 17-SAM demo world.
 
 `test_skynet_iads.lua` is the `SkynetIADS` suite. It carries the narrow
 regression test for the `3a94937` fix
@@ -248,6 +254,22 @@ test pins what the code does today under a name that says so.
 Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
+
+## Editing the `.miz`
+
+`unit-tests/skynet-unit-tests.miz` is a zip, and a script baked into one is wired in **four**
+places: the file under `l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`,
+the `a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's
+own structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to
+stay contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
+mission runs the script while the editor shows an empty trigger, or the reverse.
+
+    python build-tools/miz-suite.py check
+    python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
+
+`check` asserts all four agree; `remove` re-checks the result and refuses to write if anything is
+off, so a failed run leaves the `.miz` untouched. Neither can tell you the mission still loads —
+open it once in DCS after a removal.
 
 ## Needs the simulator
 

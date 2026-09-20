@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-abstract-element.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- Exercises SkynetIADSAbstractElement wrapped around a fixture SA-6 group
 --- (SAM-SA-6-2, a Kub 2P25 ln). Connection-node / power-source destruction
 --- tests swap the .miz `trigger.action.explosion(...)` for `<obj>:__destroy()`

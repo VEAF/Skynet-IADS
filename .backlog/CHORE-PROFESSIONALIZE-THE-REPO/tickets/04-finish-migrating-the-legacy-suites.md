@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — the port is complete; the removal pass is what is left
+Status: 🔄 in-progress — port complete, six legacy suites removed; one question left for David
 
 ## Progress
 
@@ -48,7 +48,35 @@ Status: 🔄 in-progress — the port is complete; the removal pass is what is l
 
   Every ported test is checked by mutating the source and watching it go red: 19 mutations across
   the four slices.
-- **Step 4, removing the legacy copy: not done, and deliberately.** The `unit-tests/*.lua` files are
+- **Step 4, removing the legacy copy: done for six suites.** `abstract-dcs-object-wrapper`,
+  `abstract-element`, `contact`, `harm-detection`, `jammer` and `sam-site` are gone from both
+  places — the loose `unit-tests/*.lua` and the copy inside `skynet-unit-tests.miz`. Each was
+  checked test by test: every assertion runs standalone, and none of them asserts terrain, real
+  detection, or a figure a DCS unit reports about itself.
+
+  Editing the `.miz` turned out to need a tool, `build-tools/miz-suite.py`, and the reason is
+  worth knowing: a script is wired into a `.miz` in **four** places, not three. Besides the file,
+  its `mapResource` key and the compiled `a_do_script_file(...)` call in `mission`'s `trig.actions`,
+  the Mission Editor keeps its own structured copy of the same trigger in `trigrules`, an array
+  whose indices have to stay contiguous. The first attempt removed three of the four and the tool's
+  own check caught it.
+
+  **What stays, and why.** `iads`, `early-warning-radar` and `red`/`blue-sam-sites-and-ew-radars`
+  enumerate the demo world. Two of the three `moose-a2a-connector` tests do the same.
+  `abstract-radar-element` is fully ported but still asserts the ranges DCS reports for the units it
+  models — 53499.2265625 m for the SA-2's Flat Face — and that is the one thing a stub cannot stand
+  in for. **Open question for David:** keep 47 KB of otherwise-duplicated suite for three numbers,
+  or reduce it in the `.miz` to a small canary that checks only ED's figures? Reducing it means
+  authoring an in-sim suite, which only a DCS session can judge — so it is not something to do
+  unasked.
+
+  **Not fixed here, and pre-existing:** the loose `unit-tests/test-skynet-iads.lua` carries
+  `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage` (the `3a94937` fix) and its `.miz` copy
+  does not, so the in-sim suite has never run it. The standalone suite does, so nothing is
+  uncovered; the two copies are simply still out of step. Left alone: syncing them changes what the
+  in-sim suite runs, which only DCS can judge.
+
+- **Step 4, the reasoning that got there:** The `unit-tests/*.lua` files are
   loose copies of scripts baked into `skynet-unit-tests.miz` (`l10n/DEFAULT/<same name>.lua`);
   editing one without rebuilding the `.miz` makes the two drift, which is the problem the step
   exists to prevent. It has already happened once: the loose

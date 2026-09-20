@@ -178,6 +178,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   just-switched-on controller gives. That completes the port: all 46 live tests of
   `unit-tests/test-skynet-iads-abstract-radar-element.lua` now run standalone. Test coverage
   93.97% -> 94.63%, floor 93 -> 94.
+- `build-tools/miz-suite.py`, for the one file in this repository nothing could safely edit. A
+  `.miz` is a zip, and a script baked into one is wired in **four** places: the file itself, its
+  `mapResource` key, the compiled `a_do_script_file(...)` call in the mission's `trig.actions`, and
+  the Mission Editor's own structured copy of the same trigger in `trigrules`, whose indices have to
+  stay contiguous. Missing the fourth leaves the two copies of the trigger disagreeing, so the
+  mission runs the script while the editor shows an empty trigger, or the reverse. `check` asserts
+  all four agree, entry for entry and in order; `remove` re-checks the result and refuses to write
+  if anything is off. Neither can tell you the mission still loads in DCS, and the tool says so.
 
 ### Changed
 
@@ -221,6 +229,18 @@ Until that release is cut, the build date in the artifact's first line remains t
   only reason the build could not run on the CI runner.
 - `skynet-iads-source/README_source.md`, superseded by the pages under `documentation/`.
 - `tmp/skynet-iads-compiled.lua`, a 76-byte stub committed by an interrupted build.
+- **Six legacy in-sim test suites**, both copies of each -- the loose `unit-tests/*.lua` and the one
+  baked into `unit-tests/skynet-unit-tests.miz`: `abstract-dcs-object-wrapper`, `abstract-element`,
+  `contact`, `harm-detection`, `jammer` and `sam-site`. Every test each of them asserted now runs in
+  `test/lua/` on a plain Lua interpreter, and none of them asserted anything only DCS can answer --
+  no terrain, no real detection, no figure a DCS unit reports about itself. Two copies that drift
+  are worse than one, and they had: `test-skynet-iads.lua` carries a regression test its `.miz` copy
+  never had, so the in-sim suite has never run it. David's call, 2026-09-19.
+
+  The suites that stay are the ones a stub cannot answer for: the `iads`, `early-warning-radar` and
+  `red`/`blue-sam-sites-and-ew-radars` suites, which enumerate the demo world; two of the three
+  `moose-a2a-connector` tests, for the same reason; and `abstract-radar-element`, whose port is
+  complete but which still asserts the ranges DCS reports for the units it models.
 
 ### Fixed
 

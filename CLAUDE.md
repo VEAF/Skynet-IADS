@@ -87,7 +87,11 @@ instead of extending it — it exists to erode, never to grow.
 - New **logic** tests go in `test/lua/`, run with `lua5.1 test/lua/run.lua` (a suite name filters:
   `lua5.1 test/lua/run.lua contact`). They use the DCS stub in `test/lua/dcs-stub.lua`.
 - `unit-tests/*.miz` is the legacy in-sim suite, being migrated. Only behaviour that genuinely needs
-  the simulator — terrain elevation, real detection geometry, in-game events — stays there.
+  the simulator — terrain elevation, real detection geometry, in-game events, and the figures DCS
+  units report about themselves — stays there. A suite whose every assertion runs standalone is
+  removed from both copies, the loose `unit-tests/*.lua` and the one inside the `.miz`. Never edit
+  the `.miz` by hand: a script is wired into it in four places, and `build-tools/miz-suite.py`
+  (`check`, `remove`) is what keeps them consistent. See `test/lua/README.md`.
 - **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
   its tests.
 - **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):
