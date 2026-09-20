@@ -15,17 +15,21 @@ last touched 2023-12-29:
 Two missile ranges ED has changed, and two altitudes that moved by a metre. Nothing in Skynet is
 wrong.
 
-**The four are only what is visible today.** Across the three in-sim suites that interrogate DCS
-units, **76 assertions out of 297** pin a figure that belongs to ED, not to Skynet:
+**The four are only what is visible today.** Across every in-sim suite, **125 assertions** compare
+an ED figure to a literal:
 
-| suite | assertions | of which ED data |
+| suite | assertions before | pinning an ED figure |
 |---|---|---|
-| `test-skynet-iads-red-sam-sites-and-ew-radars.lua` | 122 | 42 |
+| `highdigitsams/test-skynet-high-digit-sam-sites.lua` | 141 | 58 |
+| `test-skynet-iads-red-sam-sites-and-ew-radars.lua` | 122 | 41 |
 | `test-skynet-iads-blue-sam-sites-and-ew-radars.lua` | 46 | 19 |
-| `test-skynet-iads-abstract-radar-element.lua` | 229 | 15 |
+| `test-skynet-iads-abstract-radar-element.lua` | 229 | 7 |
 | the other three | 169 | 0 |
 
-So the question is about 76 assertions, and the next DCS patch decides which of them goes red.
+So the question is about 125 assertions, and the next DCS patch decides which of them goes red. An
+earlier count here said 76 across three suites; it came from grepping for lines *mentioning* one of
+these accessors, which over-counts the figures a test fabricates for itself and never looked at the
+high-digit suite at all.
 
 ## The decision
 

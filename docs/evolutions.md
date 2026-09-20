@@ -82,9 +82,9 @@ Two missile ranges ED has changed since 2023, and two altitudes that moved by a 
 Skynet is wrong; the tests record what DCS said three years ago.
 
 **So the open question was not "what are the numbers today".** It was whether Skynet's own suite
-should pin ED's data at all — and the four are only what is visible today. Across the three in-sim
-suites that interrogate DCS units, **76 assertions out of 297** pin a figure that belongs to ED, not
-to Skynet, so the next patch decides which of them goes red.
+should pin ED's data at all — and the four were only what was visible that day. Across every in-sim
+suite, **125 assertions** compared an ED figure to a literal, so the next patch decided which of them
+went red. All 125 are gone, into `test/lua/dcs-figures.lua`.
 
 **Answered, 2026-09-20.** David pointed at
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools), which answers the

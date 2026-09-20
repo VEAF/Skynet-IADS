@@ -1,6 +1,6 @@
 # FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET — the in-sim mission has been checking code we stopped shipping
 
-Status: ⬜ ready
+Status: 🔄 in-progress — branch `fix/in-sim-suite-tests-a-2023-skynet`, all four tickets coded; ✅ once merged
 
 Origin: found on 2026-09-20, closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. David ran
 `unit-tests/skynet-unit-tests.miz` in DCS to confirm that removing six legacy suites had not broken
@@ -83,13 +83,25 @@ suites in the `.miz` on the strength of it.
 That division only works if the in-sim half runs against the code we ship. Today it does not, so the
 guarantee the standalone suite was allowed to lean on is not there.
 
-### And 76 assertions pin ED's data, not just those four
+### And 125 assertions pin ED's data, not just those four
 
-The four are what the 2026-09-20 run made visible. Across the three in-sim suites that interrogate
-DCS units, **76 assertions out of 297** pin a figure that belongs to ED: 42 in
-`test-skynet-iads-red-sam-sites-and-ew-radars.lua`, 19 in the blue one, 15 in
-`test-skynet-iads-abstract-radar-element.lua`, and none in the other three. The next DCS patch
-decides which of them goes red.
+The four are what the 2026-09-20 run made visible. Counted across every in-sim suite — including
+`highdigitsams/test-skynet-high-digit-sam-sites.lua`, which the first sweep left out — **125
+assertions compare an ED figure to a literal**, and the next DCS patch decides which of them goes
+red:
+
+| suite | assertions before | pinning an ED figure |
+|---|---|---|
+| `highdigitsams/test-skynet-high-digit-sam-sites.lua` | 141 | 58 |
+| `test-skynet-iads-red-sam-sites-and-ew-radars.lua` | 122 | 41 |
+| `test-skynet-iads-blue-sam-sites-and-ew-radars.lua` | 46 | 19 |
+| `test-skynet-iads-abstract-radar-element.lua` | 229 | 7 |
+| the other three | 169 | 0 |
+
+An earlier count here said "76 out of 297". That came from grepping for lines *mentioning* one of
+these accessors across three suites, which over-counts (it catches figures the test fabricates
+itself, and ranges asserted to be 0) and under-counts (it never looked at the high-digit suite).
+The figures above are what ticket 03 actually removed.
 
 ## What this lot decided
 

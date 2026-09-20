@@ -14,6 +14,15 @@ luaunit = dofile(base .. "/luaunit.lua")
 
 local figures = dofile(base .. "/dcs-figures.lua")
 
+--- The datamine commit the figures below were observed against.
+---
+--- These anchors are only opposable to the dump they were checked against. When the weekly workflow
+--- moves the pin, ED may well have changed one of these very numbers -- that is the whole point of
+--- the workflow -- and asserting them then would turn the one pull request worth reading into a red
+--- build, which is the failure this lot exists to end. So they are asserted while the pin is this
+--- one, and reported as stale when it is not.
+local ANCHORED_AT = "fe1d8008e6e8dc4c1c4e85558cd1b0b29a02da3f"
+
 --- Figures a real DCS run reported on 2026-09-20, straight out of dcs.log. These are the anchor:
 --- they are what the simulator answered, not what the dump says, so they are what proves the dump
 --- can stand in for the simulator.
@@ -68,7 +77,29 @@ function TestDcsFigures:test_every_entry_states_a_usable_figure()
 	end
 end
 
+--- Says so out loud rather than passing in silence: an anchor that has stopped being checked is
+--- indistinguishable from one that passes, and this suite exists because nobody noticed for three
+--- years that a check had stopped meaning anything.
+local function anchorsStillApply(what)
+	if figures.datamineRef == ANCHORED_AT then
+		return true
+	end
+	print(
+		"  SKIP "
+			.. what
+			.. ": anchored at "
+			.. ANCHORED_AT:sub(1, 12)
+			.. ", figures are now at "
+			.. figures.datamineRef:sub(1, 12)
+			.. ". Re-observe them in DCS and update ANCHORED_AT."
+	)
+	return false
+end
+
 function TestDcsFigures:test_matches_what_dcs_reported_for_missiles()
+	if not anchorsStillApply("missile figures") then
+		return
+	end
 	for _, sample in ipairs(OBSERVED_IN_DCS) do
 		local missile = figures.missiles[sample.missile]
 		luaunit.assertNotNil(missile, sample.missile .. " is not in the generated figures")
@@ -81,6 +112,9 @@ function TestDcsFigures:test_matches_what_dcs_reported_for_radars()
 	-- Lua has only doubles. The SA-11 lands exactly either way; the Shilka misses by 4.5e-4 in
 	-- double precision, which is one unit in the last place of a 32-bit float at that magnitude.
 	-- Asserting equality here would fail for a reason that has nothing to do with ED's data.
+	if not anchorsStillApply("radar figures") then
+		return
+	end
 	local scale = figures.referenceRcs ^ 0.25
 	for _, sample in ipairs(OBSERVED_RADAR_RANGES) do
 		local radar = figures.radars[sample.unit]

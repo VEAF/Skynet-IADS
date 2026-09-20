@@ -1,10 +1,11 @@
 do
 --Figures that belong to Eagle Dynamics are NOT asserted here any more.
 --
---This suite used to pin them: `getRange() == 35000` for the SA-11's missile, and 124 more like
---it across the in-sim suites. ED has since made that 46000, so a Buk battery wakes 11 km further
---out in every mission that places one -- and the only way anyone found out was running this
---mission in DCS after three years, where it read as four red tests rather than as news.
+--125 such assertions came out of the in-sim suites, 7 of them from this file. The one that
+--made the case was in test-skynet-iads-red-sam-sites-and-ew-radars.lua: `getRange() == 35000` for
+--the SA-11's missile. ED has since made it 46000, so a Buk battery wakes 11 km further out in
+--every mission that places one -- and the only way anyone found out was running that mission in
+--DCS after three years, where it read as a red test rather than as news.
 --
 --Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
 --Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps

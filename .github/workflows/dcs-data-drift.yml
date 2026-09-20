@@ -48,13 +48,29 @@ jobs:
         run: |
           python3 build-tools/dcs-figures.py bump "${{ steps.upstream.outputs.sha }}"
           python3 build-tools/dcs-figures.py generate
-          if git diff --quiet; then
+          # Only the figures decide. `bump` has just rewritten DATAMINE_REF in dcs-figures.py, so a
+          # bare `git diff --quiet` is never clean once upstream has moved at all -- it would open a
+          # pull request titled "figures changed upstream" most weeks with no figure changed in it,
+          # and teach every reviewer to skip the one robot whose whole point is being read.
+          if git diff --quiet -- test/lua/dcs-figures.lua; then
             echo "changed=no" >> "$GITHUB_OUTPUT"
-            echo "Upstream has not moved, or it moved without changing a figure Skynet watches."
+            echo "Upstream moved, but no figure Skynet watches changed. Leaving the pin where it is."
+            git checkout -- build-tools/dcs-figures.py
           else
             echo "changed=yes" >> "$GITHUB_OUTPUT"
-            git diff --stat
+            git diff --stat -- test/lua/dcs-figures.lua
           fi
+
+      # A pull request opened with GITHUB_TOKEN does not trigger workflows, so the one pull request
+      # where `dcs-figures.py check` matters most would arrive with no CI at all. Run the checks that
+      # apply to this diff here instead, and say so in the pull request body.
+      - name: Check the regenerated figures
+        if: steps.regenerate.outputs.changed == 'yes'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+          python3 build-tools/dcs-figures.py check
+          lua5.1 test/lua/run.lua
 
       - name: Open a pull request
         if: steps.regenerate.outputs.changed == 'yes'
@@ -84,6 +100,14 @@ jobs:
 
           Read it before merging. A change here is not a defect in Skynet and there is nothing to
           fix; what it needs is somebody deciding whether it matters, and saying so.
+
+          The pin only moves when a figure does: a week where upstream moved without changing
+          anything Skynet watches opens no pull request at all.
+
+          **CI will not run on this pull request.** GitHub does not trigger workflows for an event
+          raised with `GITHUB_TOKEN`, so the job that opened this ran the checks that apply to this
+          diff itself — `dcs-figures.py check` and the standalone Lua suite — and refused to open it
+          if either failed.
           BODY
 
           git config user.name "github-actions[bot]"

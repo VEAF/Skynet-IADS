@@ -26,9 +26,11 @@ Usage, from anywhere:
 **Radars: by unit.** `skynet-iads-supported-types.lua` (`samTypesDB`) names the DCS *type* of every
 radar Skynet models. Each one has a file under `_G/db/Units/`, and that file names its sensor
 (`Sensors = { RADAR = { "SA-11 Buk TR" } }`), which has its own file under `_G/db/Sensors/Sensor/`
-carrying `detection_distance`. Both hops are real links in the data. 32 of the 35 unit types
-resolve; the three that do not are `Strela-1 9P31` and `Strela-10M3`, which have no radar at all --
-they are infrared -- and are correct to be missing.
+carrying `detection_distance`. Both hops are real links in the data. **34 of the 36** unit types
+`samTypesDB` names resolve; the two that do not are `Strela-1 9P31` and `Strela-10M3`, which have no
+radar at all -- they are infrared -- and are correct to be missing. (An earlier draft of this
+paragraph said 32 of 35, which was the count produced by the non-greedy regex `balanced_block`
+replaced -- a comment still teaching the defect below it.)
 
 **Missiles: by missile, not by launcher.** `_G/rockets/<missile>.lua` carries `Range_max` and
 `H_max`, which is exactly what `SkynetIADSSAMLauncher:getRange()` and `getMaximumFiringAltitude()`
