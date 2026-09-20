@@ -83,12 +83,26 @@ suites in the `.miz` on the strength of it.
 That division only works if the in-sim half runs against the code we ship. Today it does not, so the
 guarantee the standalone suite was allowed to lean on is not there.
 
-## What this lot does not decide
+### And 76 assertions pin ED's data, not just those four
 
-**Whether Skynet's own tests should pin ED's data at all.** Three readings are written up in
-`docs/evolutions.md` under *The in-sim suite drifts, and nothing says so*, and they lead to different
-work. Ticket 03 is where that is settled, and it is David's call, not something to resolve while
-fixing the other two.
+The four are what the 2026-09-20 run made visible. Across the three in-sim suites that interrogate
+DCS units, **76 assertions out of 297** pin a figure that belongs to ED: 42 in
+`test-skynet-iads-red-sam-sites-and-ew-radars.lua`, 19 in the blue one, 15 in
+`test-skynet-iads-abstract-radar-element.lua`, and none in the other three. The next DCS patch
+decides which of them goes red.
+
+## What this lot decided
+
+**Whether Skynet's own tests should pin ED's data at all.** Three readings were written up in
+`docs/evolutions.md` under *The in-sim suite drifts, and nothing says so*, all framed around running
+the mission. David pointed at a fourth, 2026-09-20: VEAF-Mission-Creation-Tools already answers this
+**without a simulator**, from the `Quaggles/dcs-lua-datamine` dataset at a pinned commit, with a CI
+guard and a weekly robot that bumps the pin.
+
+The datamine carries exactly these figures — `Range_max`, `H_max`, and `detection_distance` times
+`0.2 ^ 0.25` — and the two figures the DCS log reported are the two it holds. So ED's data leaves the
+simulator: ticket 03 builds the generator, the committed table and the standalone tests, and the
+in-sim suites stop asserting figures a stub can now check.
 
 ## Tickets
 
@@ -96,10 +110,10 @@ fixing the other two.
 |---|-------|--------|
 | 01 | [Refresh the deliverable the mission carries](tickets/01-refresh-the-embedded-deliverable.md) | ⬜ |
 | 02 | [Take MiST out of the mission](tickets/02-take-mist-out-of-the-mission.md) | ⬜ |
-| 03 | [Decide what to do about the DCS figures](tickets/03-decide-about-the-dcs-figures.md) | ⬜ |
+| 03 | [Take ED's figures out of DCS, and check them against the datamine](tickets/03-decide-about-the-dcs-figures.md) | ⬜ |
 
 Order matters between 01 and 02: MiST cannot leave while the artifact in the mission still calls it.
-03 is independent, and needs a decision before any code.
+03 needs 01 first — measuring ED's figures against the 2023 build would measure the wrong thing twice.
 
 ## Watch out for
 

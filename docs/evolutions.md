@@ -73,20 +73,28 @@ them pins a figure DCS reports about its own units:
 Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
 Skynet is wrong; the tests record what DCS said three years ago.
 
-**So the open question is not "what are the numbers today".** It is whether Skynet's own suite
-should pin ED's data at all. Three readings, and they are genuinely different:
+**So the open question was not "what are the numbers today".** It was whether Skynet's own suite
+should pin ED's data at all — and the four are only what is visible today. Across the three in-sim
+suites that interrogate DCS units, **76 assertions out of 297** pin a figure that belongs to ED, not
+to Skynet, so the next patch decides which of them goes red.
 
-- **It is a canary and it just worked.** Nothing else in this project would have told anyone that
-  the Buk's reach grew by 11 km — a change that moves when a battery wakes, in every mission. The
-  cost is four red tests until somebody re-runs and re-pins them.
-- **It is noise.** A suite that goes red because ED shipped a patch teaches people to ignore it,
-  which is how the drift above happened in the first place.
-- **It is the wrong shape.** What is worth knowing is *that a figure moved*, not that it equals a
-  literal — a check that records the current values and reports the delta would say the same thing
-  without ever failing.
+**Answered, 2026-09-20.** David pointed at
+[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools), which answers the
+same question **without a simulator**: `veaf_build/dcs_data/` sparse-clones
+[`Quaggles/dcs-lua-datamine`](https://github.com/Quaggles/dcs-lua-datamine) at a pinned commit,
+generates a committed artifact, and a CI guard regenerates against the pin and fails on a diff; a
+weekly workflow bumps the pin and opens a pull request when upstream moves.
 
-Whichever is chosen, the two altitude assertions (1929/1930, 1908/1909) are a metre of terrain and
-are worth nothing either way.
+The datamine carries exactly the figures these tests pin — checked at that pin (DCS 2.9.29.27278):
+`getRange()` is `_G/rockets/<missile>.Range_max` (SA-11 **46000**, HQ-7 **15000**, SA-15 12000),
+`getMaximumFiringAltitude()` is its `H_max`, and `getMaxRangeFindingTarget()` is
+`_G/db/Sensors/Sensor/<radar>.detection_distance` times `0.2 ^ 0.25` — detection range goes as the
+fourth root of the reference target's radar cross-section, and both radar samples match to the
+eighth decimal. The two figures the DCS log reported are the two the datamine holds.
+
+So ED's data leaves the simulator entirely: it becomes a generated table and a standalone test.
+`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 03 carries the work.
+
 
 **Worth considering, cheapest first:**
 
