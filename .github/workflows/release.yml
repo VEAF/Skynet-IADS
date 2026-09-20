@@ -28,6 +28,13 @@ jobs:
       - name: Load and run the artifact against the DCS stub
         run: lua5.1 build-tools/check-artifact.lua demo-missions/skynet-iads-compiled.lua
 
+      # The demo missions are assembled, not committed: the archives in git hold a placeholder for
+      # every script (see build-tools/miz-suite.py). So the copies attached below carry exactly the
+      # Skynet this release ships -- which is the point of assembling them, and the only place a
+      # playable demo comes from now.
+      - name: Assemble the missions
+        run: python3 build-tools/miz-suite.py build
+
       - name: Extract the changelog's Unreleased section
         run: |
           awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release-notes.md
@@ -47,8 +54,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # The three demos, and not the other three missions `build` writes: everything under
+          # unit-tests/ is developer material. Which is exactly what the directories now say, so
+          # this list is the demo-missions/ ones and nothing else.
           gh release create "$GITHUB_REF_NAME" \
             demo-missions/skynet-iads-compiled.lua \
+            build/missions/skynet-test-persian-gulf.miz \
+            build/missions/skynet-test-persian-gulf-stress-test.miz \
+            build/missions/skynet-and-moose-a2a-dispatcher.miz \
             --title "$GITHUB_REF_NAME" \
             --notes-file release-notes.md \
             ${{ steps.prerelease.outputs.flag }}

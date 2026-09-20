@@ -129,9 +129,14 @@ sweep measures movement against was laid down by the first sweep, i.e. *after* t
 moved, so the move that mattered measured zero and was missed. `markCoverageUpdated()` is that fix.
 
 **The in-sim check: run, and both mechanisms hold.** 2026-09-19, on
-`demo-missions/skynet-insim-last-line-of-defence.miz`, driven through VEAF's dcs-bridge, with the
-scenario kept in readable form beside it as `demo-missions/skynet-insim-last-line-of-defence.lua`.
-Every run below was flown from that file as the mission loads it — nothing hand-injected.
+`skynet-insim-last-line-of-defence.miz`, driven through VEAF's dcs-bridge, with the scenario kept in
+readable form beside it as `skynet-insim-last-line-of-defence.lua`. Every run below was flown from
+that file as the mission loads it — nothing hand-injected.
+
+Both lived under `demo-missions/` when this was written, and moved to
+`unit-tests/last-line-of-defence/` on 2026-09-20: the mission is driven from outside and carries no
+player task, so it is not a demo and a release must not attach it
+(`FIX-DEMO-MISSIONS-SHIP-A-2023-SKYNET` ticket 01).
 
 📋 **Full report: [in-sim-test-report-2026-09-19.md](in-sim-test-report-2026-09-19.md)** — the
 montage and why each distance is what it is, the protocol, every timing, and, just as much to the

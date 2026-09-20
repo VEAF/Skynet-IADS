@@ -35,9 +35,20 @@ If you like using it, please consider a donation:**
 
 ## Quick start
 
-Tired of reading already? Download the [demo
-mission](https://github.com/VEAF/Skynet-IADS/raw/master/demo-missions/skynet-test-persian-gulf.miz)
-in the Persian Gulf map and see Skynet in action.
+Tired of reading already? Grab `skynet-test-persian-gulf.miz` from the [latest
+release](https://github.com/VEAF/Skynet-IADS/releases) and see Skynet in action on the Persian Gulf
+map. It is attached to the release beside `skynet-iads-compiled.lua`, and it carries exactly the
+Skynet that release ships.
+
+The `.miz` files in the repository itself are **templates**: they hold a placeholder where each
+script goes, so that a copy of the code committed beside the code cannot quietly fall three years
+behind — which is what happened, until 2026-09-20. If you are working from a clone, assemble the
+playable missions yourself, into `build/missions/`:
+
+```
+pwsh -File build-tools/build-compiled-script.ps1
+python build-tools/miz-suite.py build
+```
 
 ## Thanks
 

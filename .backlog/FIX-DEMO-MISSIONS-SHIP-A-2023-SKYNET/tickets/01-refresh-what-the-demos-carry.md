@@ -1,6 +1,6 @@
 # 01 — Assemble the demo missions instead of committing a copy of the code
 
-Status: ⬜ ready — rewritten 2026-09-20 to match ticket 03's decision, **(b)**
+Status: 🔄 in-progress — coded and flown 2026-09-20; see *Flown in DCS* below
 
 Three of the four archives under `demo-missions/` carry `SKYNET VERSION: 3.2 | BUILD TIME: 29.12.2023
 1905Z`, and none of them has been touched since 2023-12-29. `develop` is on 3.5.0.
@@ -28,12 +28,14 @@ measured 2026-09-20 by reading the archives rather than assuming:
    demands that every member be a placeholder, which `Moose.lua` must not be. Both have to learn the
    exception before the tuple gets its first entry.
 
-3. **The loose-file scan runs per archive, and three archives share `demo-missions/`.** `check` would
-   report `skynet-insim-last-line-of-defence.lua` as loaded by no trigger while checking the Persian
-   Gulf archive, and the Persian Gulf setup as unloaded while checking the last-line one. The scan
-   has to be folder-wide and run once, after every archive in that folder has been read. It also has
-   to skip `skynet-iads-compiled.lua`, which is generated into `demo-missions/` and is nobody's
-   loose script.
+3. **The loose-file scan runs per archive, and several archives draw on the same folder.** `check`
+   would report `skynet-insim-last-line-of-defence.lua` as loaded by no trigger while checking the
+   Persian Gulf archive, and the Persian Gulf setup as unloaded while checking the last-line one.
+   The scan has to be folder-wide and run once, after every archive has been read. It also has to
+   skip `skynet-iads-compiled.lua`, which is generated into `demo-missions/` and is nobody's loose
+   script. Still true after the move: `demo-missions/skynet-iads-setup-persian-gulf.lua` is loaded
+   by two archives, and every archive under `unit-tests/` falls back to `unit-tests/`, where the
+   legacy suites sit that only `skynet-unit-tests.miz` loads.
 
 4. **`skynet-insim-last-line-of-defence.miz` is not written in DCS's own serialisation.** It was
    re-saved by VEAF's mission editor on 2026-09-19, which writes `trigrules = {` where DCS writes
@@ -108,14 +110,65 @@ parsing and the trigrules surgery get a `unittest` file, covering both serialisa
 re-checks its own output before writing, which has caught mistakes, but it cannot catch a regex that
 matches the wrong thing consistently.
 
-## Open question, for David
+## Answered by David, 2026-09-20: move it
 
 **`skynet-insim-last-line-of-defence.miz` is not a demo.** Its script opens with *"In-sim checks for
 the last line of defense and the coverage refresh"*, it is driven from outside through VEAF's
-dcs-bridge, and it "carries no player task". It sits in `demo-missions/` because that is where it was
-written, on 2026-09-19. It should not be attached to a release as a demo, and arguably belongs beside
-the in-sim suite. This ticket **leaves it where it is** and excludes it from the release assets;
-moving it is a rename that touches the `FEAT-LAST-LINE-OF-DEFENSE` record and is David's call.
+dcs-bridge, and it "carries no player task". It sat in `demo-missions/` because that is where it was
+written, on 2026-09-19.
+
+It is now `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, with its scenario
+script beside it, on the pattern `unit-tests/highdigitsams/` already set: one subdirectory per
+archive, holding the scripts it loads. `source_folders()` needed nothing — the rule written for the
+demos, *the archive's own directory then the top of its path*, gives `unit-tests/` as the fallback
+here on its own.
+
+**What the move buys beyond tidiness**: the release no longer has to name what it excludes. The
+assets are the `demo-missions/` archives and nothing else, which is a rule about a directory rather
+than a list somebody has to keep in step. The comment in `release.yml` that used to spell out the
+exception is gone with it.
+
+The `FEAT-LAST-LINE-OF-DEFENSE` PRD and its in-sim report keep the path they were written with, each
+carrying a line saying where the file went — a record of a run on 2026-09-19 should not claim to
+have used a path that did not exist yet.
+
+## Flown in DCS, 2026-09-20
+
+David flew `skynet-test-persian-gulf.miz` as assembled from this branch, from the
+`Hornet SA-11-2 jammer support` slot. Watched live through VEAF's build of dcs-fiddle -- a hook, so
+nothing had to be injected into the mission under test -- and against the whole `dcs.log`.
+
+**The mission carried the right Skynet**: `SKYNET VERSION: 3.5.0 | BUILD TIME: 20.09.2026 1704Z`,
+the artifact built from these sources. **Zero** script errors in the log, **zero** placeholder
+messages, **zero** mentions of MIST.
+
+**It still demonstrates an IADS.** The cycle, from the `GOING LIVE` / `GOING DARK` lines:
+
+| mission time | what happened |
+|---|---|
+| 17:40:45 | start -- 8 EW radars live, 13 SAM sites settle dark under network control |
+| 17:40:46 | except the two SA-10s (`setActAsEW(true)`) and the SA-15 point defence |
+| **17:44:00** | `EW-east-2` picks up one contact |
+| **17:44:20** | `SAM-SA-11` **goes live** -- designated by the network, 20 s after the detection |
+| **17:45:28** | `SAM-SA-11` **goes dark** |
+| 17:45:30 | `EW-east-2` has lost the contact |
+| 17:45:52 | `EW-west3` and `EW-Near-SA-11` pick it up in turn |
+
+A battery woken on a contact it cannot see itself, and handed back to the dark when the contact
+leaves. That is the thing the demo exists to show, and it still shows it.
+
+**What this run does not answer**: how 3.5.0 differs from 3.2 *in the air*. No 3.2 baseline was
+flown, so there is nothing to compare against -- only the assertion that the demo works, which is
+what the lot needed. Writing down three years of difference would need the same profile flown twice,
+and that is not what this session did. Said plainly rather than dressed up as a comparison.
+
+**One defect found, and deliberately not fixed here.** The demo destroys its own jammer aircraft at
+mission start: a guard in `skynet-iads-setup-persian-gulf.lua:77` checks for a client slot at `t=0`,
+before it has spawned, and the `else` branch it falls into destroys the emitter and removes its radio
+menu. Proven from the F10 menu and the setup script's ordering, measured as byte-identical in the
+December 2023 archive, so not a regression. David's call, 2026-09-20: record it, keep the lot on its
+subject. Written up in `docs/evolutions.md` under *The Persian Gulf demo destroys its own jammer at
+mission start*.
 
 ## Definition of done
 
@@ -128,7 +181,8 @@ moving it is a rename that touches the `FEAT-LAST-LINE-OF-DEFENSE` record and is
 - `release.yml` attaches the assembled demo missions.
 - `documentation/index.md` no longer sends a newcomer to a raw `.miz` in the repository.
 - `CLAUDE.md`, `test/lua/README.md` and the tool's own docstring describe six archives, not two.
-- `skynet-test-persian-gulf.miz` has been flown in DCS and still demonstrates an IADS: sites wake,
-  sites go dark, no error in the log.
-- What changed in behaviour between 3.2 and 3.5.0, as observed, is written down here — that is the
-  first honest description this project will have of what three years did.
+- ✅ `skynet-test-persian-gulf.miz` has been flown in DCS and still demonstrates an IADS: sites wake,
+  sites go dark, no error in the log. 2026-09-20, `SAM-SA-11` lit at 17:44:20 and dark at 17:45:28.
+- 🚫 What changed in behaviour between 3.2 and 3.5.0, as observed. Dropped: it would need the same
+  profile flown on both builds, and only 3.5.0 was flown. Claiming a comparison from one run would be
+  the kind of unmeasured assertion this lot was opened over.

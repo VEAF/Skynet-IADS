@@ -92,8 +92,11 @@ Ships will contribute to the IADS the same way AWACS units do. Add them as a reg
 
 ## Using Skynet in the mission editor
 
-It's quite simple to set up an IADS, have a look at the demo missions in
-[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions).
+It's quite simple to set up an IADS, have a look at the setup scripts in
+[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions) — and at the demo
+missions themselves, which come [attached to a release](https://github.com/VEAF/Skynet-IADS/releases)
+rather than committed to the repository. See the [Quick start](index.md#quick-start) for why, and for
+how to assemble one from a clone.
 
 ### Placing units
 
@@ -123,11 +126,11 @@ otherwise Skynet will not be able to control single EW radars.
 
 ### Adding the Skynet code
 
-Load the compiled skynet code into a mission. Skynet itself no longer requires MIST — the
+Load the compiled skynet code into a mission. Skynet does not require MIST — the
 [skynet-iads-compiled.lua](https://github.com/VEAF/Skynet-IADS/releases) attached to each release is
-a drop-in script. However, the demo missions bundle `mist_4_5_107.lua` for other functionality, and
-you can download the current MIST version
-[here](https://github.com/mrSkortch/MissionScriptingTools) if needed.
+a drop-in script, and the demo missions no longer bundle it either. If your own mission uses MIST for
+something else, it still works alongside Skynet; the current version is
+[here](https://github.com/mrSkortch/MissionScriptingTools).
 
 I recommend you create a text file e.g. `my-iads-setup.lua` and then add the code needed to get the
 IADS running. When updating the setup remember to reload the file in the mission editor. Otherwise

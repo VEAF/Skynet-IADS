@@ -125,3 +125,54 @@ what to do with it as it rots, that one asks what to replace it with.
 ## Smoke tests
 
 Study how the legacy `unit-test` can be transformed into something more usable and build in-sim smoke tests. See if MCPs or such exists that can help communicate with a running DCS mission. Use of the log file is always possible but may be complex.
+## The Persian Gulf demo destroys its own jammer at mission start
+
+Found on 2026-09-20 while flying the refreshed demo for `FIX-DEMO-MISSIONS-SHIP-A-2023-SKYNET`.
+David took the `Hornet SA-11-2 jammer support` slot, and nothing jammed anything.
+
+`demo-missions/skynet-iads-setup-persian-gulf.lua` ends the jammer section with a guard whose own
+comment says it "has nothing to do with the IADS":
+
+```lua
+--:77
+local hornet = Unit.getByName('Hornet SA-11-2 Attack')
+if hornet == nil then
+	Unit.getByName('jammer-emitter'):destroy()
+	jammer:removeRadioMenu()
+end
+```
+
+It runs from the `Load SKYNET` trigger at `triggerStart`, **t=0**, when a client slot the player is
+about to occupy has not spawned yet. So `hornet` is nil, and the demo destroys the jammer aircraft
+it has just armed.
+
+**Proven, not inferred**, from the F10 → Other menu and the order of the setup script:
+
+| line | what it does | observed in the sim |
+|---|---|---|
+| 66 | `redIADS:addRadioMenu()` | **F1 present** |
+| 72–74 | creates the jammer, arms it, adds its menu | would have errored on a nil emitter, so the emitter existed |
+| 78–80 | the guard: destroys the emitter **and removes the menu** | **no `Jammer:` entry** |
+| 89 | `blueIADS:addRadioMenu()` | **F2 present**, so the script ran to the end |
+
+Two menus present and the third missing means the jammer menu was created and then removed, and the
+guard is the only code that removes it. Measured alongside: `Unit.getByName('jammer-emitter')`
+returns nil in flight, the player's group reports `initial=1`, and the log holds **zero** `JAMMER`
+lines although the setup sets `iadsDebug.jammerProbability = true` and all four active sites
+(SA-10, SA-10, SA-11, SA-15) are in the jammer's table. `runCycle` finds its emitter dead, calls
+`masterArmSafe()` and disarms without a word.
+
+**Not a regression.** The group definition is byte-identical in the December 2023 archive, and the
+guard predates VEAF. The jammer demonstration has worked only by luck of timing.
+
+Options, in the order they were put to David on 2026-09-20:
+
+- **Delay the guard** by ten to thirty seconds through `SkynetIADSUtils.scheduleFunction`, keeping
+  the author's intent. Three lines. The delay stays a bet: a long briefing still loses the race.
+- **Drop the guard.** The jammer then works from every slot and no race is possible. It discards an
+  intention of walder's, in a block his own comment calls unrelated to the IADS.
+- **Leave it and record it** — what David chose, so that the lot stays on its subject. This entry is
+  that record.
+
+Whoever picks this up: the check costs one mission load. Open F10 → Other and look for a
+`Jammer: jammer-emitter` submenu.

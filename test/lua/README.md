@@ -293,9 +293,16 @@ connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
 ## Building and editing the `.miz`
 
 Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
-`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both.
+`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both. A
+third sits beside them, `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`,
+which is not a luaunit suite: it is driven from outside through VEAF's `dcs-bridge` and carries no
+player task. It applies to the three archives under `demo-missions/` too: those are not tests, but
+they are handled by the same tool and for the same reason, and `miz-suite.py` covers all six.
 
-**Neither of them contains the scripts it runs.** Each holds a placeholder for every script, and the
+The split between the two directories is what a release reads: `demo-missions/` archives are
+attached to it, everything under `unit-tests/` is developer material and is not.
+
+**None of them contains the scripts it runs.** Each holds a placeholder for every script, and the
 mission you open in DCS is assembled on demand:
 
     pwsh -File build-tools/build-compiled-script.ps1     # the deliverable is generated too
@@ -311,6 +318,11 @@ shipping — and three tests written into the loose copies during 2026 had never
 nobody remembered to bake them in. An assembled mission cannot be out of date, and one opened
 unbuilt prints a message on screen instead of quietly measuring the wrong thing.
 
+The demo missions had the same defect one shelf lower: three of the four held Skynet **3.2** from the
+same December, and a demo is what somebody downloads to learn what Skynet does. Nothing there was a
+test, so nothing could go red. They became templates on 2026-09-20 as well, and the playable copies
+are now attached to a release by `.github/workflows/release.yml`.
+
 ### The wiring, and the rest of the commands
 
 A `.miz` is a zip, and a script baked into one is wired in **four** places: the file under
@@ -325,14 +337,24 @@ mission runs the script while the editor shows an empty trigger, or the reverse.
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
-Every command works on both archives; `--miz <path>` narrows it to one. `build`, `stub` and `remove`
-re-check the result and refuse to write if anything is off, so a failed run leaves the `.miz`
-untouched. `check` also reports a suite that exists in `unit-tests/` but that no trigger loads —
-which is the drift running the other way, and how three tests sat outside the mission for months.
+Every command works on all six archives; `--miz <path>` narrows it to one. `build`, `stub` and
+`remove` re-check the result and refuse to write if anything is off, so a failed run leaves the
+`.miz` untouched. `check` also reports a loose script that no trigger anywhere loads — which is the
+drift running the other way, and how three tests sat outside the mission for months. That scan is
+folder-wide and runs once at the end of a full `check`, because three archives share
+`demo-missions/`: asking one of them to account for every Lua file beside it would report the other
+two's scripts as orphans.
 
-**CI runs this** (`.github/workflows/lua-tests.yml`, job *In-sim mission archive*): `check`, then a
-build of the deliverable, then `build`, then a Lua parse of every file in the **assembled** missions
-— including `mission` and `mapResource`, which are Lua too and are the two the tool edits. Parsing
+A `mission` is Lua, and two tools write it in two different shapes: DCS's own serialisation, and the
+one VEAF's mission editor produces when it re-saves a mission (bare keys, no `-- end of [n]`
+comments, and resource keys that are not `ResKey_Action_NNN`). `skynet-insim-last-line-of-defence.miz`
+is in the second. Every pattern in the tool reads either, and
+`python -m unittest discover -s test/python` covers both — a pattern that matches the wrong block
+does not raise, it rewrites the wrong trigger and writes the archive.
+
+**CI runs this** (`.github/workflows/lua-tests.yml`, job *Mission archives*): those tests, `check`,
+then a build of the deliverable, then `build`, then a Lua parse of every file in the **assembled**
+missions — including `mission` and `mapResource`, which are Lua too and are the two the tool edits. Parsing
 the placeholders instead would prove nothing. Verified against three deliberate breakages: a
 `trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
 caught, and the first two are caught *only* by `check`.

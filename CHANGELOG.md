@@ -138,8 +138,8 @@ Until that release is cut, the build date in the artifact's first line remains t
   index a nil value*, which is what a mistyped group name looks like -- and that a prefix has to
   start the group name rather than merely appear in it.
 
-- `demo-missions/skynet-insim-last-line-of-defence.miz`, the in-sim check for the last line of
-  defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
+- `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, the in-sim check for the
+  last line of defense: a SA-6 and an early warning radar 106 km apart, so the network holds the battery dark
   while an aircraft on the deck stays under that radar's horizon -- the reported situation, built
   on purpose. It is driven from outside through VEAF's `dcs-bridge`, so nobody has to fly: one call
   puts an immortal intruder on a run across the site, another prints what the network is doing, and
@@ -251,6 +251,36 @@ Until that release is cut, the build date in the artifact's first line remains t
   batteries it alone covered become autonomous — which is the right answer for a battery no ground
   radar covers.
 
+- **The demo missions are assembled, not committed, and a release carries them.** Three of the four
+  archives under `demo-missions/` held `SKYNET VERSION: 3.2 | BUILD TIME: 29.12.2023 1905Z` and had
+  not been touched since — so the worked example a newcomer downloads demonstrated a build from
+  before two minor versions of behaviour changes, including everything `FEAT-LAST-LINE-OF-DEFENSE`
+  and `FIX-COVERAGE-UPDATE-DARKENS-SITES` added. Nothing went red, because nothing there is a test.
+  They now hold a placeholder for every script like the in-sim archives do, `miz-suite.py build`
+  assembles them, and `.github/workflows/release.yml` attaches the three demos to a release beside
+  `skynet-iads-compiled.lua`. **Consequence for anyone cloning this repository**: the committed
+  `.miz` files are no longer playable on their own, and a playable demo comes from a release or
+  from running the build. The Quick start says so.
+
+  Their setup scripts had drifted too, three of four disagreeing with their loose copy; the loose
+  copy is the only one now. What that dropped, measured rather than assumed: one deprecated no-op
+  call (`setIgnoreHARMSWhilePointDefencesHaveAmmo`) the Persian Gulf archive had and its loose copy
+  did not, and a typo the loose MOOSE copy had already fixed.
+
+- `build-tools/miz-suite.py` covers six archives instead of two, and reads a `mission` written by
+  either DCS or VEAF's mission editor — the two serialise the same Lua table differently, and
+  assuming DCS's shape made the tool read `skynet-insim-last-line-of-defence.miz` as having an empty
+  `mapResource`. `test/python/test_miz_suite.py` covers both shapes, run in CI: a pattern that
+  matches the wrong block does not raise, it rewrites the wrong trigger and writes the archive.
+
+- `skynet-insim-last-line-of-defence.miz` moved from `demo-missions/` to
+  `unit-tests/last-line-of-defence/`, with its scenario script. It was never a demo: it is driven
+  from outside through VEAF's `dcs-bridge`, it carries no player task, and its own script opens with
+  *"In-sim checks for the last line of defense and the coverage refresh"*. It sat among the demos
+  because that is where it was written, on 2026-09-19, and the directory now says what it is — which
+  is also what keeps it out of the release assets, since those are the `demo-missions/` archives and
+  nothing else.
+
 ### Removed
 
 - `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the
@@ -269,6 +299,23 @@ Until that release is cut, the build date in the artifact's first line remains t
   `red`/`blue-sam-sites-and-ew-radars` suites, which enumerate the demo world; two of the three
   `moose-a2a-connector` tests, for the same reason; and `abstract-radar-element`, whose port is
   complete but which still asserts the ranges DCS reports for the units it models.
+
+- **MIST is out of the demo missions, and out of this repository.** All four archives loaded
+  `mist_4_5_107.lua`, 312 KB of it, because the Skynet they carried was the December 2023 build and
+  it made 33 MIST calls. The current one makes none — `fe40c4a` wrote `SkynetIADSUtils` to replace
+  it on 2026-08-30 — and across the loose setup scripts there was exactly one call left,
+  `mist.scheduleFunction(outputNames, self, 1, 2)` in the MOOSE connector demo, now
+  `SkynetIADSUtils.scheduleFunction(outputNames, nil, 1, 2)`. `self` was nil at that point in the
+  script, so the argument it passed was never a table and never reached `outputNames`.
+
+  `demo-missions/mist_4_5_107.lua` is deleted with them: nothing in this repository used it. The one
+  file in any archive that still names MIST is `dcs-bridge.lua`, vendored from
+  [VEAF/dcs-bridge](https://github.com/VEAF/dcs-bridge), which needs it only for a `spawn` command
+  the mission carrying it never calls — and guards every use (`if mist then`, `if not mist or not
+  mist.dynAdd then`).
+
+  This also takes away the popup: MIST installs a `DEAD` event handler, and an object it does not
+  know about put a message on the player's screen in the in-sim missions.
 
 ### Fixed
 
