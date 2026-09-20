@@ -610,9 +610,13 @@ def do_remove(miz, entries, order, names):
         return 2
     write_archive(miz, entries, order)
     for name in names:
-        loose = os.path.join(os.path.dirname(miz), name)
-        if os.path.isfile(os.path.join(ROOT, loose)):
-            print("NOTE: %s is still in the repository. A suite is removed from BOTH copies." % loose)
+        # Every folder this archive draws from, not just its own: MiST sat in demo-missions/ while
+        # one of the archives loading it sat in demo-missions/moose_a2a_connector/, so a reminder
+        # looking only beside the .miz said nothing for it.
+        for folder in source_folders(miz):
+            loose = os.path.join(folder, name)
+            if os.path.isfile(os.path.join(ROOT, loose)):
+                print("NOTE: %s is still in the repository. A script is removed from BOTH copies." % loose)
     print("The wiring and the scripts' syntax are checked; whether DCS accepts the mission is not.")
     return 0
 
