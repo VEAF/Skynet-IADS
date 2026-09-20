@@ -1,6 +1,6 @@
 # 03 — Take ED's figures out of DCS, and check them against the datamine
 
-Status: ✅ done — 2026-09-20, bar the DCS pass; decision in *The decision* below
+Status: ✅ done — 2026-09-20, green in DCS at 16:17; decision in *The decision* below
 
 Four tests failed on the 2026-09-20 run, all in `test-skynet-iads-red-sam-sites-and-ew-radars.lua`,
 last touched 2023-12-29:
@@ -139,8 +139,9 @@ usable — not the other way round.
   ✅ 125 assertions removed, each one reading a real DCS unit. Kept on purpose: 16 whose figures the
   test fabricates through a mocked `getDCSRepresentation()`, and 13 asserting a range of 0 — Skynet
   coping with the S-300, which DCS ships with empty sensor data.
-- ⬜ **Pending the next DCS pass.** Removing assertions cannot turn a test red in CI, because nothing
-  in CI runs this mission. The run is what proves no test lost the local it needed.
+- ✅ Proven by the DCS run of 2026-09-20 16:17: 119 tests, 119 successes, 0 failures. Removing
+  assertions cannot turn a test red in CI, because nothing in CI runs this mission, so the run is
+  what proves no test lost a local it still needed.
 
 ## The high-digit suite is not covered, and says so
 

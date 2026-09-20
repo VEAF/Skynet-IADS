@@ -144,6 +144,32 @@ a test writing to a field that had been renamed a month earlier.
 A sweep of every field the in-sim suites write, checked against what the sources define, turned up no
 second case.
 
+## How it ended
+
+`skynet-unit-tests.miz`, assembled, in DCS on 2026-09-20 at 16:17:
+
+```
+--- SKYNET VERSION: 3.5.0 | BUILD TIME: 20.09.2026 1612Z ---
+Ran 119 tests in 1.801 seconds, 119 successes, 0 failures
+```
+
+| | before the lot (3.3.0) | after |
+|---|---|---|
+| tests | 118 | **119** |
+| failures | 4 | **0** |
+| `ERROR SCRIPTING` lines | 1, every run | **none** |
+| MiST mentions in the log | many | **none** |
+
+**No regression in Skynet.** Three years of source changes separated the archive from `develop`, and
+the only two tests the refresh broke were both in `testAWACSHasMovedAndThereforeRebuildAutonomous
+StatesOfSAMSites`, both measuring mechanisms that had been deliberately moved — a renamed field
+(ticket 04) and a rebuild path `0ebbc01` relocated on purpose.
+
+**The leak check still checks.** Ticket 02 warned that swapping `mist.removeFunction` for
+`SkynetIADSUtils.removeFunction` could leave a check that silently stops checking. It did not: the
+run reports `WARNING: IADS left over Tasks` exactly once, the same as it did under MiST. The warning
+itself predates this lot and is nobody's business here.
+
 ## Tickets
 
 | # | Title | Status |

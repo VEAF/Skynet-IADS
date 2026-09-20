@@ -1,6 +1,6 @@
 # 04 — The one thing the refresh broke: a field renamed a month earlier
 
-Status: ✅ done — 2026-09-20
+Status: ✅ done — 2026-09-20, green in DCS at 16:17
 
 Refreshing the artifact (ticket 01) turned exactly one test red that had been green:
 
@@ -60,4 +60,4 @@ simulator — the distance between two real DCS units.
 
 - The field is spelled the way the sources spell it, in both copies. ✅ and the 763 was observed
   passing on 2026-09-20 at 16:14.
-- ⬜ **The one remaining failure is fixed but not yet observed green.** It needs one more pass.
+- ✅ Observed green: 2026-09-20 16:17, **119 tests, 119 successes, 0 failures**.

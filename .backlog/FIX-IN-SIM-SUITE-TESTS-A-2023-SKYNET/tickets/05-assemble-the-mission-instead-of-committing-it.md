@@ -1,6 +1,6 @@
 # 05 — Assemble the mission instead of committing a copy of the code
 
-Status: ✅ done — 2026-09-20, bar the DCS pass
+Status: ✅ done — 2026-09-20, green in DCS at 16:17
 
 David's idea, 2026-09-20, after reading what tickets 01 and 04 cost to keep working: *"ça serait
 encore mieux d'avoir un script qui construit la mission de démo avec le code existant dans les
@@ -61,5 +61,6 @@ anyone who has opened one before, which is why the message names the command.
 - Both committed archives hold placeholders, and `check` fails if one holds a script. ✅
 - `build` assembles the playable missions, and CI proves it can on every pull request. ✅
 - The tool, `CLAUDE.md` and `test/lua/README.md` describe assembling, not refreshing. ✅
-- ⬜ **Pending the DCS pass**: an assembled mission has not been loaded in DCS yet. That is the one
-  thing CI cannot answer, and the one thing this ticket changes about what DCS receives.
+- ✅ An assembled mission was loaded in DCS on 2026-09-20 at 16:14 and again at 16:17: it carried the
+  current artifact (`3.5.0 | BUILD TIME: 20.09.2026 1612Z`), no placeholder message appeared, and the
+  second run was **119 tests, 119 successes, 0 failures**.
