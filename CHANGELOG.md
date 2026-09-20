@@ -171,6 +171,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   Face's 53499.2265625 m detection range and the like): those belong to ED, and a standalone test
   would only prove the fixture repeats itself. `test/lua/README.md` now carries a "needs the
   simulator" list saying so. Test coverage 93.97%.
+- Slice 4 of the same port, the last seven tests: point defence -- a short-range battery lights up
+  while the site it protects hides from a HARM, and is stood down when the site comes back or the
+  last remembered HARM ages out -- and the detected-target cache, including the window after a
+  `goLive()` where it is deliberately bypassed so a site does not cache the empty answer a
+  just-switched-on controller gives. That completes the port: all 46 live tests of
+  `unit-tests/test-skynet-iads-abstract-radar-element.lua` now run standalone. Test coverage
+  93.97% -> 94.63%, floor 93 -> 94.
 
 ### Changed
 

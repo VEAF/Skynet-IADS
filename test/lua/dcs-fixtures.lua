@@ -106,6 +106,19 @@ local SAM_COMPOSITIONS = {
 			},
 		}
 	end,
+	-- samTypesDB "Tor": another all-in-one vehicle, and the one the point-defence tests use — it is
+	-- a short-range piece with can_engage_harm set, which is what a SAM site puts around itself to
+	-- shoot at the missiles aimed at its radar.
+	["SA-15"] = function(groupName)
+		return {
+			{
+				name = groupName .. "-1",
+				type = "Tor 9A331",
+				sensors = searchRadarSensors(),
+				ammo = launcherAmmo(3),
+			},
+		}
+	end,
 	-- samTypesDB "ZSU-23-4 Shilka": the same all-in-one shape as the SA-8, but it shoots shells.
 	["Shilka"] = function(groupName)
 		return {

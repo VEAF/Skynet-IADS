@@ -1,6 +1,6 @@
 # 04 — Finish migrating the legacy suites
 
-Status: 🔄 in-progress — slices 1 to 3 done; 7 real tests of `abstract-radar-element` left
+Status: 🔄 in-progress — the port is complete; the removal pass is what is left
 
 ## Progress
 
@@ -13,24 +13,41 @@ Status: 🔄 in-progress — slices 1 to 3 done; 7 real tests of `abstract-radar
   `FEAT-LAST-LINE-OF-DEFENSE` modifies. Slice 2 ports 15 more: HARM timing and defence states, the
   two engagement flags, the parent / child radar bookkeeping.
 
-  Slice 3 ports 16 more: ammunition and missiles in flight, and the engagement zone.
+  Slice 3 ports 16 more: ammunition and missiles in flight, and the engagement zone. Slice 4 ports
+  the last 7: point defence and the detected-target cache.
 
-  Of the 11 methods left, **3 are commented out in the legacy file** (the two
-  `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
+  **The port is done.** The legacy file has 50 test methods, of which **3 are commented out** (the
+  two `testController*WhenGoingDark*`, obsolete since `setEmission` arrived in DCS 2.7, and
   `testCallMethodOnTableElements`) and **1 has an empty body**
   (`testPointDefenceWhenOnlyOneEWRadarIsActiveAndAmmoIsStillAvailable`, a `--TODO: write Unit test`
-  that was never written). So **7 real tests remain**: point defence (5) and cached targets (2).
-  `test/lua/README.md` lists them.
+  that was never written). All **46** live ones run standalone.
+
+  The split into four slices, and into three pull requests, was agreed with David on 2026-09-19,
+  under the rule `CLAUDE.md` acquired the same day.
 
   Slice 3 also drew the first entries on the **"needs the simulator"** list the removal decision
   turns on: the `.miz` SA-2 range tests assert the figures DCS units report about themselves
   (53499.2265625 m for the Flat Face). Those are ED's numbers, not Skynet's, and a standalone test
   asking the stub would only prove `dcs-fixtures.lua` repeats itself. They stay.
 
-  One thing the port keeps finding: a legacy test that cannot fail. Two of slice 2's originals
-  compared bare `{}` mocks with `assertEquals`, and luaunit compares tables by value — so the order
-  they claimed to pin was never checked; a third never called the method it was named after. Each
-  ported test is checked by mutating the source and watching it go red.
+  One thing the port kept finding: **a legacy test that cannot fail**, four times in this one
+  file. Two of slice 2's originals compared bare `{}` mocks with `assertEquals`, and luaunit
+  compares tables by value — so the order they claimed to pin was never checked. A third never
+  called the method it was named after. A fourth, slice 3's `testSA8GoLiveRangeInPercent`, returned
+  on `informOfContact()`'s own guard before the range was ever consulted.
+
+  The fifth is a **finding**, not a defect in the test alone.
+  `testPointDefenceWillGoDarkWhenSAMItIsProtectingGoesDark` asserts that a point defence goes dark
+  with the site it protects. It passes because its point defence is built without
+  `setupElements()`, so `SkynetIADSSamSite:isDestroyed()` answers true and `goLive()` never lit it.
+  With a real point defence it **stays lit**: `pointDefencesStopActingAsEW()` is called from
+  `goLive()` and from the last remembered HARM ageing out, and from nowhere else. Harmless in the
+  live mechanism — nothing but HARM evasion ever lights a point defence — but not harmless for a
+  mission that lights one by hand. The standalone test records what the code does, under a name
+  that says so.
+
+  Every ported test is checked by mutating the source and watching it go red: 19 mutations across
+  the four slices.
 - **Step 4, removing the legacy copy: not done, and deliberately.** The `unit-tests/*.lua` files are
   loose copies of scripts baked into `skynet-unit-tests.miz` (`l10n/DEFAULT/<same name>.lua`);
   editing one without rebuilding the `.miz` makes the two drift, which is the problem the step

@@ -23,6 +23,10 @@
 # the HARM timing and defence states, the two engagement flags and the parent/child radar
 # bookkeeping, fifteen tests that until now ran only inside skynet-unit-tests.miz.
 #
+# 93 -> 94: ticket 04 slices 3 and 4 finished the abstract-radar-element port -- ammunition and
+# missiles in flight, the engagement zone, point defence and the detected-target cache. All 46
+# live tests of that legacy suite now run standalone.
+#
 # A warning paid for in that lot: luacov ADDS to an existing luacov.stats.out, so measuring twice
 # without deleting it reports the union of both runs, counting lines the first covered that the
 # second no longer has. A floor was briefly raised on a figure produced that way. run.lua now
@@ -32,4 +36,4 @@
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
 #                 lua5.1 build-tools/report-test-coverage.lua
-93
+94
