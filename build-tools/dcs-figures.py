@@ -137,11 +137,20 @@ def index_files(root, *relative):
     That name is the DCS type name -- what `unit:getTypeName()` answers and what `samTypesDB` is
     keyed on -- which is what makes the walk from a Skynet type to its data a lookup rather than a
     guess.
+
+    Earlier subtrees win, and the walk is sorted, because **43 unit names appear twice in the dump**
+    and the two copies are not equivalent: `CHAP_IRISTSLM_STR` under `Cars/Car` declares its radar
+    and the one under `GT_t/CH_t` does not. `os.walk` returns directories in filesystem order, so
+    which copy won depended on the platform -- this generated 34 radars on Windows and failed in CI
+    on Linux with "the unit declares no RADAR sensor". Caller order is the fix, and sorting is what
+    keeps it from coming back as a different filesystem's whim.
     """
     found = {}
     for rel in relative:
-        for folder, _, files in os.walk(os.path.join(root, *rel.split("/"))):
-            for name in files:
+        base = os.path.join(root, *rel.split("/"))
+        for folder, dirs, files in os.walk(base):
+            dirs.sort()
+            for name in sorted(files):
                 if name.endswith(".lua"):
                     found.setdefault(name[: -len(".lua")], os.path.join(folder, name))
     return found
@@ -203,7 +212,9 @@ def radar_unit_types():
 
 def collect_radars(dump):
     """{unit type -> (sensor name, detection_distance)} for the radars Skynet models."""
-    units = index_files(dump, "_G/db/Units")
+    # `Cars` first: it holds the playable ground units, and where a name also appears under `GT_t`
+    # that second copy is a template with no sensors.
+    units = index_files(dump, "_G/db/Units/Cars", "_G/db/Units")
     sensors = index_files(dump, "_G/db/Sensors/Sensor")
     radars, missing = {}, []
 
