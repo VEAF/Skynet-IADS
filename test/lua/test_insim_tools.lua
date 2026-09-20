@@ -1,7 +1,9 @@
---- Offline tests for the pure-Lua half of test/insim/tools/insim-test-tools.lua.
---- The DCS-world half (addOrReplace, removeJunkAround) is not tested here: it needs a sim.
+--- Offline tests for the pure-Lua half of test/insim/tools/insim-test-tools.lua, plus
+--- radarState, whose iteration is stub-testable even though what DCS means by getRadar() is
+--- not. The rest of the DCS-world half (addFromMission, removeJunkAround) needs a sim.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/dcs-stub.lua")
 dofile(base .. "/../insim/tools/insim-test-tools.lua")
 
 TestInsimTools = {}
@@ -80,6 +82,128 @@ end
 function TestInsimTools:testSerializeRoundTripsNumericKeys()
   local value = { [1] = "one", [2] = "two" }
   luaunit.assertEquals(roundTrip(value), value)
+end
+
+--- radarState asks DCS what a group's radars are doing, which is a different question from what
+--- Skynet believes: goDark() calls enableEmission(false), which stops emission but leaves the
+--- unit alive and its antenna turning, so the model tells you nothing.
+local function samGroup(name, spec)
+  dcsStub.reset()
+  local group = dcsStub.makeGroup({
+    name = name,
+    units = {
+      { name = name .. "-str", type = "Kub 1S91 str", radar = spec.searchRadarOn,
+        radarTarget = spec.tracking },
+      { name = name .. "-ln-1", type = "Kub 2P25 ln" },
+      { name = name .. "-ln-2", type = "Kub 2P25 ln", exists = spec.secondLauncherAlive },
+    },
+  })
+  return group
+end
+
+function TestInsimTools:testRadarStateReportsNothingEmittingWhenTheSiteIsDark()
+  samGroup("SAM-DARK", { searchRadarOn = false })
+
+  local state = InsimTestTools.radarState("SAM-DARK")
+
+  luaunit.assertFalse(state.emitting)
+  luaunit.assertEquals(state.emitters, 0)
+end
+
+function TestInsimTools:testRadarStateReportsEmittingWhenAnyUnitHasItsRadarOn()
+  samGroup("SAM-LIVE", { searchRadarOn = true })
+
+  local state = InsimTestTools.radarState("SAM-LIVE")
+
+  luaunit.assertTrue(state.emitting)
+  luaunit.assertEquals(state.emitters, 1)
+end
+
+function TestInsimTools:testRadarStateListsEveryLivingUnitItAsked()
+  samGroup("SAM-COUNT", { searchRadarOn = true, secondLauncherAlive = false })
+
+  local state = InsimTestTools.radarState("SAM-COUNT")
+
+  -- The destroyed launcher is not reported: getRadar on a dead unit is meaningless.
+  luaunit.assertEquals(#state.units, 2)
+  luaunit.assertEquals(state.units[1].name, "SAM-COUNT-str")
+  luaunit.assertTrue(state.units[1].emitting)
+  luaunit.assertFalse(state.units[2].emitting)
+end
+
+function TestInsimTools:testRadarStateRaisesForAGroupThatIsNotThere()
+  dcsStub.reset()
+  -- Returning "not emitting" for a missing group would let a dark assertion pass for entirely
+  -- the wrong reason.
+  local ok, err = pcall(InsimTestTools.radarState, "SAM-GONE")
+  luaunit.assertFalse(ok)
+  luaunit.assertStrContains(tostring(err), "SAM-GONE")
+end
+
+function TestInsimTools:testDescribeRadarStateNamesTheEmittingUnit()
+  samGroup("SAM-DESC", { searchRadarOn = true })
+
+  local text = InsimTestTools.describeRadarState("SAM-DESC")
+
+  luaunit.assertStrContains(text, "SAM-DESC")
+  luaunit.assertStrContains(text, "emitting")
+  luaunit.assertStrContains(text, "Kub 1S91 str")
+end
+
+function TestInsimTools:testDescribeRadarStateSaysDarkWhenNothingEmits()
+  samGroup("SAM-QUIET", { searchRadarOn = false })
+
+  luaunit.assertStrContains(InsimTestTools.describeRadarState("SAM-QUIET"), "dark")
+end
+
+--- Stands in for a SkynetIADS: only the two members skynetNetworkDisplayState touches. The
+--- behaviour under test is our wiring, not Skynet's.
+local function fakeIads()
+  local settings = {}
+  return {
+    logger = { printOutputToLog = function(_, text) settings.lastNative = text end },
+    getDebugSettings = function() return settings end,
+  }, settings
+end
+
+function TestInsimTools:testSkynetOutputIsRoutedIntoTheRunTimeline()
+  local captured = {}
+  local previousLog = log
+  log = function(format, ...) captured[#captured + 1] = string.format(format, ...) end
+
+  local iads = fakeIads()
+  InsimTestTools.skynetNetworkDisplayState(iads, true)
+  iads.logger:printOutputToLog("GOING LIVE: SAM SITE SKY-Z01-SA6-01")
+
+  log = previousLog
+  luaunit.assertEquals(#captured, 1)
+  luaunit.assertStrContains(captured[1], "GOING LIVE: SAM SITE SKY-Z01-SA6-01")
+end
+
+function TestInsimTools:testTurningTheDisplayOffPutsSkynetsOwnLoggerBack()
+  local captured = {}
+  local previousLog = log
+  log = function(format, ...) captured[#captured + 1] = string.format(format, ...) end
+
+  local iads, settings = fakeIads()
+  InsimTestTools.skynetNetworkDisplayState(iads, true)
+  InsimTestTools.skynetNetworkDisplayState(iads, false)
+  iads.logger:printOutputToLog("GOING DARK: SAM SITE")
+
+  log = previousLog
+  luaunit.assertEquals(#captured, 0, "the timeline should no longer be receiving Skynet output")
+  luaunit.assertEquals(settings.lastNative, "GOING DARK: SAM SITE")
+end
+
+function TestInsimTools:testTheDisplayFlagsSkynetActuallyReadsAreSet()
+  local iads, settings = fakeIads()
+
+  InsimTestTools.skynetNetworkDisplayState(iads, true)
+
+  -- goDark() reads radarWentDark and goLive() reads radarWentLive; the logger's own
+  -- samWentDark default is vestigial and read by nothing.
+  luaunit.assertTrue(settings.radarWentDark)
+  luaunit.assertTrue(settings.radarWentLive)
 end
 
 function TestInsimTools:testOffsetFromGoesNorthOnBearingZero()

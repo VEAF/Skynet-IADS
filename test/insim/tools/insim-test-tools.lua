@@ -10,7 +10,8 @@ Two halves, deliberately in one file while it stays small:
   * DCS-world     -- missionGroupData, addFromMission, addAirFromMission, destroyIfLive,
                      removeJunkAround, removeJunkInZone. Need a running sim.
 
-Scope rules: nothing Skynet-specific (that belongs in scenarios or fixtures); check
+Scope rules: nothing Skynet-specific except wiring up its debug output, which every scenario
+wants the same way (skynetNetworkDisplayState); check
 SkynetIADSUtils before adding arithmetic, since test/lua already covers it; split this file
 once it passes roughly 300 lines.
 ]]
@@ -275,6 +276,62 @@ function InsimTestTools.addAirFromMission(groupName, opts)
   return groupName
 end
 
+--- What DCS itself says about a group's radars, which is a different question from what Skynet
+--- believes. SkynetIADSAbstractRadarElement:isActive() returns its own aiState flag, and going
+--- dark calls enableEmission(false) -- emission stops, but the unit stays alive and its antenna
+--- keeps turning. The model is not evidence either way.
+---
+--- Returns { emitting = <bool>, emitters = <n>, units = { { name, type, emitting, tracking } } }.
+---
+--- Unit:getRadar() reports false both for a unit that has no radar and for one whose radar is
+--- off, so a single unit's false means little. The aggregate is what to assert on: nothing
+--- emitting, or something emitting.
+function InsimTestTools.radarState(groupName)
+  local group = Group.getByName(groupName)
+  assert(group, "radarState: no group named '" .. tostring(groupName) .. "'")
+
+  local state = { emitting = false, emitters = 0, units = {} }
+
+  for _, unit in ipairs(group:getUnits()) do
+    if unit:isExist() then
+      local emitting, tracking = unit:getRadar()
+      emitting = emitting and true or false
+      state.units[#state.units + 1] = {
+        name = unit:getName(),
+        type = unit:getTypeName(),
+        emitting = emitting,
+        tracking = tracking and tracking:getName() or nil,
+      }
+      if emitting then
+        state.emitting = true
+        state.emitters = state.emitters + 1
+      end
+    end
+  end
+
+  return state
+end
+
+--- One line of radarState for the run timeline, naming the emitters so a failed assertion is
+--- diagnosable from the log alone.
+function InsimTestTools.describeRadarState(groupName)
+  local state = InsimTestTools.radarState(groupName)
+
+  if not state.emitting then
+    return string.format("%s: dark (%d unit(s), none emitting)", groupName, #state.units)
+  end
+
+  local names = {}
+  for _, unit in ipairs(state.units) do
+    if unit.emitting then
+      names[#names + 1] = unit.type .. (unit.tracking and (" -> " .. unit.tracking) or "")
+    end
+  end
+
+  return string.format("%s: emitting, %d of %d unit(s) -- %s",
+    groupName, state.emitters, #state.units, table.concat(names, ", "))
+end
+
 --- Destroys a group or static if it is still live. Has no effect on a wreck -- that is what
 --- removeJunkAround is for.
 function InsimTestTools.destroyIfLive(name)
@@ -329,6 +386,55 @@ function InsimTestTools.removeJunkInZone(zoneName)
   assert(zone, "removeJunkInZone: no trigger zone named '" .. zoneName .. "'")
 
   return InsimTestTools.removeJunkAround({ x = zone.point.x, y = zone.point.z }, zone.radius)
+end
+
+--- Skynet writes its own narration through its logger's printOutputToLog, as
+--- env.info("SKYNET: ..."). That reaches dcs.log but not the run timeline, so it is absent from
+--- last-run.lua and the archive. Pointing this instance's logger at log() puts "GOING LIVE" and
+--- friends in the timeline, stamped and interleaved with the scenario's own lines.
+---
+--- The replacement carries the same text, so grepping dcs.log for "SKYNET:" still finds it. The
+--- logger belongs to one SkynetIADS instance, so nothing global is touched and the patch dies
+--- with the IADS in tearDown.
+local function routeSkynetOutputToTimeline(iads, enabled)
+  local logger = iads.logger
+  if type(logger) ~= "table" then
+    return
+  end
+
+  if enabled then
+    if not logger.insimNativeOutput then
+      logger.insimNativeOutput = logger.printOutputToLog
+      logger.printOutputToLog = function(_, output)
+        log("SKYNET: %s", tostring(output))
+      end
+    end
+  elseif logger.insimNativeOutput then
+    logger.printOutputToLog = logger.insimNativeOutput
+    logger.insimNativeOutput = nil
+  end
+end
+
+--- Turns on the Skynet debug output a scenario wants to see, and routes it into the timeline.
+---
+--- Two keys deliberately absent: noWorkingCommmandCenter and ewRadarNoConnection appear in
+--- README_source.md but are read nowhere in the source, so setting them does nothing.
+function InsimTestTools.skynetNetworkDisplayState(iads, bDisplay)
+    local iadsDebug = iads:getDebugSettings()
+
+    iadsDebug.IADSStatus = bDisplay
+    iadsDebug.radarWentDark = bDisplay
+    iadsDebug.contacts = bDisplay
+    iadsDebug.radarWentLive = bDisplay
+    iadsDebug.samNoConnection = false
+    iadsDebug.jammerProbability = false
+    iadsDebug.addedEWRadar = false
+    iadsDebug.hasNoPower = false
+    iadsDebug.harmDefence = bDisplay
+    iadsDebug.samSiteStatusEnvOutput = false
+    iadsDebug.earlyWarningRadarStatusEnvOutput = false
+
+    routeSkynetOutputToTimeline(iads, bDisplay)
 end
 
 end

@@ -251,6 +251,11 @@ function dcsStub.makeUnit(spec)
   function u:getDesc()
     return spec.desc or {}
   end
+  --- DCS reports false both for a unit with no radar and for one whose radar is off, so a
+  --- fixture says only whether this unit is emitting. spec.radarTarget is what it is tracking.
+  function u:getRadar()
+    return spec.radar == true, spec.radarTarget
+  end
   function u:getCoalition()
     return spec.coalition
   end

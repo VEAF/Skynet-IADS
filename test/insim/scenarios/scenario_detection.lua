@@ -34,6 +34,8 @@ function TestDetection:setUp()
   InsimTestTools.addFromMission(SAM)
 
   self.iads = SkynetIADS:create("insim_" .. SCENARIO)
+  InsimTestTools.skynetNetworkDisplayState(self.iads, true)
+
   self.iads:addEarlyWarningRadarsByPrefix(EWR)
   self.iads:addSAMSitesByPrefix(SAM)
   self.iads:activate()
@@ -62,6 +64,15 @@ function TestDetection:testFixturesAreAddedAndJoinTheIADS()
   luaunit.assertNotNil(Group.getByName(SAM), "the SAM group was not added")
   luaunit.assertEquals(#self.iads:getEarlyWarningRadars(), 1)
   luaunit.assertEquals(#self.iads:getSAMSites(), 1)
+
+  log("DCS: %s", InsimTestTools.describeRadarState(EWR))
+  log("DCS: %s", InsimTestTools.describeRadarState(SAM))
+
+  -- The positive control for every DCS-side radar check in this file. Skynet brings an EWR live
+  -- when it is added and leaves it there, so if the sim reports even this one as not emitting,
+  -- getRadar() does not mean what the SAM assertions below assume and they prove nothing.
+  luaunit.assertTrue(InsimTestTools.radarState(EWR).emitting,
+    "DCS reports the EWR is not emitting, though Skynet brings it live on add")
 end
 
 --- The time-dependent one. The SAM starts dark; a live EWR detecting the target is what brings
@@ -70,6 +81,13 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
   local sam = self.iads:getSAMSiteByGroupName(SAM)
   luaunit.assertNotNil(sam, "the SAM site did not join the IADS")
   luaunit.assertFalse(sam:isActive(), "the SAM should start dark")
+
+  -- isActive() is Skynet's own aiState flag. This is the sim's answer, and the two are not the
+  -- same claim: goDark() calls enableEmission(false), which stops emission but leaves the unit
+  -- alive with its antenna still turning. A rotating radar proves nothing either way.
+  log("DCS: %s", InsimTestTools.describeRadarState(SAM))
+  luaunit.assertFalse(InsimTestTools.radarState(SAM).emitting,
+    "DCS reports the SAM is emitting, though Skynet believes it is dark")
 
   -- The editor group supplies only the airframe. Its leg is computed from the EWR, so the
   -- geometry lives here rather than in the Mission Editor where it would be invisible.
@@ -88,7 +106,11 @@ function TestDetection:testSAMGoesLiveWhenTheEWRDetectsATarget()
   waitFor(function() return sam:isActive() end, 450)
   luaunit.assertTrue(sam:isActive())
 
-  log("%s went live", SAM)
+  log("%s went live -- DCS: %s", SAM, InsimTestTools.describeRadarState(SAM))
+
+  -- And the sim agrees. goLive() calls enableEmission(true) before it sets aiState, so this
+  -- should already hold; the wait only tolerates the sim applying it a tick late.
+  waitFor(function() return InsimTestTools.radarState(SAM).emitting end, 30)
 end
 
 return { name = SCENARIO, suite = TestDetection }

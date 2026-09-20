@@ -185,6 +185,27 @@ never yields at all is the exception — nothing can interrupt that.
 Timeouts should be generous. Live detection timing is not deterministic, and a scenario that
 needs tight timing is the wrong scenario for this tier.
 
+### Asserting on DCS rather than on Skynet
+
+`SkynetIADSAbstractRadarElement:isActive()` returns `self.aiState` — Skynet's own bookkeeping.
+Asserting on it proves the IADS decided something, not that the sim did it. `radarState` asks
+DCS:
+
+```lua
+luaunit.assertFalse(InsimTestTools.radarState(SAM).emitting,
+  "DCS reports the SAM is emitting, though Skynet believes it is dark")
+```
+
+**A turning antenna is not evidence.** `goDark()` calls `enableEmission(false)`, which stops the
+radar emitting but leaves the unit alive and animated; `setOnOff(false)` is used only when a
+site is silenced against a HARM. Expect the model to keep rotating on a dark site.
+
+`Unit:getRadar()` returns false both for a unit with no radar and for one whose radar is off, so
+read the aggregate (`emitting`, `emitters`), not a single unit. And keep a **positive control**
+in the scenario — something that should be emitting, asserted alongside the thing that should
+not. `scenario_detection.lua` uses the EWR, which Skynet brings live on add: if the sim reports
+even that one as dark, `getRadar()` does not mean what the other assertions assume.
+
 ### Isolation
 
 ```
@@ -221,6 +242,8 @@ All on the global `InsimTestTools`:
 | `bearingBetween(from, to)` | radians, clockwise from north |
 | `destroyIfLive(name)` | live entities only |
 | `removeJunkInZone(zoneName)` / `removeJunkAround(anchor, radius)` | clear wrecks |
+| `radarState(name)` / `describeRadarState(name)` | what **DCS** says the group's radars are doing |
+| `skynetNetworkDisplayState(iads, on)` | Skynet's debug output, routed into the timeline |
 
 And two globals that are not on it: `waitFor` / `waitSeconds` (above) and `log`.
 
