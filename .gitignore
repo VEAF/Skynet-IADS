@@ -18,5 +18,9 @@ Thumbs.db
 /luacov.stats.out
 /luacov.report.out
 
+# Python bytecode, from build-tools/*.py
+__pycache__/
+*.pyc
+
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json

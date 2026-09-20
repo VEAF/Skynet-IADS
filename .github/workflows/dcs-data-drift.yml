@@ -1,0 +1,99 @@
+name: DCS data drift
+
+# The point of this workflow is a diff. `test/lua/dcs-figures.lua` records what Eagle Dynamics says
+# about the units Skynet models -- missile reach, firing ceiling, radar detection distance -- read
+# from a pinned commit of the Quaggles/dcs-lua-datamine dump. Once a week this moves the pin to
+# upstream's current commit, regenerates, and opens a pull request if anything changed.
+#
+# That pull request is how this project finds out that ED moved a figure. The SA-11's missile went
+# from 35000 m to 46000 m somewhere between December 2023 and September 2026 -- a Buk battery now
+# wakes 11 km further out in every mission that places one -- and the only reason anybody noticed
+# was that someone finally ran the in-sim test mission in DCS after three years.
+#
+# Nothing is merged automatically. Read the diff: it is the news.
+
+on:
+  schedule:
+    # Mondays, 06:20 UTC. Offset off the hour because GitHub's scheduler queues heavily on it.
+    - cron: "20 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-the-pin:
+    name: Bump the datamine pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: develop
+
+      - name: Find upstream's current commit
+        id: upstream
+        run: |
+          sha=$(git ls-remote https://github.com/Quaggles/dcs-lua-datamine.git HEAD | cut -f1)
+          # An empty or short answer means the remote lookup failed, and bumping to it would either
+          # do nothing or write a broken pin. Stop instead of carrying on quietly.
+          if [ ${#sha} -ne 40 ]; then
+            echo "could not read upstream HEAD (got '$sha')"
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Move the pin and regenerate
+        id: regenerate
+        run: |
+          python3 build-tools/dcs-figures.py bump "${{ steps.upstream.outputs.sha }}"
+          python3 build-tools/dcs-figures.py generate
+          if git diff --quiet; then
+            echo "changed=no" >> "$GITHUB_OUTPUT"
+            echo "Upstream has not moved, or it moved without changing a figure Skynet watches."
+          else
+            echo "changed=yes" >> "$GITHUB_OUTPUT"
+            git diff --stat
+          fi
+
+      - name: Open a pull request
+        if: steps.regenerate.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.upstream.outputs.sha }}
+        run: |
+          # The branch name carries the commit, so each pin gets its own. A fixed branch name is a
+          # trap here: if one survives and already holds the commit the run wants to make, the push
+          # is a no-op, no pull request is opened, and the workflow goes quiet in a way that looks
+          # exactly like "nothing changed". That silenced the same robot in
+          # VEAF-Mission-Creation-Tools for three weeks in July 2026.
+          branch="chore/dcs-data-${SHA:0:12}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "$branch already exists upstream; a pull request for this pin was opened before."
+            exit 0
+          fi
+
+          cat > /tmp/pr-body.md <<'BODY'
+          The weekly bump moved the `Quaggles/dcs-lua-datamine` pin and regenerated
+          `test/lua/dcs-figures.lua`.
+
+          **The diff is the point.** Every line that changed is a figure Eagle Dynamics moved: a
+          missile's reach, a firing ceiling, or a radar's detection distance. Each one changes how a
+          battery behaves in game — when it wakes, how far it shoots, what it sees — in every mission
+          that places that unit.
+
+          Read it before merging. A change here is not a defect in Skynet and there is nothing to
+          fix; what it needs is somebody deciding whether it matters, and saying so.
+          BODY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add build-tools/dcs-figures.py test/lua/dcs-figures.lua
+          git commit -m "chore(data): refresh the DCS figures from datamine ${SHA:0:12}"
+          git push origin "$branch"
+          gh pr create \
+            --base develop \
+            --head "$branch" \
+            --title "chore(data): DCS figures changed upstream (${SHA:0:12})" \
+            --body-file /tmp/pr-body.md

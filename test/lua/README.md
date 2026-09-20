@@ -255,6 +255,41 @@ Still DCS-only, nothing ported (need the demo-IADS-world fixture — a later
 milestone): `early-warning-radar`, most of `iads`,
 `red/blue-sam-sites-and-ew-radars`.
 
+## The figures DCS states
+
+`dcs-figures.lua` is **generated** -- by `python build-tools/dcs-figures.py generate`, from a pinned
+commit of the [`Quaggles/dcs-lua-datamine`](https://github.com/Quaggles/dcs-lua-datamine) dump of the
+DCS databases. Do not edit it by hand.
+
+It holds the figures that belong to Eagle Dynamics rather than to Skynet: every missile's reach
+(`Range_max`) and firing ceiling (`H_max`), and the raw detection distance of every radar
+`samTypesDB` names. Those are exactly what `SkynetIADSSAMLauncher:getRange()`,
+`getMaximumFiringAltitude()` and `getMaxRangeFindingTarget()` report at runtime.
+
+**Why it exists.** The in-sim suite used to assert those numbers directly -- `getRange() == 35000`
+for the SA-11. ED has since made it 46000, which means a Buk battery now wakes 11 km further out in
+every mission that places one, and nothing here said so: the assertion only went red when somebody
+ran the mission in DCS, which nobody had done since December 2023. Recording the figures turns that
+into a diff instead of a discovery.
+
+Two things keep it honest:
+
+- CI runs `python build-tools/dcs-figures.py check`, which regenerates against the pin and fails on
+  any difference — so the committed file cannot claim a pin it no longer matches.
+- `.github/workflows/dcs-data-drift.yml` bumps the pin every Monday and opens a pull request when a
+  figure moved. **That pull request is the point.** Read the diff; there is nothing to fix.
+
+`test_dcs_figures.lua` guards the generator, not Skynet: a regex that stops matching writes a
+well-formed empty file, and one that matches half of what it should writes a plausible one. It
+checks the table is populated, that every entry states a usable figure, that the figures match what
+a real DCS run reported on 2026-09-20, and — from the Lua side, reading the real `samTypesDB` — that
+no radar Skynet models is missing. That last check is what caught a non-greedy regex reading only
+the first entry of each block, which had silently dropped two radars.
+
+**What the dump cannot say** is which launcher fires which missile: `type_ammunition` is pruned by
+the exporter. So missiles are recorded by missile, unfiltered, and the display name carries the
+connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
+
 ## Editing the `.miz`
 
 Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and

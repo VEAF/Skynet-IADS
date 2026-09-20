@@ -201,6 +201,15 @@ Until that release is cut, the build date in the artifact's first line remains t
   archives are covered, `unit-tests/skynet-unit-tests.miz` and
   `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`; `--miz <path>` narrows any command to one.
 
+- `test/lua/dcs-figures.lua` and `build-tools/dcs-figures.py`: a record of what Eagle Dynamics says
+  about the units Skynet models -- missile reach, firing ceiling, radar detection distance -- read
+  from a pinned commit of the `Quaggles/dcs-lua-datamine` dump. CI regenerates it against the pin and
+  fails on any difference, and `.github/workflows/dcs-data-drift.yml` bumps the pin weekly and opens
+  a pull request whose diff names the figure that moved. It is the only thing in this project that
+  can say a battery changed behaviour in game: the SA-11's missile went from 35000 m to 46000 m
+  between December 2023 and September 2026 -- 11 km further out before a Buk wakes -- and the only
+  reason anyone found out was running the in-sim mission after three years.
+
 ### Changed
 
 - `develop` is the default branch, and the Lua suite runs on it.

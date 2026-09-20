@@ -23,6 +23,13 @@ jobs:
       - name: Run the standalone suite
         run: lua5.1 test/lua/run.lua
 
+      # test/lua/dcs-figures.lua is generated from a pinned commit of the DCS database dump. This
+      # regenerates it and fails on any difference, so the committed file cannot claim to come from
+      # a pin it no longer matches. It is the pin that moves, in a pull request from the weekly
+      # dcs-data-drift workflow, never the file on its own.
+      - name: Check the DCS figures against their pinned source
+        run: python3 build-tools/dcs-figures.py check
+
   # The two in-sim archives are the legacy suite. CI cannot run them -- they need the simulator --
   # but it can check that they are not broken, which until now nothing did. A script is wired into
   # a .miz in four places (see build-tools/miz-suite.py); a hand edit that misses one leaves a
