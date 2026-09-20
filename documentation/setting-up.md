@@ -92,8 +92,11 @@ Ships will contribute to the IADS the same way AWACS units do. Add them as a reg
 
 ## Using Skynet in the mission editor
 
-It's quite simple to set up an IADS, have a look at the demo missions in
-[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions).
+It's quite simple to set up an IADS, have a look at the setup scripts in
+[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions) — and at the demo
+missions themselves, which come [attached to a release](https://github.com/VEAF/Skynet-IADS/releases)
+rather than committed to the repository. See the [Quick start](index.md#quick-start) for why, and for
+how to assemble one from a clone.
 
 ### Placing units
 

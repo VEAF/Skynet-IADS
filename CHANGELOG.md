@@ -251,6 +251,28 @@ Until that release is cut, the build date in the artifact's first line remains t
   batteries it alone covered become autonomous — which is the right answer for a battery no ground
   radar covers.
 
+- **The demo missions are assembled, not committed, and a release carries them.** Three of the four
+  archives under `demo-missions/` held `SKYNET VERSION: 3.2 | BUILD TIME: 29.12.2023 1905Z` and had
+  not been touched since — so the worked example a newcomer downloads demonstrated a build from
+  before two minor versions of behaviour changes, including everything `FEAT-LAST-LINE-OF-DEFENSE`
+  and `FIX-COVERAGE-UPDATE-DARKENS-SITES` added. Nothing went red, because nothing there is a test.
+  They now hold a placeholder for every script like the in-sim archives do, `miz-suite.py build`
+  assembles them, and `.github/workflows/release.yml` attaches the three demos to a release beside
+  `skynet-iads-compiled.lua`. **Consequence for anyone cloning this repository**: the committed
+  `.miz` files are no longer playable on their own, and a playable demo comes from a release or
+  from running the build. The Quick start says so.
+
+  Their setup scripts had drifted too, three of four disagreeing with their loose copy; the loose
+  copy is the only one now. What that dropped, measured rather than assumed: one deprecated no-op
+  call (`setIgnoreHARMSWhilePointDefencesHaveAmmo`) the Persian Gulf archive had and its loose copy
+  did not, and a typo the loose MOOSE copy had already fixed.
+
+- `build-tools/miz-suite.py` covers six archives instead of two, and reads a `mission` written by
+  either DCS or VEAF's mission editor — the two serialise the same Lua table differently, and
+  assuming DCS's shape made the tool read `skynet-insim-last-line-of-defence.miz` as having an empty
+  `mapResource`. `test/python/test_miz_suite.py` covers both shapes, run in CI: a pattern that
+  matches the wrong block does not raise, it rewrites the wrong trigger and writes the archive.
+
 ### Removed
 
 - `build-tools/bin/gh-md-toc.exe`, the 6 MB Windows binary that needed network access and was the

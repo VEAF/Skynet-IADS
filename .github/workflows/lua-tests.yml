@@ -30,16 +30,19 @@ jobs:
       - name: Check the DCS figures against their pinned source
         run: python3 build-tools/dcs-figures.py check
 
-  # The two in-sim archives are the legacy suite. CI cannot run them -- they need the simulator --
-  # but it can check that they are not broken, which until now nothing did. A script is wired into
-  # a .miz in four places (see build-tools/miz-suite.py); a hand edit that misses one leaves a
-  # mission that loads a resource key naming nothing, and the only way to find out was to open DCS.
+  # Six archives: the two in-sim suites, and the four missions under demo-missions/. CI cannot run
+  # them -- they need the simulator -- but it can check that they are not broken, which until now
+  # nothing did. A script is wired into a .miz in four places (see build-tools/miz-suite.py); a hand
+  # edit that misses one leaves a mission that loads a resource key naming nothing, and the only way
+  # to find out was to open DCS.
   #
   # It also checks that git is not holding a copy of any script. The archives carry placeholders and
-  # `build` puts the real files in: both of them held Skynet 3.3.0 from December 2023 to 2026-09-20,
-  # so three years of in-sim runs measured code that had stopped being shipped, and nothing said so.
-  in-sim-mission:
-    name: In-sim mission archive
+  # `build` puts the real files in: the in-sim ones held Skynet 3.3.0 from December 2023 to
+  # 2026-09-20, so three years of in-sim runs measured code that had stopped being shipped; three of
+  # the demos held 3.2 from the same December, and those are what a newcomer downloads. Nothing said
+  # so in either case.
+  mission-archives:
+    name: Mission archives
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -48,6 +51,12 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y lua5.1
+
+      # miz-suite.py reads a `mission` written by either DCS or VEAF's mission editor, which
+      # serialise the same Lua table differently. These cover both shapes: a pattern that matches
+      # the wrong block rewrites the wrong trigger and writes the archive without complaining.
+      - name: Test the archive tool
+        run: python3 -m unittest discover -s test/python
 
       - name: Check the wiring, and that git holds no copies
         run: python3 build-tools/miz-suite.py check

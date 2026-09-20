@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""Build, check, or edit the in-sim mission archives.
+"""Build, check, or edit the mission archives.
 
-Two `.miz` files carry an in-sim suite, and both are handled here:
+Six `.miz` files carry scripts from this repository, and all six are handled here:
 
-  * `unit-tests/skynet-unit-tests.miz`
-  * `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`
+  * `unit-tests/skynet-unit-tests.miz`                                 the in-sim suite
+  * `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`            the same, for the mod
+  * `demo-missions/skynet-test-persian-gulf.miz`                       the demo `documentation/` points at
+  * `demo-missions/skynet-test-persian-gulf-stress-test.miz`           the same map, many more sites
+  * `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher.miz`
+  * `demo-missions/skynet-insim-last-line-of-defence.miz`              the in-sim check for that lot
 
 **The archives in git do not contain the scripts they run.** Each holds a placeholder, and `build`
 puts the real files in to produce the mission DCS opens. That is deliberate. A copy of the code
-committed beside the code it copies goes stale without a sound: both of these archives ran Skynet
+committed beside the code it copies goes stale without a sound: the two in-sim archives ran Skynet
 3.3.0 from December 2023 to 2026-09-20 while `develop` moved to 3.5.0, so three years of in-sim runs
-measured code this project had stopped shipping, and nothing said so. An assembled mission cannot be
-out of date, and one opened unbuilt says so on screen rather than quietly measuring the wrong thing.
+measured code this project had stopped shipping; three of the four demo missions carried 3.2 from the
+same December, and those are what somebody downloads to learn what Skynet does. Nothing said so in
+either case. An assembled mission cannot be out of date, and one opened unbuilt says so on screen
+rather than quietly measuring, or demonstrating, the wrong thing.
 
 A `.miz` is a zip, and a script baked into one is wired in FOUR places. All four have to move
 together or the mission loads a resource key that names nothing:
@@ -28,6 +34,13 @@ Forgetting (4) is the trap: the two copies of the trigger disagree, and dependin
 reads it you get a mission that runs the script but shows an empty trigger in the editor, or the
 reverse. `check` asserts that they agree, entry for entry and in order.
 
+A `mission` is Lua, and **two tools write it in two different shapes**. DCS writes `["trigrules"]`,
+`["file"] = "X"` and a `-- end of [n]` comment after every block; VEAF's mission editor re-serialises
+the same table as `trigrules`, `file = "X"` and no comments at all, and it can introduce resource
+keys that are not `ResKey_Action_NNN` (`skynet-insim-last-line-of-defence.miz` carries
+`MCP_MapKey_dcs-bridge`). Both are real and both are committed here, so every pattern below reads
+either one. Assuming DCS's shape made this tool see that archive as having an empty `mapResource`.
+
 Usage, from anywhere:
 
     python build-tools/miz-suite.py build              # assemble the playable missions
@@ -38,9 +51,10 @@ Usage, from anywhere:
 
 `build` writes to `build/missions/`, which is git-ignored, and needs the deliverable built first
 (`pwsh -File build-tools/build-compiled-script.ps1`) because that is generated too. Copy what it
-writes into the DCS `Missions` folder under `Saved Games` and open it there.
+writes into the DCS `Missions` folder under `Saved Games` and open it there. The demo missions it
+writes are what `.github/workflows/release.yml` attaches to a release.
 
-Every command works on both archives unless `--miz <path>` narrows it to one. `remove`, `stub` and
+Every command works on every archive unless `--miz <path>` narrows it to one. `remove`, `stub` and
 `build` re-run the checks against the result and refuse to write if anything is off, so a failed run
 leaves the `.miz` untouched. `extract` writes every Lua file to `<dir>/<archive name>/`, so
 something that knows Lua can parse them; it is the one command that also accepts an assembled
@@ -61,10 +75,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 L10N = "l10n/DEFAULT/"
 MAP_RESOURCE = L10N + "mapResource"
 
-#: Every archive carrying an in-sim suite, repository-relative.
+#: Every archive carrying scripts from this repository, repository-relative.
 ARCHIVES = (
     os.path.join("unit-tests", "skynet-unit-tests.miz"),
     os.path.join("unit-tests", "highdigitsams", "highdigitsams-unit-tests.miz"),
+    os.path.join("demo-missions", "skynet-test-persian-gulf.miz"),
+    os.path.join("demo-missions", "skynet-test-persian-gulf-stress-test.miz"),
+    os.path.join("demo-missions", "moose_a2a_connector", "skynet-and-moose-a2a-dispatcher.miz"),
+    os.path.join("demo-missions", "skynet-insim-last-line-of-defence.miz"),
 )
 
 #: The deliverable, which is what the in-sim suite actually exercises. It is generated, not
@@ -76,10 +94,17 @@ BUILD_SCRIPT = "pwsh -File build-tools/build-compiled-script.ps1"
 #: Where `build` writes the playable missions. Git-ignored: it is output, like the deliverable.
 BUILD_DIR = os.path.join("build", "missions")
 
-#: Scripts vendored from elsewhere, which have no copy in this repository. Empty since 2026-09-20,
-#: when MiST left both archives: anything baked in from now on is reported until it is either given
-#: a copy here or listed as a deliberate exception.
-NO_SOURCE_IN_REPO = ()
+#: Scripts vendored from elsewhere, which have no copy in this repository. Anything baked into an
+#: archive and not named here is reported until it is either given a copy here or added.
+#:
+#: These are the exception to everything below: `stub` leaves them alone, `check` does not ask them
+#: to be placeholders, and `build` steps over them. They are committed inside the archive because
+#: there is nowhere else for them to live -- MOOSE is 1.1 MB compressed and belongs to another
+#: project, and the bridge is a development tool of VEAF's.
+NO_SOURCE_IN_REPO = (
+    "Moose.lua",  # github.com/FlightControl-Master/MOOSE, what the a2a-dispatcher demo demonstrates
+    "dcs-bridge.lua",  # github.com/VEAF/dcs-bridge, how the last-line-of-defence check is driven
+)
 
 #: The line that marks a member as a placeholder rather than a copy of a script.
 #:
@@ -90,8 +115,24 @@ NO_SOURCE_IN_REPO = ()
 #: says so on screen instead of quietly measuring the wrong thing.
 PLACEHOLDER_MARK = "--SKYNET-PLACEHOLDER"
 
-ACTION_BLOCK = r"([ \t]*)\[(\d+)\] = \r?\n\1\{.*?\r?\n\1\}, -- end of \[\2\]\r?\n"
-ACTIONS_ARRAY = r'\["actions"\] = \r?\n([ \t]*)\{\r?\n(.*?)\r?\n\1\}, -- end of \["actions"\]'
+#: A resource key, as it appears in `mapResource` and in the trigger that loads it. DCS names them
+#: `ResKey_Action_NNN`; VEAF's mission editor writes its own, such as `MCP_MapKey_dcs-bridge`, so
+#: the shape is read rather than assumed.
+KEY = r"[A-Za-z_][A-Za-z0-9_.-]*"
+
+#: One `[n] = { ... }` entry of a trigrules `actions` array, in DCS's serialisation and then in the
+#: editor's. Both are anchored on the indentation of the opening line, which is what keeps the
+#: non-greedy body from stopping at a nested table's closing brace.
+ACTION_BLOCKS = (
+    r"(?P<indent>[ \t]*)\[(?P<n>\d+)\] = \r?\n(?P=indent)\{.*?\r?\n(?P=indent)\}, -- end of \[(?P=n)\]\r?\n",
+    r"(?P<indent>[ \t]*)\[(?P<n>\d+)\] = \{.*?\r?\n(?P=indent)\},\r?\n",
+)
+
+#: A trigrules `actions` array, same two serialisations. `body` is the span the callers rewrite.
+ACTIONS_ARRAYS = (
+    r'\["actions"\] = \r?\n(?P<indent>[ \t]*)\{\r?\n(?P<body>.*?)\r?\n(?P=indent)\}, -- end of \["actions"\]',
+    r"^(?P<indent>[ \t]*)actions = \{\r?\n(?P<body>.*?)\r?\n(?P=indent)\},",
+)
 
 
 def read_all(path):
@@ -100,13 +141,21 @@ def read_all(path):
         return {n: z.read(n) for n in order}, order
 
 
-def source_of(miz, member, must_exist=True):
-    """The repository file a `l10n/DEFAULT/*.lua` member is a copy of, or None.
+def source_folders(miz):
+    """Where a member of this archive is looked for: its own directory, then the family's root.
 
-    Looked up in the archive's own directory first, so `highdigitsams/` wins for its own scripts,
-    then in `unit-tests/` for what the two archives share (`luaunit.lua` sits there and nowhere
-    else).
+    `unit-tests/highdigitsams/` wins for its own scripts and falls back to `unit-tests/`, where
+    `luaunit.lua` sits and nowhere else; `demo-missions/moose_a2a_connector/` falls back to
+    `demo-missions/` the same way. Before the demos joined, the fallback was `unit-tests/` spelled
+    out -- which would have sent a demo looking for its setup script among the tests.
     """
+    miz = os.path.normpath(miz)
+    folders = [os.path.dirname(miz), miz.split(os.sep)[0]]
+    return list(dict.fromkeys(folders))
+
+
+def source_of(miz, member, must_exist=True):
+    """The repository file a `l10n/DEFAULT/*.lua` member is a copy of, or None."""
     name = member[len(L10N) :]
     if name == ARTIFACT:
         # Built, not committed, so it is absent on a fresh checkout. `check` still wants to know
@@ -114,7 +163,7 @@ def source_of(miz, member, must_exist=True):
         if must_exist and not os.path.isfile(os.path.join(ROOT, ARTIFACT_SOURCE)):
             return None
         return ARTIFACT_SOURCE
-    for folder in (os.path.dirname(miz), os.path.join("unit-tests")):
+    for folder in source_folders(miz):
         candidate = os.path.join(folder, name)
         if os.path.isfile(os.path.join(ROOT, candidate)):
             return candidate
@@ -169,8 +218,8 @@ def placeholder(name, loud=False):
         "--    python build-tools/miz-suite.py build",
         "--",
         "--which writes the mission to open in DCS. A copy of a script committed beside the script it",
-        "--copies goes stale in silence -- both of these archives ran Skynet 3.3.0 from December 2023",
-        "--to 2026-09-20, and nothing said so. A placeholder cannot.",
+        "--copies goes stale in silence -- the archives here carried Skynet 3.2 and 3.3.0, both from",
+        "--December 2023, until 2026-09-20, and nothing said so. A placeholder cannot.",
         'env.error("SKYNET: this mission was opened unbuilt -- %s is a placeholder. Run: python build-tools/miz-suite.py build"%s)'
         % (name, ", true" if loud else ""),
         "",
@@ -179,41 +228,79 @@ def placeholder(name, loud=False):
 
 
 def parse_map_resource(text):
-    return dict(re.findall(r'\["(ResKey_Action_\d+)"\]\s*=\s*"([^"]+)"', text))
+    """Every `key = "file.lua"` in a mapResource, one entry per line.
+
+    Read line by line rather than with one regex over the file because the two serialisations put
+    the key differently -- `["ResKey_Action_172"]` from DCS, a bare `ResKey_Action_172` from the
+    editor, and `["MCP_MapKey_dcs-bridge"]` from the editor again when the name needs quoting.
+    """
+    found = {}
+    for line in text.splitlines():
+        entry = re.match(r'\s*(?:\["(%s)"\]|(%s))\s*=\s*"([^"]*)"' % (KEY, KEY), line)
+        if entry:
+            found[entry.group(1) or entry.group(2)] = entry.group(3)
+    return found
+
+
+def first_matching(patterns, text, flags=re.S | re.M):
+    """The matches of the first pattern that matches anything.
+
+    The patterns are the same structure written by two tools, so at most one of them can match a
+    given file -- trying them in turn is how this tool reads either without being told which.
+    """
+    for pattern in patterns:
+        found = list(re.finditer(pattern, text, flags))
+        if found:
+            return found
+    return []
 
 
 def action_blocks(body):
-    return list(re.finditer(ACTION_BLOCK, body, re.S))
+    return first_matching(ACTION_BLOCKS, body)
 
 
 def trigrules_of(mission):
-    start = mission.find('["trigrules"]')
-    if start < 0:
+    """The span of the trigrules section, in either serialisation."""
+    head = re.search(r'^(?P<indent>[ \t]*)(?:\["trigrules"\]|trigrules)\s*=', mission, re.M)
+    if head is None:
         raise SystemExit("FAIL: the mission has no trigrules section")
-    return start, mission.find('-- end of ["trigrules"]', start)
+    end = mission.find('-- end of ["trigrules"]', head.end())
+    if end < 0:
+        # The editor writes no end-of-block comment, so the section runs to the next key at the
+        # same indentation -- `version`, in the one archive that has it.
+        nxt = re.compile(r"^%s\w+\s*=" % head.group("indent"), re.M).search(mission, head.end())
+        end = nxt.start() if nxt else len(mission)
+    return head.start(), end
 
 
-def check_sources(miz, entries, both_ways=True):
-    """The committed archive holds a placeholder for every script, and one per script in the
-    repository. Returns a list of problems.
+def check_sources(miz, entries):
+    """The committed archive holds a placeholder for every script. Returns the problems, and the
+    set of repository files this archive loads.
 
     This used to compare each member against the file it copied, which meant a committed copy that
     had to be refreshed by hand -- and re-refreshed in every pull request that touched the sources,
     186 KB of binary at a time. The archives carry placeholders now and `build` puts the real
     files in, so there is nothing left to go stale and nothing to compare.
 
-    `both_ways` also reports a loose `unit-tests/*.lua` that no trigger loads. That direction is
-    right for `check` and wrong for `remove`, which spends its whole run in exactly that state: it
-    takes a script out of the archive and the loose copy is still on disk, so re-checking it both
-    ways refused every removal and left the command unusable in either order -- delete the loose
-    copy first and the opening check fails instead, on the same rule read the other way.
+    The other direction -- a loose script no trigger loads -- is `unwired_loose_files`, run once
+    over the whole set rather than per archive: three of them share `demo-missions/`, so asking one
+    archive to account for every Lua file beside it reports the other two's scripts as orphans.
     """
     problems = []
-    folder = os.path.dirname(miz)
     wired = set()
 
     for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
         name = member[len(L10N) :]
+        if name in NO_SOURCE_IN_REPO:
+            # Committed inside the archive as-is, and left alone by `stub` and `build`. A
+            # placeholder here would be a file `build` never puts back: the mission would load a
+            # stand-in for MOOSE and fail at the first `SET_GROUP:New()`.
+            if is_placeholder(entries[member]):
+                problems.append(
+                    "%s is committed inside the archive and this one holds a placeholder for it -- "
+                    "restore the archive from git. Nothing can put it back." % name
+                )
+            continue
         if not is_placeholder(entries[member]):
             problems.append(
                 "%s is a real script in a committed archive -- run `miz-suite.py stub`. "
@@ -221,24 +308,34 @@ def check_sources(miz, entries, both_ways=True):
             )
         source = source_of(miz, member, must_exist=False)
         if source is None:
-            if name not in NO_SOURCE_IN_REPO:
-                problems.append("%s has no file in the repository for `build` to put in" % name)
+            problems.append("%s has no file in the repository for `build` to put in" % name)
             continue
         wired.add(os.path.normpath(source))
         if name != ARTIFACT and not os.path.isfile(os.path.join(ROOT, source)):
             problems.append("%s names %s, which is not in the repository" % (name, source))
 
-    # The drift also runs the other way: a suite added to the repository and never baked in is a
-    # test nobody runs, which is exactly how `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage`
-    # sat outside the mission from August 2026.
-    if both_ways:
+    return problems, wired
+
+
+def unwired_loose_files(wired):
+    """Loose `.lua` files in the archives' source folders that no trigger anywhere loads.
+
+    The drift runs this way too: a suite added to the repository and never baked in is a test
+    nobody runs, which is how `testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage` sat outside
+    the mission from August 2026. `wired` is the union over every archive, because a folder can
+    feed several -- `skynet-iads-setup-persian-gulf.lua` is loaded by two of them.
+    """
+    problems = []
+    folders = []
+    for miz in ARCHIVES:
+        folders.extend(source_folders(miz))
+    for folder in sorted(set(folders)):
         for entry in sorted(os.listdir(os.path.join(ROOT, folder))):
-            if not entry.endswith(".lua"):
-                continue
+            if not entry.endswith(".lua") or entry == ARTIFACT:
+                continue  # the deliverable is generated into demo-missions/, not a loose script
             loose = os.path.normpath(os.path.join(folder, entry))
             if loose not in wired:
-                problems.append("%s is in the repository but no trigger in this archive loads it" % loose)
-
+                problems.append("%s is in the repository but no trigger in any archive loads it" % loose)
     return problems
 
 
@@ -247,7 +344,12 @@ def check(entries):
     problems = []
     mapping = parse_map_resource(entries[MAP_RESOURCE].decode("utf-8"))
     mission = entries["mission"].decode("utf-8")
-    referenced = set(re.findall(r"ResKey_Action_\d+", mission))
+
+    compiled = re.findall(r'a_do_script_file\(getValueResourceByKey\(\\"(%s)\\"\)\)' % KEY, mission)
+    start, end = trigrules_of(mission)
+    trigrules = mission[start:end]
+    editor = re.findall(r'(?:\["file"\]|(?<![\w.])file)\s*=\s*"(%s)"' % KEY, trigrules)
+    referenced = set(compiled) | set(editor)
 
     for key in sorted(referenced):
         if key not in mapping:
@@ -260,17 +362,13 @@ def check(entries):
     for orphan in sorted(scripts - named):
         problems.append("%s is in the archive but no trigger loads it" % orphan)
 
-    compiled = re.findall(r'a_do_script_file\(getValueResourceByKey\(\\"(ResKey_Action_\d+)\\"\)\)', mission)
-    start, end = trigrules_of(mission)
-    trigrules = mission[start:end]
-    editor = re.findall(r'\["file"\] = "(ResKey_Action_\d+)"', trigrules)
     if compiled != editor:
         problems.append(
             "trig.actions and trigrules disagree:\n    compiled: %s\n    editor:   %s" % (compiled, editor)
         )
 
-    for am in re.finditer(ACTIONS_ARRAY, trigrules, re.S):
-        idx = [int(b.group(2)) for b in action_blocks(am.group(2) + "\n")]
+    for am in first_matching(ACTIONS_ARRAYS, trigrules):
+        idx = [int(b.group("n")) for b in action_blocks(am.group("body") + "\n")]
         if idx and idx != list(range(1, len(idx) + 1)):
             problems.append("trigrules action indices are not contiguous: %s" % idx)
 
@@ -293,13 +391,13 @@ def drop_from_trigrules(mission, dead_keys):
     # ones still to come. Replacing by matched text instead would rewrite the wrong trigger the
     # day two of them happen to hold the same actions.
     rewrites = []
-    for am in re.finditer(ACTIONS_ARRAY, section, re.S):
-        blocks = action_blocks(am.group(2) + "\n")
+    for am in first_matching(ACTIONS_ARRAYS, section):
+        blocks = action_blocks(am.group("body") + "\n")
         if not blocks:
             continue
         kept = []
         for block in blocks:
-            key = re.search(r'\["file"\] = "(ResKey_Action_\d+)"', block.group(0))
+            key = re.search(r'(?:\["file"\]|(?<![\w.])file)\s*=\s*"(%s)"' % KEY, block.group(0))
             if key and key.group(1) in dead_keys:
                 removed += 1
             else:
@@ -309,7 +407,7 @@ def drop_from_trigrules(mission, dead_keys):
             text = re.sub(r"^([ \t]*)\[\d+\] = ", r"\g<1>[%d] = " % i, text, count=1)
             text = re.sub(r"\}, -- end of \[\d+\]\r?\n$", "}, -- end of [%d]\n" % i, text, count=1)
             renumbered.append(text)
-        rewrites.append((am.start(2), am.end(2), "".join(renumbered).rstrip("\n")))
+        rewrites.append((am.start("body"), am.end("body"), "".join(renumbered).rstrip("\n")))
 
     for begin, finish, text in reversed(rewrites):
         section = section[:begin] + text + section[finish:]
@@ -345,10 +443,15 @@ def write_archive(miz, entries, order):
     print("written: %s" % miz)
 
 
-def do_check(miz, entries, sources=True, both_ways=True):
+def do_check(miz, entries, sources=True, wired=None):
+    """Every invariant that can be asserted against one archive. `wired` collects, across a run,
+    the repository files the archives load -- `unwired_loose_files` reads it at the end."""
     problems, _, compiled = check(entries)
     if sources:
-        problems += check_sources(miz, entries, both_ways=both_ways)
+        source_problems, loaded = check_sources(miz, entries)
+        problems += source_problems
+        if wired is not None:
+            wired.update(loaded)
     for p in problems:
         print("  -", p)
     if problems:
@@ -374,6 +477,8 @@ def do_stub(miz, entries, order):
     stubbed = []
     for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
         name = member[len(L10N) :]
+        if name in NO_SOURCE_IN_REPO:
+            continue  # committed as-is: there is no source for `build` to put back over a stub
         # The artifact is loaded first by the mission, so its placeholder is the one that shouts.
         wanted = placeholder(name, loud=(name == ARTIFACT))
         if entries[member] != wanted:
@@ -412,13 +517,13 @@ def do_build(miz, entries, order):
     built = []
     for member in sorted(n for n in entries if n.startswith(L10N) and n.endswith(".lua")):
         name = member[len(L10N) :]
+        if name in NO_SOURCE_IN_REPO:
+            continue  # already in the archive, and there is nowhere else it could come from
         source = source_of(miz, member)
         if source is None:
             if name == ARTIFACT:
                 print("FAIL: %s has not been built -- run `%s`" % (ARTIFACT_SOURCE, BUILD_SCRIPT))
                 return 2
-            if name in NO_SOURCE_IN_REPO:
-                continue
             print("FAIL: %s has no file in the repository to put in" % name)
             return 2
         with open(os.path.join(ROOT, source), "rb") as handle:
@@ -443,10 +548,11 @@ def do_build(miz, entries, order):
 
 
 def do_remove(miz, entries, order, names):
-    # One way only, here and at the end: removing a script leaves its loose copy on disk until
-    # somebody deletes it, and the archive is meant to be in that state for the length of this
-    # command. `check` still reports it afterwards, which is the reminder to remove both copies.
-    if do_check(miz, entries, both_ways=False) is None:
+    # Removing a script leaves its loose copy on disk until somebody deletes it, and the archive is
+    # meant to be in that state for the length of this command. The scan that reports an unloaded
+    # loose file is `unwired_loose_files`, which only `check` runs -- so it is the reminder to
+    # remove both copies, and it is not in the way here.
+    if do_check(miz, entries) is None:
         print("FAIL: the archive is already inconsistent; not touching it")
         return 2
 
@@ -486,7 +592,7 @@ def do_remove(miz, entries, order, names):
     entries["mission"] = mission.encode("utf-8")
     entries[MAP_RESOURCE] = map_text.encode("utf-8")
 
-    if do_check(miz, entries, both_ways=False) is None:
+    if do_check(miz, entries) is None:
         print("FAIL: the result would be inconsistent; nothing written")
         return 2
     write_archive(miz, entries, order)
@@ -534,7 +640,7 @@ def selected(argv, command=None):
 
     `extract` may also be pointed at an assembled mission under `build/missions/`, because that is
     what CI needs to parse -- the placeholders in the committed archives would prove nothing. Every
-    other command edits the repository and is restricted to the two archives it knows.
+    other command edits the repository and is restricted to the archives it knows.
     """
     rest = list(argv)
     if "--miz" not in rest:
@@ -570,11 +676,12 @@ def main(argv):
 
     status = 0
     found_somewhere = set()
+    wired = set()
     for miz in archives:
         print("== %s" % miz)
         entries, order = read_all(os.path.join(ROOT, miz))
         if command == "check":
-            status = max(status, 0 if do_check(miz, entries) is not None else 2)
+            status = max(status, 0 if do_check(miz, entries, wired=wired) is not None else 2)
         elif command == "build":
             status = max(status, do_build(miz, entries, order))
         elif command == "stub":
@@ -591,6 +698,16 @@ def main(argv):
                 print("  - none of %s is in this archive; skipped" % ", ".join(rest))
                 continue
             status = max(status, do_remove(miz, entries, order, present))
+
+    # Which loose scripts nothing loads can only be told once every archive has been read, because
+    # a folder feeds several of them: `skynet-iads-setup-persian-gulf.lua` is loaded by two. Skipped
+    # when `--miz` narrowed the run, since the rest of the answer was never gathered.
+    if command == "check" and len(archives) == len(ARCHIVES):
+        orphans = unwired_loose_files(wired)
+        for orphan in orphans:
+            print("  -", orphan)
+        if orphans:
+            status = max(status, 2)
 
     # A name in no archive at all is a typo, and skipping every archive for it used to exit 0 --
     # the command reported success for having done nothing, which is how a removal gets believed.

@@ -94,16 +94,21 @@ instead of extending it — it exists to erode, never to grow.
   `test/lua/dcs-figures.lua`, generated from a pinned datamine commit, and a weekly workflow opens a
   pull request when one moves. A suite whose every assertion runs standalone is removed from both
   copies, the loose `unit-tests/*.lua` and the one inside the `.miz`.
-- **The archives in git do not contain the scripts they run.** Each holds a placeholder, and
-  `python build-tools/miz-suite.py build` assembles the playable mission into `build/missions/`,
-  which is git-ignored — build the deliverable first, it is generated too. A committed copy of the
-  code goes stale in silence: both archives ran Skynet 3.3.0 from December 2023 to 2026-09-20, so
-  three years of in-sim runs measured code this project had stopped shipping. An assembled mission
-  cannot, and one opened unbuilt says so on screen. Never edit a `.miz` by hand: a script is wired
-  into it in four places, and `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`,
-  `remove`) is what keeps them consistent; every command covers both archives unless `--miz <path>`
-  narrows it. CI runs `check`, assembles both missions and parses every Lua file in them on every
-  pull request. See `test/lua/README.md`.
+- **No archive in git contains the scripts it runs** — neither the two in-sim ones nor the four
+  under `demo-missions/`. Each holds a placeholder, and `python build-tools/miz-suite.py build`
+  assembles the playable missions into `build/missions/`, which is git-ignored — build the
+  deliverable first, it is generated too. A committed copy of the code goes stale in silence: the
+  in-sim archives ran Skynet 3.3.0 from December 2023 to 2026-09-20, and three of the four demos ran
+  3.2 from the same December, so both what we measured and what newcomers downloaded were code this
+  project had stopped shipping. An assembled mission cannot, and one opened unbuilt says so on
+  screen. Never edit a `.miz` by hand: a script is wired into it in four places, and
+  `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`, `remove`) is what keeps them
+  consistent; every command covers all six archives unless `--miz <path>` narrows it. CI runs
+  `check`, assembles every mission and parses every Lua file in them on every pull request, and
+  `.github/workflows/release.yml` attaches the assembled **demos** to a release — that is where a
+  playable demo comes from now. The tool reads a `mission` written by DCS or by VEAF's mission
+  editor, which serialise the same table differently; `python -m unittest discover -s test/python`
+  covers both shapes. See `test/lua/README.md`.
 - **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
   its tests.
 - **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):
@@ -155,9 +160,9 @@ with its tests → `lua5.1 test/lua/run.lua` → rebuild if the sources changed 
 under `[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
 `develop` → address review and CI → merge.
 
-Nothing to do about the in-sim archives: they hold placeholders, and the mission DCS opens is
-assembled on demand by `python build-tools/miz-suite.py build`. That is the step to run **before**
-testing in DCS, not before committing.
+Nothing to do about the mission archives, in-sim or demo: they hold placeholders, and the mission
+DCS opens is assembled on demand by `python build-tools/miz-suite.py build`. That is the step to run
+**before** testing in DCS, not before committing.
 
 If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
 
