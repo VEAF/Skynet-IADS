@@ -19,6 +19,7 @@ both wrong before it got them right, and each mistake made the gate pass while t
 
 import importlib.util
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -92,26 +93,69 @@ class SlugifyTest(unittest.TestCase):
         self.assertEqual(dc.slugify("Y a-t-il des bogues connus ?"), "y-a-t-il-des-bogues-connus-")
         self.assertEqual(dc.slugify("Are there any known bugs?"), "are-there-any-known-bugs")
 
-    @unittest.skipUnless(importlib.util.find_spec("pymdownx"), "pymdown-extensions not installed")
-    def test_matches_pymdownx_on_every_generated_anchor_in_the_repository(self):
-        # The one assertion that cannot drift: the same headings, through the slugifier mkdocs
-        # actually runs. Re-implementing slug rules is the weak point of this whole module.
+    @unittest.skipUnless(importlib.util.find_spec("markdown"), "markdown/pymdown-extensions not installed")
+    def test_every_anchor_matches_the_id_the_rendered_page_carries(self):
+        # The assertion that cannot drift, and it took two tries to write. Comparing `slugify` to
+        # `pymdownx.slugs.slugify` looks like the right check and is not: mkdocs hands that
+        # function the **rendered** heading, so feeding it raw markdown has both sides wrong at
+        # once. `## Voir la [documentation](x.md)` is served as `voir-la-documentation` while both
+        # produce `voir-la-documentationindexmd`, and the test stays green.
         #
-        # The skip is not a way out. This is the only test here needing anything installed, and
-        # the suite runs in a job that deliberately installs nothing — so the `Docs Check`
-        # workflow runs it a second time, after the docs requirements, where the guard is true
-        # and the comparison really happens. A skip everywhere would be worse than no test.
+        # So render the pages and read the ids out of the HTML, which is what a reader's link has
+        # to match. The skip is not a way out: this is the only test here needing anything
+        # installed, the suite also runs in a job that installs nothing on purpose, and the `Docs
+        # Check` workflow runs it a second time with the docs requirements in place — importing
+        # the module first, so a skip everywhere cannot pass for a pass.
+        anchors_in_html = self._render_and_extract_ids()
+        self.assertGreater(sum(len(v) for v in anchors_in_html.values()), 100, "the documentation shrank")
+        for page, served in anchors_in_html.items():
+            every, _ = dc.anchors_of(page)
+            self.assertEqual(every, served, f"{page.name}: what docs-check computes is not what the page serves")
+
+    @unittest.skipUnless(importlib.util.find_spec("markdown"), "markdown/pymdown-extensions not installed")
+    def test_headings_the_repository_does_not_have_yet(self):
+        # The documentation happens to contain no heading with a link, a tag, a tab or a doubled
+        # space in it — so rendering only the real pages would leave exactly the shapes that were
+        # wrong uncovered. These are rendered the same way and compared to the same ids.
+        import markdown
         from pymdownx.slugs import slugify as pymdownx_slugify
 
-        real = pymdownx_slugify(case="lower")
-        headings = []
+        adversarial = [
+            "Voir la [documentation](index.md)",
+            "Titre  avec   espaces",
+            "Deux\ttabulations",
+            "<span>Balise</span> HTML",
+            "a ? b",
+            "Portée — tiret cadratin (et parenthèses)",
+            "Un **gras** et un *italique*",
+            "The `build_variants` step",
+        ]
+        converter = markdown.Markdown(
+            extensions=["toc", "attr_list", "pymdownx.highlight", "pymdownx.superfences"],
+            extension_configs={"toc": {"slugify": pymdownx_slugify(case="lower"), "permalink": True}},
+        )
+        for title in adversarial:
+            converter.reset()
+            html = converter.convert(f"## {title}\n")
+            served = re.findall(r'<h2[^>]*\bid="([^"]+)"', html)
+            self.assertEqual([dc.slugify(title)], served, f"heading {title!r}")
+
+    @staticmethod
+    def _render_and_extract_ids() -> dict:
+        """Render every documentation page and return {path: set of heading ids it serves}."""
+        import markdown
+        from pymdownx.slugs import slugify as pymdownx_slugify
+
+        converter = markdown.Markdown(
+            extensions=["toc", "attr_list", "pymdownx.highlight", "pymdownx.superfences"],
+            extension_configs={"toc": {"slugify": pymdownx_slugify(case="lower"), "permalink": True}},
+        )
+        served = {}
         for page in sorted(Path(ROOT).joinpath("documentation").glob("*.md")):
-            for title in dc._HEADING.findall(dc.prose_of(page)):
-                if not dc._EXPLICIT_ANCHOR.search(title):
-                    headings.append(title)
-        self.assertGreater(len(headings), 50, "the documentation shrank; this test is no longer measuring much")
-        divergent = [t for t in headings if dc.slugify(t) != real(t, "-")]
-        self.assertEqual(divergent, [])
+            converter.reset()
+            html = converter.convert(page.read_text(encoding="utf-8"))
+            served[page] = set(re.findall(r'<h[1-6][^>]*\bid="([^"]+)"', html))
+        return served
 
 
 class AnchorsOfTest(unittest.TestCase):
@@ -212,6 +256,30 @@ class CheckDocsTest(unittest.TestCase):
         self.assertEqual(len(report.wrong_language_links), 1)
         self.assertIn("other.en.md", report.wrong_language_links[0])
 
+    def test_a_french_page_linking_to_the_english_twin(self):
+        # The mirror of the case above, and not a style matter: `other.en.md` is not a page of the
+        # French build, so the link leads nowhere there.
+        pages = dict(CLEAN)
+        pages["other.md"] = "# Autre\n"
+        pages["other.en.md"] = "# Other\n"
+        pages["index.md"] += "\n[other](other.en.md)\n"
+        report = self._check(pages, ["index.md", "other.md"])
+        self.assertEqual(len(report.broken_links), 1)
+        self.assertIn("not part of the French build", report.broken_links[0])
+
+    def test_an_unclosed_fence_swallows_the_rest_of_the_page(self):
+        # mkdocs renders everything after it as code, so the gate must not read it as prose.
+        pages = dict(CLEAN)
+        pages["index.md"] += "\n```lua\n[exemple](nexistepas.md)\n"
+        report = self._check(pages, ["index.md"])
+        self.assertEqual(report.total, 0, dc.format_report(report))
+
+    def test_a_nav_title_containing_a_colon(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            doc_dir, mkdocs = _tree(Path(tmp), CLEAN, [])
+            mkdocs.write_text('site_name: Test\n\nnav:\n  - "Home: the start": index.md\n', encoding="utf-8")
+            self.assertEqual(dc.check_docs(doc_dir, mkdocs).total, 0)
+
     def test_a_flagged_link_is_a_language_switcher(self):
         pages = dict(CLEAN)
         pages["other.md"] = "# Autre\n"
@@ -275,9 +343,17 @@ class CheckDocsTest(unittest.TestCase):
             self.assertEqual(len(report.broken_links), 1)
             self.assertIn("outside the documentation tree", report.broken_links[0])
 
-    def test_an_indented_code_block_is_still_a_code_block(self):
+    def test_a_fence_indented_inside_a_list_item(self):
         pages = dict(CLEAN)
         pages["index.md"] += "\n1. Comme ceci :\n\n   ```markdown\n   [exemple](nexistepas.md)\n   ```\n"
+        report = self._check(pages, ["index.md"])
+        self.assertEqual(report.total, 0, dc.format_report(report))
+
+    def test_a_block_indented_by_four_spaces_is_code_too(self):
+        # Markdown's other way of writing a code block, and the one nobody remembers is code.
+        # mkdocs renders this as a sample; the gate used to report it as a broken link.
+        pages = dict(CLEAN)
+        pages["index.md"] += "\nExemple :\n\n    [exemple](nexistepas.md)\n"
         report = self._check(pages, ["index.md"])
         self.assertEqual(report.total, 0, dc.format_report(report))
 

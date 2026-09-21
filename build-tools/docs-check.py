@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
@@ -52,12 +53,19 @@ _EXPLICIT_ANCHOR = re.compile(r"\{:?\s*#([A-Za-z0-9_-]+)\s*\}\s*$")
 #: A fenced code block, so links and `#` comments inside one are not mistaken for prose. api.md
 #: alone holds 66 of them; a shell comment there would otherwise register as a heading, and a
 #: sample link as a real one.
-_FENCE = re.compile(r"^[ \t]*(?P<fence>```+|~~~+)[^\n]*\n.*?^[ \t]*(?P=fence)[^\n]*$", re.MULTILINE | re.DOTALL)
+_FENCE = re.compile(
+    r"^[ \t]*(?P<fence>```+|~~~+)[^\n]*\n(?:.*?^[ \t]*(?P=fence)[^\n]*$|.*\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+#: A block indented by four spaces after a blank line: markdown's other way of writing code, and
+#: the one nobody remembers is code. Without this, `    [example](nowhere.md)` under "like so:" is
+#: reported as a broken link while mkdocs renders it as a sample.
+_INDENTED_BLOCK = re.compile(r"(?:^[ \t]*\n)((?:^(?: {4}|\t)[^\n]*\n?)+)", re.MULTILINE)
 #: mkdocs.yml carries a `!!python/object/apply` tag, so it cannot go through yaml.safe_load; the
 #: nav is a flat list of `key: path.md` lines, which this reads directly. A title is optional and
 #: the path may be quoted — both are legal YAML, and missing either makes the entry invisible to
 #: `nav_dangling` while its page is reported as an orphan.
-_NAV_ENTRY = re.compile(r"""^\s*-\s*(?:[^:\n]+:\s*)?["']?([A-Za-z0-9_./-]+\.md)["']?\s*$""", re.MULTILINE)
+_NAV_ENTRY = re.compile(r"""^\s*-\s*(?:.*:\s*)?["']?([A-Za-z0-9_./-]+\.md)["']?\s*$""", re.MULTILINE)
 
 #: Marks a deliberate language-switcher link (see `wrong_language_links`).
 _LANGUAGE_FLAG = "🇫🇷"
@@ -81,6 +89,20 @@ def slugify(title: str) -> str:
         The generated anchor id.
     """
     title = _EXPLICIT_ANCHOR.sub("", title).strip()
+    # mkdocs hands pymdownx the **rendered** heading, not its markdown, so everything the parser
+    # resolves has to be resolved here first or the two disagree. Measured against a real build:
+    # `## Voir la [documentation](index.md)` is served as `voir-la-documentation`, and reading the
+    # raw markdown gives `voir-la-documentationindexmd` — which is what makes it dangerous, since
+    # comparing this function to pymdownx on raw text has both sides wrong at once.
+    title = unicodedata.normalize("NFC", title)
+    title = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", title)  # [label](target) -> label
+    title = re.sub(r"!?\[([^\]]*)\]\[[^\]]*\]", r"\1", title)  # [label][ref]   -> label
+    title = re.sub(r"<[^>]+>", "", title)  # <span>x</span> -> x
+    # Whitespace runs collapse in the rendered text; punctuation removal below does **not**
+    # collapse, which is why the order matters. `## Titre  avec   espaces` is served as
+    # `titre-avec-espaces`, while `## a ? b` keeps both spaces around the dropped `?` and is
+    # served as `a--b`.
+    title = re.sub(r"\s+", " ", title)
     # `_` is deliberately absent from the stripped class: it is a word character for pymdownx, so
     # `## Connecting Skynet to the MOOSE AI_A2A_DISPATCHER` really is served with the underscores
     # in place.
@@ -109,7 +131,8 @@ def prose_of(page: Path) -> str:
         The page text, fences replaced by blank lines of the same height.
     """
     text = page.read_text(encoding="utf-8")
-    return _FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+    blank = lambda m: "\n" * m.group(0).count("\n")  # noqa: E731 — same shape for both passes
+    return _INDENTED_BLOCK.sub(blank, _FENCE.sub(blank, text))
 
 
 def anchors_of(page: Path) -> tuple[set[str], set[str]]:
@@ -217,6 +240,13 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
                 # shape that gets written; before this, the anchor branch below reached
                 # `relative_to` and the gate died on a traceback instead of reporting anything.
                 report.broken_links.append(f"{rel} -> {target} (outside the documentation tree, so never published)")
+                continue
+            if not is_en and path_part.endswith(".en.md") and target not in switcher_targets:
+                # The mirror case, and this one really breaks: `page.en.md` is not a page of the
+                # French build, so the link resolves to nothing there. mkdocs says so too — it is
+                # named here because a module described as guarding links that cross languages
+                # should not see only one of the two directions.
+                report.broken_links.append(f"{rel} -> {target} (an English page is not part of the French build)")
                 continue
             if is_en and not path_part.endswith(".en.md") and target not in switcher_targets and _twin(resolved).exists():
                 # Style, not breakage: the plugin rewrites the link and the reader does land in
