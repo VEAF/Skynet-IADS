@@ -54,10 +54,11 @@ published as a pre-release.
 The published documentation is `documentation/*.md`, built with MkDocs Material and versioned with
 `mike`, deployed by `.github/workflows/docs.yml` to <https://veaf.github.io/Skynet-IADS/>. Prose
 lives in exactly one place: either a page under `documentation/`, or the root `README.md` — never
-both. `develop` publishes as `dev` (the site default while no stable release exists), `master` as
-`latest`, and a tag as its own version — plus `latest` if the tag is a plain `vX.Y.Z`; a
-pre-release tag publishes its own version only, so a release candidate never becomes what a
-newcomer reads by default.
+both. `develop` publishes as `dev` (the site default while no stable release exists) and a tag
+publishes its own version — plus the `latest` alias if the tag is a plain `vX.Y.Z`; a pre-release
+tag publishes its own version only, so a release candidate never becomes what a newcomer reads by
+default. `master` publishes nothing of its own: a tag is always on `master`, so between two
+releases `master` is not on the site.
 
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under

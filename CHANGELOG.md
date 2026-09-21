@@ -25,6 +25,18 @@ Until that release is cut, the build date in the artifact's first line remains t
 
 ## [Unreleased]
 
+### Fixed
+
+- The documentation site never published the version it had just released. `docs.yml` had `master`
+  deploy `latest` and a tag deploy `X.Y.Z` plus the `latest` alias — but `mike deploy latest` makes
+  `latest` a **version**, and a name cannot be a version and an alias at once. The `master` push and
+  the `v3.5.0` tag ran thirty seconds apart, `master` won, and the tag's run died on *alias 'latest'
+  already specified as a version*: `veaf.github.io/Skynet-IADS/latest/` answered 200 with the right
+  content while `/3.5.0/` was a 404, so nothing looked broken and the version selector could never
+  offer the release. `master` now publishes nothing of its own — a tag is always on `master`, so the
+  two steps were publishing the same content, and the `master` step only had a reason to exist while
+  no release did. Deliberate consequence: between two releases, `master` is not on the site.
+
 ## [3.5.0] — 2026-09-21
 
 **The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,
