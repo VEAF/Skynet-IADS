@@ -124,7 +124,7 @@ what to do with it as it rots, that one asks what to replace it with.
 
 ## Smoke tests
 
-**Done, 2026-09-21, by [FEAT-IN-SIM-SMOKE-TESTS](../.backlog/FEAT-IN-SIM-SMOKE-TESTS/PRD.md).**
+**Done, 2026-09-21, by [FEAT-IN-SIM-SMOKE-TESTS](../.backlog/archive/FEAT-IN-SIM-SMOKE-TESTS.md).**
 
 The entry asked three things. *Something that can talk to a running DCS mission* — yes, VEAF's
 dcs-bridge, and `build-tools/run-smoke.py` uses it; the log file turned out not to be needed.
