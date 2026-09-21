@@ -92,9 +92,15 @@ class SlugifyTest(unittest.TestCase):
         self.assertEqual(dc.slugify("Y a-t-il des bogues connus ?"), "y-a-t-il-des-bogues-connus-")
         self.assertEqual(dc.slugify("Are there any known bugs?"), "are-there-any-known-bugs")
 
+    @unittest.skipUnless(importlib.util.find_spec("pymdownx"), "pymdown-extensions not installed")
     def test_matches_pymdownx_on_every_generated_anchor_in_the_repository(self):
-        # The one assertion that cannot drift: the same 126 headings, through the slugifier mkdocs
+        # The one assertion that cannot drift: the same headings, through the slugifier mkdocs
         # actually runs. Re-implementing slug rules is the weak point of this whole module.
+        #
+        # The skip is not a way out. This is the only test here needing anything installed, and
+        # the suite runs in a job that deliberately installs nothing — so the `Docs Check`
+        # workflow runs it a second time, after the docs requirements, where the guard is true
+        # and the comparison really happens. A skip everywhere would be worse than no test.
         from pymdownx.slugs import slugify as pymdownx_slugify
 
         real = pymdownx_slugify(case="lower")

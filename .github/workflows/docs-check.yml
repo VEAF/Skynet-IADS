@@ -17,6 +17,7 @@ on:
       - "mkdocs.yml"
       - "build-tools/docs-check.py"
       - "build-tools/docs-requirements.txt"
+      - "test/python/test_docs_check.py"
       - ".github/workflows/docs-check.yml"
 
 permissions:
@@ -40,6 +41,19 @@ jobs:
 
       - name: Install MkDocs Material and the i18n plugin
         run: pip install -r build-tools/docs-requirements.txt
+
+      # Run the gate's own tests here too, not only in the Lua tests workflow: one of them
+      # compares `slugify` against the real `pymdownx` slugifier, and that job installs nothing on
+      # purpose, so there the test skips itself. This is the only place it actually runs — and it
+      # is the test guarding the weak point of the gate, a re-implementation of mkdocs' slug rules.
+      #
+      # The import below is the point of the first line: a test that skips everywhere proves
+      # nothing, and a skip is silent. If mkdocs-material ever stops pulling pymdown-extensions
+      # in, this job says so instead of going quietly green.
+      - name: Test the gate, including against the real slugifier
+        run: |
+          python -c "import pymdownx.slugs"
+          python -m unittest discover -s test/python -p "test_docs_check.py"
 
       # `--strict` turns mkdocs' own warnings into failures: a nav entry with no page, a relative
       # link with no target, and — because `mkdocs.yml` raises `validation.links.anchors` to
