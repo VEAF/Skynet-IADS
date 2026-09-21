@@ -47,10 +47,18 @@ either one. Assuming DCS's shape made this tool see that archive as having an em
 Usage, from anywhere:
 
     python build-tools/miz-suite.py build              # assemble the playable missions
+    python build-tools/miz-suite.py build --with-bridge   # ...and wire dcs-bridge.lua in
     python build-tools/miz-suite.py check              # wiring, and that git holds no copies
     python build-tools/miz-suite.py stub               # put placeholders back (adding a suite)
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua [...]
+
+`--with-bridge` additionally wires `dcs-bridge.lua` into every archive built that does not already
+carry it, so `build-tools/run-smoke.py` can reach the mission. It is the inverse of `remove`, across
+the same four places, and it exists because the two demos are **release assets**: a mission somebody
+downloads to learn what Skynet does must not open a socket on their machine, so the bridge goes only
+into the git-ignored build. The copy comes from `skynet-insim-last-line-of-defence.miz`, which
+already carries one, so both smoke targets are driven through byte-identical code.
 
 `build` writes to `build/missions/`, which is git-ignored, and needs the deliverable built first
 (`pwsh -File build-tools/build-compiled-script.ps1`) because that is generated too. Copy what it
@@ -385,6 +393,146 @@ def check(entries):
     return problems, mapping, compiled
 
 
+#: The key the smoke bridge is wired under when `build --with-bridge` puts it in.
+#:
+#: Deliberately not `ResKey_Action_NNN`. DCS mints those and renumbers them; a hand-picked number
+#: could collide with one the editor allocates later. The key is only ever a table lookup --
+#: `skynet-insim-last-line-of-defence.miz` has run in DCS under `MCP_MapKey_dcs-bridge`, so a name
+#: DCS did not generate is proven to work -- and a self-describing one makes an injected mission
+#: obvious to anyone who opens it wondering why there is a bridge in a demo.
+BRIDGE_KEY = "SKYNET_SMOKE_dcs-bridge"
+BRIDGE = "dcs-bridge.lua"
+
+#: Where the injected copy comes from: the archive that already carries it.
+#:
+#: Not from a VEAF-dcs-bridge checkout next door, which may be absent, ahead, or behind. This way
+#: the bridge in a smoke-built demo is byte-identical to the one the last-line-of-defence check has
+#: been driven through, so the two targets cannot disagree about the transport.
+BRIDGE_ARCHIVE = os.path.join("unit-tests", "last-line-of-defence", "skynet-insim-last-line-of-defence.miz")
+
+
+def bridge_blob():
+    """The dcs-bridge.lua committed inside the last-line-of-defence archive, or None."""
+    path = os.path.join(ROOT, BRIDGE_ARCHIVE)
+    if not os.path.isfile(path):
+        return None
+    with zipfile.ZipFile(path) as z:
+        member = L10N + BRIDGE
+        if member not in z.namelist():
+            return None
+        return z.read(member)
+
+
+def add_to_map_resource(map_text, key, filename):
+    """A mapResource with one more entry, written in the shape the file already uses.
+
+    Cloned from the last existing line rather than templated: DCS brackets its keys and indents by
+    four, the editor writes some bare and indents by two. Producing the wrong shape would still
+    parse as Lua, so nothing would complain until DCS did.
+    """
+    lines = map_text.splitlines(keepends=True)
+    last = None
+    for i, line in enumerate(lines):
+        if re.match(r'\s*(?:\["%s"\]|%s)\s*=\s*"' % (KEY, KEY), line):
+            last = i
+    if last is None:
+        return None
+    # The key goes in brackets whatever the file's habit for bare ones: `dcs-bridge` has a hyphen,
+    # which is not a Lua identifier, and the editor brackets those too for exactly this reason.
+    indent = re.match(r"\s*", lines[last]).group(0)
+    ending = "\r\n" if lines[last].endswith("\r\n") else "\n"
+    lines.insert(last + 1, '%s["%s"] = "%s",%s' % (indent, key, filename, ending))
+    return "".join(lines)
+
+
+def add_to_trig_actions(mission, key):
+    """Append one `a_do_script_file` call to the compiled action string that already has them."""
+    calls = list(re.finditer(r'a_do_script_file\(getValueResourceByKey\(\\"(%s)\\"\)\);' % KEY, mission))
+    if not calls:
+        return None
+    at = calls[-1].end()
+    return mission[:at] + 'a_do_script_file(getValueResourceByKey(\\"%s\\"));' % key + mission[at:]
+
+
+def add_to_trigrules(mission, key):
+    """Append an action block loading `key`, cloned from the last one in the same array.
+
+    Cloning is the whole method. A block is seven lines in DCS's serialisation and two in the
+    editor's, it carries a nested `ai_task` table, and it is closed by an `-- end of [n]` comment in
+    one shape and not the other. Writing one from a template means writing two templates and being
+    right about which archive gets which; copying the neighbour and changing its key and its number
+    cannot pick the wrong shape.
+    """
+    start, end = trigrules_of(mission)
+    section = mission[start:end]
+    has_file = re.compile(r'(?:\["file"\]|(?<![\w.])file)\s*=\s*"%s"' % KEY)
+
+    # The LAST array that loads a script, not the first. `check` compares the flat ordered list of
+    # keys in trig.actions against the flat ordered list in trigrules and demands they be equal, and
+    # the compiled call is appended at the very end -- so this block has to land at the very end
+    # too. Appending to the first array instead puts the two lists in different orders the moment a
+    # mission has two script-loading triggers, which the editor-shaped fixture has and the Persian
+    # Gulf demo does not. That is how this was found rather than shipped.
+    target = None
+    for am in first_matching(ACTIONS_ARRAYS, section):
+        blocks = action_blocks(am.group("body") + "\n")
+        if blocks and any(has_file.search(b.group(0)) for b in blocks):
+            target = (am, blocks)
+    if target is None:
+        return None
+
+    am, blocks = target
+    last = blocks[-1]
+    # Shape is cloned from a block that HAS a file key, because that is the field being rewritten;
+    # position and number come from the last block, because that is what keeps the indices
+    # contiguous. They are usually the same block, and nothing may assume it.
+    model = next(b for b in reversed(blocks) if has_file.search(b.group(0)))
+    index = int(last.group("n")) + 1
+    clone = has_file.sub(
+        lambda m: re.sub(r'"%s"$' % KEY, '"%s"' % key, m.group(0)), model.group(0), count=1
+    )
+    clone = re.sub(r"^([ \t]*)\[\d+\] = ", r"\g<1>[%d] = " % index, clone, count=1)
+    clone = re.sub(r"\}, -- end of \[\d+\](\r?\n)$", "}, -- end of [%d]\\1" % index, clone, count=1)
+    at = am.start("body") + last.end()
+    section = section[:at] + clone + section[at:]
+    return mission[:start] + section + mission[end:]
+
+
+def inject_bridge(miz, entries, order):
+    """Wire dcs-bridge.lua into an in-memory archive, in all four places. Returns a problem or None.
+
+    Only ever called on what `build` is about to write into `build/missions/`, which is git-ignored.
+    The committed archive is never touched, and it must not be: the two demos are **release
+    assets**, and a mission somebody downloads to learn what Skynet does has no business opening a
+    socket on their machine.
+    """
+    member = L10N + BRIDGE
+    if member in entries:
+        return None  # already carries it; last-line-of-defence does
+
+    blob = bridge_blob()
+    if blob is None:
+        return "%s holds no %s to copy from" % (BRIDGE_ARCHIVE, BRIDGE)
+
+    map_text = add_to_map_resource(entries[MAP_RESOURCE].decode("utf-8"), BRIDGE_KEY, BRIDGE)
+    if map_text is None:
+        return "mapResource has no entry to copy the shape of"
+
+    mission = add_to_trig_actions(entries["mission"].decode("utf-8"), BRIDGE_KEY)
+    if mission is None:
+        return "no a_do_script_file call in trig.actions to append to"
+
+    mission = add_to_trigrules(mission, BRIDGE_KEY)
+    if mission is None:
+        return "no trigrules actions array loading a script to append to"
+
+    entries[MAP_RESOURCE] = map_text.encode("utf-8")
+    entries["mission"] = mission.encode("utf-8")
+    entries[member] = blob
+    order.append(member)
+    return None
+
+
 def drop_from_map_resource(map_text, key):
     """A mapResource with that key's line taken out, or None if there is no such line.
 
@@ -515,12 +663,15 @@ def do_stub(miz, entries, order):
     return 0
 
 
-def do_build(miz, entries, order):
+def do_build(miz, entries, order, with_bridge=False):
     """Write the playable mission: the committed archive with the real scripts put in.
 
     This is what replaces a committed copy of the code. The mission DCS opens is assembled from the
     sources at the moment it is asked for, so it cannot be out of date -- which is the whole defect
     this lot was opened for, and the reason nothing has to be remembered or re-committed.
+
+    `with_bridge` additionally wires dcs-bridge.lua in, so `build-tools/run-smoke.py` can reach the
+    mission. It is opt-in and it never reaches the committed archive: the demos are release assets.
     """
     if do_check(miz, entries, sources=False) is None:
         print("FAIL: the archive is inconsistent; not building from it")
@@ -549,6 +700,18 @@ def do_build(miz, entries, order):
             entries[member] = normalised(handle.read()).replace(b"\n", b"\r\n")
         built.append("%s <- %s" % (name, source))
 
+    if with_bridge:
+        problem = inject_bridge(miz, entries, order)
+        if problem is not None:
+            print("FAIL: cannot wire %s in: %s" % (BRIDGE, problem))
+            return 2
+        if L10N + BRIDGE in entries:
+            built.append("%s <- %s (smoke gate)" % (BRIDGE, BRIDGE_ARCHIVE))
+
+    # The guard that makes the injection safe to have written at all: the same invariants `check`
+    # holds every archive to, re-run over the assembled bytes. A malformed action block, a key in
+    # mapResource that no trigger names, trig.actions and trigrules disagreeing -- none of it can
+    # reach the disk, because nothing is written until this passes.
     if do_check(miz, entries, sources=False) is None:
         print("FAIL: the assembled mission would be inconsistent; nothing written")
         return 2
@@ -687,6 +850,13 @@ def main(argv):
     command = argv[1]
     archives, rest = selected(argv[2:], command)
 
+    with_bridge = "--with-bridge" in rest
+    if with_bridge:
+        if command != "build":
+            print("FAIL: --with-bridge only means anything to `build`")
+            return 1
+        rest.remove("--with-bridge")
+
     if command == "remove" and not rest:
         print("FAIL: remove needs at least one script name")
         return 1
@@ -703,7 +873,7 @@ def main(argv):
         if command == "check":
             status = max(status, 0 if do_check(miz, entries, wired=wired) is not None else 2)
         elif command == "build":
-            status = max(status, do_build(miz, entries, order))
+            status = max(status, do_build(miz, entries, order, with_bridge))
         elif command == "stub":
             status = max(status, do_stub(miz, entries, order))
         elif command == "extract":

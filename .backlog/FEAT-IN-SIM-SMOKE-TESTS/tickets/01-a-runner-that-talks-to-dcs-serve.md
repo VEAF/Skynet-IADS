@@ -107,6 +107,14 @@ _To be filled by the run. Expected output shape:_
 `jammer-alive` is expected to be **red on `develop`** until `FIX-DEMO-DESTROYS-ITS-JAMMER` merges,
 and that is the point: a check nobody has seen fail is a check nobody has tested.
 
+## Getting the bridge into the demo
+
+`dcs-serve` reaches nothing unless the mission loads `dcs-bridge.lua`, and only
+`skynet-insim-last-line-of-defence.miz` carried it. So the five checks above were written, tested and
+unreachable until `miz-suite.py build --with-bridge` existed — the inverse of `remove`, across the
+same four wiring places, opt-in and confined to the git-ignored build. See the PRD for why it cannot
+go into the committed archive, and for the ordering defect that testing both serialisations caught.
+
 ## Why stdlib only
 
 `miz-suite.py` sets the precedent and CTLD's runner made the same call. A tool a developer runs
@@ -122,6 +130,8 @@ one POST.
   and before the poll.
 - `python -m unittest discover -s test/python` is green.
 - The five checks are in `CHECKS`, each with a `why` worth reading on the day it fails.
+- `build --with-bridge` puts the bridge in, plain `build` does not, and the committed archives are
+  untouched by both.
 - Run against a real DCS, with the table above filled in and the two counts recorded.
 
 ## Why this is one ticket and not two

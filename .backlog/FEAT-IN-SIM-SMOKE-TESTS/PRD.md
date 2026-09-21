@@ -132,9 +132,24 @@ archive's four wiring places but has no inverse. Adding one means allocating a r
 `mapResource`, appending to the existing trigger's action string and putting the file in the zip,
 across the two serialisations `test/python/test_miz_suite.py` covers.
 
-**Open, awaiting David's call**, because it is scope this lot was not given: write that injection as
-`miz-suite.py build --with-bridge`, or land the runner with the two flown checks and take the demo
-target as a follow-up.
+**Resolved 2026-09-21: David chose the injection, in this branch.** `miz-suite.py build
+--with-bridge` wires the bridge into every archive built that does not already carry it, across the
+same four places `remove` clears. It never touches a committed archive, and a plain `build` is
+unchanged — so what a release attaches still ships no socket. The copy is lifted from
+`skynet-insim-last-line-of-defence.miz`, which means both smoke targets are driven through
+byte-identical bridge code rather than through whatever a checkout next door happens to hold.
+
+The injection clones the neighbouring structures rather than templating them. A block is seven lines
+in DCS's serialisation and two in the editor's, one closes on `-- end of [n]` and the other on
+nothing, and a malformed one still parses as Lua — so nothing would complain until DCS did. Copying
+the neighbour and changing its key and its number cannot pick the wrong shape.
+
+**A real defect was caught by testing both shapes**, which is the reason that discipline exists here.
+The first version appended the compiled call at the end of `trig.actions` but the action block to the
+**first** `trigrules` array. `check` demands the two flat key lists be equal, so the moment a mission
+has two script-loading triggers the orders diverge. The Persian Gulf demo has one; the editor-shaped
+fixture has two. Verified by mutation: restoring the faulty line turns
+`test_the_result_passes_check_editor` red with the exact disagreement.
 
 ## What this lot does not touch
 
@@ -155,8 +170,9 @@ answer it.
 ## Definition of done
 
 - `python build-tools/run-smoke.py --list` names seven checks across two targets.
-- **The demo target can actually be reached** — see the open question above; the five checks are
-  written but unreachable until the bridge is injected into the built demo.
+- **The demo target can actually be reached**: `build --with-bridge` wires the bridge in, a plain
+  `build` does not, the committed archives never change, and the injected copy is byte-identical to
+  the one `last-line-of-defence` carries.
 - `python -m unittest discover -s test/python` covers the runner's own logic, including the sweep
   that no expectation accepts a lost reply.
 - With no DCS running, the runner **skips and exits 0**, and says nothing was measured.

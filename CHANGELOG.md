@@ -224,6 +224,12 @@ Until that release is cut, the build date in the artifact's first line remains t
   artifact in the in-sim suites, Skynet 3.2 in the demos, MiST putting a popup on screen, both demos
   destroying their own jammer -- was invisible to every gate the project had. See
   `unit-tests/README.md`.
+- `python build-tools/miz-suite.py build --with-bridge`, which wires `dcs-bridge.lua` into every
+  archive it assembles that does not already carry one -- the inverse of `remove`, across the same
+  four places a script is wired in. It is what lets the smoke gate reach the demo missions, and it is
+  opt-in and confined to the git-ignored `build/missions/`: the demos are release assets, and a
+  mission somebody downloads to learn what Skynet does must not open a socket on their machine. A
+  plain `build` is unchanged, so what a release attaches is unchanged.
 
 ### Changed
 

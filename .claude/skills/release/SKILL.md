@@ -65,7 +65,7 @@ at runtime is at least a minor.
 
    ```bash
    pwsh -File build-tools/build-compiled-script.ps1
-   python build-tools/miz-suite.py build
+   python build-tools/miz-suite.py build --with-bridge
    python build-tools/run-smoke.py --target demo
    python build-tools/run-smoke.py --target lastline --tier slow
    ```

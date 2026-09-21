@@ -17,8 +17,10 @@ Prerequisites, on the machine running DCS:
 
   * `MissionScripting.lua` not sanitised, or the bridge cannot open its socket;
   * `dcs-serve` running, with `dcs-bridge.lua` loaded by the mission;
-  * the mission built and open -- `python build-tools/miz-suite.py build` first, the archives in git
-    hold placeholders.
+  * the mission built **with the bridge in it** and open:
+    `python build-tools/miz-suite.py build --with-bridge`. The archives in git hold placeholders,
+    and only `last-line-of-defence` carries dcs-bridge.lua of its own -- the demos are release
+    assets and must not ship a socket, so the bridge is injected into the git-ignored build only.
 
 Usage, from anywhere (paths resolve from this file):
 

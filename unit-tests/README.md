@@ -18,10 +18,16 @@ playable missions first:
 
 ```
 pwsh -File build-tools/build-compiled-script.ps1
-python build-tools/miz-suite.py build
+python build-tools/miz-suite.py build --with-bridge
 ```
 
 They land in `build/missions/`, which is git-ignored. A mission opened unbuilt says so on screen.
+
+`--with-bridge` wires `dcs-bridge.lua` into every archive that does not already carry it, which is
+what lets the smoke gate reach the demo. Leave it off and you get exactly what a release attaches —
+the demos are release assets, and a mission somebody downloads must not open a socket on their
+machine. The bridge is copied out of `last-line-of-defence`, so both smoke targets are driven
+through byte-identical code.
 
 ## The smoke gate
 
