@@ -1,6 +1,6 @@
 # 01 — A manual trigger on the documentation workflow
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Work
 

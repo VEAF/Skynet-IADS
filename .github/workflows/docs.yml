@@ -17,6 +17,24 @@ on:
     tags:
       - "v*"
 
+  # Republish a version's pages without moving its tag. Re-running the tag build would rebuild
+  # from the *tagged* commit, so a documentation fix landed after the tag could never reach the
+  # published pages -- this path builds from the branch it is run on and deploys under the version
+  # you name. It is what let 3.5.0's pages become bilingual without spending a version number on a
+  # translation (CHORE-DOCS-MANUAL-REPUBLISH); it does not republish the artifact, which stays
+  # whatever the tag built.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to republish, e.g. 3.5.0. Leave empty to redeploy the 'dev' alias."
+        required: false
+        type: string
+      set_latest:
+        description: "Also move the 'latest' alias, and the site default, to that version"
+        required: false
+        type: boolean
+        default: true
+
 permissions:
   contents: write
 
@@ -41,8 +59,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # `github.event_name == 'push'` matters: a manual run started from `develop` carries that
+      # same ref, so without it a republish of 3.5.0 would redeploy the `dev` alias as a side
+      # effect of asking for something else.
       - name: Deploy dev (develop branch)
-        if: github.ref == 'refs/heads/develop'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
         run: |
           mike deploy --push --update-aliases dev
           # Bootstrap only: keep "dev" the default until a stable release exists. Once
@@ -61,3 +82,31 @@ jobs:
           else
             mike deploy --push "$version"
           fi
+
+      # The version arrives through the environment rather than being interpolated into the
+      # script: a workflow input is untrusted text, and `${{ }}` inside `run` pastes it into the
+      # shell before bash ever sees a quote.
+      - name: Republish a version (manual)
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          VERSION: ${{ inputs.version }}
+          SET_LATEST: ${{ inputs.set_latest }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$VERSION' is not a version number (expected 3.5.0, or 3.6.0-rc1)"
+            exit 1
+          fi
+          if ! mike list | grep -qw "$VERSION"; then
+            echo "::error::no published version '$VERSION' — this republishes pages, it does not create a release"
+            exit 1
+          fi
+          if [ "$SET_LATEST" = "true" ]; then
+            mike deploy --push --update-aliases "$VERSION" latest
+            mike set-default --push latest
+          else
+            mike deploy --push "$VERSION"
+          fi
+
+      - name: Redeploy the dev alias (manual, no version given)
+        if: github.event_name == 'workflow_dispatch' && inputs.version == ''
+        run: mike deploy --push --update-aliases dev
