@@ -1,6 +1,6 @@
 # 04 — The documentation gate
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 

@@ -1,6 +1,6 @@
 # 02 — i18n plumbing and the four short pages
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Work
 

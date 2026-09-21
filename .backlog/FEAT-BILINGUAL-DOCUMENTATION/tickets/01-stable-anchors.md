@@ -1,6 +1,6 @@
 # 01 — Stable anchors and link hygiene
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 

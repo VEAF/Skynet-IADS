@@ -36,6 +36,9 @@ Until that release is cut, the build date in the artifact's first line remains t
   offer the release. `master` now publishes nothing of its own — a tag is always on `master`, so the
   two steps were publishing the same content, and the `master` step only had a reason to exist while
   no release did. Deliberate consequence: between two releases, `master` is not on the site.
+- The `README.md` link to the setup page was a 404, and had always been one: `mike` publishes
+  every page under its version, so `/Skynet-IADS/setting-up/` has never resolved — only
+  `/latest/setting-up/` does. Found while making the README bilingual.
 
 ### Added
 
@@ -52,6 +55,8 @@ Until that release is cut, the build date in the artifact's first line remains t
   anchor, English pages linking back into French, pages with no twin, and nav entries with no
   page. Two of those are invisible to the strict build: an untranslated page is served in French
   on its English URL rather than failing, and a link from an English page to `page.md` resolves.
+- `README.md` now carries both languages in one file, English first then French, with a switcher
+  at the top of each half — the shape VEAF-Mission-Creation-Tools uses.
 
 ## [3.5.0] — 2026-09-21
 

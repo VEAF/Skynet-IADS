@@ -1,6 +1,6 @@
 # 05 — Repository instructions and changelog
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 `CLAUDE.md` currently reads *"English, everywhere: code, comments, commits, pull requests,
 documentation"*. The last word stops being true. Rewrite it: English for code, comments, commits

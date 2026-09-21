@@ -30,10 +30,14 @@ links — a VMCT incident, not ours).
 
 ## Consequences a reader will notice
 
-- `https://veaf.github.io/Skynet-IADS/setting-up/` **becomes French**. The English page moves to
-  `.../en/setting-up/`. Every link that exists today keeps working, it just switches language;
-  Material's language selector sits in the header.
-- The root `README.md` stays English and single, as in both sibling repositories.
+- `https://veaf.github.io/Skynet-IADS/latest/setting-up/` **becomes French**. The English page
+  moves to `.../latest/en/setting-up/`. Every link that exists today keeps working, it just
+  switches language; Material's language selector sits in the header.
+- The root `README.md` becomes bilingual **in a single file** — English first, then French, with a
+  switcher at the top of each half. That is what VMCT does, and it was worth checking rather than
+  assuming: the plan opened with "the README stays English and single, as in both sibling
+  repositories", which was half right. Their own switcher link is broken (`#fr` matches no anchor
+  in their file); ours uses an explicit `<a id>`.
 
 ## Scope
 
@@ -45,10 +49,11 @@ makers spend their time.
 
 | # | Ticket | Status |
 |---|--------|--------|
-| 01 | [Stable anchors and link hygiene](tickets/01-stable-anchors.md) | ⬜ |
-| 02 | [i18n plumbing and the four short pages](tickets/02-i18n-plumbing.md) | ⬜ |
-| 03 | [Translate the API reference](tickets/03-translate-api.md) | ⬜ |
-| 04 | [The documentation gate](tickets/04-docs-gate.md) | ⬜ |
-| 05 | [Repository instructions and changelog](tickets/05-instructions.md) | ⬜ |
+| 01 | [Stable anchors and link hygiene](tickets/01-stable-anchors.md) | ✅ |
+| 02 | [i18n plumbing and the four short pages](tickets/02-i18n-plumbing.md) | ✅ |
+| 03 | [Translate the API reference](tickets/03-translate-api.md) | ✅ |
+| 04 | [The documentation gate](tickets/04-docs-gate.md) | ✅ |
+| 05 | [Repository instructions and changelog](tickets/05-instructions.md) | ✅ |
+| 06 | [A bilingual README](tickets/06-bilingual-readme.md) | ✅ |
 
 One branch, one pull request, one commit per ticket.

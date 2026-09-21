@@ -1,6 +1,6 @@
 # 03 — Translate the API reference
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 778 lines, 38 headings. Prose translated, code samples untouched, method and option names left
 exactly as the Lua spells them. Anchors identical to `api.en.md`.
