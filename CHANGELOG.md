@@ -37,6 +37,22 @@ Until that release is cut, the build date in the artifact's first line remains t
   two steps were publishing the same content, and the `master` step only had a reason to exist while
   no release did. Deliberate consequence: between two releases, `master` is not on the site.
 
+### Added
+
+- **The documentation site is now bilingual, and French is what a visitor gets by default.** Every
+  page exists twice — `page.md` in French, `page.en.md` in English — served by
+  `mkdocs-static-i18n` at the site root and under `/en/`, with a language selector in the header.
+  This is the model VEAF-Mission-Creation-Tools uses, copied down to its conventions: a heading
+  that a cross-page link targets declares its own anchor, identical in both languages, so no link
+  published elsewhere moves. `https://veaf.github.io/Skynet-IADS/latest/setting-up/` and its
+  siblings keep working and switch to French; their English text is at
+  `https://veaf.github.io/Skynet-IADS/latest/en/setting-up/`.
+- A `Docs Check` workflow, running `build-tools/docs-check.py` and a strict MkDocs build on every
+  pull request. It reports broken links, dead anchors, cross-page links relying on a generated
+  anchor, English pages linking back into French, pages with no twin, and nav entries with no
+  page. Two of those are invisible to the strict build: an untranslated page is served in French
+  on its English URL rather than failing, and a link from an English page to `page.md` resolves.
+
 ## [3.5.0] — 2026-09-21
 
 **The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,
