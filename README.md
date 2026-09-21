@@ -2,7 +2,7 @@
 
 # Skynet-IADS
 
-> 🇫🇷 [Lire ce document en français](#fr)
+> 🇬🇧 **English** | 🇫🇷 [Français](#fr)
 
 An IADS (Integrated Air Defence System) script for [DCS World](https://www.digitalcombatsimulator.com/):
 early-warning radars feed contacts to SAM sites, which stay dark under network control until told
@@ -28,7 +28,8 @@ project jointly, and this repository is where the work happens. The two historic
 ## Contributing
 
 See [contributing.md](contributing.md) for the branching model, the test suite, and how to build
-the artifact locally.
+the artifact locally. That file is in English, like everything living in the repository; only the
+published documentation is bilingual.
 
 ## Reporting a problem
 
@@ -40,7 +41,7 @@ Open a [GitHub issue](https://github.com/VEAF/Skynet-IADS/issues).
 
 # Skynet-IADS
 
-> 🇫🇷 **Français** | 🇬🇧 [English](#en)
+> 🇬🇧 [English](#en) | 🇫🇷 **Français**
 
 Un script d'IADS (Integrated Air Defence System — système de défense aérienne intégré) pour [DCS
 World](https://www.digitalcombatsimulator.com/) : les radars de veille lointaine transmettent les

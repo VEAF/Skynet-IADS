@@ -26,6 +26,14 @@ extra:
   version:
     provider: mike
 
+# mkdocs resolves anchors with the real slugifier, in the language being built, following the twin
+# a translated link lands on. Left at its default (`info`) that check is silent; at `warn` it fails
+# a `--strict` build. It is the belt to `build-tools/docs-check.py`'s braces — and the more
+# trustworthy of the two on anchors, since the gate only re-implements the slug rules.
+validation:
+  links:
+    anchors: warn
+
 # The site is bilingual, French by default, on the VEAF-Mission-Creation-Tools model: the
 # unsuffixed `page.md` holds the French text and `page.en.md` its English twin. French serves at
 # the site root and English under `/en/`, with Material's language selector in the header.

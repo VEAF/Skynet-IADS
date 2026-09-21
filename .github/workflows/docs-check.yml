@@ -4,9 +4,9 @@ name: Docs Check
 # so until now a dangling nav entry, a dead anchor or a page whose French text was written and
 # whose English twin never was would reach the published site before anyone could see it.
 #
-# Two defects the strict build cannot see, and which this job exists for: an English page with no
-# twin is served in French by the i18n plugin rather than failing, and an English page linking to
-# `page.md` resolves — straight back into French.
+# The defect the strict build cannot see, and the reason the gate runs beside it: a page with no
+# twin is served in the *other* language under its own URL by the i18n plugin rather than failing,
+# and mkdocs logs a page outside the nav as INFO, so nothing goes red.
 
 on:
   push:
@@ -42,6 +42,9 @@ jobs:
         run: pip install -r build-tools/docs-requirements.txt
 
       # `--strict` turns mkdocs' own warnings into failures: a nav entry with no page, a relative
-      # link with no target, a page in no menu. It builds both languages.
+      # link with no target, and — because `mkdocs.yml` raises `validation.links.anchors` to
+      # `warn` — a link to an anchor the target does not expose, resolved with the real slugifier
+      # in the language being built. A page in no menu is *not* one of them: mkdocs logs that as
+      # INFO, which is why the gate above checks it. Both languages are built.
       - name: Build the site, both languages, warnings fatal
         run: mkdocs build --strict --site-dir "$RUNNER_TEMP/site"

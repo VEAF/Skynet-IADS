@@ -412,11 +412,12 @@ be 0:
 contact:getMagneticHeading()
 ```
 
-Will return the current ground speed of a contact. Note the speed is available only after a contact
-has been tracked in more than one cycle by the IADS. Until that has happened speed will be 0:
+Will return the current ground speed of a contact, in knots, rounded to `decimals` decimal places
+(2 when the argument is omitted). Note the speed is available only after a contact has been tracked
+in more than one cycle by the IADS. Until that has happened speed will be 0:
 
 ```lua
-contact:getMagneticHeading()
+contact:getGroundSpeedInKnots(0)
 ```
 
 Will return the time in seconds a contact has been known to the IADS:

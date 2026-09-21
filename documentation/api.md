@@ -44,8 +44,8 @@ de la mesurer est justement celui qu'on vient d'éteindre.
 
 La dernière ligne de défense corrige cela. Un site maintenu éteint conserve un petit rayon de
 détection **virtuel** qui lui est propre — celui de Skynet, aucun radar DCS n'intervient — et un
-aéronef hostile qui y pénètre fait s'activer le site sans qu'aucun contact radar existe nulle part.
-C'est **actif par défaut**.
+aéronef hostile qui y pénètre fait s'activer le site alors qu'aucun radar, nulle part, ne tient de
+contact. C'est **actif par défaut**.
 
 La limite, assumée : un système à courte portée peut s'allumer pour un aéronef qu'il ne peut pas
 atteindre, parce que le rayon ignore le domaine de tir. Exiger la zone létale reviendrait à ce
@@ -314,7 +314,7 @@ SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE
 
 Cette option fixe, en pourcentage de la zone choisie dans `setEngagementZone`, la distance à
 laquelle le site SAM s'active. Attention à ne pas descendre trop bas : certains sites SAM ont
-besoin de 30 secondes avant de pouvoir tirer.
+besoin de jusqu'à 30 secondes avant de pouvoir tirer.
 Pendant ce temps, la cible peut déjà avoir quitté leur zone d'engagement. Cette option vise les
 systèmes à longue portée comme le S-300. Vous pouvez aussi dépasser 100, ce qui fera s'activer le
 site plus tôt :
@@ -418,11 +418,12 @@ contact suivi par l'IADS sur plus d'un cycle. Jusque-là, il vaut 0 :
 contact:getMagneticHeading()
 ```
 
-Renvoie la vitesse sol courante du contact. Attention : la vitesse n'est disponible qu'une fois le
-contact suivi par l'IADS sur plus d'un cycle. Jusque-là, elle vaut 0 :
+Renvoie la vitesse sol courante du contact, en nœuds, arrondie à `decimals` décimales (2 si
+l'argument est omis). Attention : la vitesse n'est disponible qu'une fois le contact suivi par
+l'IADS sur plus d'un cycle. Jusque-là, elle vaut 0 :
 
 ```lua
-contact:getMagneticHeading()
+contact:getGroundSpeedInKnots(0)
 ```
 
 Renvoie depuis combien de secondes le contact est connu de l'IADS :
@@ -582,8 +583,8 @@ local jammerSource = Unit.getByName("F-4 AI")
 jammer = SkynetIADSJammer:create(jammerSource, iads)
 ```
 
-Le brouilleur se met à l'écoute des émetteurs et brouille le premier qu'il rencontre parmi ceux
-qu'il est capable de brouiller :
+Le brouilleur se met à l'écoute des émetteurs et brouille ceux qu'il est capable de brouiller, dès
+qu'il en détecte un :
 
 ```lua
 jammer:masterArmOn()

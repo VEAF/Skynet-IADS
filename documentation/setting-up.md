@@ -82,8 +82,8 @@ vous introduisez un point de défaillance unique dans un IADS.
 ### AWACS (Airborne Early Warning and Control System)
 
 N'importe quel aéronef doté d'un radar air-air peut être ajouté comme AWACS. Les contacts qu'il
-détecte sont versés à l'IADS. L'AWACS détecte également les unités au sol, ainsi que les navires.
-Ceux-là, en revanche, ne sont pas transmis aux sites SAM.
+détecte sont versés à l'IADS. L'AWACS détecte également les unités au sol, navires compris. Ces
+contacts-là, en revanche, ne sont pas transmis aux sites SAM.
 
 Vous pouvez donner un nœud de liaison à l'AWACS — une antenne, par exemple : s'il est détruit,
 l'AWACS ne peut plus alimenter l'IADS en contacts.

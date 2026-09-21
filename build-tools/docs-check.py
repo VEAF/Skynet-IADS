@@ -2,22 +2,33 @@
 """Guard the published documentation against silent rot.
 
 The site is bilingual: `page.md` is French and `page.en.md` its English twin (see `mkdocs.yml`).
-Doubling the pages doubles the ways the site can rot without anyone noticing, and two of those ways
-are invisible to `mkdocs build --strict`:
+Doubling the pages doubles the ways the site can rot without anyone noticing, and the one that
+matters is invisible to `mkdocs build --strict`:
 
-- **A French page with no English twin.** `mkdocs-static-i18n` falls back rather than failing, so
-  the English URL quietly serves French. VMCT shipped one like that for months before anyone saw it
-  — this gate exists because of that page.
-- **An English page linking to `page.md`.** The link resolves, so nothing is reported; the reader
-  simply lands back in French.
+- **A page with no twin.** `mkdocs-static-i18n` falls back rather than failing, so an untranslated
+  page is served in the wrong language under the other locale's URL — `/en/faq/` answering with a
+  French `<h1>`, exit code 0. VMCT shipped one like that for months before anyone saw it, and this
+  gate exists because of that page. mkdocs does not help either way: a page in no menu is an
+  `INFO`, not a warning, so `--strict` stays green on it.
 
 Ported from `veaf_build/docs_check.py` in VEAF-Mission-Creation-Tools, keeping the two subtleties
-that repository got wrong first and fixed, both verified there against the published HTML:
+that repository got wrong first and fixed, both verified there against the published HTML, and
+both re-measured here on a real build:
 
 - **An explicit `{#anchor}` replaces the generated id**, it does not add to it. Registering both is
   how five dead anchors passed the gate while 404ing on the site.
-- **Relative links are language-agnostic** — the plugin rewrites them — but **anchors are not**, so
-  an anchor is checked against the page the reader actually lands on.
+- **Relative links are language-agnostic** — the plugin rewrites them, so an English page linking
+  to `page.md` is served `page/` resolved inside `/en/` and its reader never lands in French. Only
+  a *missing target* is a defect there. **Anchors are not rewritten**, so an anchor is checked
+  against the page the reader actually lands on.
+
+`wrong_language_links` therefore reports a **style** rule, not a broken page: every English page
+spells its target `.en.md`, so that what the file says and what the reader gets cannot drift apart.
+
+Anchor arithmetic is duplicated work — `mkdocs.yml` sets `validation.links.anchors: warn`, and the
+strict build checks the same thing with the real slugifier, in the right language. This module
+keeps it because `implicit_anchors` needs to know *which* anchors are explicit, which mkdocs never
+reports.
 
 Run it with `python build-tools/docs-check.py`; the `Docs Check` workflow runs the same thing.
 """
@@ -30,12 +41,23 @@ import sys
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
-_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+?)(?:\s+\"[^\"]*\")?\)")
+#: An inline link's target, with `<...>` around it allowed, and a reference definition's target.
+#: Both forms resolve to a file, so both have to be checked — a `[see][ref]` whose `[ref]:` line
+#: points nowhere is as broken as an inline link, and reads as ordinary prose to the eye.
+_LINK = re.compile(r"\[[^\]]*\]\(\s*<?([^)\s<>]+?)>?(?:\s+\"[^\"]*\")?\s*\)")
+_LINK_DEFINITION = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s<>]+)>?", re.MULTILINE)
 _HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.MULTILINE)
-_EXPLICIT_ANCHOR = re.compile(r"\{#([A-Za-z0-9_-]+)\}\s*$")
+#: Both spellings attr_list accepts: `{#id}` and the canonical `{: #id }`.
+_EXPLICIT_ANCHOR = re.compile(r"\{:?\s*#([A-Za-z0-9_-]+)\s*\}\s*$")
+#: A fenced code block, so links and `#` comments inside one are not mistaken for prose. api.md
+#: alone holds 66 of them; a shell comment there would otherwise register as a heading, and a
+#: sample link as a real one.
+_FENCE = re.compile(r"^(?P<fence>```+|~~~+)[^\n]*\n.*?^(?P=fence)[^\n]*$", re.MULTILINE | re.DOTALL)
 #: mkdocs.yml carries a `!!python/object/apply` tag, so it cannot go through yaml.safe_load; the
-#: nav is a flat list of `key: path.md` lines, which this reads directly.
-_NAV_ENTRY = re.compile(r":\s*([A-Za-z0-9_./-]+\.md)\s*$", re.MULTILINE)
+#: nav is a flat list of `key: path.md` lines, which this reads directly. A title is optional and
+#: the path may be quoted — both are legal YAML, and missing either makes the entry invisible to
+#: `nav_dangling` while its page is reported as an orphan.
+_NAV_ENTRY = re.compile(r"""^\s*-\s*(?:[^:\n]+:\s*)?["']?([A-Za-z0-9_./-]+\.md)["']?\s*$""", re.MULTILINE)
 
 #: Marks a deliberate language-switcher link (see `wrong_language_links`).
 _LANGUAGE_FLAG = "🇫🇷"
@@ -63,7 +85,31 @@ def slugify(title: str) -> str:
     # `## Connecting Skynet to the MOOSE AI_A2A_DISPATCHER` really is served with the underscores
     # in place.
     title = re.sub(r"[`*]", "", title)
-    return re.sub(r"[^\w\- ]", "", title, flags=re.UNICODE).strip().lower().replace(" ", "-")
+    # No strip after the punctuation is removed, and that is the whole point: pymdownx does not
+    # strip either, so the space French puts before a `?` becomes a **trailing dash**. `## Y a-t-il
+    # des bogues connus ?` is served as `y-a-t-il-des-bogues-connus-`. Stripping it made this
+    # function disagree with the site on 8 of the 126 generated anchors, every one of them French
+    # — and the divergence ran the wrong way: a link copied from the permalink the page itself
+    # displays was reported dead, while the id that 404s was accepted.
+    return re.sub(r"[^\w\- ]", "", title, flags=re.UNICODE).lower().replace(" ", "-")
+
+
+def prose_of(page: Path) -> str:
+    """Return a page's text with its fenced code blocks blanked out.
+
+    Everything this module looks for — a link, a heading — means something inside a code block
+    that it does not mean outside one: a sample link points nowhere on purpose, and `# comment` in
+    a shell snippet is not a heading. Blanking rather than deleting keeps the line numbering, so a
+    finding still points where a human would look.
+
+    Args:
+        page: Path to a markdown page.
+
+    Returns:
+        The page text, fences replaced by blank lines of the same height.
+    """
+    text = page.read_text(encoding="utf-8")
+    return _FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
 
 
 def anchors_of(page: Path) -> tuple[set[str], set[str]]:
@@ -78,7 +124,7 @@ def anchors_of(page: Path) -> tuple[set[str], set[str]]:
     """
     every: set[str] = set()
     explicit: set[str] = set()
-    for title in _HEADING.findall(page.read_text(encoding="utf-8")):
+    for title in _HEADING.findall(prose_of(page)):
         match = _EXPLICIT_ANCHOR.search(title)
         if match:
             # attr_list makes the explicit id **replace** the generated one, so the heading-derived
@@ -136,13 +182,13 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
     for page in pages:
         rel = page.relative_to(doc_dir).as_posix()
         is_en = page.name.endswith(".en.md")
-        text = page.read_text(encoding="utf-8")
+        text = prose_of(page)
         # A language switcher on an English page points at the French one *on purpose*, which is
         # exactly the shape wrong_language_links reports. The flag emoji is the signal that says
         # "this link is meant to change language".
         switcher_targets = {m for line in text.splitlines() if _LANGUAGE_FLAG in line for m in _LINK.findall(line)}
         same_page_anchors, _ = anchors_of(page)
-        for target in _LINK.findall(text):
+        for target in _LINK.findall(text) + _LINK_DEFINITION.findall(text):
             if target.startswith("#"):
                 # A same-page anchor. Checked with the same rule as a cross-page one, but never
                 # *required* to be explicit: the two reasons for that requirement — a reword
@@ -161,8 +207,10 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
                 report.broken_links.append(f"{rel} -> {target}")
                 continue
             if is_en and not path_part.endswith(".en.md") and target not in switcher_targets and _twin(resolved).exists():
-                # An English reader would land on the French page, and an English one exists.
-                report.wrong_language_links.append(f"{rel} -> {target} (use {_twin(resolved).name})")
+                # Style, not breakage: the plugin rewrites the link and the reader does land in
+                # English. What this keeps is the file saying what the reader gets, so the day one
+                # of the two twins goes away the link reads as wrong before it behaves as wrong.
+                report.wrong_language_links.append(f"{rel} -> {target} (write {_twin(resolved).name})")
             if not anchor:
                 continue
             # Anchors are not rewritten by the i18n plugin: check the page the reader lands on.
@@ -175,6 +223,11 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
             elif require_explicit_anchors and anchor not in explicit:
                 report.implicit_anchors.append(f"{rel} -> {target} (add {{#{anchor}}} in {landed})")
 
+    # Both directions. Walking the French pages alone leaves an `x.en.md` with no `x.md` checked by
+    # nobody: it is not a French page, so it is asked for neither a twin nor a nav entry, and
+    # mkdocs logs a page outside the nav as INFO — so `--strict` stays green while the page is
+    # missing from the French site entirely. In a repository whose every other file is English,
+    # that is the easy half to write first.
     for page in fr_pages:
         rel = page.relative_to(doc_dir).as_posix()
         if rel in EXEMPT:
@@ -183,6 +236,17 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
             report.missing_translations.append(rel)
         if rel not in nav_targets:
             report.nav_orphans.append(rel)
+
+    for page in pages:
+        if not page.name.endswith(".en.md"):
+            continue
+        french = page.parent / (page.name[: -len(".en.md")] + ".md")
+        rel = french.relative_to(doc_dir).as_posix()
+        if rel in EXEMPT or french.exists():
+            continue
+        report.missing_translations.append(page.relative_to(doc_dir).as_posix())
+        if rel not in nav_targets:
+            report.nav_orphans.append(page.relative_to(doc_dir).as_posix())
 
     for target in sorted(nav_targets):
         if not (doc_dir / target).exists():
@@ -195,8 +259,8 @@ _LABELS = {
     "broken_links": "Links whose target file does not exist",
     "dead_anchors": "Links pointing at an anchor the target does not expose",
     "implicit_anchors": "Cross-page links relying on a heading-derived anchor (declare {#anchor})",
-    "wrong_language_links": "English pages linking to the French version of a translated page",
-    "missing_translations": "French pages with no English counterpart",
+    "wrong_language_links": "English pages spelling a link `page.md` where `page.en.md` exists (style)",
+    "missing_translations": "Pages with no counterpart in the other language",
     "nav_orphans": "Pages absent from the mkdocs nav (unreachable by menu)",
     "nav_dangling": "Nav entries pointing at a file that does not exist",
 }
