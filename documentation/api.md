@@ -33,7 +33,7 @@ SAM sites off or on according to targets it has detected:
 redIADS:setUpdateInterval(5)
 ```
 
-## Last line of defense
+## Last line of defense {#last-line-of-defense}
 
 A SAM site under network control has its radar switched off, so it is **blind**: the only thing that
 can bring it back to life is an early warning radar that covers it and is holding the target. Fly
@@ -152,7 +152,7 @@ This function is deprecated and will be removed in a future release.
 redIADS:setupSAMSitesAndThenActivate()
 ```
 
-## Connecting Skynet to the MOOSE AI_A2A_DISPATCHER
+## Connecting Skynet to the MOOSE AI_A2A_DISPATCHER {#connecting-skynet-to-the-moose-ai_a2a_dispatcher}
 
 IRL an IADS would most likely not only handle SAM sites but also pass information to interceptor
 aircraft. You can connect Skynet with MOOSE's
@@ -228,7 +228,7 @@ You can manually add a SAM site, must be a valid group name:
 redIADS:addSAMSite('SA-6 Group2')
 ```
 
-### Accessing SAM sites in the IADS
+### Accessing SAM sites in the IADS {#accessing-sam-sites-in-the-iads}
 
 The following functions exist to access SAM sites added to the IADS. They all support daisy
 chaining options:
@@ -337,7 +337,7 @@ HARMS are set to true by default.
 samSite:setCanEngageHARM(true)
 ```
 
-## Add go live constraints
+## Add go live constraints {#add-go-live-constraints}
 
 You can include constraints which must be satisfied for the SAM site to go live. Please note this
 only controls activation of the SAM site.
@@ -388,7 +388,7 @@ Get a table of all constraints:
 self.samSite:getGoLiveConstraints()
 ```
 
-## Contact
+## Contact {#contact}
 
 You can use the following methods to get information about a contact.
 
@@ -457,7 +457,7 @@ You can add EW radars manually, must be a valid unit name:
 redIADS:addEarlyWarningRadar('EWR West')
 ```
 
-### Accessing EW radars in the IADS
+### Accessing EW radars in the IADS {#accessing-ew-radars-in-the-iads}
 
 The following functions exist to access EW radars added to the IADS. They all support daisy
 chaining options.
@@ -476,7 +476,7 @@ redIADS:getEarlyWarningRadarByUnitName('EW-west')
 
 ## Options for SAM sites and EW radars
 
-### Setting an option
+### Setting an option {#setting-an-option}
 
 In the following examples `ewRadarOrSamSite` refers to a single EW radar or SAM site or a table of
 EW radars and SAM sites you got from the Skynet IADS, by calling one of the functions named in
@@ -502,7 +502,7 @@ field `harm_detection_chance` for default detection probabilities:
 ewRadarOrSamSite:setHARMDetectionChance(50)
 ```
 
-### Point defence
+### Point defence {#point-defence}
 
 You must use a point defence SAM that can engage HARM missiles. Can be used to protect SAM sites or
 EW radars. See [point defence](tactics.md#point-defence) for information on what this does.
@@ -551,7 +551,7 @@ radars):
 SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
 ```
 
-## Adding a jammer
+## Adding a jammer {#adding-a-jammer}
 
 The jammer is quite easy to set up. You need a unit that acts as a jammer source, preferably an
 aircraft in the strike package.
@@ -638,7 +638,7 @@ Set the maximum range the jammer will work, the default value is set to 200 naut
 jammer:setMaximumEffectiveDistance(100)
 ```
 
-## Setting debug information
+## Setting debug information {#setting-debug-information}
 
 When developing a mission I suggest you add debug output to check how the IADS reacts to threats.
 Debug output may slow down DCS, so it's recommended to turn it off in a live environment.

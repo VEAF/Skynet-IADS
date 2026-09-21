@@ -18,7 +18,7 @@ This is due to the short range of their radars. By the time the IADS wakes them 
 likely passed their engagement range.
 The strength of the Skynet IADS lies with handling long range systems that operate by radar.
 
-## Which SAM systems can engage HARMS?
+## Which SAM systems can engage HARMS? {#which-sam-systems-can-engage-harms}
 
 As of July 2022 only the SA-15, SA-10, NASAMS and Patriot have been confirmed to engage HARMS. The
 best option for a solid HARM defence is to add SA-15's around EW radars or high value SAM sites.

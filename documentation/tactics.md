@@ -48,7 +48,7 @@ defending against the HARM.
 
 ![Skynet IADS overview](images/skynet-harm-radar-shutdown.jpg)
 
-## Point defence
+## Point defence {#point-defence}
 
 When a radar emitter (EW radar or SAM site) is attacked by a HARM there is a chance it may detect
 the HARM and go dark. If this radar emitter is acting as the sole EW radar in the area, surrounding

@@ -33,7 +33,7 @@ If you like using it, please consider a donation:**
 
 [![Skynet IADS donation](images/btn_donateCC_LG.gif.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7GSVFH448BWFQ&source=url)
 
-## Quick start
+## Quick start {#quick-start}
 
 Tired of reading already? Grab `skynet-test-persian-gulf.miz` from the [latest
 release](https://github.com/VEAF/Skynet-IADS/releases) and see Skynet in action on the Persian Gulf

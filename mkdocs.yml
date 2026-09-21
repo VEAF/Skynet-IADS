@@ -34,5 +34,15 @@ nav:
   - FAQ: faq.md
 
 markdown_extensions:
+  # `case: lower` keeps accents instead of folding them to ASCII, so a French heading gets a French
+  # anchor rather than a mangled one. Same slugifier VMCT uses, for the same reason.
+  - toc:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+      permalink: true
+  # Lets a heading declare its own id — `## Point defence {#point-defence}` — so a deep link
+  # survives both a reword and a translation: the French and English twins carry the same anchor.
+  - attr_list
   - pymdownx.highlight
   - pymdownx.superfences
