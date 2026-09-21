@@ -5,9 +5,10 @@
 > `skynet-iads-source/` are concatenated into a single deliverable `skynet-iads-compiled.lua` by a
 > PowerShell build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
 
-**VEAF maintains this project.** `regroupement-patrouille/Skynet-IADS` is read-only and walder has
-been inactive for years — the two communities agreed that VEAF takes it over. Never open pull
-requests against either upstream, and never treat them as a source of truth.
+**VEAF and the Regroupement de Patrouilles (BFR, NAWACS) maintain this project jointly**, in this
+repository. `regroupement-patrouille/Skynet-IADS` is read-only and walder has been inactive for
+years — both are historical archives. Never open pull requests against either upstream, and never
+treat them as a source of truth.
 
 ## Language
 

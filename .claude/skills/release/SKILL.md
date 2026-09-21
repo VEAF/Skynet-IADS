@@ -38,9 +38,10 @@ Two numbering schemes had coexisted without ever being reconciled: the inherited
 `v2.0.1` (walder's lineage), while the artifact has long called itself `3.4.0RP-VEAF`.
 
 **David's decision**: continue the artifact's lineage, because that is the number anyone actually
-reads in a log. The first VEAF release is **`3.5.0`**, tagged **`v3.5.0`** — the shape of the
-existing tags, colliding with none of them. The `RP` suffix is dropped: the Regroupement no longer
-maintains this project.
+reads in a log. The first release under joint maintenance is **`3.5.0`**, tagged **`v3.5.0`** — the
+shape of the existing tags, colliding with none of them. The `RP` suffix is dropped: VEAF and the
+Regroupement de Patrouilles (BFR, NAWACS) carry the project on together, so the number belongs to
+both and has no reason to carry either name.
 
 Semantic versioning from there, as `contributing.md` already states. A change to what a mission sees
 at runtime is at least a minor.

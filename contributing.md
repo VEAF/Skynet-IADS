@@ -2,11 +2,11 @@
 
 Thanks for your interest in Skynet.
 
-**VEAF maintains this project.** The [Regroupement's
-repository](https://github.com/regroupement-patrouille/Skynet-IADS) is read-only and
-[walder's](https://github.com/walder/Skynet-IADS) has been inactive for years; the two communities
-agreed that VEAF takes it over. So this is where issues, discussions and pull requests belong — not
-upstream.
+**VEAF and the Regroupement de Patrouilles (BFR, NAWACS) maintain this project jointly.** The
+[Regroupement's repository](https://github.com/regroupement-patrouille/Skynet-IADS) is read-only and
+[walder's](https://github.com/walder/Skynet-IADS) has been inactive for years; both are historical
+archives, and the two communities agreed to carry the project on together here. So this is where
+issues, discussions and pull requests belong — not upstream.
 
 Before spending time on a feature, propose it: open an issue, or bring it to the
 [VEAF Discord](https://discord.gg/veaf). Feedback before code saves more time than it costs.
@@ -111,9 +111,10 @@ exactly one of the two places, never both — check before adding to either.
 minor.
 
 Two numbering schemes coexisted for years — inherited tags stopping at `v2.0.1` from walder's
-lineage, and the artifact calling itself `3.4.0RP-VEAF`. Settled on 2026-09-19: VEAF continues the
-**artifact's** lineage, because that is the number people read in a log. The first VEAF release is
-**3.5.0**, tagged `v3.5.0`, and the `RP` suffix is dropped.
+lineage, and the artifact calling itself `3.4.0RP-VEAF`. Settled on 2026-09-19: this project
+continues the **artifact's** lineage, because that is the number people read in a log. The first
+release under joint maintenance is **3.5.0**, tagged `v3.5.0`, and the `RP` suffix is dropped — the
+number belongs to both communities now and has no reason to carry either name.
 
 ## Changelog
 

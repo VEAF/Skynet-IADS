@@ -15,9 +15,10 @@ release](https://github.com/VEAF/Skynet-IADS/releases/latest) and load it into y
 
 ## Maintenance
 
-[VEAF](https://github.com/VEAF) maintains this project. The original repository,
-[regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS), is
-read-only.
+[VEAF](https://github.com/VEAF) and the Regroupement de Patrouilles (BFR, NAWACS) maintain this
+project jointly, and this repository is where the work happens. The two historical repositories —
+[regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS) and
+[walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) — are read-only.
 
 ## Contributing
 
