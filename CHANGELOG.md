@@ -73,7 +73,9 @@ Until that release is cut, the build date in the artifact's first line remains t
   *tagged* commit, so a documentation fix landed afterwards could never reach the published pages
   — and waiting for the next release freezes it for a delay nobody controls. This is what made
   3.5.0's pages bilingual without spending a version number on a translation; the artifact,
-  the tag and the version number are untouched. The mechanism is VMCT's, added there for the same
+  the tag and the version number are untouched, and so is the `latest` alias — mike rebuilds the
+  alias directories a version already owns, so republishing the newest release refreshes
+  `/latest/` without being asked to move it. The mechanism is VMCT's, added there for the same
   reason.
 
 ## [3.5.0] — 2026-09-21
