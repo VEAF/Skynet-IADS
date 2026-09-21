@@ -32,4 +32,4 @@ the *tagged* commit would mean a fix landed after the tag never reaches the publ
 
 | # | Ticket | Status |
 |---|--------|--------|
-| 01 | [A manual trigger on the documentation workflow](tickets/01-manual-trigger.md) | ⬜ |
+| 01 | [A manual trigger on the documentation workflow](tickets/01-manual-trigger.md) | ✅ |

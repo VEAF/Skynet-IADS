@@ -66,6 +66,18 @@ Until that release is cut, the build date in the artifact's first line remains t
 - `README.md` now carries both languages in one file, English first then French, with a switcher
   at the top of each half — the shape VEAF-Mission-Creation-Tools uses.
 
+### Changed
+
+- The documentation workflow can now republish a released version's pages without moving its tag
+  (`gh workflow run docs.yml -f version=3.5.0`). Re-running the tag build rebuilds from the
+  *tagged* commit, so a documentation fix landed afterwards could never reach the published pages
+  — and waiting for the next release freezes it for a delay nobody controls. This is what made
+  3.5.0's pages bilingual without spending a version number on a translation; the artifact,
+  the tag and the version number are untouched, and so is the `latest` alias — mike rebuilds the
+  alias directories a version already owns, so republishing the newest release refreshes
+  `/latest/` without being asked to move it. The mechanism is VMCT's, added there for the same
+  reason.
+
 ## [3.5.0] — 2026-09-21
 
 **The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,

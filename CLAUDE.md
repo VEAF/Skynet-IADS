@@ -67,6 +67,16 @@ tag publishes its own version only, so a release candidate never becomes what a 
 default. `master` publishes nothing of its own: a tag is always on `master`, so between two
 releases `master` is not on the site.
 
+A documentation fix that lands between two releases therefore reaches nobody until the next tag.
+`gh workflow run docs.yml -f version=3.5.0` republishes that version's **pages** from the current
+branch, leaving the tag, the artifact and the version number alone — run it from `develop`, and
+only when the pages genuinely describe the released code. Omit `version` to redeploy `dev`.
+
+It does **not** move `latest`, and it does not need to: mike rebuilds every alias directory the
+version already owns, so republishing the newest release refreshes `/latest/` on its own. Pass
+`-f set_latest=true` only to make a version *become* `latest` — on an older one it drags the site
+default back to old documentation, and the run stays green while doing it.
+
 The site is **bilingual, French by default**, on the VEAF-Mission-Creation-Tools model:
 `mkdocs-static-i18n` in `suffix` mode, French at the site root and English under `/en/`. Three
 conventions come with it, and `build-tools/docs-check.py` enforces all three — run it before
