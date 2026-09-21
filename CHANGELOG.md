@@ -25,6 +25,8 @@ Until that release is cut, the build date in the artifact's first line remains t
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-09-21
+
 **The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,
 NAWACS) carry Skynet-IADS on together, in this repository. This release brings a **last line of
 defense** — a battery held dark by the network now wakes on proximity alone — three fixes to radar
