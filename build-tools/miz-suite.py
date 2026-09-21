@@ -701,11 +701,14 @@ def do_build(miz, entries, order, with_bridge=False):
         built.append("%s <- %s" % (name, source))
 
     if with_bridge:
+        # Asked before injecting, not after: an archive that already carries the bridge is left
+        # alone, and reporting "put in" for it would say the tool did something it did not.
+        already = L10N + BRIDGE in entries
         problem = inject_bridge(miz, entries, order)
         if problem is not None:
             print("FAIL: cannot wire %s in: %s" % (BRIDGE, problem))
             return 2
-        if L10N + BRIDGE in entries:
+        if not already:
             built.append("%s <- %s (smoke gate)" % (BRIDGE, BRIDGE_ARCHIVE))
 
     # The guard that makes the injection safe to have written at all: the same invariants `check`
@@ -715,6 +718,9 @@ def do_build(miz, entries, order, with_bridge=False):
     if do_check(miz, entries, sources=False) is None:
         print("FAIL: the assembled mission would be inconsistent; nothing written")
         return 2
+
+    if with_bridge and L10N + BRIDGE in entries and not any(BRIDGE in line for line in built):
+        print("  %s was already in the archive; left as it is" % BRIDGE)
 
     out = os.path.join(ROOT, BUILD_DIR)
     if not os.path.isdir(out):
