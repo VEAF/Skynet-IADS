@@ -77,6 +77,16 @@ Until that release is cut, the build date in the artifact's first line remains t
   alias directories a version already owns, so republishing the newest release refreshes
   `/latest/` without being asked to move it. The mechanism is VMCT's, added there for the same
   reason.
+- **What 3.5.0 changed is now in the guide, not only in the reference.** The last line of
+  defense, the coverage refresh and the on-screen setup warnings are on by default and change what
+  an existing mission does, and all three were documented only in the API reference — a catalogue
+  of call signatures, read when you already know what you are looking for. *Setting up an IADS*
+  now has a section for each, and the reference keeps the knobs.
+- **The documentation no longer carries the original author's donation button.** The project
+  changed hands; a visitor clicking that link was misled about who they were supporting. The home
+  page now says who created Skynet, who maintains it today, and thanks him — keeping his own
+  acknowledgements to Spearzone, Coranthia and Grimes, which are other people's credit and not
+  ours to drop.
 
 ## [3.5.0] — 2026-09-21
 

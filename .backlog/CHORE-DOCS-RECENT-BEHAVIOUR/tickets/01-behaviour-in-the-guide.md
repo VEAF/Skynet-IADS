@@ -1,6 +1,6 @@
 # 01 — The behaviour pages carry the behaviour
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 `setting-up.md` describes the elements of an IADS — sites, radars, power, nodes, AWACS, ships. It
 says nothing about three behaviours that are on by default:

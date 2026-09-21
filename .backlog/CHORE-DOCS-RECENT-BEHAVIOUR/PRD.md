@@ -36,5 +36,5 @@ people's credit, and erasing them to retire a donation link is not the same requ
 
 | # | Ticket | Status |
 |---|--------|--------|
-| 01 | [The behaviour pages carry the behaviour](tickets/01-behaviour-in-the-guide.md) | ⬜ |
-| 02 | [A project taken over, not a donation link](tickets/02-handover-block.md) | ⬜ |
+| 01 | [The behaviour pages carry the behaviour](tickets/01-behaviour-in-the-guide.md) | ✅ |
+| 02 | [A project taken over, not a donation link](tickets/02-handover-block.md) | ✅ |

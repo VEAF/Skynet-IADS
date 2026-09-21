@@ -1,6 +1,6 @@
 # 02 — A project taken over, not a donation link
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 `index.md` ends on the original author's PayPal button ("over 200 hours of work went into the
 development of Skynet") and his acknowledgements. Both predate the handover, and the donation

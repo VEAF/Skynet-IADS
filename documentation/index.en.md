@@ -28,11 +28,6 @@ Skynet supports the [HighDigitSAMs Mod](https://github.com/Auranis/HighDigitSAMs
 You can also connect [Skynet with the AI_A2A_DISPATCHER](api.en.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher)
 by MOOSE to add interceptors to the IADS.
 
-**So far over 200 hours of work went in to the development of Skynet.
-If you like using it, please consider a donation:**
-
-[![Skynet IADS donation](images/btn_donateCC_LG.gif.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7GSVFH448BWFQ&source=url)
-
 ## Quick start {#quick-start}
 
 Tired of reading already? Grab `skynet-test-persian-gulf.miz` from the [latest
@@ -50,9 +45,18 @@ pwsh -File build-tools/build-compiled-script.ps1
 python build-tools/miz-suite.py build
 ```
 
-## Thanks
+## A project taken over, and the people behind it {#credits}
 
-Special thanks to Spearzone and Coranthia for researching public available information on IADS
-networks and getting me up to speed on how such a system works.
-I based the SAM site setup on [Grimes SAM DB](https://forums.eagle.ru/showthread.php?t=118175) from
-his IADS script, however I removed range data since Skynet loads that from DCS.
+Skynet was created by [walder](https://github.com/walder/Skynet-IADS), who designed, wrote and
+maintained it for years — over 200 hours of work before the first public version. Everything this
+script gets right comes from there.
+
+It is now maintained jointly by [VEAF](https://github.com/VEAF) and the Regroupement de
+Patrouilles (BFR, NAWACS), in [this repository](https://github.com/VEAF/Skynet-IADS), where all
+the work happens. The two historical repositories — the Regroupement de Patrouilles' and walder's
+— are read-only. Thank you to him for leaving us something worth building on.
+
+The original author's thanks are ours as well: to Spearzone and Coranthia, for researching the
+public information on IADS networks and getting him up to speed on how such a system works; and
+to [Grimes](https://forums.eagle.ru/showthread.php?t=118175), whose SAM DB shaped the SAM site
+setup — minus the range data, which Skynet reads from DCS directly.
