@@ -48,9 +48,16 @@ Read from the F10 → Other menu and the order of the setup script:
 
 Two menus present and the third missing means the jammer menu was created and then removed, and the
 guard is the only code that removes it. Measured alongside: `Unit.getByName('jammer-emitter')`
-returns nil in flight, and the log holds **zero** `JAMMER` lines although the setup sets
-`iadsDebug.jammerProbability = true` and all four active sites are in the jammer's table. `runCycle`
-finds its emitter dead, calls `masterArmSafe()` and disarms without a word.
+returns nil in flight. `runCycle` finds its emitter dead, calls `masterArmSafe()` and disarms
+without a word.
+
+> **One piece of evidence withdrawn, 2026-09-21.** The first draft also cited *"zero `SKYNET: JAMMER:`
+> lines in the log"*. It does not discriminate: measured on the **fixed** build, with the F-4E alive
+> and tracked by the network at 53 NM, the log still holds zero of them — because the jammer only
+> writes one when it is within `maximumEffectiveDistanceNM` of a **live** radar, which takes a
+> specific geometry this run never reached. Absence of those lines is consistent with the defect and
+> with a perfectly healthy jammer, so it proves nothing. What does discriminate is the missing F10
+> submenu between two present ones, and `Unit.getByName` returning nil in flight — both measured.
 
 ## The decision — 2026-09-21
 
@@ -105,9 +112,12 @@ re-bake.
 - The entry in `docs/evolutions.md` is removed, because it recorded a deferred decision that has now
   been taken — the record of it lives here.
 - `CHANGELOG.md` records what somebody downloading the demo will notice.
-- Verified in DCS: the assembled Persian Gulf demo shows a `Jammer: jammer-emitter` submenu under
-  F10 → Other, and the log carries `JAMMER` lines. The stress-test demo shares the fix and is not
-  flown separately — it differs only in how many sites it puts on the map.
+- **Verified in DCS on 2026-09-21**, both directions, through `build-tools/run-smoke.py`'s
+  `jammer-alive` check: `emitter-gone` on a build without this fix — measured while David occupied
+  the `Hornet SA-11-2` slot, which is the proof the guard does not depend on the slot at all — and
+  `alive` on a build carrying it, 5/5 checks green. The network then reports the F-4E as a contact
+  at 53 NM, which it cannot do for an aircraft that no longer exists. The stress-test demo shares
+  the fix and is not flown separately: it differs only in how many sites it puts on the map.
 
 The last point is the one this repository cannot check on its own, which is the subject of the lot
 that follows this one, `FEAT-IN-SIM-SMOKE-TESTS`. Its first target is this very mission, and *"the

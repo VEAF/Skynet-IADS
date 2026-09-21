@@ -502,7 +502,8 @@ Until that release is cut, the build date in the artifact's first line remains t
   occupies the `Hornet SA-11-2 Attack` slot -- but it runs at `triggerStart`, and that slot is a
   client slot, which has no `Unit` until a player takes it. `Unit.getByName` therefore always
   returned nil and the guard always fired, so the F10 `Jammer:` menu was created and immediately
-  removed and the log never carried a single `JAMMER` line. Not a regression: the group is
+  removed, and `runCycle` found its emitter dead and disarmed without a word. Not a regression: the
+  group is
   byte-identical in the December 2023 archive and the guard predates VEAF, so the demonstration has
   only ever worked by luck of timing. The guard is gone -- if nobody takes the Hornet slot the F-4E
   now flies its route alone and jams the red network anyway, which for a demo about jamming is the
