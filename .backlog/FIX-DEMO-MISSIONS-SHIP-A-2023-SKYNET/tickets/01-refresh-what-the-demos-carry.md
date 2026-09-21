@@ -170,6 +170,11 @@ December 2023 archive, so not a regression. David's call, 2026-09-20: record it,
 subject. Written up in `docs/evolutions.md` under *The Persian Gulf demo destroys its own jammer at
 mission start*.
 
+> Fixed since, on 2026-09-21, by [FIX-DEMO-DESTROYS-ITS-JAMMER](../../FIX-DEMO-DESTROYS-ITS-JAMMER/PRD.md),
+> which took the record with it — the `docs/evolutions.md` section above no longer exists. Its PRD
+> also corrects one thing this paragraph gets wrong: the stress-test demo loads the same setup script
+> and was equally affected, so the defect was in two missions, not one.
+
 ## Definition of done
 
 - The four demo archives hold placeholders, and `check` fails if one holds a script.
