@@ -48,13 +48,14 @@ python build-tools/miz-suite.py build
 ## A project taken over, and the people behind it {#credits}
 
 Skynet was created by [walder](https://github.com/walder/Skynet-IADS), who designed, wrote and
-maintained it for years — over 200 hours of work before the first public version. Everything this
-script gets right comes from there.
+maintained it for years — over 200 hours of work, by his own count. The foundations of this script
+come from there.
 
 It is now maintained jointly by [VEAF](https://github.com/VEAF) and the Regroupement de
 Patrouilles (BFR, NAWACS), in [this repository](https://github.com/VEAF/Skynet-IADS), where all
-the work happens. The two historical repositories — the Regroupement de Patrouilles' and walder's
-— are read-only. Thank you to him for leaving us something worth building on.
+the work happens. The Regroupement de Patrouilles' repository is archived and walder's has not
+moved in years: neither is a current source. Thank you to him for leaving us something worth
+building on.
 
 The original author's thanks are ours as well: to Spearzone and Coranthia, for researching the
 public information on IADS networks and getting him up to speed on how such a system works; and
