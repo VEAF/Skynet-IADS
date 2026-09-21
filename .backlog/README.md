@@ -17,10 +17,9 @@ the same shape.
 
 ## Active lots
 
-None. Everything opened so far is closed and archived below.
-
-The next piece of work is the **first VEAF release, `v3.5.0`** — not a lot but a procedure: the
-`release` skill carries it, and nothing gets tagged without David's go.
+| Lot | What | Status |
+|-----|------|--------|
+| [FEAT-BILINGUAL-DOCUMENTATION](FEAT-BILINGUAL-DOCUMENTATION/PRD.md) | The documentation site in French and English, French by default — the VMCT model, copied down to its gate | 🔄 |
 
 ## Archive
 
