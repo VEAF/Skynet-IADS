@@ -92,28 +92,43 @@ wrong one would fail the first real run for no reason. The first DCS run fills t
 the expectation tightens to those numbers in the same pull request if it is still open, or in a
 one-line follow-up if it is not.
 
-## Measured in DCS
+## Measured in DCS — 2026-09-21
 
-_To be filled by the run. Expected output shape:_
+Run twice against `build/missions/skynet-test-persian-gulf.miz`, once without
+`FIX-DEMO-DESTROYS-ITS-JAMMER` and once with it, so every check has been seen in the state it is
+supposed to report.
+
+Without the fix, David in the `Hornet SA-11-2` slot:
 
 ```
   PASS  artifact-loaded       3.5.0
-  PASS  networks-built        sam:? ewr:?
+  PASS  networks-built        sam:13 ewr:8
   PASS  named-elements-found  all-found
-  PASS  jammer-alive          alive
+  FAIL  jammer-alive          emitter-gone
   PASS  no-mist               nil
+
+4/5 passed
 ```
 
-`jammer-alive` is expected to be **red on `develop`** until `FIX-DEMO-DESTROYS-ITS-JAMMER` merges,
-and that is the point: a check nobody has seen fail is a check nobody has tested.
+With it: **5/5**, `jammer-alive` → `alive`, and the network then reports the F-4E as a contact at
+53 NM — which it cannot do for an aircraft that no longer exists. Exit code 1 on the failing run and
+0 on the passing one.
 
-## Getting the bridge into the demo
+So `jammer-alive` has now been seen red **and** green, which is the only way a check is tested. It
+also settles the slot question from the outside: the guard fired while the slot it tests was
+occupied.
 
-`dcs-serve` reaches nothing unless the mission loads `dcs-bridge.lua`, and only
-`skynet-insim-last-line-of-defence.miz` carried it. So the five checks above were written, tested and
-unreachable until `miz-suite.py build --with-bridge` existed — the inverse of `remove`, across the
-same four wiring places, opt-in and confined to the git-ignored build. See the PRD for why it cannot
-go into the committed archive, and for the ordering defect that testing both serialisations caught.
+**The two counts are now pinned.** `sam:13 ewr:8`, measured rather than guessed, and the expectation
+tightened from "non-zero" to those exact figures — with the test updated to match. Non-zero was too
+weak for the failure that actually happens: a renamed group does not empty the network, it makes it
+*smaller*, and `sam:1 ewr:8` would have sailed through. If somebody adds a battery to the demo this
+goes red and the number moves in the same change, which is the point of a regression net.
+
+**One claim withdrawn rather than repeated.** An earlier draft of the sibling lot cited "zero
+`SKYNET: JAMMER:` lines in the log" as evidence the jammer was dead. Measured here on the **fixed**
+build, with the F-4E alive and tracked: still zero, because the jammer only logs within
+`maximumEffectiveDistanceNM` of a *live* radar and this run never reached that geometry. The absence
+is consistent with both states, so it proves nothing and is out of the record.
 
 ## Why stdlib only
 

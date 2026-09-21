@@ -104,11 +104,13 @@ class NamedChecksTest(unittest.TestCase):
         self.assertFalse(expect("nil"))
         self.assertFalse(expect("table: 0x00a1b2c3"))
 
-    def test_networks_built_wants_both_counts_non_zero(self):
+    def test_networks_built_wants_the_counts_a_real_run_measured(self):
         expect = self._expect("networks-built")
-        self.assertTrue(expect("sam:4 ewr:3"))
-        self.assertFalse(expect("sam:0 ewr:3"))
-        self.assertFalse(expect("sam:4 ewr:0"))
+        self.assertTrue(expect("sam:13 ewr:8"))
+        # a partial discovery is the failure that matters, and "non-zero" would have passed it
+        self.assertFalse(expect("sam:1 ewr:8"))
+        self.assertFalse(expect("sam:13 ewr:1"))
+        self.assertFalse(expect("sam:0 ewr:0"))
         self.assertFalse(expect("no-red-iads"))
 
     def test_jammer_alive_separates_gone_from_dead(self):

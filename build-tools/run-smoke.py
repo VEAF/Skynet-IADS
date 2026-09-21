@@ -139,10 +139,14 @@ CHECKS: tuple[Check, ...] = (
             "local sam = #redIADS:getSAMSites() local ewr = #redIADS:getEarlyWarningRadars() "
             "return string.format('sam:%d ewr:%d', sam, ewr)"
         ),
-        expect=lambda v: bool(re.fullmatch(r"sam:[1-9]\d* ewr:[1-9]\d*", v)),
+        # Pinned to what a real run measured on 2026-09-21, not to "non-zero": a count that only has
+        # to be positive still passes when prefix discovery finds one site out of thirteen, which is
+        # the shape a renamed group actually takes. If somebody adds a battery to the demo, this goes
+        # red and the number moves here in the same change -- that is the point of it.
+        expect=lambda v: v == "sam:13 ewr:8",
         why="Prefix discovery is how every mission maker wires a network, and it is the step that "
-        "silently finds nothing when a group is renamed. Non-zero on both counts only -- the "
-        "exact figures are not pinned here until a run has measured them, rather than guessed.",
+        "silently finds nothing when a group is renamed -- or finds fewer, which is worse, because "
+        "the network still comes up and only part of the map defends itself.",
     ),
     Check(
         name="named-elements-found",
