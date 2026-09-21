@@ -224,9 +224,14 @@ CHECKS: tuple[Check, ...] = (
     ),
 )
 
+#: Which mission each target needs open in DCS -- the **assembled** one, not the committed archive.
+#:
+#: The paths under `demo-missions/` and `unit-tests/` hold placeholders, so naming those here would
+#: send somebody to open a mission that says "unbuilt" on screen and then wonder why every check
+#: failed. What DCS opens comes out of `build/missions/`, copied into Saved Games.
 TARGETS: dict[str, str] = {
-    "demo": "demo-missions/skynet-test-persian-gulf.miz",
-    "lastline": "unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz",
+    "demo": "build/missions/skynet-test-persian-gulf.miz",
+    "lastline": "build/missions/skynet-insim-last-line-of-defence.miz",
 }
 
 
@@ -421,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.list:
         for check in CHECKS:
             print(f"  {check.tier:<5} {check.target:<9} {check.name}")
-        print("\nMissions these need open in DCS:")
+        print("\nBuild these, then open the built copy in DCS:")
         for name, path in sorted(TARGETS.items()):
             print(f"  {name:<9} {path}")
         return 0

@@ -85,6 +85,14 @@ class ExpectationsTest(unittest.TestCase):
                 self.assertIn(check.tier, ("fast", "slow"))
                 self.assertTrue(check.why.strip(), "a check has to say what it is for")
 
+    def test_targets_name_the_built_mission_not_the_committed_archive(self):
+        # The committed archives hold placeholders. Naming one here sends somebody to open a mission
+        # that says "unbuilt" on screen, and then to wonder why every check failed. The README said
+        # build/missions/ and --list said otherwise; the tool is the one people read.
+        for name, path in rs.TARGETS.items():
+            with self.subTest(target=name):
+                self.assertTrue(path.startswith("build/missions/"), path)
+
     def test_check_names_are_unique(self):
         names = [c.name for c in rs.CHECKS]
         self.assertEqual(len(names), len(set(names)))
