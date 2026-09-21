@@ -124,4 +124,15 @@ what to do with it as it rots, that one asks what to replace it with.
 
 ## Smoke tests
 
-Study how the legacy `unit-test` can be transformed into something more usable and build in-sim smoke tests. See if MCPs or such exists that can help communicate with a running DCS mission. Use of the log file is always possible but may be complex.
+**Done, 2026-09-21, by [FEAT-IN-SIM-SMOKE-TESTS](../.backlog/FEAT-IN-SIM-SMOKE-TESTS/PRD.md).**
+
+The entry asked three things. *Something that can talk to a running DCS mission* — yes, VEAF's
+dcs-bridge, and `build-tools/run-smoke.py` uses it; the log file turned out not to be needed.
+*Transform the legacy `unit-test` into something more usable* — that was the migration in
+`CHORE-PROFESSIONALIZE-THE-REPO` ticket 04, which is finished: a suite whose every assertion runs
+standalone has left both copies. *Build in-sim smoke tests* — seven of them, across two missions, in
+`unit-tests/README.md`.
+
+One thing the entry guessed at and the answer contradicts: this cannot be a CI gate. GitHub runners
+have no DCS, no licence and no GPU, and both CTLD_Next and VMCT reached that conclusion before us and
+documented it. It is a local, consultative step before a release.

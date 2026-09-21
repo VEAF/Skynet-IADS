@@ -261,3 +261,96 @@ class Keys(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InjectBridge(unittest.TestCase):
+    """`build --with-bridge` wires dcs-bridge.lua into the assembled mission, in all four places.
+
+    Both serialisations, because the whole point of this tool is that two write the same table
+    differently, and a malformed action block does not raise -- it loads a resource key that names
+    nothing, in a mission somebody then opens in DCS.
+
+    The test that earns its place is `test_the_result_passes_check`: it caught the injection
+    appending to the FIRST trigrules array while the compiled call went to the end, which puts the
+    two lists in a different order. It only shows up on a mission with two script-loading triggers,
+    which the editor fixture has and the Persian Gulf demo does not -- so without it this shipped.
+    """
+
+    def _entries(self, mission, map_resource):
+        return {
+            "mission": mission.encode("utf-8"),
+            ms.MAP_RESOURCE: map_resource.encode("utf-8"),
+            ms.L10N + "skynet-iads-compiled.lua": b"-- skynet",
+            ms.L10N + "mist_4_5_107.lua": b"-- mist",
+        }
+
+    def _inject(self, mission, map_resource, with_existing_bridge=False):
+        """Run the three rewrites without touching the filesystem."""
+        entries = self._entries(mission, map_resource)
+        if with_existing_bridge:
+            entries[ms.L10N + ms.BRIDGE] = b"-- bridge"
+        new_map = ms.add_to_map_resource(map_resource, ms.BRIDGE_KEY, ms.BRIDGE)
+        new_mission = ms.add_to_trig_actions(mission, ms.BRIDGE_KEY)
+        new_mission = ms.add_to_trigrules(new_mission, ms.BRIDGE_KEY)
+        entries[ms.MAP_RESOURCE] = new_map.encode("utf-8")
+        entries["mission"] = new_mission.encode("utf-8")
+        entries[ms.L10N + ms.BRIDGE] = b"-- bridge"
+        return entries, new_mission, new_map
+
+    def test_the_result_passes_check_dcs(self):
+        entries, _, _ = self._inject(DCS_MISSION, DCS_MAP_RESOURCE)
+        problems, _, _ = ms.check(entries)
+        self.assertEqual(problems, [])
+
+    def test_the_result_passes_check_editor(self):
+        entries, _, _ = self._inject(EDITOR_MISSION, EDITOR_MAP_RESOURCE)
+        problems, _, _ = ms.check(entries)
+        self.assertEqual(problems, [])
+
+    def test_the_key_lands_last_in_both_lists(self):
+        for mission, mapres in ((DCS_MISSION, DCS_MAP_RESOURCE), (EDITOR_MISSION, EDITOR_MAP_RESOURCE)):
+            with self.subTest(shape=mission[:20]):
+                entries, _, _ = self._inject(mission, mapres)
+                _, _, compiled = ms.check(entries)
+                self.assertEqual(compiled[-1], ms.BRIDGE_KEY)
+
+    def test_map_resource_gains_one_bracketed_entry(self):
+        for mapres in (DCS_MAP_RESOURCE, EDITOR_MAP_RESOURCE):
+            with self.subTest(shape=mapres[:20]):
+                out = ms.add_to_map_resource(mapres, ms.BRIDGE_KEY, ms.BRIDGE)
+                mapping = ms.parse_map_resource(out)
+                self.assertEqual(mapping[ms.BRIDGE_KEY], ms.BRIDGE)
+                self.assertEqual(len(mapping), len(ms.parse_map_resource(mapres)) + 1)
+                # bracketed whatever the file's habit: the name has a hyphen, so it is no identifier
+                self.assertIn('["%s"]' % ms.BRIDGE_KEY, out)
+
+    def test_map_resource_keeps_the_indentation_it_found(self):
+        self.assertIn('\n    ["%s"]' % ms.BRIDGE_KEY, ms.add_to_map_resource(DCS_MAP_RESOURCE, ms.BRIDGE_KEY, ms.BRIDGE))
+        self.assertIn('\n  ["%s"]' % ms.BRIDGE_KEY, ms.add_to_map_resource(EDITOR_MAP_RESOURCE, ms.BRIDGE_KEY, ms.BRIDGE))
+
+    def test_trigrules_indices_stay_contiguous(self):
+        for mission in (DCS_MISSION, EDITOR_MISSION):
+            with self.subTest(shape=mission[:20]):
+                out = ms.add_to_trigrules(mission, ms.BRIDGE_KEY)
+                start, end = ms.trigrules_of(out)
+                for am in ms.first_matching(ms.ACTIONS_ARRAYS, out[start:end]):
+                    idx = [int(b.group("n")) for b in ms.action_blocks(am.group("body") + "\n")]
+                    self.assertEqual(idx, list(range(1, len(idx) + 1)))
+
+    def test_the_clone_keeps_the_end_of_block_comment_only_where_it_belongs(self):
+        # DCS closes every block with `-- end of [n]`; the editor writes none. A clone carrying the
+        # wrong one still parses as Lua, so nothing downstream would complain.
+        self.assertIn("-- end of [3]", ms.add_to_trigrules(DCS_MISSION, ms.BRIDGE_KEY))
+        self.assertNotIn("-- end of [", ms.add_to_trigrules(EDITOR_MISSION, ms.BRIDGE_KEY))
+
+    def test_injecting_twice_is_refused_by_the_archive_already_having_it(self):
+        entries = self._entries(DCS_MISSION, DCS_MAP_RESOURCE)
+        entries[ms.L10N + ms.BRIDGE] = b"-- bridge"
+        order = list(entries)
+        before = dict(entries)
+        self.assertIsNone(ms.inject_bridge("demo-missions/x.miz", entries, order))
+        self.assertEqual(entries, before)
+
+    def test_a_mission_with_no_script_action_is_refused(self):
+        self.assertIsNone(ms.add_to_trig_actions("mission = { trig = { actions = {} } }", ms.BRIDGE_KEY))
+        self.assertIsNone(ms.add_to_map_resource("mapResource = \n{\n}\n", ms.BRIDGE_KEY, ms.BRIDGE))

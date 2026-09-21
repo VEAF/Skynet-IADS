@@ -60,17 +60,35 @@ at runtime is at least a minor.
    in a diff: a new default, a site that now lights up where it used to stay dark, a setting that
    changed meaning. Say it plainly or someone will file it as a bug.
 
-3. **Bump `SkynetIADS.version`** in `skynet-iads-source/skynet-iads.lua` to the target version, on a
+3. **Fly it, and say what you saw.** Build the missions and run the in-sim smoke checks against a
+   DCS with the release candidate in it:
+
+   ```bash
+   pwsh -File build-tools/build-compiled-script.ps1
+   python build-tools/miz-suite.py build --with-bridge
+   python build-tools/run-smoke.py --target demo
+   python build-tools/run-smoke.py --target lastline --tier slow
+   ```
+
+   **Consultative, not a gate** — David's call, 2026-09-21. A red check is a conversation, not a
+   stop: report the table and ask, rather than refusing to continue. No DCS to hand means the runner
+   skips and exits 0; that is a legitimate outcome, and the honest thing is to say the release went
+   out unflown rather than to imply it was checked. See `unit-tests/README.md`.
+
+   It goes here, before the version is bumped, because CI cannot do it: GitHub runners have no DCS.
+   Everything after this point is automated and will happily publish a build nobody ever loaded.
+
+4. **Bump `SkynetIADS.version`** in `skynet-iads-source/skynet-iads.lua` to the target version, on a
    branch off `develop` (e.g. `release/x.y.z`), and open a pull request. Wait for CI — it builds the
    artifact and runs it against the DCS stub on every pull request, so a chunk that raises fails the
    gate before you ever tag it. **Do not touch `CHANGELOG.md`'s `[Unreleased]` heading here** — it
-   must still read `## [Unreleased]` when the tag is pushed in step 5. Merge to `develop`, then
+   must still read `## [Unreleased]` when the tag is pushed in step 6. Merge to `develop`, then
    promote to `master` per the project's branching model.
 
-4. **Never commit the built artifact.** It is git-ignored and rebuilt by CI; nothing in this branch
+5. **Never commit the built artifact.** It is git-ignored and rebuilt by CI; nothing in this branch
    should touch `demo-missions/skynet-iads-compiled.lua`.
 
-5. **Tag and let CI publish it** — give the user the commands, let them run them:
+6. **Tag and let CI publish it** — give the user the commands, let them run them:
 
    ```bash
    git checkout master && git pull origin master
@@ -87,12 +105,12 @@ at runtime is at least a minor.
    release branch yet: tag it `v3.5.0-rc1` (anything not a plain `vX.Y.Z`), and the workflow marks
    the GitHub release as a pre-release automatically.
 
-6. **Freeze the changelog**, now that the release is out: on `develop`, replace `## [Unreleased]`
+7. **Freeze the changelog**, now that the release is out: on `develop`, replace `## [Unreleased]`
    with `## [x.y.z] — YYYY-MM-DD` and open a fresh empty `[Unreleased]` above it. Doing this before
    the tag would have shipped an empty release — the workflow reads the `[Unreleased]` heading
    literally.
 
-7. **Tell the consumer.** The release does not reach a single mission by itself. Say so, and say
+8. **Tell the consumer.** The release does not reach a single mission by itself. Say so, and say
    what is waiting on it — normally a vendoring lot in VEAF-Mission-Creation-Tools. If that lot
    exists, name it; if it does not, say that it needs to.
 
