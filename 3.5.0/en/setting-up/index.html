@@ -497,6 +497,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-iads-does-on-its-own" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the IADS does on its own
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What the IADS does on its own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The last line of defense
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The coverage refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The setup warnings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-skynet-in-the-mission-editor" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -800,6 +850,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-iads-does-on-its-own" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the IADS does on its own
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What the IADS does on its own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The last line of defense
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The coverage refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The setup warnings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-skynet-in-the-mission-editor" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -954,6 +1054,41 @@ Technically you can also add a power source. In this context it would represent 
 for the connection node, since an aircraft provides its own power.</p>
 <h3 id="ships">Ships<a class="headerlink" href="#ships" title="Permanent link">&para;</a></h3>
 <p>Ships will contribute to the IADS the same way AWACS units do. Add them as a regular EW radar.</p>
+<h2 id="what-the-iads-does-on-its-own">What the IADS does on its own<a class="headerlink" href="#what-the-iads-does-on-its-own" title="Permanent link">&para;</a></h2>
+<p>Three behaviours are <strong>on by default</strong>: you write nothing to get them, and they change what your
+mission does. The knobs for each are in the <a href="../api/">API reference</a>.</p>
+<h3 id="last-line-of-defense">The last line of defense<a class="headerlink" href="#last-line-of-defense" title="Permanent link">&para;</a></h3>
+<p>A SAM site held dark by the network is blind: only an EW radar that covers it and is holding the
+target can wake it. Fly under the early warning radars' horizon and you overfly the batteries with
+none of them reacting.</p>
+<p>To stop that absurdity, a dark site keeps a short <strong>virtual</strong> detection radius of its own — 10 to
+15 km, drawn once per site and kept — and a hostile aircraft inside it makes the site go
+live even when no radar anywhere holds a contact. A site silenced to evade an anti-radiation
+missile, out of ammunition, without power or destroyed does not wake on proximity.</p>
+<p>This is a design decision rather than an obvious good: a mission that wants a purist IADS, where
+sneaking under the radar horizon is a tactic that pays, switches it off with
+<a href="../api/#last-line-of-defense"><code>setLastLineOfDefence(false)</code></a>.</p>
+<h3 id="coverage-refresh">The coverage refresh<a class="headerlink" href="#coverage-refresh" title="Permanent link">&para;</a></h3>
+<p>Which EW radar covers which battery is geometry, and geometry moves the moment a unit does. The
+IADS therefore re-evaluates the coverage of every element that has travelled more than 10 NM
+<strong>since the last sweep</strong>, every 10 seconds by default.</p>
+<p>The most visible consequence: <strong>an AWACS flying home has the same effect as one shot down</strong> — the
+batteries it leaves behind become autonomous. And the EW radars parenting a mobile SAM site follow
+it as it drives. The knob is
+<a href="../api/#coverage-refresh"><code>setCoverageRefreshInterval</code></a>.</p>
+<h3 id="setup-warnings">The setup warnings<a class="headerlink" href="#setup-warnings" title="Permanent link">&para;</a></h3>
+<p>A setup mistake — a group <strong>or unit</strong> name that is not in the mission, an element of the other
+coalition, a group Skynet has no SAM data for — is shown on screen prefixed <code>WARNING:</code>, and
+written to <code>dcs.log</code> either way.</p>
+<p><strong>A prefix that matches nothing, however, says nothing.</strong> <code>addSAMSitesByPrefix</code> and
+<code>addEarlyWarningRadarsByPrefix</code> walk the mission's groups and keep the ones starting with the
+prefix; when none do, the IADS starts with no sites at all and nobody is told. The warnings above
+come from the by-name additions, <code>addSAMSite</code> and <code>addEarlyWarningRadar</code>. If your IADS looks
+inert, check first that the prefix really matches the <strong>start</strong> of the group name — and turn on
+<code>samSiteStatusEnvOutput</code> to count what was added.</p>
+<p>A mission that knows about its own warnings and does not want them on players' screens turns them
+off with <a href="../api/#setting-debug-information"><code>iadsDebug.warnings = false</code></a>; the log keeps
+receiving them.</p>
 <h2 id="using-skynet-in-the-mission-editor">Using Skynet in the mission editor<a class="headerlink" href="#using-skynet-in-the-mission-editor" title="Permanent link">&para;</a></h2>
 <p>It's quite simple to set up an IADS, have a look at the setup scripts in
 <a href="https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions">demo-missions/</a> — and at the demo
