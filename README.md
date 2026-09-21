@@ -8,15 +8,15 @@ An IADS (Integrated Air Defence System) script for [DCS World](https://www.digit
 early-warning radars feed contacts to SAM sites, which stay dark under network control until told
 to engage.
 
-**[Read the documentation](https://veaf.github.io/Skynet-IADS/latest/en/)** — setup, tactics, the
-public API and the FAQ all live there. The site is published in French and in English; the
-language selector sits in its header.
+**[Read the documentation](https://veaf.github.io/Skynet-IADS/)** — setup, tactics, the public API
+and the FAQ all live there. The site is published in French and in English; the language selector
+sits in its header.
 
 ## Getting the script
 
 Download the compiled artifact from the [latest
-release](https://github.com/VEAF/Skynet-IADS/releases/latest) and load it into your mission — see
-[setting up an IADS](https://veaf.github.io/Skynet-IADS/latest/en/setting-up/) for how.
+release](https://github.com/VEAF/Skynet-IADS/releases/latest) and load it into your mission — the
+documentation's *Setting up an IADS* page says how.
 
 ## Maintenance
 
@@ -47,15 +47,15 @@ Un script d'IADS (Integrated Air Defence System — système de défense aérien
 World](https://www.digitalcombatsimulator.com/) : les radars de veille lointaine transmettent les
 contacts aux sites SAM, qui restent éteints sous le contrôle du réseau jusqu'à l'ordre d'engager.
 
-**[Lire la documentation](https://veaf.github.io/Skynet-IADS/latest/)** — le montage, la tactique,
-l'API publique et la FAQ s'y trouvent. Le site est publié en français et en anglais ; le sélecteur
-de langue est dans son en-tête.
+**[Lire la documentation](https://veaf.github.io/Skynet-IADS/)** — le montage, la tactique, l'API
+publique et la FAQ s'y trouvent. Le site est publié en français et en anglais ; le sélecteur de
+langue est dans son en-tête.
 
 ## Récupérer le script
 
 Téléchargez l'artefact compilé depuis la [dernière
 version](https://github.com/VEAF/Skynet-IADS/releases/latest) et chargez-le dans votre mission —
-voir [mettre en place un IADS](https://veaf.github.io/Skynet-IADS/latest/setting-up/).
+la page *Mettre en place un IADS* de la documentation explique comment.
 
 ## Maintenance
 

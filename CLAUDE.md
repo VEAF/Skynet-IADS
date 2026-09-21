@@ -61,7 +61,11 @@ published as a pre-release.
 The published documentation is `documentation/*.md`, built with MkDocs Material and versioned with
 `mike`, deployed by `.github/workflows/docs.yml` to <https://veaf.github.io/Skynet-IADS/>. Prose
 lives in exactly one place: either a page under `documentation/`, or the root `README.md` — never
-both.
+both. `develop` publishes as `dev` (the site default while no stable release exists) and a tag
+publishes its own version — plus the `latest` alias if the tag is a plain `vX.Y.Z`; a pre-release
+tag publishes its own version only, so a release candidate never becomes what a newcomer reads by
+default. `master` publishes nothing of its own: a tag is always on `master`, so between two
+releases `master` is not on the site.
 
 The site is **bilingual, French by default**, on the VEAF-Mission-Creation-Tools model:
 `mkdocs-static-i18n` in `suffix` mode, French at the site root and English under `/en/`. Three
@@ -69,16 +73,16 @@ conventions come with it, and `build-tools/docs-check.py` enforces all three —
 pushing, and `mkdocs build --strict` with it:
 
 - **Every page has a twin.** `page.md` French, `page.en.md` English, both listed nowhere but the
-  single unsuffixed `nav` entry, which the plugin resolves per language.
+  single unsuffixed `nav` entry, which the plugin resolves per language. This one is a real
+  defect: the plugin falls back rather than failing, so an untranslated page is served in the
+  other language under its own URL, and mkdocs logs a page outside the nav as `INFO`.
 - **A heading targeted by a cross-page link declares its anchor**, `## Point defence
   {#point-defence}`, with the **same id in both languages**. A generated anchor differs between
   the twins and breaks on the next reword.
-- **An English page links to `page.en.md`**, never to `page.md` — that link resolves, and drops
-  its reader back into French. `develop` publishes as `dev` (the site default while no stable release exists) and a tag
-publishes its own version — plus the `latest` alias if the tag is a plain `vX.Y.Z`; a pre-release
-tag publishes its own version only, so a release candidate never becomes what a newcomer reads by
-default. `master` publishes nothing of its own: a tag is always on `master`, so between two
-releases `master` is not on the site.
+- **An English page links to `page.en.md`**, never to `page.md`. Style, not breakage — measured:
+  the plugin rewrites either spelling to the same URL and the reader stays in English. What the
+  rule buys is that the file says what the reader gets, so a twin going away reads as wrong before
+  it behaves as wrong.
 
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under

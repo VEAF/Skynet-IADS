@@ -261,6 +261,35 @@ class CheckDocsTest(unittest.TestCase):
         self.assertEqual(len(report.broken_links), 1)
         self.assertIn("nexistepas.md", report.broken_links[0])
 
+    def test_a_link_outside_the_documentation_tree(self):
+        # `[the changelog](../CHANGELOG.md#unreleased)` is the shape that gets written. The file
+        # exists, but the site never publishes it, so the link 404s for a reader — and with an
+        # anchor it used to reach `relative_to` and kill the gate with a traceback.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "CHANGELOG.md").write_text("# Changelog\n\n## Unreleased\n", encoding="utf-8")
+            pages = dict(CLEAN)
+            pages["index.md"] += "\n[chgl](../CHANGELOG.md#unreleased)\n"
+            doc_dir, mkdocs = _tree(root, pages, ["index.md"])
+            report = dc.check_docs(doc_dir, mkdocs)
+            self.assertEqual(len(report.broken_links), 1)
+            self.assertIn("outside the documentation tree", report.broken_links[0])
+
+    def test_an_indented_code_block_is_still_a_code_block(self):
+        pages = dict(CLEAN)
+        pages["index.md"] += "\n1. Comme ceci :\n\n   ```markdown\n   [exemple](nexistepas.md)\n   ```\n"
+        report = self._check(pages, ["index.md"])
+        self.assertEqual(report.total, 0, dc.format_report(report))
+
+    def test_a_config_without_a_nav_key_fails_loudly(self):
+        # Silently treating the whole file as the nav makes every page look listed, which is the
+        # one outcome worse than a false positive here.
+        with tempfile.TemporaryDirectory() as tmp:
+            doc_dir, mkdocs = _tree(Path(tmp), CLEAN, ["index.md"])
+            mkdocs.write_text("site_name: Test\n", encoding="utf-8")
+            with self.assertRaises(SystemExit):
+                dc.check_docs(doc_dir, mkdocs)
+
     def test_angle_bracketed_target(self):
         pages = dict(CLEAN)
         pages["index.md"] += "\n[la page](<nexistepas.md>)\n"

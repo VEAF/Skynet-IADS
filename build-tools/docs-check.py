@@ -52,7 +52,7 @@ _EXPLICIT_ANCHOR = re.compile(r"\{:?\s*#([A-Za-z0-9_-]+)\s*\}\s*$")
 #: A fenced code block, so links and `#` comments inside one are not mistaken for prose. api.md
 #: alone holds 66 of them; a shell comment there would otherwise register as a heading, and a
 #: sample link as a real one.
-_FENCE = re.compile(r"^(?P<fence>```+|~~~+)[^\n]*\n.*?^(?P=fence)[^\n]*$", re.MULTILINE | re.DOTALL)
+_FENCE = re.compile(r"^[ \t]*(?P<fence>```+|~~~+)[^\n]*\n.*?^[ \t]*(?P=fence)[^\n]*$", re.MULTILINE | re.DOTALL)
 #: mkdocs.yml carries a `!!python/object/apply` tag, so it cannot go through yaml.safe_load; the
 #: nav is a flat list of `key: path.md` lines, which this reads directly. A title is optional and
 #: the path may be quoted — both are legal YAML, and missing either makes the entry invisible to
@@ -176,7 +176,12 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
     pages = sorted(doc_dir.rglob("*.md"))
     fr_pages = [p for p in pages if not p.name.endswith(".en.md")]
 
-    nav_text = mkdocs_yml.read_text(encoding="utf-8").split("\nnav:", 1)[-1]
+    config = mkdocs_yml.read_text(encoding="utf-8")
+    if "\nnav:" not in config:
+        # `split(...)[-1]` on a missing key hands back the whole file, every `- x.md` anywhere in
+        # it counts as a nav entry, and `nav_orphans` goes quietly blind. Fail loudly instead.
+        raise SystemExit(f"docs-check: no 'nav:' key in {mkdocs_yml} — the nav checks would be meaningless")
+    nav_text = config.split("\nnav:", 1)[1]
     nav_targets = set(_NAV_ENTRY.findall(nav_text))
 
     for page in pages:
@@ -205,6 +210,13 @@ def check_docs(doc_dir: Path, mkdocs_yml: Path, require_explicit_anchors: bool =
             resolved = (page.parent / path_part).resolve()
             if not resolved.exists():
                 report.broken_links.append(f"{rel} -> {target}")
+                continue
+            if not resolved.is_relative_to(doc_dir.resolve()):
+                # The file exists but sits outside docs_dir, so the site never publishes it and
+                # the link 404s for a reader. `[the changelog](../CHANGELOG.md#unreleased)` is the
+                # shape that gets written; before this, the anchor branch below reached
+                # `relative_to` and the gate died on a traceback instead of reporting anything.
+                report.broken_links.append(f"{rel} -> {target} (outside the documentation tree, so never published)")
                 continue
             if is_en and not path_part.endswith(".en.md") and target not in switcher_targets and _twin(resolved).exists():
                 # Style, not breakage: the plugin rewrites the link and the reader does land in

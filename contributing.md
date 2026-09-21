@@ -117,9 +117,9 @@ with that, all three checked by `python build-tools/docs-check.py`:
 
 | Rule | Why |
 |---|---|
-| A page ships with its twin, or not at all | The plugin falls back instead of failing: the English URL of an untranslated page serves French, and nothing says so |
+| A page ships with its twin, or not at all | The plugin falls back instead of failing: the URL of an untranslated page serves the other language, and nothing says so — not even `--strict`, which logs a page outside the nav as `INFO` |
 | A heading a cross-page link targets declares its anchor — `## Point defence {#point-defence}` — with the same id in both languages | A generated anchor comes from the heading text, so it differs between the twins and dies on the next reword |
-| An English page links to `page.en.md` | A link to `page.md` resolves, and sends its reader back into French |
+| An English page links to `page.en.md` | Style, not breakage: measured on a real build, the plugin rewrites either spelling to the same URL and the reader stays in English. The rule keeps what the file says and what the reader gets from drifting apart |
 
 Run the gate and `mkdocs build --strict` before pushing; both also run on the pull request
 (`.github/workflows/docs-check.yml`).

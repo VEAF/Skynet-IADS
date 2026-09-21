@@ -37,8 +37,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   two steps were publishing the same content, and the `master` step only had a reason to exist while
   no release did. Deliberate consequence: between two releases, `master` is not on the site.
 - The `README.md` link to the setup page was a 404, and had always been one: `mike` publishes
-  every page under its version, so `/Skynet-IADS/setting-up/` has never resolved — only
-  `/latest/setting-up/` does. Found while making the README bilingual.
+  every page under its version, so `/Skynet-IADS/setting-up/` has never resolved. The README no
+  longer names a version at all — it points at `https://veaf.github.io/Skynet-IADS/`, which
+  redirects to whichever version is the default. A link carrying `/latest/` would have been the
+  same trap one release later: `latest` only moves on a tag, so between this merge and the next
+  release it still serves the English-only 3.5.0 site, and `/latest/en/` does not exist yet.
 - The API reference documented a contact's ground speed and then showed `getMagneticHeading()` in
   the code block beside it — the paragraph above copied and its call left in place. The method is
   `getGroundSpeedInKnots(decimals)`, `decimals` defaulting to 2. Found by the review of this lot,
