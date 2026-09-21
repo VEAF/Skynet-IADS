@@ -495,3 +495,15 @@ Until that release is cut, the build date in the artifact's first line remains t
   longer on that path. The behaviour is covered standalone by
   `test/lua/test_skynet_iads_coverage_refresh.lua`; what stays in the mission is the part that needs
   the simulator, the distance between two real DCS units.
+- Both Persian Gulf demos destroyed the jammer aircraft they had just armed, on every single load --
+  `skynet-test-persian-gulf.miz` and `skynet-test-persian-gulf-stress-test.miz` share one setup
+  script and carry the same two units, so the defect and its fix are the same in both. The
+  setup script ends its jammer section with a guard of walder's that removes the AI F-4E when nobody
+  occupies the `Hornet SA-11-2 Attack` slot -- but it runs at `triggerStart`, and that slot is a
+  client slot, which has no `Unit` until a player takes it. `Unit.getByName` therefore always
+  returned nil and the guard always fired, so the F10 `Jammer:` menu was created and immediately
+  removed and the log never carried a single `JAMMER` line. Not a regression: the group is
+  byte-identical in the December 2023 archive and the guard predates VEAF, so the demonstration has
+  only ever worked by luck of timing. The guard is gone -- if nobody takes the Hornet slot the F-4E
+  now flies its route alone and jams the red network anyway, which for a demo about jamming is the
+  better failure.
