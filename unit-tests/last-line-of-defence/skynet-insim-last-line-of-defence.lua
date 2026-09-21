@@ -17,6 +17,11 @@
 -- Everything is driven from outside through VEAF's dcs-bridge, so nobody has to fly. The mission
 -- carries no player task.
 --
+-- **Each run also answers in one word.** SKYNET_TEST.verdict() and SKYNET_TEST.coverageVerdict()
+-- return IDLE, RUNNING, PASS or FAIL with a reason, which is what `build-tools/run-smoke.py` polls.
+-- Before that, reading a run meant reading the log by eye; the watches still write those lines, and
+-- they remain the way to see *how* a run went rather than whether it passed.
+--
 -- Each check must be able to fail BOTH ways. For run 1: the site lights up when the intruder
 -- crosses its last-line-of-defense radius, AND it falls silent once the persistence has run out.
 -- For run 2: the battery is held non-autonomous while the AWACS covers it, AND it is handed back
@@ -30,6 +35,23 @@ do
 	SKYNET_TEST.SAM_GROUP = "TEST-SAM-SA-6"
 	SKYNET_TEST.EW_UNIT = "TEST-EW-far"
 	SKYNET_TEST.INTRUDER_GROUP = "TEST-INTRUDER"
+
+	--- How long a run may take before its verdict stops saying RUNNING and says what is missing.
+	--
+	-- Ten minutes. Run 1 flies 80 km at 200 m/s, so seven is the honest figure and this leaves room
+	-- for a slow load. The runner has a timeout of its own, but a timeout there can only say "still
+	-- RUNNING"; a deadline here can say *which half* never happened, which is the whole difference
+	-- between a report somebody can act on and one they have to reproduce.
+	SKYNET_TEST.RUN_DEADLINE = 600
+
+	--- What each run has actually been seen to do, accumulated by its watch.
+	--
+	-- A verdict cannot be computed on demand from the current state, because both runs are about a
+	-- **transition**: a battery that is dark right now is either one that never lit or one that has
+	-- correctly gone quiet again, and those are the pass and the fail. So the watch records the
+	-- edges as they go past, and the verdict reads the record.
+	SKYNET_TEST.run1 = { started = nil, wasActive = nil, sawLit = false, sawDark = false }
+	SKYNET_TEST.run2 = { started = nil, wasAutonomous = nil, sawHeld = false, sawHandedBack = false }
 
 	local function log(message)
 		env.info("SKYNET-TEST: " .. message)
@@ -263,6 +285,9 @@ do
 		if group == nil then
 			return "the intruder did not spawn"
 		end
+		--a fresh measurement per launch. The watch has been recording since mission start, so
+		--without this a second run would inherit the first one's edges and pass on them
+		SKYNET_TEST.run1 = { started = timer.getTime(), wasActive = nil, sawLit = false, sawDark = false }
 		log(
 			string.format(
 				"intruder away: %.0f km south of the site, %.0f m AGL, %.0f m/s [%s]",
@@ -323,14 +348,60 @@ do
 	-- The two moments that matter -- the site lighting up as the intruder crosses the radius, and
 	-- falling silent once the persistence expires -- are seconds wide. Polling them from outside
 	-- would miss one; the log does not.
+	--- Records run 1's two edges: the site lighting up, and falling silent again afterwards.
+	--
+	-- Called from the watch, so it must not raise: the watch is a scheduled function, and DCS drops
+	-- a schedule whose body errors. The run would then go blind from that second on and look exactly
+	-- like a run where nothing happened -- which is the failure this whole file exists to detect.
+	local function recordRun1()
+		local samSite = SKYNET_TEST.samSite()
+		if samSite == nil then
+			return
+		end
+		local active = samSite:isActive()
+		local record = SKYNET_TEST.run1
+		if record.wasActive == false and active then
+			record.sawLit = true
+		elseif record.wasActive and not active and record.sawLit then
+			--only after a light-up. A site that was never lit cannot have gone quiet, and counting
+			--the initial dark state as "went dark" would pass a run in which nothing happened at all
+			record.sawDark = true
+		end
+		record.wasActive = active
+	end
+
 	function SKYNET_TEST.startWatch(intervalSeconds)
 		intervalSeconds = intervalSeconds or 5
 		SKYNET_TEST.stopWatch()
 		SKYNET_TEST.watchID = timer.scheduleFunction(function(_, time)
+			pcall(recordRun1)
 			env.info("SKYNET-TEST-WATCH:\n" .. SKYNET_TEST.status())
 			return time + intervalSeconds
 		end, nil, timer.getTime() + intervalSeconds)
 		return "watch started, every " .. intervalSeconds .. "s"
+	end
+
+	--- Run 1's verdict, as one word, for `build-tools/run-smoke.py`.
+	--
+	-- **Returns a word, never a boolean and never a table.** dcs-bridge's `handleExec` ends on
+	-- `tostring(result ~= nil and result or "")`, and that idiom turns a `false` into the empty
+	-- string -- indistinguishable from nil, from a crash, and from success. A runner cannot tell
+	-- those apart, so the scenario never puts it in that position.
+	function SKYNET_TEST.verdict()
+		local record = SKYNET_TEST.run1
+		if record.started == nil then
+			return "IDLE"
+		end
+		if record.sawLit and record.sawDark then
+			return "PASS"
+		end
+		if timer.getTime() - record.started < SKYNET_TEST.RUN_DEADLINE then
+			return "RUNNING"
+		end
+		if not record.sawLit then
+			return "FAIL: the site never lit up -- the last line of defence did not wake it"
+		end
+		return "FAIL: the site lit up but never went quiet again -- the persistence never expired"
 	end
 
 	function SKYNET_TEST.stopWatch()
@@ -413,16 +484,57 @@ do
 		)
 	end
 
+	--- Records run 2's two edges: the battery held by the AWACS, and handed back once it leaves.
+	--
+	-- Same nil-safety obligation as recordRun1: this runs inside a scheduled function.
+	local function recordRun2()
+		if SKYNET_TEST.iads2 == nil then
+			return
+		end
+		local site = SKYNET_TEST.iads2:getSAMSiteByGroupName(SKYNET_TEST.COVERAGE_SAM_GROUP)
+		if site == nil then
+			return
+		end
+		local autonomous = site:getAutonomousState()
+		local record = SKYNET_TEST.run2
+		if not autonomous then
+			--held by the network: the AWACS is a parent and the battery is not on its own
+			record.sawHeld = true
+		elseif record.wasAutonomous == false and record.sawHeld then
+			record.sawHandedBack = true
+		end
+		record.wasAutonomous = autonomous
+	end
+
 	function SKYNET_TEST.startCoverageWatch(intervalSeconds)
 		intervalSeconds = intervalSeconds or 5
 		if SKYNET_TEST.coverageWatchID then
 			timer.removeFunction(SKYNET_TEST.coverageWatchID)
 		end
 		SKYNET_TEST.coverageWatchID = timer.scheduleFunction(function(_, time)
+			pcall(recordRun2)
 			env.info("SKYNET-TEST-" .. SKYNET_TEST.coverageStatus())
 			return time + intervalSeconds
 		end, nil, timer.getTime() + intervalSeconds)
 		return "coverage watch started, every " .. intervalSeconds .. "s"
+	end
+
+	--- Run 2's verdict, as one word. See SKYNET_TEST.verdict for why it is never a boolean.
+	function SKYNET_TEST.coverageVerdict()
+		local record = SKYNET_TEST.run2
+		if record.started == nil then
+			return "IDLE"
+		end
+		if record.sawHeld and record.sawHandedBack then
+			return "PASS"
+		end
+		if timer.getTime() - record.started < SKYNET_TEST.RUN_DEADLINE then
+			return "RUNNING"
+		end
+		if not record.sawHeld then
+			return "FAIL: the battery was never held -- the AWACS never became its parent"
+		end
+		return "FAIL: the battery was held and never handed back -- the coverage refresh did not purge"
 	end
 
 	--- Spawns the battery and its AWACS, wires them into a second network, and starts watching.
@@ -516,6 +628,7 @@ do
 		SKYNET_TEST.iads2:addSAMSite(SKYNET_TEST.COVERAGE_SAM_GROUP)
 		SKYNET_TEST.iads2:activate()
 
+		SKYNET_TEST.run2 = { started = timer.getTime(), wasAutonomous = nil, sawHeld = false, sawHandedBack = false }
 		SKYNET_TEST.startCoverageWatch(5)
 		log("coverage run started")
 		return SKYNET_TEST.coverageStatus()
