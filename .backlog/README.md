@@ -19,7 +19,7 @@ the same shape.
 
 | Lot | What | Status |
 |-----|------|--------|
-| [FEAT-BILINGUAL-DOCUMENTATION](FEAT-BILINGUAL-DOCUMENTATION/PRD.md) | The documentation site in French and English, French by default — the VMCT model, copied down to its gate | 🔄 |
+| [FEAT-BILINGUAL-DOCUMENTATION](FEAT-BILINGUAL-DOCUMENTATION/PRD.md) | The documentation site in French and English, French by default — the VMCT model, copied down to its gate | ✅ |
 
 ## Archive
 
