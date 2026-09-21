@@ -1,0 +1,64 @@
+name: Docs Check
+
+# Guards the bilingual documentation on every pull request. `docs.yml` only runs *after* a merge,
+# so until now a dangling nav entry, a dead anchor or a page whose French text was written and
+# whose English twin never was would reach the published site before anyone could see it.
+#
+# The defect the strict build cannot see, and the reason the gate runs beside it: a page with no
+# twin is served in the *other* language under its own URL by the i18n plugin rather than failing,
+# and mkdocs logs a page outside the nav as INFO, so nothing goes red.
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    paths:
+      - "documentation/**"
+      - "mkdocs.yml"
+      - "build-tools/docs-check.py"
+      - "build-tools/docs-requirements.txt"
+      - "test/python/test_docs_check.py"
+      - ".github/workflows/docs-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  docs-check:
+    name: Links, anchors, translations, nav
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # The gate is stdlib-only, so it runs in a couple of seconds with nothing installed. Its own
+      # unit tests run in the Lua tests workflow, with the rest of test/python.
+      - name: Check links, anchors, translations and nav
+        run: python build-tools/docs-check.py
+
+      - name: Install MkDocs Material and the i18n plugin
+        run: pip install -r build-tools/docs-requirements.txt
+
+      # Run the gate's own tests here too, not only in the Lua tests workflow: one of them
+      # compares `slugify` against the real `pymdownx` slugifier, and that job installs nothing on
+      # purpose, so there the test skips itself. This is the only place it actually runs — and it
+      # is the test guarding the weak point of the gate, a re-implementation of mkdocs' slug rules.
+      #
+      # The import below is the point of the first line: a test that skips everywhere proves
+      # nothing, and a skip is silent. If mkdocs-material ever stops pulling pymdown-extensions
+      # in, this job says so instead of going quietly green.
+      - name: Test the gate, including against the real slugifier
+        run: |
+          python -c "import pymdownx.slugs"
+          python -m unittest discover -s test/python -p "test_docs_check.py"
+
+      # `--strict` turns mkdocs' own warnings into failures: a nav entry with no page, a relative
+      # link with no target, and — because `mkdocs.yml` raises `validation.links.anchors` to
+      # `warn` — a link to an anchor the target does not expose, resolved with the real slugifier
+      # in the language being built. A page in no menu is *not* one of them: mkdocs logs that as
+      # INFO, which is why the gate above checks it. Both languages are built.
+      - name: Build the site, both languages, warnings fatal
+        run: mkdocs build --strict --site-dir "$RUNNER_TEMP/site"

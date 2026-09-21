@@ -36,6 +36,35 @@ Until that release is cut, the build date in the artifact's first line remains t
   offer the release. `master` now publishes nothing of its own — a tag is always on `master`, so the
   two steps were publishing the same content, and the `master` step only had a reason to exist while
   no release did. Deliberate consequence: between two releases, `master` is not on the site.
+- The `README.md` link to the setup page was a 404, and had always been one: `mike` publishes
+  every page under its version, so `/Skynet-IADS/setting-up/` has never resolved. The README no
+  longer names a version at all — it points at `https://veaf.github.io/Skynet-IADS/`, which
+  redirects to whichever version is the default. A link carrying `/latest/` would have been the
+  same trap one release later: `latest` only moves on a tag, so between this merge and the next
+  release it still serves the English-only 3.5.0 site, and `/latest/en/` does not exist yet.
+- The API reference documented a contact's ground speed and then showed `getMagneticHeading()` in
+  the code block beside it — the paragraph above copied and its call left in place. The method is
+  `getGroundSpeedInKnots(decimals)`, `decimals` defaulting to 2. Found by the review of this lot,
+  which had faithfully translated the mistake into a second language.
+
+### Added
+
+- **The documentation site is now bilingual, and French is what a visitor gets by default.** Every
+  page exists twice — `page.md` in French, `page.en.md` in English — served by
+  `mkdocs-static-i18n` at the site root and under `/en/`, with a language selector in the header.
+  This is the model VEAF-Mission-Creation-Tools uses, copied down to its conventions: a heading
+  that a cross-page link targets declares its own anchor, identical in both languages, so no link
+  published elsewhere moves. `https://veaf.github.io/Skynet-IADS/latest/setting-up/` and its
+  siblings keep working and switch to French; their English text is at
+  `https://veaf.github.io/Skynet-IADS/latest/en/setting-up/`.
+- A `Docs Check` workflow, running `build-tools/docs-check.py` and a strict MkDocs build on every
+  pull request. It reports broken links, dead anchors, cross-page links relying on a generated
+  anchor, pages with no twin, and nav entries with no page. The one the strict build cannot see is
+  the missing twin: the i18n plugin serves the page in the other language rather than failing, and
+  a page in no menu is an `INFO` to mkdocs. `mkdocs.yml` also raises `validation.links.anchors` to
+  `warn`, so a dead anchor fails the build, checked with the real slugifier in each language.
+- `README.md` now carries both languages in one file, English first then French, with a switcher
+  at the top of each half — the shape VEAF-Mission-Creation-Tools uses.
 
 ## [3.5.0] — 2026-09-21
 

@@ -1,174 +1,180 @@
-# Setting up an IADS
+# Mettre en place un IADS
 
-## Skynet IADS elements
+## Les éléments d'un Skynet IADS
 
-![Skynet IADS overview](images/skynet-overview.jpg)
+![Vue d'ensemble de Skynet IADS](images/skynet-overview.jpg)
 
-### IADS
+### L'IADS
 
-A Skynet IADS is a complete operational network. You can have multiple Skynet IADS instances per
-coalition in a DCS mission. A simple setup would be one IADS for the blue side and one IADS for the
-red side.
+Un Skynet IADS est un réseau opérationnel complet. Vous pouvez avoir plusieurs instances de Skynet
+IADS par coalition dans une mission DCS. Un montage simple consiste en un IADS pour le camp bleu et
+un IADS pour le camp rouge.
 
-### Track files
+### Les pistes (track files)
 
-Skynet keeps a global track file of all detected targets. It queries all its units with radars and
-deduplicates contacts. By default lost contacts are stored up to 32 seconds in memory.
+Skynet tient un fichier de pistes global rassemblant toutes les cibles détectées. Il interroge
+toutes ses unités dotées d'un radar et dédoublonne les contacts. Par défaut, un contact perdu est
+conservé en mémoire jusqu'à 32 secondes.
 
-### Command centers
+### Les centres de commandement
 
-You can add multiple command centers to a Skynet IADS. Once all command centers are destroyed the
-IADS will go into autonomous mode.
+Vous pouvez ajouter plusieurs centres de commandement à un Skynet IADS. Une fois tous les centres
+de commandement détruits, l'IADS bascule en mode autonome.
 
-### SAM sites
+### Les sites SAM
 
-Skynet can handle multiple SAM sites, it will try and keep emissions to a minimum, therefore by
-default SAM sites will be turned on only if a target is in range.
-Every single launcher and radar unit's distance of a SAM site is analysed individually.
-If at least one launcher and radar is within range, the SAM Site will become active.
-This allows for a scattered placement of radar and launcher units as in real life.
+Skynet sait gérer plusieurs sites SAM ; il cherche à réduire les émissions au minimum, et par
+défaut un site SAM ne s'allume donc que si une cible est à portée.
+La distance est analysée individuellement pour chaque lanceur et chaque radar du site.
+Dès qu'au moins un lanceur et un radar sont à portée, le site SAM s'active.
+Cela autorise une implantation dispersée des radars et des lanceurs, comme dans la réalité.
 
-If SAM sites or radar guided AAA run out of ammo they will go dark. In the case of a SAM site it
-will wait with going dark as long as the last fired missile is still in the air.
+Un site SAM ou une DCA guidée par radar qui n'a plus de munitions s'éteint. Dans le cas d'un site
+SAM, l'extinction attend que le dernier missile tiré ne soit plus en vol.
 
-If an EW radar or a SAM site acting as EW radar is destroyed surrounding SAM sites can be left
-without EW radar coverage. This can also happen if a SAM site is outside of AWACS coverage.
-SAM sites will go autonomous in such a case meaning they will use their organic radars or just stay
-dark depending on setup.
-Once a SAM site is within EW radar coverage again it will be updated by the IADS.
+Si un EW radar, ou un site SAM jouant le rôle d'EW radar, est détruit, les sites SAM alentour
+peuvent se retrouver sans couverture radar de veille lointaine. Cela arrive aussi lorsqu'un site
+SAM sort de la couverture d'un AWACS.
+Le site SAM passe alors en mode autonome : il utilise ses radars organiques, ou reste éteint, selon
+la configuration.
+Dès qu'il retrouve la couverture d'un EW radar, l'IADS recommence à l'alimenter.
 
-### Early Warning Radars
+### Les radars de veille lointaine (EW radars)
 
-Skynet can handle 0-n EW radars. For detection of a target the DCS radar detection logic is used.
-You can use any type of radar listed in
-[skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua)
-in an EW role in Skynet.
-Some modern SAM radars have a greater detection range than older EW radars, e.g. the S-300PS 64H6E
-(160 km) vs EWR 55G6 (120 km).
+Skynet sait gérer de 0 à n EW radars. La détection des cibles s'appuie sur la logique de détection
+radar de DCS.
+Vous pouvez employer dans un rôle de veille lointaine n'importe quel type de radar listé dans
+[skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua).
+Certains radars SAM modernes portent plus loin que d'anciens EW radars : par exemple le 64H6E du
+S-300PS (160 km) face au 55G6 EWR (120 km).
 
-You can also designate SAM sites to act as EW radars, in this case a SAM site will constantly have
-their radar on. Long range systems like the S-300 are used as EW radars in real life.
-SAM sites that are out of ammo will stay live if they are set to act as EW radars.
+Vous pouvez aussi désigner des sites SAM pour tenir le rôle d'EW radar ; dans ce cas, le site garde
+son radar allumé en permanence. Les systèmes à longue portée comme le S-300 servent de radars de
+veille dans la réalité.
+Un site SAM à court de munitions reste allumé s'il est configuré pour tenir ce rôle.
 
-Nice to know: terrain elevation around an EW radar will create blind spots, allowing low and fast
-movers to penetrate radar networks through valleys.
+Bon à savoir : le relief autour d'un EW radar crée des angles morts, qui permettent à un avion bas
+et rapide de percer un réseau radar en suivant les vallées.
 
-### Power sources
+### Les sources d'énergie
 
-By default Skynet IADS will run without having to add power sources. You can add multiple power
-sources to SAM sites, EW radars and command centers.
-Once a power source is fully damaged the Skynet IADS unit will stop working.
+Par défaut, un Skynet IADS fonctionne sans qu'il soit nécessaire d'ajouter des sources d'énergie.
+Vous pouvez en ajouter plusieurs aux sites SAM, aux EW radars et aux centres de commandement.
+Dès qu'une source d'énergie est complètement détruite, l'unité Skynet IADS qu'elle alimente cesse
+de fonctionner.
 
-Nice to know: taking out the power source of a command center is a real life tactic used in SEAD
-(Suppression of Enemy Air Defence).
+Bon à savoir : neutraliser la source d'énergie d'un centre de commandement est une tactique bien
+réelle de SEAD (Suppression of Enemy Air Defence).
 
-### Connection nodes
+### Les nœuds de liaison (connection nodes)
 
-By default Skynet IADS will run without having to add connection nodes. You can add multiple
-connection nodes to SAM sites, EW radars and command centers.
+Par défaut, un Skynet IADS fonctionne sans qu'il soit nécessaire d'ajouter des nœuds de liaison.
+Vous pouvez en ajouter plusieurs aux sites SAM, aux EW radars et aux centres de commandement.
 
-When all the unit's connection nodes are fully damaged an EW radar or SAM site will go into
-autonomous mode. For a SAM site this means it will behave in its autonomous mode setting.
-If an EW Radar loses its node it will no longer contribute information to the IADS but otherwise
-the IADS will still work. Command centers do not have an autonomous mode.
+Lorsque tous les nœuds de liaison d'une unité sont détruits, l'EW radar ou le site SAM passe en
+mode autonome. Pour un site SAM, cela veut dire qu'il applique le comportement autonome configuré.
+Un EW radar qui perd son nœud cesse d'alimenter l'IADS en informations, mais l'IADS continue de
+fonctionner par ailleurs. Les centres de commandement, eux, n'ont pas de mode autonome.
 
-Nice to know: a single node can be used to connect an arbitrary number of Skynet IADS units. This
-way you can add a single point of failure in to an IADS.
+Bon à savoir : un même nœud peut relier un nombre quelconque d'unités Skynet IADS. C'est ainsi que
+vous introduisez un point de défaillance unique dans un IADS.
 
 ### AWACS (Airborne Early Warning and Control System)
 
-Any aircraft with an air to air radar can be added as AWACS. Contacts detected will be added to the
-IADS. The AWACS will also detect ground units like ships.
-These will however not be passed to the SAM sites.
+N'importe quel aéronef doté d'un radar air-air peut être ajouté comme AWACS. Les contacts qu'il
+détecte sont versés à l'IADS. L'AWACS détecte également les unités au sol, navires compris. Ces
+contacts-là, en revanche, ne sont pas transmis aux sites SAM.
 
-You can add a connection node for the AWACS like an antenna, if it is destroyed, the AWACS will no
-longer be able to contribute contacts to the IADS.
-Technically you can also add a power source. In this context it would represent the power source
-for the connection node, since an aircraft provides its own power.
+Vous pouvez donner un nœud de liaison à l'AWACS — une antenne, par exemple : s'il est détruit,
+l'AWACS ne peut plus alimenter l'IADS en contacts.
+Techniquement, vous pouvez aussi lui donner une source d'énergie. Dans ce contexte, elle représente
+l'alimentation du nœud de liaison, puisqu'un aéronef produit la sienne.
 
-### Ships
+### Les navires
 
-Ships will contribute to the IADS the same way AWACS units do. Add them as a regular EW radar.
+Un navire alimente l'IADS exactement comme une unité AWACS. Ajoutez-le comme un EW radar ordinaire.
 
-## Using Skynet in the mission editor
+## Utiliser Skynet dans l'éditeur de mission
 
-It's quite simple to set up an IADS, have a look at the setup scripts in
-[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions) — and at the demo
-missions themselves, which come [attached to a release](https://github.com/VEAF/Skynet-IADS/releases)
-rather than committed to the repository. See the [Quick start](index.md#quick-start) for why, and for
-how to assemble one from a clone.
+Monter un IADS est assez simple : jetez un œil aux scripts de configuration dans
+[demo-missions/](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions) — et aux missions de
+démonstration elles-mêmes, qui sont [jointes à une
+release](https://github.com/VEAF/Skynet-IADS/releases) plutôt que déposées dans le dépôt. Le
+[démarrage rapide](index.md#quick-start) explique pourquoi, et comment en assembler une depuis un
+clone.
 
-### Placing units
+### Placer les unités
 
-This tutorial assumes you are familiar with how to set up a SAM site in DCS. If not I suggest you
-watch [this video](https://www.youtube.com/watch?v=YZPh-JNf6Ww) by the Grim Reapers.
-Place the IADS elements you wish to add on the map.
+Ce tutoriel suppose que vous savez monter un site SAM dans DCS. Si ce n'est pas le cas, je vous
+conseille [cette vidéo](https://www.youtube.com/watch?v=YZPh-JNf6Ww) des Grim Reapers.
+Placez sur la carte les éléments de l'IADS que vous voulez ajouter.
 
-![Mission Editor IADS Setup](images/iads-setup.png)
+![Montage d'un IADS dans l'éditeur de mission](images/iads-setup.png)
 
-### Preparing a SAM site
+### Préparer un site SAM
 
-There may only be **one type of SAM site per group**. More than one type of SAM site per group will
-result in Skynet not being able to properly control the group. Also please refrain from adding
-units to the SAM group that are not required for the SAM like trucks, tanks and soldiers.
-The skill level you set on a SAM group is retained by Skynet. Make sure you name the **SAM site
-group** in a consistent manner with a prefix e.g. `SAM-SA-2`.
+Il ne doit y avoir **qu'un seul type de site SAM par groupe**. Au-delà, Skynet ne saura pas piloter
+le groupe correctement. Évitez également d'ajouter au groupe SAM des unités dont le système n'a pas
+besoin : camions, chars, fantassins.
+Le niveau de compétence (skill) que vous donnez à un groupe SAM est conservé par Skynet. Veillez à
+nommer le **groupe du site SAM** de façon cohérente, avec un préfixe, par exemple `SAM-SA-2`.
 
-![Mission Editor add SAM site](images/add-sam-site.png)
+![Ajout d'un site SAM dans l'éditeur de mission](images/add-sam-site.png)
 
-### Preparing an EW radar
+### Préparer un EW radar
 
-You can use any type of radar as an EW radar. Make sure you **name the unit** in a consistent
-manner with a prefix, e.g. `EW-center3`. Make sure you have only **one EW radar in a group**
-otherwise Skynet will not be able to control single EW radars.
+N'importe quel type de radar peut servir d'EW radar. Veillez à **nommer l'unité** de façon
+cohérente, avec un préfixe, par exemple `EW-center3`. Veillez également à n'avoir qu'**un seul EW
+radar par groupe**, sans quoi Skynet ne pourra pas piloter les radars un par un.
 
-![Mission Editor EW radar](images/ew-setup.png)
+![EW radar dans l'éditeur de mission](images/ew-setup.png)
 
-### Adding the Skynet code
+### Ajouter le code de Skynet
 
-Load the compiled skynet code into a mission. Skynet does not require MIST — the
-[skynet-iads-compiled.lua](https://github.com/VEAF/Skynet-IADS/releases) attached to each release is
-a drop-in script, and the demo missions no longer bundle it either. If your own mission uses MIST for
-something else, it still works alongside Skynet; the current version is
-[here](https://github.com/mrSkortch/MissionScriptingTools).
+Chargez le code compilé de Skynet dans une mission. Skynet n'a pas besoin de MIST : le fichier
+[skynet-iads-compiled.lua](https://github.com/VEAF/Skynet-IADS/releases) joint à chaque release est
+un script autonome, et les missions de démonstration ne l'embarquent plus non plus. Si votre propre
+mission utilise MIST pour autre chose, les deux cohabitent sans problème ; la version courante est
+[ici](https://github.com/mrSkortch/MissionScriptingTools).
 
-I recommend you create a text file e.g. `my-iads-setup.lua` and then add the code needed to get the
-IADS running. When updating the setup remember to reload the file in the mission editor. Otherwise
-changes will not become effective.
-You can also add the code directly in the mission editor, however that input field is quite small
-if you write more than a few lines of code.
+Je vous conseille de créer un fichier texte, `my-iads-setup.lua` par exemple, et d'y écrire le code
+nécessaire au démarrage de l'IADS. Lorsque vous modifiez votre configuration, pensez à recharger le
+fichier dans l'éditeur de mission, sans quoi les changements resteront sans effet.
+Vous pouvez aussi saisir le code directement dans l'éditeur de mission, mais le champ est plutôt
+étroit dès que vous écrivez plus de quelques lignes.
 
-![Mission Editor IADS Setup](images/load-scripts.png)
+![Chargement des scripts dans l'éditeur de mission](images/load-scripts.png)
 
-### Adding the Skynet IADS
+### Ajouter le Skynet IADS
 
-For the IADS to work you need four lines of code.
+Quatre lignes de code suffisent à faire fonctionner l'IADS.
 
-Create an instance of the IADS, the name string is optional and will be displayed in status output:
+Créez une instance de l'IADS ; la chaîne de caractères qui le nomme est facultative et sera
+affichée dans les sorties d'état :
 
 ```lua
 redIADS = SkynetIADS:create('name')
 ```
 
-Give all SAM groups you want to add a common prefix in the mission editor eg: `SAM-SA-10 west`,
-then add this line of code:
+Donnez un préfixe commun, dans l'éditeur de mission, à tous les groupes SAM que vous voulez ajouter
+— par exemple `SAM-SA-10 west` — puis ajoutez cette ligne :
 
 ```lua
 redIADS:addSAMSitesByPrefix('SAM')
 ```
 
-Same for the EW radars, name all units with a common prefix in the mission editor eg:
-`EW-radar-south`:
+Même chose pour les EW radars : nommez toutes les unités avec un préfixe commun, par exemple
+`EW-radar-south` :
 
 ```lua
 redIADS:addEarlyWarningRadarsByPrefix('EW')
 ```
 
-Activate the IADS:
+Activez l'IADS :
 
 ```lua
 redIADS:activate()
 ```
 
-See the [API reference](api.md) for everything else — command centers, power sources, connection
-nodes, go-live constraints, the jammer, and the full example setup.
+Consultez la [référence de l'API](api.md) pour tout le reste : centres de commandement, sources
+d'énergie, nœuds de liaison, conditions d'activation, brouilleur, et l'exemple de montage complet.

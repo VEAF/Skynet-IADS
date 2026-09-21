@@ -44,10 +44,16 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 - [Conventional Commits](https://www.conventionalcommits.org/), in English.
 - Branches are deleted on merge — this is automatic.
 
-## Everything in English
+## Everything in English, except the published documentation
 
-Code, comments, commit messages, pull requests, documentation. This project has users beyond the
-French-speaking community.
+Code, comments, commit messages, pull requests, the backlog, this file. This project has users
+beyond the French-speaking community.
+
+What a *user* reads is the exception: the documentation site is bilingual and **French is what a
+visitor gets by default** — most of the people who set up a mission with Skynet read French first
+— and `README.md` carries both languages in one file, English first. See
+[the README is hand-written, the documentation is published](#the-readme-is-hand-written-the-documentation-is-published)
+for how the two versions of a page live side by side.
 
 ## Test first
 
@@ -104,6 +110,19 @@ candidate never becomes what `master` ships.
 (`.github/workflows/docs.yml`), published at <https://veaf.github.io/Skynet-IADS/>. Preview it
 locally with `pip install -r build-tools/docs-requirements.txt && mkdocs serve`. Prose lives in
 exactly one of the two places, never both — check before adding to either.
+
+The site is bilingual, French by default: `page.md` is the French text, `page.en.md` its English
+twin, and `mkdocs-static-i18n` serves French at the root and English under `/en/`. Three rules come
+with that, all three checked by `python build-tools/docs-check.py`:
+
+| Rule | Why |
+|---|---|
+| A page ships with its twin, or not at all | The plugin falls back instead of failing: the URL of an untranslated page serves the other language, and nothing says so — not even `--strict`, which logs a page outside the nav as `INFO` |
+| A heading a cross-page link targets declares its anchor — `## Point defence {#point-defence}` — with the same id in both languages | A generated anchor comes from the heading text, so it differs between the twins and dies on the next reword |
+| An English page links to `page.en.md` | Style, not breakage: measured on a real build, the plugin rewrites either spelling to the same URL and the reader stays in English. The rule keeps what the file says and what the reader gets from drifting apart |
+
+Run the gate and `mkdocs build --strict` before pushing; both also run on the pull request
+(`.github/workflows/docs-check.yml`).
 
 ## Versioning
 

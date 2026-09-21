@@ -55,7 +55,10 @@ jobs:
       # miz-suite.py reads a `mission` written by either DCS or VEAF's mission editor, which
       # serialise the same Lua table differently. These cover both shapes: a pattern that matches
       # the wrong block rewrites the wrong trigger and writes the archive without complaining.
-      - name: Test the archive tool
+      # The suite also covers build-tools/docs-check.py, whose own job is in docs-check.yml — the
+      # gate spends its life reporting zero defects, so what proves it still checks anything is a
+      # test per defect kind.
+      - name: Test the Python tooling
         run: python3 -m unittest discover -s test/python
 
       - name: Check the wiring, and that git holds no copies

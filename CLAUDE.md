@@ -12,8 +12,15 @@ treat them as a source of truth.
 
 ## Language
 
-English, everywhere: code, comments, commits, pull requests, documentation. The users of this
-project are not only French-speaking.
+English for everything inside the repository: code, comments, commits, pull requests, the backlog,
+`contributing.md`. The users of this project are not only French-speaking.
+
+**What a user reads is bilingual, and French is the default.** Under `documentation/`, the
+unsuffixed `page.md` holds the **French** text and `page.en.md` its English twin; a page never
+ships without its twin, because the i18n plugin falls back rather than failing and a missing
+English page means the English URL silently serves French. The root `README.md` is bilingual too,
+in a single file — English first, then French, with a switcher at the top of each half, as
+VEAF-Mission-Creation-Tools does it. See *Documentation* below.
 
 ## Behaviour (surgical mode)
 
@@ -59,6 +66,23 @@ publishes its own version — plus the `latest` alias if the tag is a plain `vX.
 tag publishes its own version only, so a release candidate never becomes what a newcomer reads by
 default. `master` publishes nothing of its own: a tag is always on `master`, so between two
 releases `master` is not on the site.
+
+The site is **bilingual, French by default**, on the VEAF-Mission-Creation-Tools model:
+`mkdocs-static-i18n` in `suffix` mode, French at the site root and English under `/en/`. Three
+conventions come with it, and `build-tools/docs-check.py` enforces all three — run it before
+pushing, and `mkdocs build --strict` with it:
+
+- **Every page has a twin.** `page.md` French, `page.en.md` English, both listed nowhere but the
+  single unsuffixed `nav` entry, which the plugin resolves per language. This one is a real
+  defect: the plugin falls back rather than failing, so an untranslated page is served in the
+  other language under its own URL, and mkdocs logs a page outside the nav as `INFO`.
+- **A heading targeted by a cross-page link declares its anchor**, `## Point defence
+  {#point-defence}`, with the **same id in both languages**. A generated anchor differs between
+  the twins and breaks on the next reword.
+- **An English page links to `page.en.md`**, never to `page.md`. Style, not breakage — measured:
+  the plugin rewrites either spelling to the same URL and the reader stays in English. What the
+  rule buys is that the file says what the reader gets, so a twin going away reads as wrong before
+  it behaves as wrong.
 
 The deliverable is vendored by
 [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under

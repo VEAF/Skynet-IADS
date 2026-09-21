@@ -1,15 +1,16 @@
-# API reference
+# Référence de l'API
 
-This is the danger zone. Call Kenny Loggins. Some experience with scripting is recommended.
-You can handcraft your IADS with the following functions. If you reference units that don't exist a
-message will be displayed when the mission loads.
-The following examples use static objects for command centers, connection nodes and power sources,
-you can also use units instead.
+Ici commence la zone dangereuse. Appelez Kenny Loggins. Un peu d'expérience en script est
+recommandée.
+Les fonctions ci-dessous vous permettent de façonner votre IADS à la main. Si vous référencez des
+unités qui n'existent pas, un message s'affiche au chargement de la mission.
+Les exemples qui suivent utilisent des objets statiques pour les centres de commandement, les nœuds
+de liaison et les sources d'énergie ; vous pouvez tout aussi bien employer des unités.
 
-## IADS configuration
+## Configuration de l'IADS
 
-Call this method to add or remove a radio menu to toggle the status output of the IADS. By default
-the radio menu option is not visible:
+Appelez cette méthode pour ajouter ou retirer une entrée du menu radio permettant d'afficher ou de
+masquer l'état de l'IADS. Par défaut, cette entrée n'est pas visible :
 
 ```lua
 redIADS:addRadioMenu()
@@ -19,112 +20,115 @@ redIADS:addRadioMenu()
 redIADS:removeRadioMenu()
 ```
 
-If you dereference the IADS remember to call `deactivate()` otherwise background tasks of the IADS
-will continue running, resulting in unexpected behaviour:
+Si vous déréférencez l'IADS, pensez à appeler `deactivate()`, sans quoi ses tâches de fond
+continueront de tourner et produiront des comportements inattendus :
 
 ```lua
 redIADS:deactivate()
 ```
 
-Set the update interval in seconds of the IADS. This determines in what interval the IADS will turn
-SAM sites off or on according to targets it has detected:
+Définit l'intervalle de mise à jour de l'IADS, en secondes. Il détermine la cadence à laquelle
+l'IADS allume ou éteint les sites SAM en fonction des cibles détectées :
 
 ```lua
 redIADS:setUpdateInterval(5)
 ```
 
-## Last line of defense
+## Dernière ligne de défense {#last-line-of-defense}
 
-A SAM site under network control has its radar switched off, so it is **blind**: the only thing that
-can bring it back to life is an early warning radar that covers it and is holding the target. Fly
-under the EW radars' horizon and no battery reacts, whatever the distance — proximity to the site is
-an input nowhere in the cycle, because the only sensor that could measure it is the one that was
-just switched off.
+Un site SAM sous contrôle du réseau a son radar éteint : il est donc **aveugle**. La seule chose
+qui puisse le ramener à la vie, c'est un radar de veille lointaine qui le couvre et qui tient la
+cible. Volez sous l'horizon des EW radars et aucune batterie ne réagira, quelle que soit la
+distance — la proximité du site n'entre nulle part dans le cycle, puisque le seul capteur capable
+de la mesurer est justement celui qu'on vient d'éteindre.
 
-The last line of defense fixes that. A site held dark keeps a short **virtual** detection radius of
-its own — Skynet's, no DCS radar involved — and a hostile aircraft inside it makes the site go live
-with no radar contact anywhere. It is **on by default**.
+La dernière ligne de défense corrige cela. Un site maintenu éteint conserve un petit rayon de
+détection **virtuel** qui lui est propre — celui de Skynet, aucun radar DCS n'intervient — et un
+aéronef hostile qui y pénètre fait s'activer le site alors qu'aucun radar, nulle part, ne tient de
+contact. C'est **actif par défaut**.
 
-The honest limit, which is deliberate: a short-range piece can light up for an aircraft it cannot
-reach, because the radius ignores the firing envelope. Requiring the kill zone would mean a Shilka,
-useful range about 2.5 km, never waking inside a 10–15 km radius — and short-range pieces are
-exactly what a last line of defense is for.
+La limite, assumée : un système à courte portée peut s'allumer pour un aéronef qu'il ne peut pas
+atteindre, parce que le rayon ignore le domaine de tir. Exiger la zone létale reviendrait à ce
+qu'une Shilka, portée utile d'environ 2,5 km, ne se réveille jamais dans un rayon de 10 à 15 km —
+or les systèmes à courte portée sont exactement ce à quoi sert une dernière ligne de défense.
 
-Switch it off for a mission that wants a purist IADS:
+Désactivez-la pour une mission qui veut un IADS puriste :
 
 ```lua
 redIADS:setLastLineOfDefence(false)
 ```
 
-Set the bounds, in metres, of the radius. Each site draws its own radius once, between these two
-values, and keeps it for the whole mission — so a pilot cannot learn the exact distance, and a site
-does not blink for an aircraft loitering near the mean. Changing the bounds makes every site draw
-again:
+Définit les bornes du rayon, en mètres. Chaque site tire son propre rayon une fois pour toutes,
+entre ces deux valeurs, et le conserve pour toute la mission — ainsi un pilote ne peut pas
+apprendre la distance exacte, et un site ne clignote pas pour un aéronef qui tourne autour de la
+valeur moyenne. Modifier les bornes fait tirer à nouveau tous les sites :
 
 ```lua
 redIADS:setLastLineOfDefenceRadius(10000, 15000)
 ```
 
-Set how long, in seconds, a site stays live after the last contact reported to it. Without this a
-fast pass lights the site for a single cycle and a racetrack makes it flicker:
+Définit la durée, en secondes, pendant laquelle un site reste allumé après le dernier contact qui
+lui a été signalé. Sans cela, un passage rapide n'allume le site que pour un cycle, et un circuit
+d'attente le fait clignoter :
 
 ```lua
 redIADS:setLastLineOfDefencePersistence(45)
 ```
 
-A site silenced to evade an anti-radiation missile, out of ammunition, without power or destroyed
-does **not** wake on proximity, and the site's own [go live constraints](#add-go-live-constraints)
-are still honoured.
+Un site rendu silencieux pour échapper à un missile antiradar, à court de munitions, privé
+d'énergie ou détruit ne se réveille **pas** à la proximité, et les [conditions
+d'activation](#add-go-live-constraints) propres au site restent honorées.
 
-### Reporting a contact from outside Skynet
+### Signaler un contact depuis l'extérieur de Skynet
 
-`reportContact` is the public entry point the last line of defense itself uses. Call it to wake a
-SAM site on a DCS unit, as if something had reported that aircraft to the network — a spotter, a
-JTAC, any script of your own:
+`reportContact` est le point d'entrée public qu'utilise la dernière ligne de défense elle-même.
+Appelez-le pour réveiller un site SAM sur une unité DCS, comme si quelque chose avait signalé cet
+aéronef au réseau : un guetteur, un JTAC, n'importe quel script de votre cru :
 
 ```lua
 redIADS:reportContact(Unit.getByName('Intruder'), redIADS:getSAMSiteByGroupName('SAM-SA-6'))
 ```
 
-Unlike the normal path it does not require the target to be inside the site's firing envelope: the
-site lights up because something told it the aircraft is there, not because it can hit it. Every
-other guard still applies, and the site is held live by the persistence above. It answers whether
-the site is live after the call.
+Contrairement au chemin normal, il n'exige pas que la cible soit dans le domaine de tir du site :
+le site s'allume parce qu'on lui a dit que l'aéronef est là, pas parce qu'il peut l'atteindre.
+Toutes les autres protections s'appliquent, et le site est maintenu allumé par la persistance
+ci-dessus. La fonction indique si le site est allumé après l'appel.
 
-## Coverage refresh
+## Rafraîchissement de la couverture
 
-Which battery sits under which radar is geometry, and geometry changes when something moves. Skynet
-re-evaluates the coverage of every element that has travelled more than 10 NM since the last sweep,
-by default every 10 seconds. This is what makes an AWACS in transit lose the batteries it left
-behind — they become autonomous, exactly as if it had been shot down — and a mobile SAM site's
-parents follow it as it drives.
+Savoir quelle batterie se trouve sous quel radar est une affaire de géométrie, et la géométrie
+change dès que quelque chose bouge. Skynet réévalue la couverture de tout élément ayant parcouru
+plus de 10 NM depuis le dernier balayage, par défaut toutes les 10 secondes. C'est ce qui fait
+qu'un AWACS en transit perd les batteries qu'il laisse derrière lui — elles deviennent autonomes,
+exactement comme s'il avait été abattu — et que les parents d'un site SAM mobile le suivent au fil
+de ses déplacements.
 
 ```lua
 redIADS:setCoverageRefreshInterval(10)
 ```
 
-An interval of `0` stops the sweep. Killing an early warning radar still frees its batteries
-immediately, without waiting for the next sweep.
+Un intervalle de `0` arrête le balayage. Abattre un radar de veille lointaine libère toujours ses
+batteries immédiatement, sans attendre le balayage suivant.
 
-## Adding a command center
+## Ajouter un centre de commandement
 
-The command center represents the place where information is collected and analysed. If it is
-destroyed the IADS disintegrates.
+Le centre de commandement représente l'endroit où l'information est collectée et analysée. S'il est
+détruit, l'IADS se désagrège.
 
-Add a command center like this:
+Ajoutez un centre de commandement ainsi :
 
 ```lua
 local commandCenter = StaticObject.getByName("Command Center")
 redIADS:addCommandCenter(commandCenter)
 ```
 
-## Power sources and connection nodes
+## Sources d'énergie et nœuds de liaison
 
-You can use units or static objects. Call the function multiple times to add more than one power
-source or connection node.
+Vous pouvez employer des unités ou des objets statiques. Appelez la fonction plusieurs fois pour
+ajouter plus d'une source d'énergie ou d'un nœud de liaison.
 
-`unit` refers to a SAM site or EW Radar you retrieved from the IADS — see [setting an
-option](#setting-an-option):
+`unit` désigne un site SAM ou un EW radar récupéré depuis l'IADS — voir [définir une
+option](#setting-an-option) :
 
 ```lua
 local powerSource = StaticObject.getByName("EW Power Source")
@@ -136,7 +140,7 @@ local connectionNode = Unit.getByName("EW connection node")
 unit:addConnectionNode(connectionNode)
 ```
 
-For command centers use:
+Pour les centres de commandement :
 
 ```lua
 local commandCenter = StaticObject.getByName("Command Center2")
@@ -144,55 +148,55 @@ local comPowerSource = StaticObject.getByName("Command Center2 Power Source")
 redIADS:addCommandCenter(commandCenter):addPowerSource(comPowerSource)
 ```
 
-## Warm up the SAM sites of an IADS
+## Préchauffer les sites SAM d'un IADS
 
-This function is deprecated and will be removed in a future release.
+Cette fonction est dépréciée et sera retirée dans une version future.
 
 ```lua
 redIADS:setupSAMSitesAndThenActivate()
 ```
 
-## Connecting Skynet to the MOOSE AI_A2A_DISPATCHER
+## Connecter Skynet à l'AI_A2A_DISPATCHER de MOOSE {#connecting-skynet-to-the-moose-ai_a2a_dispatcher}
 
-IRL an IADS would most likely not only handle SAM sites but also pass information to interceptor
-aircraft. You can connect Skynet with MOOSE's
-[AI_A2A_DISPATCHER](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/AI.AI_A2A_Dispatcher.html)
-to add interceptors to the IADS. This allows the IADS not only to direct SAM sites but also to
-scramble fighters. Skynet will set the radars it can use on the SET_GROUP object of a dispatcher —
-meaning that if a radar is lost in Skynet it will no longer be available to detect and scramble
-interceptors. See the [moose_a2a_connector demo
-mission](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions).
+Dans la réalité, un IADS ne se contenterait probablement pas de piloter des sites SAM : il
+transmettrait aussi l'information à des intercepteurs. Vous pouvez connecter Skynet à
+l'[AI_A2A_DISPATCHER](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/AI.AI_A2A_Dispatcher.html)
+de MOOSE pour ajouter des intercepteurs à l'IADS. Le réseau peut alors non seulement diriger les
+sites SAM, mais aussi lancer des chasseurs sur alerte. Skynet renseigne les radars utilisables dans
+l'objet SET_GROUP d'un dispatcher : si un radar est perdu dans Skynet, il cesse d'être disponible
+pour détecter et déclencher des intercepteurs. Voir la [mission de démonstration
+moose_a2a_connector](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions).
 
-Add the object of type SET_GROUP to the IADS like this (in this example `DetectionSetGroup`):
+Ajoutez l'objet de type SET_GROUP à l'IADS ainsi (ici `DetectionSetGroup`) :
 
 ```lua
 redIADS:addMooseSetGroup(DetectionSetGroup)
 ```
 
-A full example setup of Skynet and the AI_A2A_DISPATCHER:
+Un exemple complet de montage de Skynet avec l'AI_A2A_DISPATCHER :
 
 ```lua
--- Setup Skynet IADS:
+-- Montage du Skynet IADS :
 redIADS = SkynetIADS:create('Enemy IADS')
 redIADS:addSAMSitesByPrefix('SAM')
 redIADS:addEarlyWarningRadarsByPrefix('EW')
 redIADS:activate()
 
--- START MOOSE CODE:
--- Define a SET_GROUP object that builds a collection of groups that define the EWR network.
+-- DÉBUT DU CODE MOOSE :
+-- Définir un objet SET_GROUP qui rassemble les groupes constituant le réseau de veille lointaine.
 DetectionSetGroup = SET_GROUP:New()
 
--- Setup the detection and group targets to a 30km range!
+-- Régler la détection et le regroupement des cibles sur une portée de 30 km !
 Detection = DETECTION_AREAS:New( DetectionSetGroup, 30000 )
 
--- Setup the A2A dispatcher, and initialize it.
+-- Monter le dispatcher A2A et l'initialiser.
 A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )
 
--- Set 100km as the radius to engage any target by airborne friendlies.
-A2ADispatcher:SetEngageRadius() -- 100000 is the default value.
+-- Rayon de 100 km pour l'engagement de toute cible par des amis en vol.
+A2ADispatcher:SetEngageRadius() -- 100000 est la valeur par défaut.
 
--- Set 200km as the radius to ground control intercept.
-A2ADispatcher:SetGciRadius() -- 200000 is the default value.
+-- Rayon de 200 km pour l'interception commandée depuis le sol.
+A2ADispatcher:SetGciRadius() -- 200000 est la valeur par défaut.
 
 CCCPBorderZone = ZONE_POLYGON:New( "RED-BORDER", GROUP:FindByName( "RED-BORDER" ) )
 A2ADispatcher:SetBorderZone( CCCPBorderZone )
@@ -201,455 +205,463 @@ A2ADispatcher:SetSquadronGrouping( "Kutaisi", 2 )
 A2ADispatcher:SetSquadronGci( "Kutaisi", 900, 1200 )
 A2ADispatcher:SetTacticalDisplay(true)
 A2ADispatcher:Start()
---END MOOSE CODE
+-- FIN DU CODE MOOSE
 
--- add the MOOSE SET_GROUP to the IADS, from now on Skynet will update active radars that the
--- MOOSE SET_GROUP can use for EW detection.
+-- ajouter le SET_GROUP MOOSE à l'IADS ; à partir de maintenant, Skynet tiendra à jour les radars
+-- actifs que ce SET_GROUP peut utiliser pour la détection lointaine.
 redIADS:addMooseSetGroup(DetectionSetGroup)
 ```
 
-## SAM site configuration
+## Configuration des sites SAM
 
-### Adding SAM sites
+### Ajouter des sites SAM
 
-#### Add multiple SAM sites
+#### Ajouter plusieurs sites SAM
 
-Adds SAM sites with prefix in group name to the IADS. Previously added SAM sites are cleared:
+Ajoute à l'IADS les sites SAM dont le nom de groupe commence par le préfixe. Les sites SAM ajoutés
+précédemment sont effacés :
 
 ```lua
 redIADS:addSAMSitesByPrefix('SAM')
 ```
 
-#### Add a SAM site manually
+#### Ajouter un site SAM à la main
 
-You can manually add a SAM site, must be a valid group name:
+Vous pouvez ajouter un site SAM manuellement ; il doit s'agir d'un nom de groupe valide :
 
 ```lua
 redIADS:addSAMSite('SA-6 Group2')
 ```
 
-### Accessing SAM sites in the IADS
+### Accéder aux sites SAM de l'IADS {#accessing-sam-sites-in-the-iads}
 
-The following functions exist to access SAM sites added to the IADS. They all support daisy
-chaining options:
+Les fonctions suivantes donnent accès aux sites SAM ajoutés à l'IADS. Toutes acceptent
+l'enchaînement d'options :
 
-Returns all SAM sites with the corresponding Nato name, see
+Renvoie tous les sites SAM portant le nom OTAN correspondant, voir
 [skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua).
-For all units beginning with 'SA-': don't add Nato code names (Guideline, Gainful), just write
-'SA-2', 'SA-6':
+Pour toutes les unités commençant par « SA- », n'employez pas les noms de code OTAN (Guideline,
+Gainful), écrivez simplement « SA-2 », « SA-6 » :
 
 ```lua
 redIADS:getSAMSitesByNatoName('SA-6')
 ```
 
-Returns all SAM sites in the IADS:
+Renvoie tous les sites SAM de l'IADS :
 
 ```lua
 redIADS:getSAMSites()
 ```
 
-Returns a SAM site with the specified group name:
+Renvoie le site SAM portant le nom de groupe indiqué :
 
 ```lua
 redIADS:getSAMSiteByGroupName('SAM-SA-6')
 ```
 
-**If no group carries that name, nothing is returned** — the call yields no value at all, which
-reads as `nil` when you assign it, the way every example on this page does. Chaining straight off
-the call, as in `redIADS:getSAMSiteByGroupName('typo'):setActAsEW(true)`, then fails with *attempt
-to index a nil value*: that error almost always means a group name that does not match the mission.
-`getEarlyWarningRadarByUnitName` behaves the same way.
+**Si aucun groupe ne porte ce nom, rien n'est renvoyé** — l'appel ne produit aucune valeur, ce qui
+se lit `nil` lorsque vous l'affectez, comme le font tous les exemples de cette page. Enchaîner
+directement sur l'appel, comme dans `redIADS:getSAMSiteByGroupName('typo'):setActAsEW(true)`, échoue
+alors sur *attempt to index a nil value* : cette erreur signale presque toujours un nom de groupe
+qui ne correspond pas à la mission. `getEarlyWarningRadarByUnitName` se comporte de la même façon.
 
-Returns a SAM site with the specified group name prefix. Let's say you have a bunch of SAM sites
-that all will share the same power source.
-Give these sites a special prefix in the group name, e.g. `SAM-SECTOR-A`. Once you have added the
-SAM sites you can access them via the prefix to set whatever options you want:
+Renvoie les sites SAM dont le nom de groupe commence par le préfixe indiqué. Imaginons un ensemble
+de sites SAM qui partageront tous la même source d'énergie.
+Donnez-leur un préfixe particulier dans le nom de groupe, par exemple `SAM-SECTOR-A`. Une fois les
+sites ajoutés, vous y accédez par ce préfixe pour leur appliquer les options voulues :
 
 ```lua
 redIADS:getSAMSitesByPrefix('SAM-SECTOR-A')
 ```
 
-The prefix has to **start** the group name: `SECTOR-A` matches nothing when the groups are called
-`SAM-SECTOR-A-...`. A prefix that matches nothing, and a Nato name no site carries, both give back
-an empty list rather than nothing at all, so chaining options onto them is safe — the options simply
-reach no one.
+Le préfixe doit **commencer** le nom de groupe : `SECTOR-A` ne correspond à rien si les groupes
+s'appellent `SAM-SECTOR-A-...`. Un préfixe qui ne correspond à rien, comme un nom OTAN que ne porte
+aucun site, renvoie une liste vide plutôt que rien du tout : y enchaîner des options ne casse donc
+rien — simplement, les options n'atteignent personne.
 
-### Act as EW radar
+### Jouer le rôle d'EW radar
 
-Will set the SAM site to act as an EW radar. This will result in the SAM site always having its
-radar on. Contacts the SAM site sees are reported to the IADS. This option is recommended for long
-range systems like the S-300:
+Configure le site SAM pour qu'il tienne le rôle d'EW radar. Son radar restera allumé en permanence
+et les contacts qu'il détecte seront transmis à l'IADS. Option recommandée pour les systèmes à
+longue portée comme le S-300 :
 
 ```lua
 samSite:setActAsEW(true)
 ```
 
-### Engagement zone
+### Zone d'engagement
 
-Set the distance at which a SAM site will switch on its radar:
+Définit la distance à laquelle un site SAM allume son radar :
 
 ```lua
 samSite:setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE)
 ```
 
-#### Engagement zone options
+#### Options de zone d'engagement
 
-SAM site will go live when target is within the red circle in the mission editor (default Skynet
-behaviour):
+Le site SAM s'active lorsque la cible entre dans le cercle rouge de l'éditeur de mission
+(comportement par défaut de Skynet) :
 
 ```lua
 SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_KILL_ZONE
 ```
 
-SAM site will go live when target is within the yellow circle in the mission editor:
+Le site SAM s'active lorsque la cible entre dans le cercle jaune de l'éditeur de mission :
 
 ```lua
 SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE
 ```
 
-This option sets the range in relation to the zone you set in `setEngagementZone` for a SAM site to
-go live. Be careful not to set the value too low. Some SAM sites need up to 30 seconds until they
-can fire.
-During this time a target might have already left the engagement zone of the SAM site. This option
-is intended for long range systems like the S-300. You can also set the range above 100, which will
-have the effect that the SAM site goes live earlier:
+Cette option fixe, en pourcentage de la zone choisie dans `setEngagementZone`, la distance à
+laquelle le site SAM s'active. Attention à ne pas descendre trop bas : certains sites SAM ont
+besoin de jusqu'à 30 secondes avant de pouvoir tirer.
+Pendant ce temps, la cible peut déjà avoir quitté leur zone d'engagement. Cette option vise les
+systèmes à longue portée comme le S-300. Vous pouvez aussi dépasser 100, ce qui fera s'activer le
+site plus tôt :
 
 ```lua
 samSite:setGoLiveRangeInPercent(90)
 ```
 
-### Engage air weapons
+### Engager les armements aériens
 
-Will set the SAM site to engage air weapons, if it is able to do so in DCS. It is a wrapper for the
-[ENGAGE_AIR_WEAPONS](https://wiki.hoggitworld.com/view/DCS_option_engage_air_weapons) setting.
+Autorise le site SAM à engager les armements aériens, s'il en est capable dans DCS. C'est une
+enveloppe autour du réglage
+[ENGAGE_AIR_WEAPONS](https://wiki.hoggitworld.com/view/DCS_option_engage_air_weapons).
 
 ```lua
 samSite:setCanEngageAirWeapons(true)
 ```
 
-### Engage HARM
+### Engager les HARM
 
-Will set the SAM site to engage HARMs, if it is able to do so in DCS. If set to false the SAM site
-will shut down if a HARM that has been identified by the IADS is inbound. SAM sites that can engage
-HARMS are set to true by default.
+Autorise le site SAM à engager les HARM, s'il en est capable dans DCS. Réglée à `false`, l'option
+fait s'éteindre le site lorsqu'un HARM identifié par l'IADS arrive sur lui. Les sites SAM capables
+d'engager des HARM sont à `true` par défaut.
 
 ```lua
 samSite:setCanEngageHARM(true)
 ```
 
-## Add go live constraints
+## Ajouter des conditions d'activation {#add-go-live-constraints}
 
-You can include constraints which must be satisfied for the SAM site to go live. Please note this
-only controls activation of the SAM site.
-There is currently no way to tell a SAM site to only target a certain contact via the Lua scripting
-engine in DCS.
+Vous pouvez poser des conditions qui devront être remplies pour que le site SAM s'active. Notez que
+cela ne pilote que l'activation du site.
+Il n'existe aujourd'hui aucun moyen, via le moteur de script Lua de DCS, de dire à un site SAM de
+ne viser qu'un contact précis.
 
-The constraint must evaluate to true and the contact must be in range of the SAM site (handled by
-Skynet).
+La condition doit s'évaluer à vrai **et** le contact doit être à portée du site SAM — ce second
+point étant géré par Skynet.
 
-### Use cases
+### Cas d'usage
 
-Place a SAM site on a flight path that you suspect strike fighters will pass. Add a heading
-constraint to ensure that the SAM site will only go live when fighters are on their way back from
-the target.
+Placer un site SAM sur une trajectoire que vous soupçonnez empruntée par des chasseurs-bombardiers,
+avec une condition sur le cap pour qu'il ne s'active qu'au retour de l'objectif.
 
-Set a SAM site to only go live if aircraft are in a certain altitude band.
+Faire qu'un site SAM ne s'active que si les aéronefs sont dans une certaine tranche d'altitude.
 
-SAM site shall only go live once a strike package has destroyed a certain building or unit.
+Faire qu'un site SAM ne s'active qu'une fois un bâtiment ou une unité détruits par un dispositif
+d'attaque.
 
-You do not have to use the contact provided in the function to evaluate the constraint. You can
-make any assertion you want.
+Vous n'êtes pas obligé d'utiliser le contact fourni à la fonction pour évaluer la condition : vous
+pouvez y affirmer ce que vous voulez.
 
-Create a function that will evaluate if the constraint is satisfied. The function will have access
-to the [contact](#contact) the SAM site is evaluating:
+Écrivez une fonction qui évalue si la condition est remplie. Elle a accès au
+[contact](#contact) que le site SAM est en train d'évaluer :
 
 ```lua
---SAM site will only go live if the contact is below 1000 feet.
+-- le site SAM ne s'activera que si le contact est sous 1000 pieds.
 local function goLiveConstraint(contact)
 	return ( contact:getHeightInFeetMSL() < 1000 )
 end
 ```
 
-Add the function to the SAM site and give it a name. You can add as many constraints as you wish:
+Ajoutez la fonction au site SAM en lui donnant un nom. Vous pouvez poser autant de conditions que
+vous voulez :
 
 ```lua
 self.samSite:addGoLiveConstraint('ignore-low-flying-contacts', goLiveConstraint)
 ```
 
-Remove constraint you no longer wish to use:
+Retirez une condition dont vous ne voulez plus :
 
 ```lua
 self.samSite:removeGoLiveConstraint('ignore-low-flying-contacts')
 ```
 
-Get a table of all constraints:
+Récupérez la table de toutes les conditions :
 
 ```lua
 self.samSite:getGoLiveConstraints()
 ```
 
-## Contact
+## Contact {#contact}
 
-You can use the following methods to get information about a contact.
+Les méthodes suivantes donnent des informations sur un contact.
 
-Will return true if contact has been identified as a HARM by Skynet:
+Renvoie vrai si le contact a été identifié comme un HARM par Skynet :
 
 ```lua
 contact:isIdentifiedAsHARM()
 ```
 
-Will return the height of a contact:
+Renvoie l'altitude du contact :
 
 ```lua
 contact:getHeightInFeetMSL()
 ```
 
-Will return the current magnetic heading of a contact. Note the heading is available only after a
-contact has been tracked in more than one cycle by the IADS. Until that has happened heading will
-be 0:
+Renvoie le cap magnétique courant du contact. Attention : le cap n'est disponible qu'une fois le
+contact suivi par l'IADS sur plus d'un cycle. Jusque-là, il vaut 0 :
 
 ```lua
 contact:getMagneticHeading()
 ```
 
-Will return the current ground speed of a contact. Note the speed is available only after a contact
-has been tracked in more than one cycle by the IADS. Until that has happened speed will be 0:
+Renvoie la vitesse sol courante du contact, en nœuds, arrondie à `decimals` décimales (2 si
+l'argument est omis). Attention : la vitesse n'est disponible qu'une fois le contact suivi par
+l'IADS sur plus d'un cycle. Jusque-là, elle vaut 0 :
 
 ```lua
-contact:getMagneticHeading()
+contact:getGroundSpeedInKnots(0)
 ```
 
-Will return the time in seconds a contact has been known to the IADS:
+Renvoie depuis combien de secondes le contact est connu de l'IADS :
 
 ```lua
 contact:getAge()
 ```
 
-Will return the type as an `Object.Category`:
+Renvoie le type sous la forme d'un `Object.Category` :
 
 ```lua
 contact:getTypeName()
 ```
 
-Will return the unit name:
+Renvoie le nom de l'unité :
 
 ```lua
 contact:getName()
 ```
 
-## EW radar configuration
+## Configuration des EW radars
 
-### Adding EW radars
+### Ajouter des EW radars
 
-#### Add multiple EW radars
+#### Ajouter plusieurs EW radars
 
-Adds EW radars with prefix in unit name to the IADS. Previously added EW sites are cleared:
+Ajoute à l'IADS les EW radars dont le nom d'unité commence par le préfixe. Les EW radars ajoutés
+précédemment sont effacés :
 
 ```lua
 redIADS:addEarlyWarningRadarsByPrefix('EW')
 ```
 
-#### Add an EW radar manually
+#### Ajouter un EW radar à la main
 
-You can add EW radars manually, must be a valid unit name:
+Vous pouvez ajouter des EW radars manuellement ; il doit s'agir d'un nom d'unité valide :
 
 ```lua
 redIADS:addEarlyWarningRadar('EWR West')
 ```
 
-### Accessing EW radars in the IADS
+### Accéder aux EW radars de l'IADS {#accessing-ew-radars-in-the-iads}
 
-The following functions exist to access EW radars added to the IADS. They all support daisy
-chaining options.
+Les fonctions suivantes donnent accès aux EW radars ajoutés à l'IADS. Toutes acceptent
+l'enchaînement d'options.
 
-Returns all EW radars in the IADS:
+Renvoie tous les EW radars de l'IADS :
 
 ```lua
 redIADS:getEarlyWarningRadars()
 ```
 
-Returns the EW radar with the specified unit name:
+Renvoie l'EW radar portant le nom d'unité indiqué :
 
 ```lua
 redIADS:getEarlyWarningRadarByUnitName('EW-west')
 ```
 
-## Options for SAM sites and EW radars
+## Options communes aux sites SAM et aux EW radars
 
-### Setting an option
+### Définir une option {#setting-an-option}
 
-In the following examples `ewRadarOrSamSite` refers to a single EW radar or SAM site or a table of
-EW radars and SAM sites you got from the Skynet IADS, by calling one of the functions named in
-[accessing EW radars](#accessing-ew-radars-in-the-iads) or [accessing SAM
-sites](#accessing-sam-sites-in-the-iads).
+Dans les exemples qui suivent, `ewRadarOrSamSite` désigne un EW radar ou un site SAM isolé, ou bien
+une table d'EW radars et de sites SAM obtenue depuis le Skynet IADS en appelant l'une des fonctions
+citées dans [accéder aux EW radars](#accessing-ew-radars-in-the-iads) ou [accéder aux sites
+SAM](#accessing-sam-sites-in-the-iads).
 
-### Daisy chaining options
+### Enchaîner les options
 
-You can daisy chain options on a single SAM site / EW Radar or a table of SAM sites / EW radars
-like this:
+Vous pouvez enchaîner les options sur un site SAM ou un EW radar isolé, comme sur une table de
+sites SAM ou d'EW radars :
 
 ```lua
 redIADS:getSAMSites():setActAsEW(true):addPowerSource(powerSource):addConnectionNode(connectionNode):setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE):setGoLiveRangeInPercent(90):setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
 ```
 
-### HARM defence
+### Défense contre les HARM
 
-You can set the reaction probability (between 0 and 100 percent). See
+Vous pouvez fixer la probabilité de réaction, entre 0 et 100 pour cent. Le champ
+`harm_detection_chance` de
 [skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua)
-field `harm_detection_chance` for default detection probabilities:
+donne les probabilités de détection par défaut :
 
 ```lua
 ewRadarOrSamSite:setHARMDetectionChance(50)
 ```
 
-### Point defence
+### Défense rapprochée {#point-defence}
 
-You must use a point defence SAM that can engage HARM missiles. Can be used to protect SAM sites or
-EW radars. See [point defence](tactics.md#point-defence) for information on what this does.
+Le SAM de défense rapprochée doit être capable d'engager des missiles HARM. Il peut protéger des
+sites SAM comme des EW radars. Voir [défense rapprochée](tactics.md#point-defence) pour ce que fait
+ce mécanisme.
 
-If you want the point defences to coordinate their HARM defence then you can add multiple point
-defence SAM sites into one group. **This is the only place where you should add multiple SAM sites
-into one group in Skynet**.
-Let's assume you have two SA-15 units defending a radar. If the SA-15 units are in separate groups
-they will both fire at the same HARM inbound. However if they are in the same group and multiple
-HARMs are inbound they will each pick a separate HARM to engage.
+Si vous voulez que les défenses rapprochées coordonnent leur riposte, placez plusieurs sites SAM de
+défense rapprochée dans un même groupe. **C'est le seul endroit où l'on doive placer plusieurs
+sites SAM dans un même groupe avec Skynet.**
+Admettons que deux SA-15 défendent un radar. Dans des groupes séparés, ils tireront tous les deux
+sur le même HARM entrant. Dans le même groupe, face à plusieurs HARM, chacun en prendra un
+différent.
 
 ```lua
---first get the SAM site you want to use as point defence from the IADS:
+-- récupérer d'abord depuis l'IADS le site SAM à utiliser en défense rapprochée :
 local sa15 = redIADS:getSAMSiteByGroupName('SAM-SA-15')
---then add it to the SAM site it should protect:
+-- puis l'attacher au site SAM qu'il doit protéger :
 redIADS:getSAMSiteByGroupName('SAM-SA-10'):addPointDefence(sa15)
 ```
 
-This function is deprecated and will be removed in a future release.
+Cette fonction est dépréciée et sera retirée dans une version future.
 
 ```lua
 ewRadarOrSamSite:setIgnoreHARMSWhilePointDefencesHaveAmmo(true)
 ```
 
-### Autonomous mode behaviour
+### Comportement en mode autonome
 
-Set how the SAM site or EW radar will behave if it loses connection to the IADS:
+Définit le comportement du site SAM ou de l'EW radar lorsqu'il perd la liaison avec l'IADS :
 
 ```lua
 ewRadarOrSamSite:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
 ```
 
-#### Autonomous mode options
+#### Options du mode autonome
 
-SAM site or EW radar will behave with the default DCS AI. Alarm state will be red and ROE weapons
-free (default Skynet behaviour for SAM sites):
+Le site SAM ou l'EW radar adopte le comportement par défaut de l'IA de DCS. L'état d'alerte passe
+au rouge et les ROE à *weapons free* (comportement Skynet par défaut pour les sites SAM) :
 
 ```lua
 SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DCS_AI
 ```
 
-SAM Site or EW radar will go dark if it loses connection to the IADS (default behaviour for EW
-radars):
+Le site SAM ou l'EW radar s'éteint lorsqu'il perd la liaison avec l'IADS (comportement par défaut
+pour les EW radars) :
 
 ```lua
 SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
 ```
 
-## Adding a jammer
+## Ajouter un brouilleur {#adding-a-jammer}
 
-The jammer is quite easy to set up. You need a unit that acts as a jammer source, preferably an
-aircraft in the strike package.
-Once the jammer detects an emitter it starts jamming the radar. Set the [corresponding debug
-variable jammerProbability](#setting-debug-information) to see what the jammer is doing.
-Check
+Le brouilleur est assez simple à mettre en place. Il vous faut une unité qui serve de source de
+brouillage, de préférence un aéronef du dispositif d'attaque.
+Dès qu'il détecte un émetteur, le brouilleur se met à brouiller le radar. Activez la [variable de
+débogage jammerProbability](#setting-debug-information) pour voir ce que fait le brouilleur.
+Le fichier
 [skynet-iads-jammer.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-jammer.lua)
-to see which SAM sites are supported.
+indique quels sites SAM sont pris en charge.
 
-Remember to set the AI aircraft acting as jammer in the mission editor to `Reaction to Threat =
-EVADE FIRE` otherwise the AI will try and actively attack the SAM site.
-This way it will stick to the preset flight plan.
+Pensez à régler, dans l'éditeur de mission, l'aéronef IA qui joue le brouilleur sur `Reaction to
+Threat = EVADE FIRE`, sans quoi l'IA cherchera activement à attaquer le site SAM.
+Ainsi réglé, il s'en tiendra au plan de vol prévu.
 
-Create a jammer and assign it to a unit. Also make sure you add the IADS you want the jammer to
-work for:
+Créez un brouilleur et affectez-le à une unité. Veillez à préciser l'IADS pour lequel il doit
+travailler :
 
 ```lua
 local jammerSource = Unit.getByName("F-4 AI")
 jammer = SkynetIADSJammer:create(jammerSource, iads)
 ```
 
-The jammer will start listening for emitters and if it finds one of the emitters it is able to jam
-it will start jamming it:
+Le brouilleur se met à l'écoute des émetteurs et brouille ceux qu'il est capable de brouiller, dès
+qu'il en détecte un :
 
 ```lua
 jammer:masterArmOn()
 ```
 
-Will disable jamming for the specified SAM type, pass the Nato name:
+Désactive le brouillage pour le type de SAM indiqué ; passez le nom OTAN :
 
 ```lua
 jammer:disableFor('SA-2')
 ```
 
-Will turn off the jammer. Make sure you call this function before you dereference a jammer in the
-code, otherwise a background task will keep on jamming:
+Éteint le brouilleur. Appelez bien cette fonction avant de déréférencer un brouilleur dans le code,
+sans quoi une tâche de fond continuera de brouiller :
 
 ```lua
 jammer:masterArmSafe()
 ```
 
-A battery stops being jammed about **ten seconds** after the jammer stops jamming it — whether the
-emitter is shot down, switched off with `masterArmSafe()`, flown beyond its effective distance, or
-loses line of sight to every radar of the battery. It is then handed back to whatever was directing
-it. A battery that is dark at that moment is released when it next comes up.
+Une batterie cesse d'être brouillée environ **dix secondes** après que le brouilleur a cessé de la
+brouiller — que l'émetteur soit abattu, éteint par `masterArmSafe()`, parti au-delà de sa distance
+efficace, ou qu'il ait perdu la vue directe sur tous les radars de la batterie. Elle est alors
+rendue à ce qui la dirigeait. Une batterie éteinte à cet instant est libérée à son prochain
+allumage.
 
-Will add jammer on / off to the radio menu:
+Ajoute la commande brouilleur marche / arrêt au menu radio :
 
 ```lua
 jammer:addRadioMenu()
 ```
 
-Will remove jammer on / off from the radio menu:
+Retire la commande brouilleur marche / arrêt du menu radio :
 
 ```lua
 jammer:removeRadioMenu()
 ```
 
-### Advanced functions
+### Fonctions avancées
 
-Add a second IADS the jammer should be able to jam, for example if you have two separate IADS
-running:
+Ajoute un second IADS que le brouilleur doit pouvoir brouiller, par exemple si vous faites tourner
+deux IADS distincts :
 
 ```lua
 jammer:addIADS(iads2)
 ```
 
-Add a new jammer function:
+Ajoute une nouvelle fonction de brouillage :
 
 ```lua
--- write a lambda function that expects one parameter:
--- given public available data on jammers their effectiveness drastically decreases the closer you get, so a non-linear function would make sense:
+-- écrire une fonction anonyme qui attend un paramètre :
+-- d'après les données publiques sur les brouilleurs, leur efficacité chute fortement à mesure qu'on se rapproche ; une fonction non linéaire a donc du sens :
 local function f(distanceNM)
 	return ( 1.4 ^ distanceNM ) + 80
 end
 
--- add the function: specify which SAM type it should apply for:
+-- ajouter la fonction en précisant à quel type de SAM elle s'applique :
 self.jammer:addFunction('SA-10', f)
 ```
 
-Set the maximum range the jammer will work, the default value is set to 200 nautical miles:
+Définit la portée maximale du brouilleur ; la valeur par défaut est de 200 milles nautiques :
 
 ```lua
 jammer:setMaximumEffectiveDistance(100)
 ```
 
-## Setting debug information
+## Activer les informations de débogage {#setting-debug-information}
 
-When developing a mission I suggest you add debug output to check how the IADS reacts to threats.
-Debug output may slow down DCS, so it's recommended to turn it off in a live environment.
+Pendant la conception d'une mission, je vous conseille d'activer des sorties de débogage pour
+vérifier comment l'IADS réagit aux menaces. Elles peuvent ralentir DCS : mieux vaut les couper en
+environnement de production.
 
-Access the debug settings:
+Accédez aux réglages de débogage :
 
 ```lua
 local iadsDebug = redIADS:getDebugSettings()
 ```
 
-Output in game:
+Sortie en jeu :
 
 ```lua
 iadsDebug.IADSStatus = true
@@ -657,16 +669,17 @@ iadsDebug.contacts = true
 iadsDebug.jammerProbability = true
 ```
 
-Setup mistakes — a group or unit name that is not in the mission, an element belonging to the other
-coalition, a group Skynet has no SAM data for — are shown on screen prefixed `WARNING:`, and are
-always written to `dcs.log` whatever this is set to. It is **on by default**, so a mission that
-knows about its own warnings and does not want them on players' screens turns it off:
+Les erreurs de montage — un nom de groupe ou d'unité absent de la mission, un élément appartenant à
+l'autre coalition, un groupe dont Skynet n'a pas les données SAM — s'affichent à l'écran préfixées
+`WARNING:`, et sont toujours écrites dans `dcs.log`, quel que soit ce réglage. C'est **actif par
+défaut** ; une mission qui connaît ses propres avertissements et ne veut pas les afficher aux
+joueurs les désactive :
 
 ```lua
 iadsDebug.warnings = false
 ```
 
-Output to dcs.log:
+Sortie vers dcs.log :
 
 ```lua
 iadsDebug.addedEWRadar = true
@@ -676,8 +689,8 @@ iadsDebug.radarWentDark = true
 iadsDebug.harmDefence = true
 ```
 
-These three options will output detailed information on every radar in the IADS to the dcs.log
-file. Enabling these may have an impact on performance:
+Ces trois options écrivent le détail de chaque radar de l'IADS dans le fichier dcs.log. Les activer
+peut avoir un impact sur les performances :
 
 ```lua
 iadsDebug.samSiteStatusEnvOutput = true
@@ -685,20 +698,20 @@ iadsDebug.earlyWarningRadarStatusEnvOutput = true
 iadsDebug.commandCenterStatusEnvOutput = true
 ```
 
-![Mission Editor IADS Setup](images/skynet-debug.png)
+![Sortie de débogage de Skynet](images/skynet-debug.png)
 
-## Example setup
+## Exemple de montage
 
-This is an example of how you can set up your IADS, used in the [demo
-mission](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions):
+Voici un exemple de montage d'IADS, celui de la [mission de
+démonstration](https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions) :
 
 ```lua
 do
 
---create an instance of the IADS
+-- créer une instance de l'IADS
 redIADS = SkynetIADS:create('RED IADS')
 
----debug settings remove from here on if you do not want any output on what the IADS is doing by default
+--- réglages de débogage : supprimer à partir d'ici si vous ne voulez aucune sortie sur ce que fait l'IADS par défaut
 local iadsDebug = redIADS:getDebugSettings()
 iadsDebug.IADSStatus = true
 iadsDebug.radarWentDark = true
@@ -709,61 +722,61 @@ iadsDebug.samNoConnection = true
 iadsDebug.jammerProbability = true
 iadsDebug.addedEWRadar = true
 iadsDebug.harmDefence = true
----end remove debug ---
+--- fin de la partie débogage à supprimer ---
 
---add all units with unit name beginning with 'EW' to the IADS:
+-- ajouter à l'IADS toutes les unités dont le nom commence par 'EW' :
 redIADS:addEarlyWarningRadarsByPrefix('EW')
 
---add all groups beginning with group name 'SAM' to the IADS:
+-- ajouter à l'IADS tous les groupes dont le nom commence par 'SAM' :
 redIADS:addSAMSitesByPrefix('SAM')
 
---add a command center:
+-- ajouter un centre de commandement :
 commandCenter = StaticObject.getByName('Command-Center')
 redIADS:addCommandCenter(commandCenter)
 
----we add a K-50 AWACS, manually. This could just as well be automated by adding an 'EW' prefix to the unit name:
+--- on ajoute un AWACS K-50 à la main. On pourrait tout aussi bien l'automatiser en préfixant le nom d'unité par 'EW' :
 redIADS:addEarlyWarningRadar('AWACS-K-50')
 
---add a power source and a connection node for this EW radar:
+-- ajouter une source d'énergie et un nœud de liaison à cet EW radar :
 local powerSource = StaticObject.getByName('Power-Source-EW-Center3')
 local connectionNodeEW = StaticObject.getByName('Connection-Node-EW-Center3')
 redIADS:getEarlyWarningRadarByUnitName('EW-Center3'):addPowerSource(powerSource):addConnectionNode(connectionNodeEW)
 
---add a connection node to this SA-2 site, and set the option for it to go dark, if it loses connection to the IADS:
+-- ajouter un nœud de liaison à ce site SA-2, et lui demander de s'éteindre s'il perd la liaison avec l'IADS :
 local connectionNode = Unit.getByName('Mobile-Command-Post-SAM-SA-2')
 redIADS:getSAMSiteByGroupName('SAM-SA-2'):addConnectionNode(connectionNode):setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
 
---this SA-2 site will go live at 70% of its max search range:
+-- ce site SA-2 s'activera à 70 % de sa portée de veille maximale :
 redIADS:getSAMSiteByGroupName('SAM-SA-2'):setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE):setGoLiveRangeInPercent(70)
 
---all SA-10 sites shall act as EW sites, meaning their radars will be on all the time:
+-- tous les sites SA-10 tiendront le rôle d'EW radar : leur radar restera allumé en permanence :
 redIADS:getSAMSitesByNatoName('SA-10'):setActAsEW(true)
 
---set the SA-15's as point defence for the SA-10 site. We set the SA-10 to always identify HARMs so we can demonstrate the point defence mechanism in Skynet.
---the SA-10 will stay online when shot at by HARMS as long as the point defences and SAM site have ammo and the saturation point is not reached.
+-- mettre les SA-15 en défense rapprochée du site SA-10. On règle le SA-10 pour qu'il identifie toujours les HARM, afin de démontrer le mécanisme de défense rapprochée de Skynet.
+-- le SA-10 restera allumé sous le feu des HARM tant que les défenses rapprochées et le site SAM auront des munitions et que le point de saturation ne sera pas atteint.
 local sa15 = redIADS:getSAMSiteByGroupName('SAM-SA-15-point-defence-SA-10')
 redIADS:getSAMSiteByGroupName('SAM-SA-10'):addPointDefence(sa15):setHARMDetectionChance(100)
 
---set this SA-11 site to go live 70% of max range of its missiles (default value: 100%), its HARM detection probability is set to 50% (default value: 70%)
+-- ce site SA-11 s'activera à 70 % de la portée maximale de ses missiles (valeur par défaut : 100 %), et sa probabilité de détection des HARM est fixée à 50 % (valeur par défaut : 70 %)
 redIADS:getSAMSiteByGroupName('SAM-SA-11'):setGoLiveRangeInPercent(70):setHARMDetectionChance(50)
 
---this SA-6 site will always react to a HARM being fired at it:
+-- ce site SA-6 réagira toujours à un HARM tiré sur lui :
 redIADS:getSAMSiteByGroupName('SAM-SA-6'):setHARMDetectionChance(100)
 
---set this SA-11 site to go live at maximum search range (default is at maximum firing range):
+-- ce site SA-11 s'activera à la portée de veille maximale (par défaut, c'est à la portée de tir maximale) :
 redIADS:getSAMSiteByGroupName('SAM-SA-11-2'):setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE)
 
---activate the radio menu to toggle IADS Status output
+-- activer l'entrée de menu radio qui affiche l'état de l'IADS
 redIADS:addRadioMenu()
 
---activate the IADS
+-- activer l'IADS
 redIADS:activate()
 
---add the jammer
+-- ajouter le brouilleur
 local jammer = SkynetIADSJammer:create(Unit.getByName('jammer-emitter'), redIADS)
 jammer:masterArmOn()
 
---setup blue IADS:
+-- monter l'IADS bleu :
 blueIADS = SkynetIADS:create('BLUE IADS')
 blueIADS:addSAMSitesByPrefix('BLUE-SAM')
 blueIADS:addEarlyWarningRadarsByPrefix('BLUE-EW')
