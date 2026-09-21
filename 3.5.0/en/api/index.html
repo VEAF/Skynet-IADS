@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -35,7 +35,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1503,7 +1503,7 @@ are still honoured.</p>
 <p><code>reportContact</code> is the public entry point the last line of defense itself uses. Call it to wake a
 SAM site on a DCS unit, as if something had reported that aircraft to the network — a spotter, a
 JTAC, any script of your own:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">reportContact</span><span class="p">(</span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;Intruder&#39;</span><span class="p">),</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-6&#39;</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">reportContact</span><span class="p">(</span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Intruder'</span><span class="p">),</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-6'</span><span class="p">))</span>
 </code></pre></div>
 <p>Unlike the normal path it does not require the target to be inside the site's firing envelope: the
 site lights up because something told it the aircraft is there, not because it can hit it. Every
@@ -1523,7 +1523,7 @@ immediately, without waiting for the next sweep.</p>
 <p>The command center represents the place where information is collected and analysed. If it is
 destroyed the IADS disintegrates.</p>
 <p>Add a command center like this:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;Command Center&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"Command Center"</span><span class="p">)</span>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">addCommandCenter</span><span class="p">(</span><span class="nv">commandCenter</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="power-sources-and-connection-nodes">Power sources and connection nodes<a class="headerlink" href="#power-sources-and-connection-nodes" title="Permanent link">&para;</a></h2>
@@ -1531,15 +1531,15 @@ destroyed the IADS disintegrates.</p>
 source or connection node.</p>
 <p><code>unit</code> refers to a SAM site or EW Radar you retrieved from the IADS — see <a href="#setting-an-option">setting an
 option</a>:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">powerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;EW Power Source&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">powerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"EW Power Source"</span><span class="p">)</span>
 <span class="nv">unit</span><span class="p">:</span><span class="nf">addPowerSource</span><span class="p">(</span><span class="nv">powerSource</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">connectionNode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;EW connection node&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">connectionNode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"EW connection node"</span><span class="p">)</span>
 <span class="nv">unit</span><span class="p">:</span><span class="nf">addConnectionNode</span><span class="p">(</span><span class="nv">connectionNode</span><span class="p">)</span>
 </code></pre></div>
 <p>For command centers use:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;Command Center2&quot;</span><span class="p">)</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">comPowerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;Command Center2 Power Source&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"Command Center2"</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">comPowerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"Command Center2 Power Source"</span><span class="p">)</span>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">addCommandCenter</span><span class="p">(</span><span class="nv">commandCenter</span><span class="p">):</span><span class="nf">addPowerSource</span><span class="p">(</span><span class="nv">comPowerSource</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="warm-up-the-sam-sites-of-an-iads">Warm up the SAM sites of an IADS<a class="headerlink" href="#warm-up-the-sam-sites-of-an-iads" title="Permanent link">&para;</a></h2>
@@ -1560,9 +1560,9 @@ mission</a>.</p>
 </code></pre></div>
 <p>A full example setup of Skynet and the AI_A2A_DISPATCHER:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Setup Skynet IADS:</span>
-<span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">&#39;Enemy IADS&#39;</span><span class="p">)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;SAM&#39;</span><span class="p">)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">&#39;EW&#39;</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">'Enemy IADS'</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM'</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'EW'</span><span class="p">)</span>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">activate</span><span class="p">()</span>
 
 <span class="c1">-- START MOOSE CODE:</span>
@@ -1581,11 +1581,11 @@ mission</a>.</p>
 <span class="c1">-- Set 200km as the radius to ground control intercept.</span>
 <span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetGciRadius</span><span class="p">()</span><span class="w"> </span><span class="c1">-- 200000 is the default value.</span>
 
-<span class="nv">CCCPBorderZone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ZONE_POLYGON</span><span class="p">:</span><span class="nf">New</span><span class="p">(</span><span class="w"> </span><span class="s2">&quot;RED-BORDER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">GROUP</span><span class="p">:</span><span class="nf">FindByName</span><span class="p">(</span><span class="w"> </span><span class="s2">&quot;RED-BORDER&quot;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span>
+<span class="nv">CCCPBorderZone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ZONE_POLYGON</span><span class="p">:</span><span class="nf">New</span><span class="p">(</span><span class="w"> </span><span class="s2">"RED-BORDER"</span><span class="p">,</span><span class="w"> </span><span class="nv">GROUP</span><span class="p">:</span><span class="nf">FindByName</span><span class="p">(</span><span class="w"> </span><span class="s2">"RED-BORDER"</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span>
 <span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetBorderZone</span><span class="p">(</span><span class="w"> </span><span class="nv">CCCPBorderZone</span><span class="w"> </span><span class="p">)</span>
-<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadron</span><span class="p">(</span><span class="w"> </span><span class="s2">&quot;Kutaisi&quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">AIRBASE</span><span class="p">.</span><span class="py">Caucasus</span><span class="p">.</span><span class="py">Kutaisi</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;Squadron red SU-27&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">)</span>
-<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadronGrouping</span><span class="p">(</span><span class="w"> </span><span class="s2">&quot;Kutaisi&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">)</span>
-<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadronGci</span><span class="p">(</span><span class="w"> </span><span class="s2">&quot;Kutaisi&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">900</span><span class="p">,</span><span class="w"> </span><span class="mi">1200</span><span class="w"> </span><span class="p">)</span>
+<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadron</span><span class="p">(</span><span class="w"> </span><span class="s2">"Kutaisi"</span><span class="p">,</span><span class="w"> </span><span class="nv">AIRBASE</span><span class="p">.</span><span class="py">Caucasus</span><span class="p">.</span><span class="py">Kutaisi</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">"Squadron red SU-27"</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">)</span>
+<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadronGrouping</span><span class="p">(</span><span class="w"> </span><span class="s2">"Kutaisi"</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">)</span>
+<span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetSquadronGci</span><span class="p">(</span><span class="w"> </span><span class="s2">"Kutaisi"</span><span class="p">,</span><span class="w"> </span><span class="mi">900</span><span class="p">,</span><span class="w"> </span><span class="mi">1200</span><span class="w"> </span><span class="p">)</span>
 <span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">SetTacticalDisplay</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 <span class="nv">A2ADispatcher</span><span class="p">:</span><span class="nf">Start</span><span class="p">()</span>
 <span class="c1">--END MOOSE CODE</span>
@@ -1598,11 +1598,11 @@ mission</a>.</p>
 <h3 id="adding-sam-sites">Adding SAM sites<a class="headerlink" href="#adding-sam-sites" title="Permanent link">&para;</a></h3>
 <h4 id="add-multiple-sam-sites">Add multiple SAM sites<a class="headerlink" href="#add-multiple-sam-sites" title="Permanent link">&para;</a></h4>
 <p>Adds SAM sites with prefix in group name to the IADS. Previously added SAM sites are cleared:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;SAM&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM'</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="add-a-sam-site-manually">Add a SAM site manually<a class="headerlink" href="#add-a-sam-site-manually" title="Permanent link">&para;</a></h4>
 <p>You can manually add a SAM site, must be a valid group name:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSite</span><span class="p">(</span><span class="s1">&#39;SA-6 Group2&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSite</span><span class="p">(</span><span class="s1">'SA-6 Group2'</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="accessing-sam-sites-in-the-iads">Accessing SAM sites in the IADS<a class="headerlink" href="#accessing-sam-sites-in-the-iads" title="Permanent link">&para;</a></h3>
 <p>The following functions exist to access SAM sites added to the IADS. They all support daisy
@@ -1611,13 +1611,13 @@ chaining options:</p>
 <a href="https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua">skynet-iads-supported-types.lua</a>.
 For all units beginning with 'SA-': don't add Nato code names (Guideline, Gainful), just write
 'SA-2', 'SA-6':</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByNatoName</span><span class="p">(</span><span class="s1">&#39;SA-6&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByNatoName</span><span class="p">(</span><span class="s1">'SA-6'</span><span class="p">)</span>
 </code></pre></div>
 <p>Returns all SAM sites in the IADS:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSites</span><span class="p">()</span>
 </code></pre></div>
 <p>Returns a SAM site with the specified group name:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-6&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-6'</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>If no group carries that name, nothing is returned</strong> — the call yields no value at all, which
 reads as <code>nil</code> when you assign it, the way every example on this page does. Chaining straight off
@@ -1628,7 +1628,7 @@ to index a nil value</em>: that error almost always means a group name that does
 that all will share the same power source.
 Give these sites a special prefix in the group name, e.g. <code>SAM-SECTOR-A</code>. Once you have added the
 SAM sites you can access them via the prefix to set whatever options you want:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;SAM-SECTOR-A&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM-SECTOR-A'</span><span class="p">)</span>
 </code></pre></div>
 <p>The prefix has to <strong>start</strong> the group name: <code>SECTOR-A</code> matches nothing when the groups are called
 <code>SAM-SECTOR-A-...</code>. A prefix that matches nothing, and a Nato name no site carries, both give back
@@ -1694,10 +1694,10 @@ to the <a href="#contact">contact</a> the SAM site is evaluating:</p>
 <span class="kr">end</span>
 </code></pre></div>
 <p>Add the function to the SAM site and give it a name. You can add as many constraints as you wish:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">self</span><span class="p">.</span><span class="py">samSite</span><span class="p">:</span><span class="nf">addGoLiveConstraint</span><span class="p">(</span><span class="s1">&#39;ignore-low-flying-contacts&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">goLiveConstraint</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">self</span><span class="p">.</span><span class="py">samSite</span><span class="p">:</span><span class="nf">addGoLiveConstraint</span><span class="p">(</span><span class="s1">'ignore-low-flying-contacts'</span><span class="p">,</span><span class="w"> </span><span class="nv">goLiveConstraint</span><span class="p">)</span>
 </code></pre></div>
 <p>Remove constraint you no longer wish to use:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">self</span><span class="p">.</span><span class="py">samSite</span><span class="p">:</span><span class="nf">removeGoLiveConstraint</span><span class="p">(</span><span class="s1">&#39;ignore-low-flying-contacts&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">self</span><span class="p">.</span><span class="py">samSite</span><span class="p">:</span><span class="nf">removeGoLiveConstraint</span><span class="p">(</span><span class="s1">'ignore-low-flying-contacts'</span><span class="p">)</span>
 </code></pre></div>
 <p>Get a table of all constraints:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">self</span><span class="p">.</span><span class="py">samSite</span><span class="p">:</span><span class="nf">getGoLiveConstraints</span><span class="p">()</span>
@@ -1733,11 +1733,11 @@ in more than one cycle by the IADS. Until that has happened speed will be 0:</p>
 <h3 id="adding-ew-radars">Adding EW radars<a class="headerlink" href="#adding-ew-radars" title="Permanent link">&para;</a></h3>
 <h4 id="add-multiple-ew-radars">Add multiple EW radars<a class="headerlink" href="#add-multiple-ew-radars" title="Permanent link">&para;</a></h4>
 <p>Adds EW radars with prefix in unit name to the IADS. Previously added EW sites are cleared:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">&#39;EW&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'EW'</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="add-an-ew-radar-manually">Add an EW radar manually<a class="headerlink" href="#add-an-ew-radar-manually" title="Permanent link">&para;</a></h4>
 <p>You can add EW radars manually, must be a valid unit name:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadar</span><span class="p">(</span><span class="s1">&#39;EWR West&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadar</span><span class="p">(</span><span class="s1">'EWR West'</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="accessing-ew-radars-in-the-iads">Accessing EW radars in the IADS<a class="headerlink" href="#accessing-ew-radars-in-the-iads" title="Permanent link">&para;</a></h3>
 <p>The following functions exist to access EW radars added to the IADS. They all support daisy
@@ -1746,7 +1746,7 @@ chaining options.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getEarlyWarningRadars</span><span class="p">()</span>
 </code></pre></div>
 <p>Returns the EW radar with the specified unit name:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getEarlyWarningRadarByUnitName</span><span class="p">(</span><span class="s1">&#39;EW-west&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getEarlyWarningRadarByUnitName</span><span class="p">(</span><span class="s1">'EW-west'</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="options-for-sam-sites-and-ew-radars">Options for SAM sites and EW radars<a class="headerlink" href="#options-for-sam-sites-and-ew-radars" title="Permanent link">&para;</a></h2>
 <h3 id="setting-an-option">Setting an option<a class="headerlink" href="#setting-an-option" title="Permanent link">&para;</a></h3>
@@ -1775,9 +1775,9 @@ Let's assume you have two SA-15 units defending a radar. If the SA-15 units are 
 they will both fire at the same HARM inbound. However if they are in the same group and multiple
 HARMs are inbound they will each pick a separate HARM to engage.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">--first get the SAM site you want to use as point defence from the IADS:</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">sa15</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-15&#39;</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">sa15</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-15'</span><span class="p">)</span>
 <span class="c1">--then add it to the SAM site it should protect:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-10&#39;</span><span class="p">):</span><span class="nf">addPointDefence</span><span class="p">(</span><span class="nv">sa15</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-10'</span><span class="p">):</span><span class="nf">addPointDefence</span><span class="p">(</span><span class="nv">sa15</span><span class="p">)</span>
 </code></pre></div>
 <p>This function is deprecated and will be removed in a future release.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">ewRadarOrSamSite</span><span class="p">:</span><span class="nf">setIgnoreHARMSWhilePointDefencesHaveAmmo</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
@@ -1808,7 +1808,7 @@ EVADE FIRE</code> otherwise the AI will try and actively attack the SAM site.
 This way it will stick to the preset flight plan.</p>
 <p>Create a jammer and assign it to a unit. Also make sure you add the IADS you want the jammer to
 work for:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">jammerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">&quot;F-4 AI&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">jammerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s2">"F-4 AI"</span><span class="p">)</span>
 <span class="nv">jammer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADSJammer</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="nv">jammerSource</span><span class="p">,</span><span class="w"> </span><span class="nv">iads</span><span class="p">)</span>
 </code></pre></div>
 <p>The jammer will start listening for emitters and if it finds one of the emitters it is able to jam
@@ -1816,7 +1816,7 @@ it will start jamming it:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">masterArmOn</span><span class="p">()</span>
 </code></pre></div>
 <p>Will disable jamming for the specified SAM type, pass the Nato name:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">disableFor</span><span class="p">(</span><span class="s1">&#39;SA-2&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">disableFor</span><span class="p">(</span><span class="s1">'SA-2'</span><span class="p">)</span>
 </code></pre></div>
 <p>Will turn off the jammer. Make sure you call this function before you dereference a jammer in the
 code, otherwise a background task will keep on jamming:</p>
@@ -1845,7 +1845,7 @@ running:</p>
 <span class="kr">end</span>
 
 <span class="c1">-- add the function: specify which SAM type it should apply for:</span>
-<span class="nv">self</span><span class="p">.</span><span class="py">jammer</span><span class="p">:</span><span class="nf">addFunction</span><span class="p">(</span><span class="s1">&#39;SA-10&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">f</span><span class="p">)</span>
+<span class="nv">self</span><span class="p">.</span><span class="py">jammer</span><span class="p">:</span><span class="nf">addFunction</span><span class="p">(</span><span class="s1">'SA-10'</span><span class="p">,</span><span class="w"> </span><span class="nv">f</span><span class="p">)</span>
 </code></pre></div>
 <p>Set the maximum range the jammer will work, the default value is set to 200 nautical miles:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">jammer</span><span class="p">:</span><span class="nf">setMaximumEffectiveDistance</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
@@ -1887,7 +1887,7 @@ mission</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kr">do</span>
 
 <span class="c1">--create an instance of the IADS</span>
-<span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">&#39;RED IADS&#39;</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">'RED IADS'</span><span class="p">)</span>
 
 <span class="c1">---debug settings remove from here on if you do not want any output on what the IADS is doing by default</span>
 <span class="kd">local</span><span class="w"> </span><span class="nv">iadsDebug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getDebugSettings</span><span class="p">()</span>
@@ -1902,47 +1902,47 @@ mission</a>:</p>
 <span class="nv">iadsDebug</span><span class="p">.</span><span class="py">harmDefence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="c1">---end remove debug ---</span>
 
-<span class="c1">--add all units with unit name beginning with &#39;EW&#39; to the IADS:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">&#39;EW&#39;</span><span class="p">)</span>
+<span class="c1">--add all units with unit name beginning with 'EW' to the IADS:</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'EW'</span><span class="p">)</span>
 
-<span class="c1">--add all groups beginning with group name &#39;SAM&#39; to the IADS:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;SAM&#39;</span><span class="p">)</span>
+<span class="c1">--add all groups beginning with group name 'SAM' to the IADS:</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM'</span><span class="p">)</span>
 
 <span class="c1">--add a command center:</span>
-<span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;Command-Center&#39;</span><span class="p">)</span>
+<span class="nv">commandCenter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Command-Center'</span><span class="p">)</span>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">addCommandCenter</span><span class="p">(</span><span class="nv">commandCenter</span><span class="p">)</span>
 
-<span class="c1">---we add a K-50 AWACS, manually. This could just as well be automated by adding an &#39;EW&#39; prefix to the unit name:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadar</span><span class="p">(</span><span class="s1">&#39;AWACS-K-50&#39;</span><span class="p">)</span>
+<span class="c1">---we add a K-50 AWACS, manually. This could just as well be automated by adding an 'EW' prefix to the unit name:</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadar</span><span class="p">(</span><span class="s1">'AWACS-K-50'</span><span class="p">)</span>
 
 <span class="c1">--add a power source and a connection node for this EW radar:</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">powerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;Power-Source-EW-Center3&#39;</span><span class="p">)</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">connectionNodeEW</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;Connection-Node-EW-Center3&#39;</span><span class="p">)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getEarlyWarningRadarByUnitName</span><span class="p">(</span><span class="s1">&#39;EW-Center3&#39;</span><span class="p">):</span><span class="nf">addPowerSource</span><span class="p">(</span><span class="nv">powerSource</span><span class="p">):</span><span class="nf">addConnectionNode</span><span class="p">(</span><span class="nv">connectionNodeEW</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">powerSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Power-Source-EW-Center3'</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">connectionNodeEW</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">StaticObject</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Connection-Node-EW-Center3'</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getEarlyWarningRadarByUnitName</span><span class="p">(</span><span class="s1">'EW-Center3'</span><span class="p">):</span><span class="nf">addPowerSource</span><span class="p">(</span><span class="nv">powerSource</span><span class="p">):</span><span class="nf">addConnectionNode</span><span class="p">(</span><span class="nv">connectionNodeEW</span><span class="p">)</span>
 
 <span class="c1">--add a connection node to this SA-2 site, and set the option for it to go dark, if it loses connection to the IADS:</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">connectionNode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;Mobile-Command-Post-SAM-SA-2&#39;</span><span class="p">)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-2&#39;</span><span class="p">):</span><span class="nf">addConnectionNode</span><span class="p">(</span><span class="nv">connectionNode</span><span class="p">):</span><span class="nf">setAutonomousBehaviour</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">AUTONOMOUS_STATE_DARK</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">connectionNode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'Mobile-Command-Post-SAM-SA-2'</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-2'</span><span class="p">):</span><span class="nf">addConnectionNode</span><span class="p">(</span><span class="nv">connectionNode</span><span class="p">):</span><span class="nf">setAutonomousBehaviour</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">AUTONOMOUS_STATE_DARK</span><span class="p">)</span>
 
 <span class="c1">--this SA-2 site will go live at 70% of its max search range:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-2&#39;</span><span class="p">):</span><span class="nf">setEngagementZone</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">GO_LIVE_WHEN_IN_SEARCH_RANGE</span><span class="p">):</span><span class="nf">setGoLiveRangeInPercent</span><span class="p">(</span><span class="mi">70</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-2'</span><span class="p">):</span><span class="nf">setEngagementZone</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">GO_LIVE_WHEN_IN_SEARCH_RANGE</span><span class="p">):</span><span class="nf">setGoLiveRangeInPercent</span><span class="p">(</span><span class="mi">70</span><span class="p">)</span>
 
 <span class="c1">--all SA-10 sites shall act as EW sites, meaning their radars will be on all the time:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByNatoName</span><span class="p">(</span><span class="s1">&#39;SA-10&#39;</span><span class="p">):</span><span class="nf">setActAsEW</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSitesByNatoName</span><span class="p">(</span><span class="s1">'SA-10'</span><span class="p">):</span><span class="nf">setActAsEW</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 
-<span class="c1">--set the SA-15&#39;s as point defence for the SA-10 site. We set the SA-10 to always identify HARMs so we can demonstrate the point defence mechanism in Skynet.</span>
+<span class="c1">--set the SA-15's as point defence for the SA-10 site. We set the SA-10 to always identify HARMs so we can demonstrate the point defence mechanism in Skynet.</span>
 <span class="c1">--the SA-10 will stay online when shot at by HARMS as long as the point defences and SAM site have ammo and the saturation point is not reached.</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">sa15</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-15-point-defence-SA-10&#39;</span><span class="p">)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-10&#39;</span><span class="p">):</span><span class="nf">addPointDefence</span><span class="p">(</span><span class="nv">sa15</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">sa15</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-15-point-defence-SA-10'</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-10'</span><span class="p">):</span><span class="nf">addPointDefence</span><span class="p">(</span><span class="nv">sa15</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
 
 <span class="c1">--set this SA-11 site to go live 70% of max range of its missiles (default value: 100%), its HARM detection probability is set to 50% (default value: 70%)</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-11&#39;</span><span class="p">):</span><span class="nf">setGoLiveRangeInPercent</span><span class="p">(</span><span class="mi">70</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-11'</span><span class="p">):</span><span class="nf">setGoLiveRangeInPercent</span><span class="p">(</span><span class="mi">70</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
 
 <span class="c1">--this SA-6 site will always react to a HARM being fired at it:</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-6&#39;</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-6'</span><span class="p">):</span><span class="nf">setHARMDetectionChance</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
 
 <span class="c1">--set this SA-11 site to go live at maximum search range (default is at maximum firing range):</span>
-<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">&#39;SAM-SA-11-2&#39;</span><span class="p">):</span><span class="nf">setEngagementZone</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">GO_LIVE_WHEN_IN_SEARCH_RANGE</span><span class="p">)</span>
+<span class="nv">redIADS</span><span class="p">:</span><span class="nf">getSAMSiteByGroupName</span><span class="p">(</span><span class="s1">'SAM-SA-11-2'</span><span class="p">):</span><span class="nf">setEngagementZone</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">GO_LIVE_WHEN_IN_SEARCH_RANGE</span><span class="p">)</span>
 
 <span class="c1">--activate the radio menu to toggle IADS Status output</span>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">addRadioMenu</span><span class="p">()</span>
@@ -1951,13 +1951,13 @@ mission</a>:</p>
 <span class="nv">redIADS</span><span class="p">:</span><span class="nf">activate</span><span class="p">()</span>
 
 <span class="c1">--add the jammer</span>
-<span class="kd">local</span><span class="w"> </span><span class="nv">jammer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADSJammer</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">&#39;jammer-emitter&#39;</span><span class="p">),</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">jammer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADSJammer</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="nv">Unit</span><span class="p">.</span><span class="nf">getByName</span><span class="p">(</span><span class="s1">'jammer-emitter'</span><span class="p">),</span><span class="w"> </span><span class="nv">redIADS</span><span class="p">)</span>
 <span class="nv">jammer</span><span class="p">:</span><span class="nf">masterArmOn</span><span class="p">()</span>
 
 <span class="c1">--setup blue IADS:</span>
-<span class="nv">blueIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">&#39;BLUE IADS&#39;</span><span class="p">)</span>
-<span class="nv">blueIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;BLUE-SAM&#39;</span><span class="p">)</span>
-<span class="nv">blueIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">&#39;BLUE-EW&#39;</span><span class="p">)</span>
+<span class="nv">blueIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">'BLUE IADS'</span><span class="p">)</span>
+<span class="nv">blueIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'BLUE-SAM'</span><span class="p">)</span>
+<span class="nv">blueIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'BLUE-EW'</span><span class="p">)</span>
 <span class="nv">blueIADS</span><span class="p">:</span><span class="nf">activate</span><span class="p">()</span>
 <span class="nv">blueIADS</span><span class="p">:</span><span class="nf">addRadioMenu</span><span class="p">()</span>
 
@@ -2025,7 +2025,7 @@ mission</a>:</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

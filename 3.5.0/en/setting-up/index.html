@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -35,7 +35,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -992,15 +992,15 @@ if you write more than a few lines of code.</p>
 <h3 id="adding-the-skynet-iads">Adding the Skynet IADS<a class="headerlink" href="#adding-the-skynet-iads" title="Permanent link">&para;</a></h3>
 <p>For the IADS to work you need four lines of code.</p>
 <p>Create an instance of the IADS, the name string is optional and will be displayed in status output:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span>
 </code></pre></div>
 <p>Give all SAM groups you want to add a common prefix in the mission editor eg: <code>SAM-SA-10 west</code>,
 then add this line of code:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">&#39;SAM&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM'</span><span class="p">)</span>
 </code></pre></div>
 <p>Same for the EW radars, name all units with a common prefix in the mission editor eg:
 <code>EW-radar-south</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">&#39;EW&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'EW'</span><span class="p">)</span>
 </code></pre></div>
 <p>Activate the IADS:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">activate</span><span class="p">()</span>
@@ -1065,7 +1065,7 @@ nodes, go-live constraints, the jammer, and the full example setup.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
