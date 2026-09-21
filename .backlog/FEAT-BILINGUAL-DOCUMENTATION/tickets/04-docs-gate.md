@@ -18,8 +18,8 @@ checks that apply here:
 | `broken_links` | a relative link whose target file does not exist |
 | `dead_anchors` | an anchor no heading provides, checked on the page the reader actually lands on |
 | `implicit_anchors` | a cross-page link relying on a generated anchor — breaks on the next reword, and differs between languages |
-| `wrong_language_links` | an English page sending its reader to the French twin |
-| `missing_translations` | a French page with no `.en.md` |
+| `wrong_language_links` | an English page spelling a link `page.md` where the twin exists. **Style, not breakage** — measured on a real build, the plugin rewrites both spellings to the same URL and the reader stays in English. The claim that it drops them into French was an inversion of what the original says it verified; the review of this lot caught it |
+| `missing_translations` | a page with no twin, in **either** direction — an `x.en.md` with no `x.md` is the easy half to write first in a repository whose every other file is English |
 | `nav_orphans` / `nav_dangling` | a page in no menu, a menu entry with no page |
 
 Two behaviours VMCT got wrong first and fixed — keep them: an explicit `{#id}` **replaces** the
