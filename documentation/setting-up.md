@@ -94,6 +94,57 @@ l'alimentation du nœud de liaison, puisqu'un aéronef produit la sienne.
 
 Un navire alimente l'IADS exactement comme une unité AWACS. Ajoutez-le comme un EW radar ordinaire.
 
+## Ce que l'IADS fait de lui-même
+
+Trois comportements sont **actifs par défaut** : vous n'avez rien à écrire pour en bénéficier, mais
+ils changent ce que fait votre mission. Les réglages de chacun sont dans la [référence de
+l'API](api.md).
+
+### La dernière ligne de défense {#last-line-of-defense}
+
+Un site SAM tenu éteint par le réseau est aveugle : seul un EW radar qui le couvre et qui tient la
+cible peut le réveiller. Volez sous l'horizon des radars de veille et vous survolez les batteries
+sans qu'aucune réagisse.
+
+Pour éviter cette absurdité, un site éteint conserve un petit rayon de détection **virtuel** qui
+lui est propre — entre 10 et 15 km, tiré une fois pour toutes par site — et un aéronef
+hostile qui y pénètre l'active, même si aucun radar nulle part ne tient de contact. Un site
+silencieux pour échapper à un missile antiradar, à court de munitions, privé d'énergie ou détruit
+ne se réveille pas pour autant.
+
+C'est une décision de conception, pas une évidence : une mission qui veut un IADS puriste, où
+percer sous l'horizon radar est une tactique payante, la désactive avec
+[`setLastLineOfDefence(false)`](api.md#last-line-of-defense).
+
+### Le rafraîchissement de la couverture {#coverage-refresh}
+
+Savoir quel EW radar couvre quelle batterie est une affaire de géométrie, et la géométrie bouge dès
+qu'une unité se déplace. L'IADS réévalue donc la couverture de tout élément ayant parcouru plus de
+10 NM **depuis le dernier balayage**, toutes les 10 secondes par défaut.
+
+Conséquence la plus visible : **un AWACS qui rentre à la base a le même effet que s'il était
+abattu** — les batteries qu'il laisse derrière lui deviennent autonomes. Et les EW radars parents
+d'un site SAM mobile le suivent au fil de ses déplacements. Le réglage est
+[`setCoverageRefreshInterval`](api.md#coverage-refresh).
+
+### Les avertissements de montage {#setup-warnings}
+
+Une erreur de montage — un nom de groupe **ou d'unité** absent de la mission, un élément de l'autre
+coalition, un groupe dont Skynet n'a pas les données SAM — s'affiche à l'écran, préfixée
+`WARNING:`, et part dans `dcs.log` dans tous les cas.
+
+**Attention, un préfixe qui ne correspond à rien ne dit rien.** `addSAMSitesByPrefix` et
+`addEarlyWarningRadarsByPrefix` parcourent les groupes de la mission et retiennent ceux qui
+commencent par le préfixe ; s'il n'y en a aucun, l'IADS démarre avec zéro site et personne ne vous
+prévient. Les avertissements ci-dessus viennent des ajouts nommés un par un, `addSAMSite` et
+`addEarlyWarningRadar`. Si votre IADS semble inerte, vérifiez d'abord que le préfixe correspond
+vraiment au **début** du nom de groupe — et activez `samSiteStatusEnvOutput` pour compter ce qui a
+été ajouté.
+
+Une mission qui connaît ses propres avertissements et ne veut pas les montrer aux joueurs les
+coupe avec [`iadsDebug.warnings = false`](api.md#setting-debug-information) ; le journal, lui,
+continue de les recevoir.
+
 ## Utiliser Skynet dans l'éditeur de mission
 
 Monter un IADS est assez simple : jetez un œil aux scripts de configuration dans

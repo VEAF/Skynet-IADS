@@ -91,7 +91,7 @@ site lights up because something told it the aircraft is there, not because it c
 other guard still applies, and the site is held live by the persistence above. It answers whether
 the site is live after the call.
 
-## Coverage refresh
+## Coverage refresh {#coverage-refresh}
 
 Which battery sits under which radar is geometry, and geometry changes when something moves. Skynet
 re-evaluates the coverage of every element that has travelled more than 10 NM since the last sweep,

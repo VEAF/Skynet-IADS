@@ -31,11 +31,6 @@ Skynet prend en charge le [mod HighDigitSAMs](https://github.com/Auranis/HighDig
 Vous pouvez aussi [connecter Skynet à l'AI_A2A_DISPATCHER](api.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher)
 de MOOSE pour ajouter des intercepteurs à l'IADS.
 
-**Plus de 200 heures de travail ont été consacrées au développement de Skynet à ce jour.
-Si vous aimez l'utiliser, pensez à faire un don :**
-
-[![Skynet IADS donation](images/btn_donateCC_LG.gif.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7GSVFH448BWFQ&source=url)
-
 ## Démarrage rapide {#quick-start}
 
 Déjà fatigué de lire ? Récupérez `skynet-test-persian-gulf.miz` dans la [dernière
@@ -53,10 +48,21 @@ pwsh -File build-tools/build-compiled-script.ps1
 python build-tools/miz-suite.py build
 ```
 
-## Remerciements
+## Un projet repris, et ses auteurs {#credits}
 
-Un merci tout particulier à Spearzone et Coranthia, qui ont épluché les informations publiques sur
-les réseaux IADS et m'ont mis à niveau sur le fonctionnement d'un tel système.
-Le montage des sites SAM s'inspire de la [SAM DB de
-Grimes](https://forums.eagle.ru/showthread.php?t=118175), tirée de son script IADS ; j'en ai
-toutefois retiré les données de portée, que Skynet lit directement dans DCS.
+Skynet a été créé par [walder](https://github.com/walder/Skynet-IADS), qui l'a conçu, développé et
+maintenu pendant des années — plus de 200 heures de travail, de son propre compte. Les fondations
+de ce script viennent de là.
+
+Le projet est aujourd'hui maintenu conjointement par le [VEAF](https://github.com/VEAF) et le
+Regroupement de Patrouilles (BFR, NAWACS), dans [ce
+dépôt](https://github.com/VEAF/Skynet-IADS), où se fait tout le travail. Le dépôt du Regroupement
+de Patrouilles est archivé, et celui de walder n'a plus bougé depuis des années : ni l'un ni
+l'autre n'est une source à jour. Merci à lui de nous avoir laissé un outil sur lequel on pouvait
+construire.
+
+Les remerciements de l'auteur d'origine restent les nôtres : à Spearzone et Coranthia, qui ont
+épluché les informations publiques sur les réseaux IADS et l'ont mis à niveau sur le
+fonctionnement d'un tel système ; et à [Grimes](https://forums.eagle.ru/showthread.php?t=118175),
+dont la SAM DB a inspiré le montage des sites SAM — les données de portée en moins, que Skynet lit
+directement dans DCS.

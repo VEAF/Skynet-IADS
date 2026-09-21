@@ -90,6 +90,54 @@ for the connection node, since an aircraft provides its own power.
 
 Ships will contribute to the IADS the same way AWACS units do. Add them as a regular EW radar.
 
+## What the IADS does on its own
+
+Three behaviours are **on by default**: you write nothing to get them, and they change what your
+mission does. The knobs for each are in the [API reference](api.en.md).
+
+### The last line of defense {#last-line-of-defense}
+
+A SAM site held dark by the network is blind: only an EW radar that covers it and is holding the
+target can wake it. Fly under the early warning radars' horizon and you overfly the batteries with
+none of them reacting.
+
+To stop that absurdity, a dark site keeps a short **virtual** detection radius of its own — 10 to
+15 km, drawn once per site and kept — and a hostile aircraft inside it makes the site go
+live even when no radar anywhere holds a contact. A site silenced to evade an anti-radiation
+missile, out of ammunition, without power or destroyed does not wake on proximity.
+
+This is a design decision rather than an obvious good: a mission that wants a purist IADS, where
+sneaking under the radar horizon is a tactic that pays, switches it off with
+[`setLastLineOfDefence(false)`](api.en.md#last-line-of-defense).
+
+### The coverage refresh {#coverage-refresh}
+
+Which EW radar covers which battery is geometry, and geometry moves the moment a unit does. The
+IADS therefore re-evaluates the coverage of every element that has travelled more than 10 NM
+**since the last sweep**, every 10 seconds by default.
+
+The most visible consequence: **an AWACS flying home has the same effect as one shot down** — the
+batteries it leaves behind become autonomous. And the EW radars parenting a mobile SAM site follow
+it as it drives. The knob is
+[`setCoverageRefreshInterval`](api.en.md#coverage-refresh).
+
+### The setup warnings {#setup-warnings}
+
+A setup mistake — a group **or unit** name that is not in the mission, an element of the other
+coalition, a group Skynet has no SAM data for — is shown on screen prefixed `WARNING:`, and
+written to `dcs.log` either way.
+
+**A prefix that matches nothing, however, says nothing.** `addSAMSitesByPrefix` and
+`addEarlyWarningRadarsByPrefix` walk the mission's groups and keep the ones starting with the
+prefix; when none do, the IADS starts with no sites at all and nobody is told. The warnings above
+come from the by-name additions, `addSAMSite` and `addEarlyWarningRadar`. If your IADS looks
+inert, check first that the prefix really matches the **start** of the group name — and turn on
+`samSiteStatusEnvOutput` to count what was added.
+
+A mission that knows about its own warnings and does not want them on players' screens turns them
+off with [`iadsDebug.warnings = false`](api.en.md#setting-debug-information); the log keeps
+receiving them.
+
 ## Using Skynet in the mission editor
 
 It's quite simple to set up an IADS, have a look at the setup scripts in

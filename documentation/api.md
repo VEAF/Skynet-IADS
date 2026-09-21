@@ -94,7 +94,7 @@ le site s'allume parce qu'on lui a dit que l'aéronef est là, pas parce qu'il p
 Toutes les autres protections s'appliquent, et le site est maintenu allumé par la persistance
 ci-dessus. La fonction indique si le site est allumé après l'appel.
 
-## Rafraîchissement de la couverture
+## Rafraîchissement de la couverture {#coverage-refresh}
 
 Savoir quelle batterie se trouve sous quel radar est une affaire de géométrie, et la géométrie
 change dès que quelque chose bouge. Skynet réévalue la couverture de tout élément ayant parcouru

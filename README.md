@@ -21,9 +21,10 @@ documentation's *Setting up an IADS* page says how.
 ## Maintenance
 
 [VEAF](https://github.com/VEAF) and the Regroupement de Patrouilles (BFR, NAWACS) maintain this
-project jointly, and this repository is where the work happens. The two historical repositories —
-[regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS) and
-[walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) — are read-only.
+project jointly, and this repository is where the work happens. Neither historical repository is a
+current source: [regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS)
+is archived, and [walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) has not moved since
+2024.
 
 ## Contributing
 
@@ -60,9 +61,10 @@ la page *Mettre en place un IADS* de la documentation explique comment.
 ## Maintenance
 
 [VEAF](https://github.com/VEAF) et le Regroupement de Patrouilles (BFR, NAWACS) maintiennent ce
-projet conjointement, et c'est dans ce dépôt que le travail se fait. Les deux dépôts historiques —
-[regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS) et
-[walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) — sont en lecture seule.
+projet conjointement, et c'est dans ce dépôt que le travail se fait. Aucun des deux dépôts
+historiques n'est une source à jour :
+[regroupement-patrouille/Skynet-IADS](https://github.com/regroupement-patrouille/Skynet-IADS) est
+archivé, et [walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) n'a plus bougé depuis 2024.
 
 ## Contribuer
 
