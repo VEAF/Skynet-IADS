@@ -1,88 +1,96 @@
 # FAQ
 
-## Does Skynet IADS have an impact on game performance?
+## Skynet IADS a-t-il un impact sur les performances du jeu ?
 
-Skynet may actually improve game performance when using a lot of SAM AI units. This is because
-Skynet will turn off radar emissions of all SAM groups currently not in range of a target. By
-default these SAM groups would otherwise have their radars on. Skynet caches target information for
-a few seconds to reduce expensive calls on DCS radar detection.
+Skynet peut même les améliorer lorsque la mission comporte beaucoup d'unités SAM pilotées par
+l'IA, parce qu'il coupe les émissions radar de tous les groupes SAM qui n'ont aucune cible à
+portée. Sans lui, ces groupes garderaient leur radar allumé. Skynet met par ailleurs en cache les
+informations de cible pendant quelques secondes, ce qui évite des appels coûteux à la détection
+radar de DCS.
 
-## What air defence units shall I add to the Skynet IADS?
+## Quelles unités de défense aérienne ajouter au Skynet IADS ?
 
-In theory you can add all the types that are listed in the
-[skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua)
-file.
-Very short range units (like the Shilka AAA, Rapier) won't really benefit from the IADS apart from
-reacting to HARMs. These are better just placed in a mission and handled by the default AI of DCS.
-This is due to the short range of their radars. By the time the IADS wakes them up, the contact has
-likely passed their engagement range.
-The strength of the Skynet IADS lies with handling long range systems that operate by radar.
+En théorie, tous les types listés dans le fichier
+[skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua).
+Les unités à très courte portée (la DCA Shilka, le Rapier) ne tireront pas grand-chose de l'IADS,
+sinon la réaction aux HARM. Autant les poser simplement dans la mission et les laisser à l'IA de
+DCS.
+C'est dû à la faible portée de leur radar : le temps que l'IADS les réveille, le contact est
+généralement déjà sorti de leur domaine de tir.
+La force de Skynet IADS est ailleurs : dans la gestion des systèmes à longue portée qui travaillent
+au radar.
 
-## Which SAM systems can engage HARMS? {#which-sam-systems-can-engage-harms}
+## Quels systèmes SAM peuvent engager les HARM ? {#which-sam-systems-can-engage-harms}
 
-As of July 2022 only the SA-15, SA-10, NASAMS and Patriot have been confirmed to engage HARMS. The
-best option for a solid HARM defence is to add SA-15's around EW radars or high value SAM sites.
+En juillet 2022, seuls le SA-15, le SA-10, le NASAMS et le Patriot ont été confirmés capables
+d'engager des HARM. Pour une défense anti-HARM solide, la meilleure option consiste à disposer des
+SA-15 autour des EW radars et des sites SAM à forte valeur.
 
-## What exactly does Skynet do with the SAMs?
+## Que fait Skynet aux SAM, exactement ?
 
-Via the scripting engine one can toggle the radar emitters on and off. Further options are the
-alarm state and the rules of engagement. In a nutshell that's all that Skynet does. Skynet does
-also read the radar and firing range properties of a SAM site. Based on that data and the setup
-options a mission designer provides, Skynet will turn a SAM site on or off.
+Le moteur de script permet d'allumer et d'éteindre les émetteurs radar. On peut aussi agir sur
+l'état d'alerte et sur les règles d'engagement. En résumé, c'est tout ce que fait Skynet. Il lit
+également les caractéristiques de portée radar et de portée de tir d'un site SAM ; à partir de ces
+données et des options fournies par le concepteur de la mission, il allume ou éteint le site.
 
-No god-like intervention is used (like magically exploding HARMS via the scripting engine).
-If a SAM site or EW radar detects an inbound HARM it just turns off its radar as in real life. The
-HARM as it is programmed in DCS will try and glide in to the last known position, mostly resulting
-in misses by 50-100 meters.
+Aucune intervention divine n'est employée — pas de HARM qu'on ferait exploser par magie via le
+moteur de script.
+Si un site SAM ou un EW radar détecte un HARM entrant, il coupe simplement son radar, comme dans la
+réalité. Le HARM, tel qu'il est programmé dans DCS, tente alors de planer jusqu'à la dernière
+position connue, et manque sa cible la plupart du temps de 50 à 100 mètres.
 
-## Why does a SAM site not react to an aircraft right above it?
+## Pourquoi un site SAM ne réagit-il pas à un avion qui le survole ?
 
-Because a site under network control has its radar switched off, and is therefore blind. It lights
-up when an EW radar **that covers it** hands it a contact — nothing else. Fly under the EW radars'
-horizon and no battery reacts, whatever the distance.
+Parce qu'un site placé sous contrôle du réseau a son radar éteint : il est donc aveugle. Il
+s'allume quand un EW radar **qui le couvre** lui transmet un contact — et pas autrement. Volez sous
+l'horizon des EW radars et aucune batterie ne réagira, quelle que soit la distance.
 
-The corollary surprises people the other way round: **destroy the EW radars and the remaining sites
-become more aggressive**, because they revert to the DCS AI, which turns everything on and engages.
+Le corollaire surprend en sens inverse : **détruisez les EW radars et les sites restants deviennent
+plus agressifs**, puisqu'ils repassent sous le contrôle de l'IA de DCS, qui allume tout et engage.
 
-This is softened by the [last line of defense](api.md#last-line-of-defense): a dark site keeps a
-short virtual detection radius of its own, so an aircraft flying over it wakes it even when no radar
-anywhere holds a contact. It is on by default and can be switched off.
+Ce comportement est adouci par la [dernière ligne de défense](api.md#last-line-of-defense) : un
+site éteint conserve un petit rayon de détection virtuel qui lui est propre, si bien qu'un avion
+qui le survole le réveille même si aucun radar nulle part ne tient de contact. C'est actif par
+défaut, et désactivable.
 
-## Does "covered" mean the EW radar is feeding that site?
+## « Couvert » veut-il dire que l'EW radar alimente ce site ?
 
-No. Coverage is a flat 2D distance between the EW radar and the battery, compared against the EW
-radar's detection range — no horizon, no terrain, no altitude. It says the EW radar is **near** the
-battery, never that it is actually feeding it anything. A single long-range radar can list a dozen
-batteries as covered while detecting nothing at all.
+Non. La couverture est une simple distance en 2D entre l'EW radar et la batterie, comparée à la
+portée de détection du radar — sans horizon, sans relief, sans altitude. Elle dit que l'EW radar
+est **près** de la batterie, jamais qu'il lui transmet effectivement quoi que ce soit. Un seul
+radar à longue portée peut afficher une douzaine de batteries comme couvertes tout en ne détectant
+rien du tout.
 
-## Are there known bugs?
+## Y a-t-il des bogues connus ?
 
-Yes, when placing multi-unit SAM sites (e.g. SA-3, Patriot..) make sure the first unit you place is
-the search radar. If you add any other element as the first unit, Skynet will not be able to read
-radar data.
-The result will be that the SAM site won't go live. This bug was observed in DCS 2.5.5. The SAM
-site will work fine when used as a standalone unit outside of Skynet.
+Oui : lorsque vous placez un site SAM composé de plusieurs unités (SA-3, Patriot…), veillez à ce
+que la première unité posée soit le radar de veille. Si vous commencez par un autre élément, Skynet
+ne parviendra pas à lire les données radar.
+Le site SAM ne s'activera alors jamais. Ce bogue a été observé dans DCS 2.5.5. Le même site
+fonctionne normalement en unité autonome, hors Skynet.
 
-## How do I know if a SAM site is in range of an EW site or a SAM site in EW mode?
+## Comment savoir si un site SAM est à portée d'un EW radar, ou d'un site SAM en mode EW ?
 
-To get a rough idea you can look at the range circles in the mission editor. However these ranges
-are greater than the actual in-game detection ranges of an EW radar or SAM site.
-The following screenshot shows the range of the 1L13 EWR. The mission editor shows a range of 64 NM
-(nautical miles) whereas the in-game range is 43 NM.
+Pour s'en faire une idée grossière, on peut regarder les cercles de portée dans l'éditeur de
+mission. Ces portées sont toutefois supérieures aux portées de détection réelles en jeu, qu'il
+s'agisse d'un EW radar ou d'un site SAM.
+La capture ci-dessous montre la portée de l'EWR 1L13 : l'éditeur de mission annonce 64 NM (milles
+nautiques), là où la portée en jeu est de 43 NM.
 
-In this example the SAM site to the north east would not be in range of the EW radar, therefore it
-would go into autonomous mode once the mission starts.
+Dans cet exemple, le site SAM au nord-est ne serait pas à portée de l'EW radar ; il passerait donc
+en mode autonome au démarrage de la mission.
 
-![1L13 EWR range differences](images/ew-detection-distance-example.png)
+![Écart de portée de l'EWR 1L13](images/ew-detection-distance-example.png)
 
-Set the debug options `samSiteStatusEnvOutput` and `earlyWarningRadarStatusEnvOutput` (see [setting
-debug information](api.md#setting-debug-information)) to get detailed information on every SAM
-site and EW radar.
-The text marked in the red box will show you which SAM sites are in the covered area of a SAM site
-or EW radar.
+Activez les options de débogage `samSiteStatusEnvOutput` et `earlyWarningRadarStatusEnvOutput`
+(voir [activer les informations de débogage](api.md#setting-debug-information)) pour obtenir le
+détail de chaque site SAM et de chaque EW radar.
+Le texte encadré en rouge indique quels sites SAM se trouvent dans la zone couverte par un site SAM
+ou un EW radar.
 
-![SAM sites in covered area](images/radar-emitter-status-dcs-log.png)
+![Sites SAM dans la zone couverte](images/radar-emitter-status-dcs-log.png)
 
-## How do I connect Skynet with the MOOSE AI_A2A_DISPATCHER and what are the benefits of that?
+## Comment connecter Skynet à l'AI_A2A_DISPATCHER de MOOSE, et qu'est-ce que ça apporte ?
 
-See [connecting Skynet to the MOOSE AI_A2A_DISPATCHER](api.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher).
+Voir [connecter Skynet à l'AI_A2A_DISPATCHER de
+MOOSE](api.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher).

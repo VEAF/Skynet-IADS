@@ -26,6 +26,36 @@ extra:
   version:
     provider: mike
 
+# The site is bilingual, French by default, on the VEAF-Mission-Creation-Tools model: the
+# unsuffixed `page.md` holds the French text and `page.en.md` its English twin. French serves at
+# the site root and English under `/en/`, with Material's language selector in the header.
+#
+# A page must never ship without its twin — the reader of the missing language silently gets the
+# other one. `build-tools/docs-check.py` is what enforces that, along with the links and anchors
+# that cross between the two.
+plugins:
+  - search:
+      lang:
+        - fr
+        - en
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: fr
+          default: true
+          name: Français
+          build: true
+          nav_translations:
+            Home: Accueil
+            Setting up an IADS: Mettre en place un IADS
+            Tactics: Tactique
+            API reference: Référence de l'API
+        - locale: en
+          name: English
+          build: true
+
+# The paths below stay unsuffixed on purpose: the i18n plugin resolves each entry to the twin of
+# the language being built.
 nav:
   - Home: index.md
   - Setting up an IADS: setting-up.md

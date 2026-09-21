@@ -2,57 +2,61 @@
 
 ![logo](images/SA3_2.jpg)
 
-An IADS (Integrated Air Defence System) script for DCS (Digital Combat Simulator).
+Un script d'IADS (Integrated Air Defence System — système de défense aérienne intégré) pour DCS
+(Digital Combat Simulator).
 
-## Abstract
+## Résumé
 
-This script simulates an IADS within the scripting possibilities of DCS. Early Warning Radar
-Stations (EW Radar) scan the sky for contacts. These contacts are correlated with SAM (Surface to
-Air Missile) sites. If a contact is within firing range of the SAM site it will become active.
+Ce script simule un IADS dans les limites de ce que permet le moteur de script de DCS. Des radars
+de veille lointaine (EW radars) balaient le ciel à la recherche de contacts. Ces contacts sont
+recoupés avec les sites SAM (Surface to Air Missile). Dès qu'un contact entre dans le domaine de
+tir d'un site SAM, celui-ci s'active.
 
-A modern IADS also depends on command centers and datalinks to the SAM sites. The IADS can be set
-up with this infrastructure. Destroying it will degrade the capability of the IADS.
+Un IADS moderne repose aussi sur des centres de commandement et sur des liaisons de données vers
+les sites SAM. Vous pouvez monter l'IADS avec cette infrastructure : la détruire dégrade les
+capacités du réseau.
 
-This all sounds gibberish to you? Watch [this video by Covert Cabal on modern
-IADS](https://www.youtube.com/watch?v=9J9kntzkSQY).
+Tout ceci vous paraît du charabia ? Regardez [cette vidéo de Covert Cabal sur les IADS
+modernes](https://www.youtube.com/watch?v=9J9kntzkSQY).
 
-Visit [this DCS forum
-thread](https://forums.eagle.ru/topic/226173-skynet-an-iads-for-mission-builders) for development
-updates.
+Le [fil de discussion sur le forum
+DCS](https://forums.eagle.ru/topic/226173-skynet-an-iads-for-mission-builders) suit les évolutions
+du développement.
 
-Join the [Skynet discord group](https://discord.gg/pz8wcQs) and get support setting up your
-mission.
+Rejoignez le [groupe Discord de Skynet](https://discord.gg/pz8wcQs) pour vous faire aider à
+configurer votre mission.
 
-Skynet supports the [HighDigitSAMs Mod](https://github.com/Auranis/HighDigitSAMs).
+Skynet prend en charge le [mod HighDigitSAMs](https://github.com/Auranis/HighDigitSAMs).
 
-You can also connect [Skynet with the AI_A2A_DISPATCHER](api.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher)
-by MOOSE to add interceptors to the IADS.
+Vous pouvez aussi [connecter Skynet à l'AI_A2A_DISPATCHER](api.md#connecting-skynet-to-the-moose-ai_a2a_dispatcher)
+de MOOSE pour ajouter des intercepteurs à l'IADS.
 
-**So far over 200 hours of work went in to the development of Skynet.
-If you like using it, please consider a donation:**
+**Plus de 200 heures de travail ont été consacrées au développement de Skynet à ce jour.
+Si vous aimez l'utiliser, pensez à faire un don :**
 
 [![Skynet IADS donation](images/btn_donateCC_LG.gif.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7GSVFH448BWFQ&source=url)
 
-## Quick start {#quick-start}
+## Démarrage rapide {#quick-start}
 
-Tired of reading already? Grab `skynet-test-persian-gulf.miz` from the [latest
-release](https://github.com/VEAF/Skynet-IADS/releases) and see Skynet in action on the Persian Gulf
-map. It is attached to the release beside `skynet-iads-compiled.lua`, and it carries exactly the
-Skynet that release ships.
+Déjà fatigué de lire ? Récupérez `skynet-test-persian-gulf.miz` dans la [dernière
+version](https://github.com/VEAF/Skynet-IADS/releases) et voyez Skynet à l'œuvre sur la carte du
+golfe Persique. Elle est jointe à la release, à côté de `skynet-iads-compiled.lua`, et embarque
+exactement le Skynet que cette version livre.
 
-The `.miz` files in the repository itself are **templates**: they hold a placeholder where each
-script goes, so that a copy of the code committed beside the code cannot quietly fall three years
-behind — which is what happened, until 2026-09-20. If you are working from a clone, assemble the
-playable missions yourself, into `build/missions/`:
+Les fichiers `.miz` du dépôt, eux, sont des **gabarits** : ils contiennent un emplacement réservé à
+la place de chaque script, pour qu'une copie du code déposée à côté du code ne puisse pas prendre
+trois ans de retard en silence — ce qui est précisément arrivé, jusqu'au 20/09/2026. Si vous
+travaillez depuis un clone, assemblez vous-même les missions jouables, dans `build/missions/` :
 
 ```
 pwsh -File build-tools/build-compiled-script.ps1
 python build-tools/miz-suite.py build
 ```
 
-## Thanks
+## Remerciements
 
-Special thanks to Spearzone and Coranthia for researching public available information on IADS
-networks and getting me up to speed on how such a system works.
-I based the SAM site setup on [Grimes SAM DB](https://forums.eagle.ru/showthread.php?t=118175) from
-his IADS script, however I removed range data since Skynet loads that from DCS.
+Un merci tout particulier à Spearzone et Coranthia, qui ont épluché les informations publiques sur
+les réseaux IADS et m'ont mis à niveau sur le fonctionnement d'un tel système.
+Le montage des sites SAM s'inspire de la [SAM DB de
+Grimes](https://forums.eagle.ru/showthread.php?t=118175), tirée de son script IADS ; j'en ai
+toutefois retiré les données de portée, que Skynet lit directement dans DCS.

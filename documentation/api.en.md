@@ -505,7 +505,7 @@ ewRadarOrSamSite:setHARMDetectionChance(50)
 ### Point defence {#point-defence}
 
 You must use a point defence SAM that can engage HARM missiles. Can be used to protect SAM sites or
-EW radars. See [point defence](tactics.md#point-defence) for information on what this does.
+EW radars. See [point defence](tactics.en.md#point-defence) for information on what this does.
 
 If you want the point defences to coordinate their HARM defence then you can add multiple point
 defence SAM sites into one group. **This is the only place where you should add multiple SAM sites
