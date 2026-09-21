@@ -20,6 +20,8 @@ the same shape.
 | Lot | What | Status |
 |-----|------|--------|
 | [FEAT-BILINGUAL-DOCUMENTATION](FEAT-BILINGUAL-DOCUMENTATION/PRD.md) | The documentation site in French and English, French by default — the VMCT model, copied down to its gate | ✅ |
+| [CHORE-DOCS-MANUAL-REPUBLISH](CHORE-DOCS-MANUAL-REPUBLISH/PRD.md) | Republish a released version's pages without moving its tag, so a documentation fix does not wait for the next release | ✅ |
+| [CHORE-DOCS-RECENT-BEHAVIOUR](CHORE-DOCS-RECENT-BEHAVIOUR/PRD.md) | What 3.5.0 changed, moved from the API reference into the guide; the original author's donation block retired | ✅ |
 
 ## Archive
 
