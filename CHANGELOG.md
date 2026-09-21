@@ -25,6 +25,55 @@ Until that release is cut, the build date in the artifact's first line remains t
 
 ## [Unreleased]
 
+**The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,
+NAWACS) carry Skynet-IADS on together, in this repository. This release brings a **last line of
+defense** — a battery held dark by the network now wakes on proximity alone — three fixes to radar
+coverage that each left a site mute for the rest of a mission, and a repository put back on its
+feet: continuous integration, published documentation, an in-sim smoke gate, and a standalone test
+suite at 94% coverage. It is also why the number jumps from `3.4.0RP-VEAF` to `3.5.0`.
+
+### What changes for your missions
+
+- **The last line of defense is on by default.** A battery the network holds dark keeps a short
+  *virtual* detection radius of its own — no DCS radar involved — drawn once per site between 10 and
+  15 km and kept for the mission. A hostile aircraft inside it wakes the site with no radar contact
+  anywhere, and the site stays live 45 s after the last pass. A short-range piece such as a Shilka
+  can therefore light up for an aircraft it cannot reach: accepted trade-off. Turn it off with
+  `setLastLineOfDefence(false)`.
+- **An AWACS that goes home now has the same effect as one shot down.** The coverage sweep purges
+  where the old path only ever added, so the batteries that AWACS alone covered become autonomous.
+  That is the right answer for a battery no ground radar covers, and it is visible in mission.
+- **Sites no longer go dark when one is added or respawned.** Declaring that a radar covers a
+  battery used to switch that battery off; a bulk `addSAMSitesByPrefix()` left the elements it
+  discarded wired into the coverage graph; and a site torn down mid-HARM-evasion stayed deaf for the
+  rest of the mission. All three are reached by the `*ByPrefix` calls VEAF's helper makes on
+  respawn.
+- **The `.miz` files in this repository are no longer playable on their own.** They hold a
+  placeholder for every script now, so a committed demo can no longer go stale in silence. A
+  playable demo comes from this release's assets or from `python build-tools/miz-suite.py build`.
+  MIST is out of the demos and out of the repository with them.
+
+### What to do when upgrading
+
+- **Expect setup warnings on screen.** Four messages — a group name that is not in the mission, a
+  unit name that is not in the mission, an element of the other coalition, a group with no SAM data
+  — only wrote a line to `dcs.log` between November 2020 and now. They are shown to the players
+  again, prefixed `WARNING:`. A mission that has quietly carried a typo for years will announce it
+  the first time it loads this build; that is the point. The escape hatch is
+  `redIADS:getDebugSettings().warnings = false`, which silences the screen copy and keeps the log.
+- **Decide about the last line of defense.** Leaving it on is a valid choice, but it is a choice:
+  `setLastLineOfDefence`, `setLastLineOfDefenceRadius` and `setLastLineOfDefencePersistence` are the
+  three settings.
+- **`SkynetIADS:addJammer()` is gone.** It raised *table expected, got nil* on every call ever made
+  to it, so no mission can have used it successfully — but a setup script that still calls it now
+  fails differently. Attach a jammer the documented way:
+  `SkynetIADSJammer:create(Unit.getByName("F-4 AI"), redIADS)`, plus `jammer:addIADS(blueIADS)` for
+  a second network.
+- **MIST is no longer needed for Skynet.** The current build makes no MIST call at all. A mission
+  that loaded `mist_4_5_107.lua` only for Skynet can drop it — 312 KB, and one `DEAD` event handler
+  that put an error popup on the players' screens. Only if nothing else in the mission uses MIST,
+  which is rarely the case in VEAF missions.
+
 ### Added
 
 - A backlog under `.backlog/`, with the two lots VEAF has decided on: `FEAT-LAST-LINE-OF-DEFENSE`
