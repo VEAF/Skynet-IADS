@@ -90,8 +90,65 @@ verdict is added beside them, not in their place.
 - The file still parses under Lua 5.1, and `miz-suite.py check` is happy.
 - **Run in DCS**, both reaching `PASS`, with the timings recorded here.
 
-## Measured in DCS
+## Measured in DCS — 2026-09-21
 
-_To be filled by the run. What to record: the wall-clock to each PASS, and that a deliberately
-broken variant reaches `FAIL:` with the right half named — a verdict nobody has seen go red is a
-verdict nobody has tested._
+```
+  PASS  last-line-of-defence         PASS
+  PASS  coverage-follows-what-moves  PASS
+
+2/2 passed
+```
+
+**Montage checked before committing fifteen minutes of flight to it**, with `SKYNET_TEST.geometry()`:
+the EWR sits 106.0 km from the site for a detection range of 267.5 km, so it covers it and the
+network holds it dark; the site's radius came out at 12.7 km, inside the 10–15 km the design draws
+from; one parent radar; both elements on land. A run started on a bad montage proves nothing, and
+this is the one call that says so in two seconds.
+
+### Run 1, the last line of defence
+
+| t | what the watch saw |
+|---|---|
+| 49 s | intruder 36.36 km out. `ACTIVE=false AUTONOMOUS=false targetsInRange=false` — dark, and held by the network |
+| 213 s | intruder **5.83 km**, inside the 12.7 km radius. `ACTIVE=true AUTONOMOUS=false targetsInRange=false freshReport=true` |
+| 525 s | intruder 39.84 km out the other side. `ACTIVE=false freshReport=false` — quiet again |
+
+The middle row is the whole mechanism in one line. `ACTIVE=true` with `targetsInRange=false` means
+the site lit with **no radar contact anywhere** — proximity alone woke it. `AUTONOMOUS=false` means
+it woke *into* the network rather than being handed to the DCS AI, which is the difference between
+the fix and a workaround. And the third row is the half that makes it a test rather than a demo:
+it went quiet again.
+
+Over the run the watch recorded 42 ticks lit against 63 dark — a bounded window with dark either
+side, not a site that came on and stayed on.
+
+### Run 2, coverage follows what moves
+
+Final state: `AWACS at 214.7 km (range 204.5 km) | battery AUTONOMOUS=true parents=0 | AWACS covers
+0 site(s)`. The AWACS crossed its own detection range and the sweep dropped the link: the battery
+lost its only parent and was handed back to itself.
+
+### Every verdict seen, including the ones that fail
+
+A verdict nobody has seen go red is a verdict nobody has tested, so the four failure branches were
+forced live through the bridge by writing a record with a deadline already past — no re-flying:
+
+| forced state | answer |
+|---|---|
+| run 1, never lit | `FAIL: the site never lit up -- the last line of defence did not wake it` |
+| run 1, lit and never dark | `FAIL: the site lit up but never went quiet again -- the persistence never expired` |
+| run 1, inside the deadline | `RUNNING` |
+| run 1, not armed | `IDLE` |
+| run 2, never held | `FAIL: the battery was never held -- the AWACS never became its parent` |
+| run 2, held and never handed back | `FAIL: the battery was held and never handed back -- the coverage refresh did not purge` |
+
+Six states, each naming the half that is missing. That is the whole vocabulary exercised against a
+running DCS.
+
+**Zero `ERROR SCRIPTING` lines** in the log across both runs.
+
+This is also what stands in for the standalone test the recorders do not have — see the gap above.
+It is weaker than a unit test in one specific way, and worth saying: the failure branches were
+exercised by writing the record directly, so they prove the **verdict** reads a record correctly,
+not that the **recorders** write one correctly. The recorders are covered only by the two runs
+passing.

@@ -1,6 +1,6 @@
 # FEAT-IN-SIM-SMOKE-TESTS — a release can be flown before it is numbered
 
-Status: 🔄 in-progress
+Status: 🔄 in-progress — coded, flown green on 2026-09-21, awaiting review on [PR #35](https://github.com/VEAF/Skynet-IADS/pull/35)
 
 Origin: `docs/evolutions.md` has carried a *Smoke tests* entry since the repository was
 professionalised — *"study how the legacy unit-test can be transformed into something more usable
@@ -180,5 +180,9 @@ answer it.
 - The `release` skill runs the checks before the version is bumped, consultatively.
 - `unit-tests/README.md` says how to run it and how to add a check.
 - The *Smoke tests* entry in `docs/evolutions.md` is replaced by a pointer here.
-- **Measured against a real DCS**, and the figures written into ticket 2 — including the two counts
-  `networks-built` deliberately does not pin yet, because nobody has counted them.
+- **Measured against a real DCS — done, 2026-09-21.** Seven checks, two missions, all green:
+  `3.5.0`, `sam:13 ewr:8`, `all-found`, `alive`, `nil`, and both flown runs `PASS`. The two counts
+  are pinned to what was counted rather than guessed. `jammer-alive` was seen **red** first, on a
+  build without `FIX-DEMO-DESTROYS-ITS-JAMMER`, and the four failure branches of the two verdicts
+  were forced live so that every state of the vocabulary has been observed. Zero `ERROR SCRIPTING`
+  lines across every run. Figures in the tickets.
