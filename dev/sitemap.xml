@@ -1,23 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
-         <loc>https://veaf.github.io/Skynet-IADS/dev/</loc>
-         <lastmod>2026-09-21</lastmod>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/deven/"/>
     </url>
     <url>
-         <loc>https://veaf.github.io/Skynet-IADS/dev/api/</loc>
-         <lastmod>2026-09-21</lastmod>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/api/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev/api/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/deven/api/"/>
     </url>
     <url>
-         <loc>https://veaf.github.io/Skynet-IADS/dev/faq/</loc>
-         <lastmod>2026-09-21</lastmod>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/faq/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev/faq/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/deven/faq/"/>
     </url>
     <url>
-         <loc>https://veaf.github.io/Skynet-IADS/dev/setting-up/</loc>
-         <lastmod>2026-09-21</lastmod>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/setting-up/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev/setting-up/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/deven/setting-up/"/>
     </url>
     <url>
-         <loc>https://veaf.github.io/Skynet-IADS/dev/tactics/</loc>
-         <lastmod>2026-09-21</lastmod>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/tactics/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev/tactics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/deven/tactics/"/>
+    </url>
+    <url>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/en/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/dev/en/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/dev"/>
+    </url>
+    <url>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/en/api/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/dev/en/api/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/devapi/"/>
+    </url>
+    <url>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/en/faq/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/dev/en/faq/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/devfaq/"/>
+    </url>
+    <url>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/en/setting-up/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/dev/en/setting-up/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/devsetting-up/"/>
+    </url>
+    <url>
+        <loc>https://veaf.github.io/Skynet-IADS/dev/en/tactics/</loc>
+        <lastmod>2026-09-21</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://veaf.github.io/Skynet-IADS/dev/en/tactics/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://veaf.github.io/Skynet-IADS/devtactics/"/>
     </url>
 </urlset>
