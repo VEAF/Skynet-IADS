@@ -92,6 +92,11 @@ instead of extending it — it exists to erode, never to grow.
   `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, is a check driven from
   outside through VEAF's `dcs-bridge` with no player task. The directory is also what a release
   reads: `demo-missions/` archives are attached to it, `unit-tests/` ones never are.
+  **`unit-tests/README.md` is the door**: how to run the in-sim smoke gate
+  (`python build-tools/run-smoke.py`), what each check asks, and the rule for adding one — a check
+  returns a *word*, because `dcs-bridge` flattens a Lua `false` to the empty string. The gate is
+  consultative and local; DCS cannot run on a GitHub runner, and the `release` skill runs it before
+  the version is bumped.
   Only behaviour that genuinely needs the simulator — terrain elevation, real detection geometry,
   in-game events, how a DCS group is composed — stays there. **The numeric figures ED states about a
   unit do not**: a missile's reach, its firing ceiling, a radar's detection distance are recorded in

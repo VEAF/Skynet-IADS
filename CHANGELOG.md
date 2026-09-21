@@ -214,6 +214,16 @@ Until that release is cut, the build date in the artifact's first line remains t
   can say a battery changed behaviour in game: the SA-11's missile went from 35000 m to 46000 m
   between December 2023 and September 2026 -- 11 km further out before a Buk wakes -- and the only
   reason anyone found out was running the in-sim mission after three years.
+- `build-tools/run-smoke.py`, an in-sim smoke gate: it sends small pieces of Lua into a running DCS
+  through VEAF's dcs-bridge, reads back one word per check, and prints a table. Seven checks across
+  two missions -- five that interrogate the Persian Gulf demo without touching it, and two that fly
+  the last-line-of-defence scenario and now answer with a verdict instead of log lines a human had
+  to read. Stdlib only, like `miz-suite.py`. It is **consultative and local**: GitHub runners have no
+  DCS, no licence and no GPU, so it informs a release rather than gating one, and it skips with an
+  explanation when there is nothing to talk to. Every defect flying found this month -- a 2023
+  artifact in the in-sim suites, Skynet 3.2 in the demos, MiST putting a popup on screen, both demos
+  destroying their own jammer -- was invisible to every gate the project had. See
+  `unit-tests/README.md`.
 
 ### Changed
 
