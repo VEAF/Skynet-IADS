@@ -73,14 +73,6 @@ local jammer = SkynetIADSJammer:create(Unit.getByName('jammer-emitter'), redIADS
 jammer:masterArmOn()
 jammer:addRadioMenu()
 
----some special code to remove the jammer aircraft if player is not flying with it in formation, has nothing to do with the IADS:
-local hornet = Unit.getByName('Hornet SA-11-2 Attack')
-if hornet == nil then
-	Unit.getByName('jammer-emitter'):destroy()
-	jammer:removeRadioMenu()
-end
---end special code
-
 ------setup blue IADS:
 blueIADS = SkynetIADS:create('UAE')
 blueIADS:addSAMSitesByPrefix('BLUE-SAM')

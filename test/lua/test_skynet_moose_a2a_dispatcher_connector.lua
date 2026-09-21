@@ -22,14 +22,13 @@ function TestMooseA2ADispatcherConnector:tearDown()
 end
 
 function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
-
 	local mockMooseSetGroup = {}
 	mockMooseSetGroup.connector = self.connector
 	local numRemoveCalls = 0
 
 	function mockMooseSetGroup:RemoveGroupsByName(groupNames)
 		numRemoveCalls = numRemoveCalls + 1
-		if	numRemoveCalls == 1 then
+		if numRemoveCalls == 1 then
 			luaunit.assertEquals(groupNames, self.connector.ewRadarGroupNames)
 		end
 
@@ -50,7 +49,6 @@ function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
 
 	local numAddCalls = 0
 	function mockMooseSetGroup:AddGroupsByName(groupNames)
-
 		if numAddCalls == 0 then
 			luaunit.assertEquals(groupNames, samGroups)
 		end
@@ -64,9 +62,25 @@ function TestMooseA2ADispatcherConnector:testAddMooseSetGroupAndUpdate()
 
 	self.connector:addMooseSetGroup(mockMooseSetGroup)
 
-
 	luaunit.assertEquals(numRemoveCalls, 2)
 	luaunit.assertEquals(numAddCalls, 2)
+end
+
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+
+--- One connector can serve several networks: a mission with a red and a blue IADS hands MOOSE
+--- the early warning radars of both. The collection starts with the network the connector was
+--- built for, and addIADS is the only way a second one joins.
+function TestMooseA2ADispatcherConnector:testASecondNetworkCanJoinTheConnector()
+	dcsStub.reset()
+	local red = SkynetIADS:create("red")
+	local connector = SkynetMooseA2ADispatcherConnector:create(red)
+	luaunit.assertEquals(#connector.iadsCollection, 1)
+
+	local blue = SkynetIADS:create("blue")
+	connector:addIADS(blue)
+	luaunit.assertEquals(#connector.iadsCollection, 2)
+	luaunit.assertIs(connector.iadsCollection[2], blue)
 end
 
 os.exit(luaunit.LuaUnit.run())

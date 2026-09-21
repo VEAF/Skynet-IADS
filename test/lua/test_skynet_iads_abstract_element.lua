@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-abstract-element.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- Exercises SkynetIADSAbstractElement wrapped around a fixture SA-6 group
 --- (SAM-SA-6-2, a Kub 2P25 ln). Connection-node / power-source destruction
 --- tests swap the .miz `trigger.action.explosion(...)` for `<obj>:__destroy()`
@@ -15,12 +18,12 @@ TestSkynetIADSAbstractElement = {}
 function TestSkynetIADSAbstractElement:setUp()
 	dcsStub.reset()
 	self.iads = SkynetIADS:create()
-	self.group = dcsStub.makeGroup({ name = "SAM-SA-6-2", units = { { name = "SAM-SA-6-2-u1", type = "Kub 2P25 ln" } } })
+	self.group =
+		dcsStub.makeGroup({ name = "SAM-SA-6-2", units = { { name = "SAM-SA-6-2-u1", type = "Kub 2P25 ln" } } })
 	self.abstractElement = SkynetIADSAbstractElement:create(self.group, self.iads)
 
 	--mock this function, we test it once in testCheckOneGenericObjectAliveForUnitWorks
-	function self.abstractElement:setToCorrectAutonomousState()
-	end
+	function self.abstractElement:setToCorrectAutonomousState() end
 end
 
 function TestSkynetIADSAbstractElement:tearDown()
@@ -35,7 +38,7 @@ function TestSkynetIADSAbstractElement:testHasActiveConnectionNodeByDefaultIfNon
 end
 
 function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForUnitWorks()
-	local unit = F.connectionNodeUnit('SAM-SA-6-2-connection-node-unit')
+	local unit = F.connectionNodeUnit("SAM-SA-6-2-connection-node-unit")
 
 	local called = false
 
@@ -52,9 +55,8 @@ function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForUnitWork
 	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), false)
 end
 
-
 function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForStaticObjectsWorks()
-	local static = F.connectionNodeStatic('SAM-SA-6-2-coonection-node-static')
+	local static = F.connectionNodeStatic("SAM-SA-6-2-coonection-node-static")
 	self.abstractElement:addConnectionNode(static)
 	luaunit.assertEquals(self.abstractElement:genericCheckOneObjectIsAlive(self.abstractElement.connectionNodes), true)
 	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), true)
@@ -64,7 +66,6 @@ function TestSkynetIADSAbstractElement:testCheckOneGenericObjectAliveForStaticOb
 end
 
 function TestSkynetIADSAbstractElement:testPowerSourceAndConnectionNodeStaticObjectAndDestrutionSuccessful()
-
 	local powerSource = F.connectionNodeStatic("test-ground-vehicle-power-source")
 	local connectionNode = F.connectionNodeStatic("test-ground-vehicle-connection-node")
 
@@ -101,7 +102,58 @@ function TestSkynetIADSAbstractElement:testGetDCSName()
 	end
 
 	luaunit.assertEquals(self.abstractElement:getDCSName(), "SAM-SA-6-2")
+end
 
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+
+--- Two debug settings a mission turns on while wiring a network up, to find out why an element
+--- refuses to work. They report on every check, so they are noisy by design and off by default.
+function TestSkynetIADSAbstractElement:testTheNoConnectionSettingNamesTheElementThatIsCutOff()
+	self.abstractElement:addConnectionNode(dcsStub.makeStatic({ name = "node-dead" }))
+	dcsStub.world["node-dead"]:__destroy()
+	self.iads:getDebugSettings().samNoConnection = true
+
+	dcsStub.screenText = {}
+	luaunit.assertEquals(self.abstractElement:hasActiveConnectionNode(), false)
+	luaunit.assertEquals(#dcsStub.screenText, 1)
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "no connection to Command Center")
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "SAM-SA-6-2")
+end
+
+function TestSkynetIADSAbstractElement:testTheNoPowerSettingNamesTheElementThatIsDark()
+	self.abstractElement:addPowerSource(dcsStub.makeStatic({ name = "power-dead" }))
+	dcsStub.world["power-dead"]:__destroy()
+	self.iads:getDebugSettings().hasNoPower = true
+
+	dcsStub.screenText = {}
+	luaunit.assertEquals(self.abstractElement:hasWorkingPowerSource(), false)
+	luaunit.assertEquals(#dcsStub.screenText, 1)
+	luaunit.assertStrContains(dcsStub.screenText[1].text, "has no power")
+end
+
+function TestSkynetIADSAbstractElement:testNeitherSettingSaysAnythingWhileTheyAreOff()
+	self.abstractElement:addPowerSource(dcsStub.makeStatic({ name = "power-dead-2" }))
+	dcsStub.world["power-dead-2"]:__destroy()
+	dcsStub.screenText = {}
+	self.abstractElement:hasWorkingPowerSource()
+	self.abstractElement:hasActiveConnectionNode()
+	luaunit.assertEquals(#dcsStub.screenText, 0)
+end
+
+--- A shot event is handed to weaponFired, which the base class leaves empty and the radar
+--- element overrides to count its missiles in flight. The dispatch is what matters here: a site
+--- that never hears about its own launches never knows it has missiles up.
+function TestSkynetIADSAbstractElement:testAShotEventIsHandedToWeaponFired()
+	local fired = 0
+	function self.abstractElement:weaponFired(_)
+		fired = fired + 1
+	end
+
+	self.abstractElement:onEvent({ id = world.event.S_EVENT_SHOT })
+	luaunit.assertEquals(fired, 1)
+
+	self.abstractElement:onEvent({ id = world.event.S_EVENT_BIRTH })
+	luaunit.assertEquals(fired, 1, "and no other event is mistaken for one")
 end
 
 os.exit(luaunit.LuaUnit.run())

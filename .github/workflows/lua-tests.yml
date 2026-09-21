@@ -2,7 +2,7 @@ name: Lua tests
 
 on:
   push:
-    branches: [master]
+    branches: [master, develop]
   pull_request:
 
 permissions:
@@ -22,3 +22,123 @@ jobs:
 
       - name: Run the standalone suite
         run: lua5.1 test/lua/run.lua
+
+      # test/lua/dcs-figures.lua is generated from a pinned commit of the DCS database dump. This
+      # regenerates it and fails on any difference, so the committed file cannot claim to come from
+      # a pin it no longer matches. It is the pin that moves, in a pull request from the weekly
+      # dcs-data-drift workflow, never the file on its own.
+      - name: Check the DCS figures against their pinned source
+        run: python3 build-tools/dcs-figures.py check
+
+  # Six archives: the two in-sim suites, and the four missions under demo-missions/. CI cannot run
+  # them -- they need the simulator -- but it can check that they are not broken, which until now
+  # nothing did. A script is wired into a .miz in four places (see build-tools/miz-suite.py); a hand
+  # edit that misses one leaves a mission that loads a resource key naming nothing, and the only way
+  # to find out was to open DCS.
+  #
+  # It also checks that git is not holding a copy of any script. The archives carry placeholders and
+  # `build` puts the real files in: the in-sim ones held Skynet 3.3.0 from December 2023 to
+  # 2026-09-20, so three years of in-sim runs measured code that had stopped being shipped; three of
+  # the demos held 3.2 from the same December, and those are what a newcomer downloads. Nothing said
+  # so in either case.
+  mission-archives:
+    name: Mission archives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+
+      # miz-suite.py reads a `mission` written by either DCS or VEAF's mission editor, which
+      # serialise the same Lua table differently. These cover both shapes: a pattern that matches
+      # the wrong block rewrites the wrong trigger and writes the archive without complaining.
+      - name: Test the archive tool
+        run: python3 -m unittest discover -s test/python
+
+      - name: Check the wiring, and that git holds no copies
+        run: python3 build-tools/miz-suite.py check
+
+      # The mission DCS opens is assembled, not committed, so this is the step that proves it can
+      # be. It needs the deliverable, which is generated too.
+      - name: Build the deliverable, then assemble the missions
+        run: |
+          pwsh -File build-tools/build-compiled-script.ps1
+          python3 build-tools/miz-suite.py build
+
+      # Syntax only: these scripts call into DCS and MOOSE, so they cannot be executed here. What
+      # this catches is a truncated or corrupted file. Run against the ASSEMBLED missions, because
+      # those are what DCS loads -- parsing the placeholders would prove nothing.
+      #
+      # `extract` does the walking, rather than a copy of its rules inlined here: it knows which
+      # members are Lua without carrying the extension (`mission`, `mapResource` and the rest), and
+      # a second copy of that list would stop matching the day someone adds to the first.
+      - name: Parse every Lua file in the assembled missions
+        run: |
+          status=0
+          for m in build/missions/*.miz; do
+            python3 build-tools/miz-suite.py extract "$RUNNER_TEMP/built" --miz "$m"
+          done
+          for f in "$RUNNER_TEMP"/built/*/*.lua; do
+            if lua5.1 -e "assert(loadfile('$f'))" 2>"$RUNNER_TEMP/err"; then
+              echo "ok    $(basename "$f")"
+            else
+              echo "FAIL  $(basename "$f"): $(cat "$RUNNER_TEMP/err")"
+              status=1
+            fi
+          done
+          exit $status
+
+  test-coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # luacov is pure Lua, but it has to land where lua5.1 will find it: apt's luarocks is
+      # built against the distribution's default Lua, and --lua-version redirects it. The
+      # 5.1 headers are what lets it configure that version, the same way lint.yml needs them.
+      - name: Install Lua 5.1 and luacov
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
+          sudo luarocks --lua-version=5.1 install luacov
+          # require, not -lluacov: the latter would start a collection here and drop a stats
+          # file into the checkout before the measurement run has begun.
+          lua5.1 -e "require('luacov.runner') print('luacov resolves under ' .. _VERSION)"
+
+      # A separate job on purpose: the suite above must keep running with no debug hook
+      # installed. It takes under a second, so running it twice costs nothing.
+      - name: Run the suite under luacov
+        env:
+          SKYNET_TEST_COVERAGE: 1
+        run: lua5.1 test/lua/run.lua
+
+      # pipefail matters: without it the pipeline reports tee's status, so a reporter that exits
+      # non-zero — below the floor (1), or no measurement at all (2) — would leave the step green.
+      # The status is held back until the summary is written, because a failing run is exactly the
+      # one whose per-file table the reviewer needs. The scratch file goes to the runner's temp,
+      # not into the checkout.
+      - name: Report test coverage
+        run: |
+          set -o pipefail
+          status=0
+          lua5.1 build-tools/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
+          {
+            echo '### Test coverage'
+            echo ''
+            echo '```'
+            cat "$RUNNER_TEMP/test-coverage.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - name: Upload the per-line report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-report
+          path: luacov.report.out
+          if-no-files-found: warn

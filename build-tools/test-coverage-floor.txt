@@ -1,0 +1,39 @@
+# The lowest test coverage this repository accepts, in percent.
+#
+# It only goes up. Every pull request that adds tests raises it, in the same diff as the tests
+# that earned it — the number below is what was measured then, rounded down. Lowering it is a
+# decision taken in the open, with the reason in the commit message.
+#
+# It started at 70 because that is what the suite measured when the gate was built
+# (CHORE-TEST-COVERAGE-FLOOR ticket 02); the lot aims for 90. A gate set at the target rather
+# than at the measurement is red before anyone has done anything wrong, and gets bypassed.
+#
+# 70 -> 83: CHORE-TEST-COVERAGE-FLOOR ticket 03 pinned the logger's four status printers, which
+# were the single largest block the suite never ran (310 lines, 44% of everything it missed).
+# 83 -> 86: ticket 05 covered the network facade -- the getters documentation/api.md shows on
+# the SkynetIADS object, the enrolment failure paths and the radio menu.
+# 86 -> 91: ticket 06 took the long tail -- the jammer, the HARM decision, how a battery
+# learns its own range, the geometry helpers. That carries the lot past its 90% target.
+# 91 -> 92: FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER put the first tests on
+# evaluateIfTargetsContainHARMs -- the two-second scan that hands a jammed battery back ten
+# seconds after the jammer goes quiet -- and removed SkynetIADS:addJammer(), one of the lines
+# nothing could ever cover.
+#
+# 92 -> 93: CHORE-PROFESSIONALIZE-THE-REPO ticket 04, slice 2 of the abstract-radar-element port --
+# the HARM timing and defence states, the two engagement flags and the parent/child radar
+# bookkeeping, fifteen tests that until now ran only inside skynet-unit-tests.miz.
+#
+# 93 -> 94: ticket 04 slices 3 and 4 finished the abstract-radar-element port -- ammunition and
+# missiles in flight, the engagement zone, point defence and the detected-target cache. All 46
+# live tests of that legacy suite now run standalone.
+#
+# A warning paid for in that lot: luacov ADDS to an existing luacov.stats.out, so measuring twice
+# without deleting it reports the union of both runs, counting lines the first covered that the
+# second no longer has. A floor was briefly raised on a figure produced that way. run.lua now
+# removes the stale file before it starts; a number that cannot be reproduced twice running is
+# not a measurement.
+#
+# What counts as a measured line is in .luacov at the repository root.
+# Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+#                 lua5.1 build-tools/report-test-coverage.lua
+94

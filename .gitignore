@@ -1,3 +1,30 @@
 .DS_STORE
+Thumbs.db
 /demo-missions/spikes/
 /.superpowers/
+
+# Editors
+/.vscode/
+/.idea/
+
+# Build output — rebuilt by CI, never hand-edited.
+/tmp/
+/demo-missions/skynet-iads-compiled.lua
+
+# MkDocs build output — published to the gh-pages branch by CI, not committed here.
+/site/
+
+# Test coverage — written by luacov into the directory the suite was run from.
+/luacov.stats.out
+/luacov.report.out
+
+# Playable missions, assembled by build-tools/miz-suite.py build. Output, like the deliverable:
+# the archives in unit-tests/ hold placeholders, and the real scripts are put in on demand.
+/build/
+
+# Python bytecode, from build-tools/*.py
+__pycache__/
+*.pyc
+
+# Claude Code: per-machine overrides stay local
+.claude/settings.local.json

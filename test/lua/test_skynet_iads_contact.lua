@@ -1,4 +1,7 @@
 --- Standalone port of unit-tests/test-skynet-iads-contact.lua.
+--- That legacy suite is gone: every test of it runs here, so both its copies -- the loose
+--- file and the one baked into skynet-unit-tests.miz -- were removed by
+--- CHORE-PROFESSIONALIZE-THE-REPO ticket 04, rather than left to drift against this one.
 --- The DCS-mission version reads fixtures baked into skynet-unit-tests.miz and
 --- asserts the resulting magic numbers ("AH-1W", 989, 5015, 347). Here the
 --- fixtures are code-defined and every expected value is recomputed from them
@@ -14,50 +17,50 @@ loader.load("skynet-iads-contact")
 TestSkynetIADSContact = {}
 
 function TestSkynetIADSContact:setUp()
-  dcsStub.reset()
-  dcsStub.setClock(1000)
-  -- pos.y = 1528.572 m; 1528.572 / 0.3048 = 5015.0 ft exactly.
-  self.unit = dcsStub.makeUnit({
-    name = "contact-1",
-    type = "AH-1W",
-    pos = { x = 0, y = 1528.572, z = 0 },
-    heading = math.rad(347),
-  })
-  dcsStub.world["contact-1"] = self.unit
-  self.contact = SkynetIADSContact:create({ object = self.unit })
+	dcsStub.reset()
+	dcsStub.setClock(1000)
+	-- pos.y = 1528.572 m; 1528.572 / 0.3048 = 5015.0 ft exactly.
+	self.unit = dcsStub.makeUnit({
+		name = "contact-1",
+		type = "AH-1W",
+		pos = { x = 0, y = 1528.572, z = 0 },
+		heading = math.rad(347),
+	})
+	dcsStub.world["contact-1"] = self.unit
+	self.contact = SkynetIADSContact:create({ object = self.unit })
 end
 
 -- ---- getTypeName -----------------------------------------------------
 
 function TestSkynetIADSContact:test_getTypeName_is_unit()
-  luaunit.assertEquals(self.contact:getTypeName(), "AH-1W")
+	luaunit.assertEquals(self.contact:getTypeName(), "AH-1W")
 end
 
 function TestSkynetIADSContact:test_getTypeName_is_weapon()
-  -- The reason skynet-iads-contact.lua's WEAPON change ships on this branch:
-  -- an in-flight weapon (e.g. an inbound HARM) is a valid contact and must
-  -- report its DCS type, not "UNKNOWN".
-  local missile = dcsStub.makeUnit({
-    name = "harm-1",
-    type = "weapons.missiles.AGM_88",
-    category = Object.Category.WEAPON,
-    pos = { x = 0, y = 100, z = 0 },
-  })
-  dcsStub.world["harm-1"] = missile
-  local weaponContact = SkynetIADSContact:create({ object = missile })
-  luaunit.assertEquals(weaponContact:getTypeName(), "weapons.missiles.AGM_88")
+	-- The reason skynet-iads-contact.lua's WEAPON change ships on this branch:
+	-- an in-flight weapon (e.g. an inbound HARM) is a valid contact and must
+	-- report its DCS type, not "UNKNOWN".
+	local missile = dcsStub.makeUnit({
+		name = "harm-1",
+		type = "weapons.missiles.AGM_88",
+		category = Object.Category.WEAPON,
+		pos = { x = 0, y = 100, z = 0 },
+	})
+	dcsStub.world["harm-1"] = missile
+	local weaponContact = SkynetIADSContact:create({ object = missile })
+	luaunit.assertEquals(weaponContact:getTypeName(), "weapons.missiles.AGM_88")
 end
 
 function TestSkynetIADSContact:test_getTypeName_unknown_when_no_representation()
-  function self.contact:getDCSRepresentation()
-    return nil
-  end
-  luaunit.assertEquals(self.contact:getTypeName(), "UNKNOWN")
+	function self.contact:getDCSRepresentation()
+		return nil
+	end
+	luaunit.assertEquals(self.contact:getTypeName(), "UNKNOWN")
 end
 
 function TestSkynetIADSContact:test_getTypeName_is_harm_when_identified()
-  self.contact:setHARMState(SkynetIADSContact.HARM)
-  luaunit.assertEquals(self.contact:getTypeName(), SkynetIADSContact.HARM)
+	self.contact:setHARMState(SkynetIADSContact.HARM)
+	luaunit.assertEquals(self.contact:getTypeName(), SkynetIADSContact.HARM)
 end
 
 -- ---- getCategory -----------------------------------------------------
@@ -68,154 +71,187 @@ end
 -- guarded lookup so callers stop duplicating it unguarded.
 
 function TestSkynetIADSContact:test_getCategory_is_unit()
-  luaunit.assertEquals(self.contact:getCategory(), Object.Category.UNIT)
+	luaunit.assertEquals(self.contact:getCategory(), Object.Category.UNIT)
 end
 
 function TestSkynetIADSContact:test_getCategory_is_weapon()
-  local missile = dcsStub.makeUnit({
-    name = "harm-2",
-    type = "weapons.missiles.AGM_88",
-    category = Object.Category.WEAPON,
-    pos = { x = 0, y = 100, z = 0 },
-  })
-  dcsStub.world["harm-2"] = missile
-  local weaponContact = SkynetIADSContact:create({ object = missile })
-  luaunit.assertEquals(weaponContact:getCategory(), Object.Category.WEAPON)
+	local missile = dcsStub.makeUnit({
+		name = "harm-2",
+		type = "weapons.missiles.AGM_88",
+		category = Object.Category.WEAPON,
+		pos = { x = 0, y = 100, z = 0 },
+	})
+	dcsStub.world["harm-2"] = missile
+	local weaponContact = SkynetIADSContact:create({ object = missile })
+	luaunit.assertEquals(weaponContact:getCategory(), Object.Category.WEAPON)
 end
 
 function TestSkynetIADSContact:test_getCategory_nil_when_no_representation()
-  function self.contact:getDCSRepresentation()
-    return nil
-  end
-  luaunit.assertEquals(self.contact:getCategory(), nil)
+	function self.contact:getDCSRepresentation()
+		return nil
+	end
+	luaunit.assertEquals(self.contact:getCategory(), nil)
 end
 
 function TestSkynetIADSContact:test_getCategory_nil_when_destroyed()
-  -- destroyed-but-non-nil representation: Object.getCategory (unlike rep:getCategory())
-  -- returns nil instead of raising, same contract getTypeName() relies on.
-  function self.contact:getDCSRepresentation()
-    return { isExist = function() return false end }
-  end
-  luaunit.assertEquals(self.contact:getCategory(), nil)
+	-- destroyed-but-non-nil representation: Object.getCategory (unlike rep:getCategory())
+	-- returns nil instead of raising, same contract getTypeName() relies on.
+	function self.contact:getDCSRepresentation()
+		return {
+			isExist = function()
+				return false
+			end,
+		}
+	end
+	luaunit.assertEquals(self.contact:getCategory(), nil)
 end
 
 -- ---- height / heading ----------------------------------------------
 
 function TestSkynetIADSContact:test_getHeightInFeetMSL()
-  -- round(1528.572 / 0.3048, 0) = round(5015.0) = 5015
-  luaunit.assertEquals(self.contact:getHeightInFeetMSL(), 5015)
+	-- round(1528.572 / 0.3048, 0) = round(5015.0) = 5015
+	luaunit.assertEquals(self.contact:getHeightInFeetMSL(), 5015)
 end
 
 function TestSkynetIADSContact:test_getMagneticHeading()
-  -- round(toDegree(getHeading)) where getHeading == math.rad(347) => 347
-  luaunit.assertEquals(self.contact:getMagneticHeading(), 347)
+	-- round(toDegree(getHeading)) where getHeading == math.rad(347) => 347
+	luaunit.assertEquals(self.contact:getMagneticHeading(), 347)
 end
 
 function TestSkynetIADSContact:test_getMagneticHeading_minus_one_when_gone()
-  function self.contact:isExist()
-    return false
-  end
-  luaunit.assertEquals(self.contact:getMagneticHeading(), -1)
+	function self.contact:isExist()
+		return false
+	end
+	luaunit.assertEquals(self.contact:getMagneticHeading(), -1)
 end
 
 -- ---- refresh / speed / age ---------------------------------------
 
 function TestSkynetIADSContact:test_getNumberOfTimesHitByRadar()
-  luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 0)
-  self.contact:refresh() -- clock 1000 > lastTimeSeen 0 => counts
-  luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 1)
+	luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 0)
+	self.contact:refresh() -- clock 1000 > lastTimeSeen 0 => counts
+	luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 1)
 end
 
 function TestSkynetIADSContact:test_refresh_calls_updateSimpleAltitudeProfile()
-  local called = false
-  function self.contact:updateSimpleAltitudeProfile()
-    called = true
-  end
-  self.contact:refresh()
-  luaunit.assertEquals(called, true)
+	local called = false
+	function self.contact:updateSimpleAltitudeProfile()
+		called = true
+	end
+	self.contact:refresh()
+	luaunit.assertEquals(called, true)
 end
 
 function TestSkynetIADSContact:test_refresh_computes_ground_speed()
-  self.contact:refresh() -- baseline at clock 1000, position (0,_,0)
-  -- move 185 200 m over 3600 s: 185200 m = 100 NM; 3600 s = 1 h => 100 kt
-  self.unit:__setPos({ x = 185200, y = 1528.572, z = 0 })
-  dcsStub.setClock(1000 + 3600)
-  self.contact:refresh()
-  luaunit.assertEquals(self.contact:getGroundSpeedInKnots(0), 100)
+	self.contact:refresh() -- baseline at clock 1000, position (0,_,0)
+	-- move 185 200 m over 3600 s: 185200 m = 100 NM; 3600 s = 1 h => 100 kt
+	self.unit:__setPos({ x = 185200, y = 1528.572, z = 0 })
+	dcsStub.setClock(1000 + 3600)
+	self.contact:refresh()
+	luaunit.assertEquals(self.contact:getGroundSpeedInKnots(0), 100)
 end
 
 function TestSkynetIADSContact:test_getAge()
-  -- clock 1000, lastTimeSeen forced to 0 => age 1000
-  self.contact.lastTimeSeen = dcsStub.now() - 1000
-  luaunit.assertEquals(self.contact:getAge(), 1000)
+	-- clock 1000, lastTimeSeen forced to 0 => age 1000
+	self.contact.lastTimeSeen = dcsStub.now() - 1000
+	luaunit.assertEquals(self.contact:getAge(), 1000)
 end
 
 -- ---- altitude profile (ported near-verbatim) --------------------
 
 function TestSkynetIADSContact:test_updateSimpleAltitudeProfile_descend_then_climb()
-  local mock = {}
-  local y = 100
-  function mock:getPosition()
-    return { p = { y = y } }
-  end
-  function self.contact:getDCSRepresentation()
-    return mock
-  end
+	local mock = {}
+	local y = 100
+	function mock:getPosition()
+		return { p = { y = y } }
+	end
+	function self.contact:getDCSRepresentation()
+		return mock
+	end
 
-  self.contact.position.p.y = 200 -- was higher, now 100 => DESCEND
-  self.contact:updateSimpleAltitudeProfile()
-  local profile = self.contact:getSimpleAltitudeProfile()
-  luaunit.assertEquals(profile[1], SkynetIADSContact.DESCEND)
-  luaunit.assertEquals(#profile, 1)
+	self.contact.position.p.y = 200 -- was higher, now 100 => DESCEND
+	self.contact:updateSimpleAltitudeProfile()
+	local profile = self.contact:getSimpleAltitudeProfile()
+	luaunit.assertEquals(profile[1], SkynetIADSContact.DESCEND)
+	luaunit.assertEquals(#profile, 1)
 
-  self.contact.position.p.y = 200
-  y = 200 -- no change => no new entry
-  self.contact:updateSimpleAltitudeProfile()
-  luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 1)
+	self.contact.position.p.y = 200
+	y = 200 -- no change => no new entry
+	self.contact:updateSimpleAltitudeProfile()
+	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 1)
 
-  self.contact.position.p.y = 100
-  y = 200 -- was lower, now 200 => CLIMB
-  self.contact:updateSimpleAltitudeProfile()
-  profile = self.contact:getSimpleAltitudeProfile()
-  luaunit.assertEquals(profile[2], SkynetIADSContact.CLIMB)
-  luaunit.assertEquals(#profile, 2)
+	self.contact.position.p.y = 100
+	y = 200 -- was lower, now 200 => CLIMB
+	self.contact:updateSimpleAltitudeProfile()
+	profile = self.contact:getSimpleAltitudeProfile()
+	luaunit.assertEquals(profile[2], SkynetIADSContact.CLIMB)
+	luaunit.assertEquals(#profile, 2)
 
-  self.contact.position.p.y = 100
-  y = 200 -- still climbing (100 < 200), but previousPath == CLIMB => not appended
-  self.contact:updateSimpleAltitudeProfile()
-  luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 2)
+	self.contact.position.p.y = 100
+	y = 200 -- still climbing (100 < 200), but previousPath == CLIMB => not appended
+	self.contact:updateSimpleAltitudeProfile()
+	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 2)
 end
 
 -- ---- HARM state (ported verbatim) ------------------------------
 
 function TestSkynetIADSContact:test_setHARMState()
-  luaunit.assertEquals(self.contact.harmState, SkynetIADSContact.HARM_UNKNOWN)
-  self.contact:setHARMState(SkynetIADSContact.HARM)
-  luaunit.assertEquals(self.contact.harmState, SkynetIADSContact.HARM)
+	luaunit.assertEquals(self.contact.harmState, SkynetIADSContact.HARM_UNKNOWN)
+	self.contact:setHARMState(SkynetIADSContact.HARM)
+	luaunit.assertEquals(self.contact.harmState, SkynetIADSContact.HARM)
 end
 
 function TestSkynetIADSContact:test_isIdentifiedAsHARM()
-  luaunit.assertEquals(self.contact:isIdentifiedAsHARM(), false)
-  self.contact:setHARMState(SkynetIADSContact.HARM)
-  luaunit.assertEquals(self.contact:isIdentifiedAsHARM(), true)
+	luaunit.assertEquals(self.contact:isIdentifiedAsHARM(), false)
+	self.contact:setHARMState(SkynetIADSContact.HARM)
+	luaunit.assertEquals(self.contact:isIdentifiedAsHARM(), true)
 end
 
 function TestSkynetIADSContact:test_isHARMStateUnknown()
-  luaunit.assertEquals(self.contact:isHARMStateUnknown(), true)
-  self.contact:setHARMState(SkynetIADSContact.NOT_HARM)
-  luaunit.assertEquals(self.contact:isHARMStateUnknown(), false)
+	luaunit.assertEquals(self.contact:isHARMStateUnknown(), true)
+	self.contact:setHARMState(SkynetIADSContact.NOT_HARM)
+	luaunit.assertEquals(self.contact:isHARMStateUnknown(), false)
 end
 
 -- ---- radar element list (ported verbatim) ---------------------
 
 function TestSkynetIADSContact:test_addAbstractRadarElementDetected_dedupes()
-  local radar = {}
-  self.contact:addAbstractRadarElementDetected(radar)
-  luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 1)
-  self.contact:addAbstractRadarElementDetected(radar) -- same ref, no-op
-  luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 1)
-  self.contact:addAbstractRadarElementDetected({})
-  luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 2)
+	local radar = {}
+	self.contact:addAbstractRadarElementDetected(radar)
+	luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 1)
+	self.contact:addAbstractRadarElementDetected(radar) -- same ref, no-op
+	luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 1)
+	self.contact:addAbstractRadarElementDetected({})
+	luaunit.assertEquals(#self.contact:getAbstractRadarElementsDetected(), 2)
+end
+
+-- ---- CHORE-TEST-COVERAGE-FLOOR ticket 06 ---------------------------------------------------
+
+--- A DCS radar target reports how much it has worked out about what it is looking at. Skynet
+--- passes both flags through untouched; what matters is that they come from the radar target and
+--- are not invented.
+function TestSkynetIADSContact:testWhatTheRadarKnowsAboutAContactIsReportedAsIs()
+	local unit = dcsStub.makeUnit({ name = "bogey", type = "F-16C", pos = { x = 0, y = 3000, z = 0 } })
+	local identified = SkynetIADSContact:create({ object = unit, type = true, distance = true })
+	luaunit.assertEquals(identified:isTypeKnown(), true)
+	luaunit.assertEquals(identified:isDistanceKnown(), true)
+
+	local unknown = SkynetIADSContact:create({ object = unit, type = false, distance = false })
+	luaunit.assertEquals(unknown:isTypeKnown(), false)
+	luaunit.assertEquals(unknown:isDistanceKnown(), false)
+end
+
+--- A contact whose unit DCS no longer has answers a height of zero and an empty description
+--- instead of throwing. Half a destroyed network is exactly when the status page walks these.
+function TestSkynetIADSContact:testADeadContactAnswersNeutrallyInsteadOfThrowing()
+	local unit = dcsStub.makeUnit({ name = "shot-down", type = "F-16C", pos = { x = 0, y = 3000, z = 0 } })
+	local contact = SkynetIADSContact:create({ object = unit })
+	contact:refresh()
+	luaunit.assertTrue(contact:getHeightInFeetMSL() > 0)
+
+	unit:__destroy()
+	luaunit.assertEquals(contact:getHeightInFeetMSL(), 0)
+	luaunit.assertEquals(contact:getDesc(), {})
 end
 
 os.exit(luaunit.LuaUnit.run())

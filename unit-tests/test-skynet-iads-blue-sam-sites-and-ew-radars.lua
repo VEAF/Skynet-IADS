@@ -1,4 +1,22 @@
 do
+--Figures that belong to Eagle Dynamics are NOT asserted here any more.
+--
+--125 such assertions came out of the in-sim suites, 19 of them from this file. The one that
+--made the case was in test-skynet-iads-red-sam-sites-and-ew-radars.lua: `getRange() == 35000` for
+--the SA-11's missile. ED has since made it 46000, so a Buk battery wakes 11 km further out in
+--every mission that places one -- and the only way anyone found out was running that mission in
+--DCS after three years, where it read as a red test rather than as news.
+--
+--Those figures are recorded in test/lua/dcs-figures.lua, generated from a pinned commit of the
+--Quaggles/dcs-lua-datamine dump. CI checks the file against its pin, and a weekly workflow bumps
+--the pin and opens a pull request when a figure moves. That is where a changed range shows up now.
+--
+--What stays here is what a stub cannot answer: terrain elevation, real detection geometry, what
+--DCS reports about a group's composition, and Skynet's own decisions. Assertions on figures the
+--test itself fabricates through a mocked getDCSRepresentation() stay too -- those are not ED's.
+--
+--The `--[[ ... ]]` blocks below are captures of getSensors() and getAmmo() taken in 2023. They
+--are kept as documentation of the shape Skynet parses; do not read their numbers as current.
 TestSkynetIADSBLUESAMSitesAndEWRadars = {}
 
 function TestSkynetIADSBLUESAMSitesAndEWRadars:setUp()
@@ -123,9 +141,6 @@ Launcher:
 	lu.assertEquals(#self.samSite:getLaunchers(), 1)
 	lu.assertEquals(#self.samSite:getSearchRadars(), 1)	
 	
-	lu.assertEquals(self.samSite:getSearchRadars()[1]:getMaxRangeFindingTarget(), 23405.912109375)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getRange(), 8000)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getInitialNumberOfMissiles(), 10)
 end
 
 function TestSkynetIADSBLUESAMSitesAndEWRadars:testNASAMS()
@@ -135,12 +150,7 @@ function TestSkynetIADSBLUESAMSitesAndEWRadars:testNASAMS()
 	lu.assertEquals(self.samSite:getNatoName(), "NASAMS")
 	lu.assertEquals(self.samSite:getHARMDetectionChance(),90)
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
-	lu.assertEquals(self.samSite:getRadars()[1]:getMaxRangeFindingTarget(), 26749.61328125)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getRange(), 57000)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getInitialNumberOfMissiles(), 6)
 	
-	lu.assertEquals(self.samSite:getLaunchers()[2]:getRange(), 61000)
-	lu.assertEquals(self.samSite:getLaunchers()[2]:getInitialNumberOfMissiles(), 6)
 	
 end
 
@@ -195,9 +205,6 @@ Launcher:
 	self.samSiteName = "BLUE-SAM-RAPIER"
 	self:setUp()
 	lu.assertEquals(self.samSite:getNatoName(), "Rapier")
-	lu.assertEquals(self.samSite:getRadars()[1]:getMaxRangeFindingTarget(), 16718.5078125)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getRange(), 6800)
-	lu.assertEquals(self.samSite:getLaunchers()[1]:getInitialNumberOfMissiles(), 4)
 	
 	local units = Group.getByName(self.samSiteName):getUnits()
 	for i = 1, #units do
@@ -263,11 +270,8 @@ Search Radar:
 	lu.assertEquals(self.samSite:getCanEngageHARM(), true)
 	
 	local radar = self.samSite:getSearchRadars()[1]
-	lu.assertEquals(radar:getMaxRangeFindingTarget(), 173872.484375)
 	
 	local launcher = self.samSite:getLaunchers()[1]
-	lu.assertEquals(launcher:getInitialNumberOfMissiles(), 4)
-	lu.assertEquals(launcher:getRange(), 120000)
 end
 
 function TestSkynetIADSBLUESAMSitesAndEWRadars:testLPWSCRAM()
@@ -312,8 +316,6 @@ function TestSkynetIADSBLUESAMSitesAndEWRadars:testLPWSCRAM()
 	local searchRadar = self.samSite:getSearchRadars()[1]
 	local launcher = self.samSite:getLaunchers()[1]
 	
-	lu.assertEquals(searchRadar:getMaxRangeFindingTarget(), 13374.806640625)
-	lu.assertEquals(launcher:getRange(), 13374.806640625)
 end
 
 
@@ -337,7 +339,6 @@ function TestSkynetIADSBLUESAMSitesAndEWRadars:testEWRANFPS117Domed()
 	lu.assertEquals(self.ewRadar:getNatoName(), "FPS-117 Dome")
 	lu.assertEquals(self.ewRadar:getHARMDetectionChance(), 80)
 	local radar = self.ewRadar:getSearchRadars()[1]
-	lu.assertEquals(radar:getMaxRangeFindingTarget(), 309626.78125)
 end
 
 function TestSkynetIADSBLUESAMSitesAndEWRadars:testEWRANFPS117()
@@ -360,7 +361,6 @@ function TestSkynetIADSBLUESAMSitesAndEWRadars:testEWRANFPS117()
 	lu.assertEquals(self.ewRadar:getNatoName(), "FPS-117")
 	lu.assertEquals(self.ewRadar:getHARMDetectionChance(), 80)
 	local radar = self.ewRadar:getSearchRadars()[1]
-	lu.assertEquals(radar:getMaxRangeFindingTarget(), 309626.78125)
 end
 
 --TODO: this test can only be finished once the perry class has radar data:
@@ -523,7 +523,6 @@ Launchers:
 	self:setUp()
 	lu.assertEquals(self.ewRadar:getNatoName(), "PERRY")
 	--as long as we don't use the PERRY as a SAM site the distance returned is irrelevant, because it's radar wil be on all the time
-	lu.assertEquals(self.ewRadar:getRadars()[1]:getMaxRangeFindingTarget(), 173872.484375)
 end
 
 end

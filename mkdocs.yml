@@ -1,0 +1,38 @@
+site_name: Skynet-IADS
+site_description: An IADS (Integrated Air Defence System) script for DCS World.
+site_url: https://veaf.github.io/Skynet-IADS/
+repo_url: https://github.com/VEAF/Skynet-IADS
+repo_name: VEAF/Skynet-IADS
+docs_dir: documentation
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.top
+    - content.code.copy
+
+extra:
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Setting up an IADS: setting-up.md
+  - Tactics: tactics.md
+  - API reference: api.md
+  - FAQ: faq.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
