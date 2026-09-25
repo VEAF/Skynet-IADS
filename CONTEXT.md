@@ -1,66 +1,51 @@
-# Skynet — domain vocabulary
+# SkynetIADS — context
 
-The words this codebase uses, and what they actually mean. Several of them are narrower than they
-sound, and confusing them produces bugs that raise no error — only a battery that does not fire.
+## Premise
 
-## The idea
+Air defences in DCS are always live, radars permanently emitting. That is neither realistic nor good
+gameplay:
 
-A real integrated air defence system does not leave every radar emitting. Search radars watch, they
-pass tracks down a chain of command, and a firing battery only lights up when it is about to shoot.
-That is what makes it survivable against anti-radiation missiles.
+- they are always visible on passive enemy sensors;
+- they are easily attacked with HARMs.
 
-Skynet models that: **a site under network control has its emission switched off**, and is turned
-back on only when the network hands it something to engage. Everything below serves that sentence.
+## What is SkynetIADS
 
-## The elements
+Skynet is a script that makes DCS air defences behave like a real integrated air defence network.
+It governs how the air defence groups a mission already contains behave. Everything upstream of
+that — creating those groups, enrolling them, the mission's own logic — belongs to the script that
+calls Skynet.
+
+### Minimum emissions
+
+EWRs stay on and watch the airspace from afar; SAM sites keep their radars off. Each cycle the
+network collects what the EWRs have detected and offers those contacts to the sites they cover. A
+site that finds one inside its own firing envelope goes live and engages it. Until that moment it is
+hidden, which makes it both more survivable and more effective.
+
+### HARM defence
+
+Skynet takes a SAM site or an EWR dark when it believes a HARM is homing on it, to break the
+missile's guidance.
+
+## Vocabulary
 
 | Term | Meaning |
 |---|---|
-| **IADS** | One network, one coalition. `SkynetIADS`. A mission usually runs two, one per side. |
-| **SAM site** | A DCS group holding launchers and radars. `SkynetIADSSamSite`. Dark by default under network control. |
-| **EWR** | An early-warning radar. `SkynetIADSEWRadar`. Permanently lit, feeds contacts to the network. |
-| **AWACS** | An airborne or shipborne radar. `SkynetIADSAWACSRadar`, chosen by DCS category rather than by type. It is an EWR that moves, which is the source of most of its special cases. |
-| **Command centre** | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. |
-| **Point defence** | A short-range site attached to another, to cover it while it hides from an anti-radiation missile. |
-| **Contact** | A detected target, wrapped in `SkynetIADSContact`, with an age and a HARM state. |
+| DCS | Digital Combat Simulator, the military flight simulator SkynetIADS is designed for. |
+| IADS | Integrated Air Defence System. SkynetIADS builds IADS networks in DCS missions, usually one per coalition. |
+| SAM site | A DCS group holding launchers and radars. Dark by default under SkynetIADS control. |
+| EWR | An early-warning radar. Permanently lit, feeds contacts to the network. |
+| AWACS | An airborne or shipborne radar. An EWR that moves. |
+| HARM | High speed anti radiation missile — a missile that homes on a radar's emissions. |
+| Command centre | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. |
+| Point defence | A short-range SAM site attached to another, to cover it while it hides from a HARM. |
+| Contact | A target detected by the network, with an age and a HARM state. |
+| Acting as EW | A SAM site set to feed the network as an EWR does. It then stays live permanently, and is visible and targetable in exchange. |
+| Live / Dark | Emission state of an air defence radar. This is the lever SkynetIADS uses to simulate IADS network behaviour. |
 
-## The words that mislead
+## Notable concepts
 
-### "Covered" does not mean "informed"
-
-An EWR **covers** a SAM site when the flat 2D distance between their radars is smaller than the
-EWR's detection range. No horizon, no terrain, no altitude. It says the EWR is **near** the battery
-— never that it is feeding it anything. A single long-range radar can "cover" eighteen batteries it
-will never usefully serve, and a blind AWACS covers everything within its nominal range while
-detecting nothing at all.
-
-Coverage decides **autonomy**, not designation. They are separate questions and the code treats
-them separately.
-
-### "Autonomous" means abandoned, not independent
-
-A site is **autonomous** when no valid parent radar covers it. It is then handed back to the DCS AI,
-which lights it up and engages on its own. So autonomy makes a battery *more* dangerous, not less —
-destroying every EWR in a sector wakes up everything that was hiding behind them. This surprises
-players, and it is the intended behaviour.
-
-A parent is valid when it exists, has power, has a connection node, is not destroyed, and **acts as
-EW**.
-
-### "Acting as EW" is a role, not a type
-
-`actAsEW` is a flag on any radar element. An EWR is given it when it joins. A **SAM site** can be
-given it too, and then it stays lit permanently and feeds the network like a radar would — it is the
-lever for a site that must watch its own sector. The cost is that it is visible and targetable.
-
-### "Go live" and "go dark" are about emission
-
-`goLive()` turns the emitter on, sets alarm state red and weapons free. `goDark()` turns the emitter
-off — but refuses while the site is tracking, has missiles in flight, or is hiding from an
-anti-radiation missile. Neither is a simple setter; both carry conditions worth reading before
-calling.
-
-## The cycle
+### The cycle
 
 Every `contactUpdateInterval` seconds (5 by default), `SkynetIADS.evaluateContacts` runs:
 
@@ -73,18 +58,29 @@ Every `contactUpdateInterval` seconds (5 by default), `SkynetIADS.evaluateContac
 
 Step 4 is where the design shows: a battery cannot notice anything itself, because step 2 never asks
 a dark site what it sees. It is blind by construction, and that is the point — until it is not, which
-is what the last line of defense addresses.
+is what the last line of defence feature addresses.
 
-## Radar ranges are read once
+### Covered SAM sites
 
-`setupRangeData` reads a radar's detection range from `getSensors()` at the moment the element is
-built, and nothing reads it again. A bad answer at that instant fixes the range for the whole
-mission: the site detects nothing and never lights up. VEAF's helper carries a re-read for exactly
-this reason.
+An EWR feeds the SAM sites it **covers**. An EWR covers a SAM site when the flat 2D distance between
+their radars is smaller than the EWR's detection range: no horizon, no terrain, no altitude, only
+whether the EWR is near the battery. So a mission can be built in which a site is covered by an EWR
+that cannot see anything in that site's engagement range.
 
-## What the project is not
+### Autonomous SAM sites
 
-Skynet does not spawn anything, does not manage missions, and does not know about VEAF. Group
-enrolment, mission configuration and radio menus belong to the consumer — in VEAF's case,
-`veafSkynetIadsHelper.lua`. When a behaviour looks like it should be here, check whether it is
-actually theirs: automatic AWACS enrolment, for instance, is VEAF's, not this project's.
+An autonomous SAM site is still part of the IADS but has been handed back to the DCS AI, which runs
+it on its own radar. This happens when no EWR covers it any more — an isolated site, or one whose
+covering EWRs have been destroyed.
+
+What it does then is a per-element setting: by default it goes live and fights on its own, but it can
+be configured to stay dark instead.
+
+### "Go live" and "go dark"
+
+`goLive()` and `goDark()` are not simple setters. Both refuse in circumstances that protect the site
+or the network, so calling one is a request, never a guarantee — read the conditions before relying
+on either.
+
+Going dark under HARM defence is also not the same state as going dark on standby: the DCS AI is
+switched off entirely, not merely the radars.

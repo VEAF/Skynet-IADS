@@ -91,6 +91,13 @@ Until that release is cut, the build date in the artifact's first line remains t
   noticed but not yet committed to, which is the same subject as the rest of `.backlog/` and the
   step before a lot — keeping it one directory away made it the one tracker nobody opened while
   looking at the others.
+- `CONTEXT.md` now carries the domain and stops cataloguing the code. Much of it came from an agent
+  reading the *compiled* artifact vendored in another repository rather than these sources, and it
+  showed: `goDark()` under HARM defence was described as refusing when the code makes it go dark
+  unconditionally, autonomy was called the opposite of what the word means and its second behaviour
+  mode went unmentioned, and the EWR was credited with an engagement decision the network and the
+  site make between them. A technical peculiarity with a home in the code is now recorded as owed to
+  the code, so the file shrinks as the code improves instead of growing with every incident.
 
 ## [3.5.0] — 2026-09-21
 
