@@ -64,11 +64,10 @@ function TestSkynetIADSContact:test_getTypeName_is_harm_when_identified()
 end
 
 -- ---- getCategory -----------------------------------------------------
--- docs/evolutions.md "No isExist() / nil guard before Object.getCategory in the
--- contact loop": skynet-iads.lua called Object.getCategory(contact:getDCSRepresentation())
--- bare at the evaluateContacts() call site, unlike this same lookup done for
--- getTypeName() above, which guards it. getCategory() gives contacts the same
--- guarded lookup so callers stop duplicating it unguarded.
+-- skynet-iads.lua called Object.getCategory(contact:getDCSRepresentation()) bare at
+-- the evaluateContacts() call site, unlike this same lookup done for getTypeName()
+-- above, which guards it. getCategory() gives contacts the same guarded lookup so
+-- callers stop duplicating it unguarded.
 
 function TestSkynetIADSContact:test_getCategory_is_unit()
 	luaunit.assertEquals(self.contact:getCategory(), Object.Category.UNIT)

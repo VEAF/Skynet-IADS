@@ -30,7 +30,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `unit-tests/*.miz` | the legacy in-sim suites, being migrated to `test/lua/` |
 | `build-tools/` | the build script and its helpers |
 | `.backlog/` | what is planned, in progress and done |
-| `docs/evolutions.md` | ideas and things noticed in passing, not yet committed work |
+| `.backlog/IDEAS.md` | ideas and things noticed in passing, not yet committed work |
 
 ## Git flow
 

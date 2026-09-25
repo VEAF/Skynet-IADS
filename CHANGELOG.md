@@ -87,6 +87,10 @@ Until that release is cut, the build date in the artifact's first line remains t
   page now says who created Skynet, who maintains it today, and thanks him — keeping his own
   acknowledgements to Spearzone, Coranthia and Grimes, which are other people's credit and not
   ours to drop.
+- The idea tracker moved from `docs/evolutions.md` to `.backlog/IDEAS.md`. It records what is
+  noticed but not yet committed to, which is the same subject as the rest of `.backlog/` and the
+  step before a lot — keeping it one directory away made it the one tracker nobody opened while
+  looking at the others.
 
 ## [3.5.0] — 2026-09-21
 

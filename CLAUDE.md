@@ -196,7 +196,7 @@ instead of extending it — it exists to erode, never to grow.
 days are compacted into `.backlog/archive/<LOT-ID>.md`.
 
 GitHub issues are for reports arriving from outside. A report that turns into work becomes a lot.
-`docs/evolutions.md` is the idea tracker: an evolution is a thought, a lot is committed work.
+`.backlog/IDEAS.md` is the idea tracker: an evolution is a thought, a lot is committed work.
 
 ## Default workflow
 

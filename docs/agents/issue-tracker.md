@@ -7,6 +7,7 @@ Lots, PRDs and tickets are markdown files in the repository, not GitHub issues.
 ```
 .backlog/
   README.md                  index of active lots, maintained by hand
+  IDEAS.md                   ideas not yet committed to work
   <LOT-ID>/
     PRD.md                   why, what was decided, and why it was decided that way
     tickets/
@@ -41,7 +42,7 @@ to know whether it is theirs.
 | | |
 |---|---|
 | **GitHub issues** | Reports arriving from outside. A report that becomes work becomes a lot; the issue is then closed referencing it. |
-| **`docs/evolutions.md`** | Ideas and things noticed in passing. An evolution is a thought; a lot is committed work. Promoting one to the other is the normal path. |
+| **`.backlog/IDEAS.md`** | Ideas and things noticed in passing. An evolution is a thought; a lot is committed work. Promoting one to the other is the normal path. |
 | **`.backlog/`** | What is planned, in progress or done. |
 
 Never create a separate todo file. In-session task lists stay in the session.

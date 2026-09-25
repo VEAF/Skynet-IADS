@@ -5,6 +5,9 @@ one file per ticket under `tickets/`. Completed lots are compacted into
 `.backlog/archive/<LOT-ID>.md`. This index is the source of truth for **scope and status**, and it
 is maintained by hand.
 
+[IDEAS.md](IDEAS.md) sits beside it and is not a lot: ideas and things noticed in passing. Promoting
+one to a lot is the normal path.
+
 The convention is the one used by [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools)
 and [CTLD](https://github.com/VEAF/CTLD), so that anyone moving between the three repositories finds
 the same shape.
