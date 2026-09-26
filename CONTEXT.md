@@ -34,13 +34,13 @@ missile's guidance.
 | DCS | Digital Combat Simulator, the military flight simulator SkynetIADS is designed for. |
 | IADS | Integrated Air Defence System. SkynetIADS builds IADS networks in DCS missions, usually one per coalition. |
 | SAM site | A DCS group holding launchers and radars. Dark by default under SkynetIADS control. |
-| EWR | An early-warning radar. Permanently lit, feeds contacts to the network. |
+| EWR | An early-warning radar. Lit by default — it goes dark only to evade a HARM — and feeds contacts to the network. |
 | AWACS | An airborne or shipborne radar. An EWR that moves. |
 | HARM | High speed anti radiation missile — a missile that homes on a radar's emissions. |
 | Command centre | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. |
 | Connection node | An optional structure an element depends on to stay part of the network. Lose it and that element goes autonomous, whatever the radars around it are doing. |
 | Point defence | A short-range SAM site attached to another, to cover it while it hides from a HARM. |
-| Contact | A target detected by the network, with an age and a HARM state. |
+| Contact | Something the network has detected and is tracking: one target, as the network knows it, merged from whatever saw it. |
 | Acting as EW | A SAM site set to feed the network as an EWR does. It then stays live permanently, and is visible and targetable in exchange. |
 | Live / Dark | Emission state of an air defence radar. This is the lever SkynetIADS uses to simulate IADS network behaviour. |
 
@@ -75,13 +75,15 @@ on its own radar. What it does then is a per-element setting: by default it goes
 its own, but it can be configured to stay dark instead.
 
 A **SAM site** goes autonomous when nothing connects it to the network any more. Any one of these is
-enough, and the last is the one people expect:
+enough, and the third is the one people expect:
 
 - its own connection node is gone;
 - no command centre is usable;
-- every EWR covering it has been destroyed, has lost power or its connection node, or has stopped
-  acting as EW;
-- nothing covered it in the first place — an isolated site.
+- every parent covering it has been destroyed, or has lost power or its connection node;
+- no parent covered it in the first place — an isolated site.
+
+A parent is an EWR, or a SAM site acting as EW. A parent that stops acting as EW stops counting as
+one, which is a way a site can be cut off with every radar around it intact.
 
 An **EWR** goes autonomous on a shorter rule: its connection node is gone, or no command centre is
 usable. It has no parent to lose.
