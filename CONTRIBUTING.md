@@ -14,7 +14,15 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 ## What you need
 
 - **Lua 5.1.** The deliverable runs inside DCS, which is Lua 5.1 — no `goto`, no `<const>`, no
-  `table.move`, no `utf8.*`. The standalone test suite refuses to run on anything else.
+  `table.move`, no `utf8.*`. The standalone test suite refuses to run on anything else. Where
+  `lua5.1` is on `PATH` the suite is `lua5.1 test/lua/run.lua`; on Windows, install *Lua for
+  Windows* and call it by its path, which PowerShell needs the call operator for:
+
+  ```powershell
+  & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+  ```
+
+  `test/lua/README.md` has the `cmd.exe` form and the per-suite variants.
 - **PowerShell**, for the build. `pwsh` (PowerShell 7) works on every platform.
 - **DCS** is *not* required for most contributions. It used to be: the whole test suite lived
   inside a mission. Logic is now testable on a plain Lua interpreter, and DCS is only needed for the
@@ -31,12 +39,44 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `build-tools/` | the build script and its helpers |
 | `.backlog/` | what is planned, in progress and done |
 | `.backlog/IDEAS.md` | ideas and things noticed in passing, not yet committed work |
+| `BACKLOG-CONVENTIONS.md` | how the tracker works: lot shape, PRD as against ticket, the status vocabulary |
+
+## File naming
+
+Every directory already follows a convention; this is it written down, because until it was, an
+outlier could not be told apart from a deliberate exception.
+
+| Where | Pattern |
+|---|---|
+| root markdown | `UPPERCASE.md` |
+| `skynet-iads-source/` | kebab-case, `skynet-iads-*.lua` |
+| `build-tools/` | kebab-case |
+| `documentation/` | kebab-case, with an `.en.md` twin |
+| `test/lua/`, `test/python/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
+| `.backlog/` | `UPPERCASE.md` for files, `<LOT-ID>/` for a lot, `NN-slug.md` for a ticket |
+
+The snake_case in the test directories is not an inconsistency: Python cannot import a module whose
+name contains a hyphen, so `test/python/` has no choice, and `test/lua/` mirrors it so that a test
+file looks the same in both.
+
+Two exceptions, named so that they read as decisions rather than oversights:
+
+- `build-tools/listToMerge.txt` is inherited camelCase. It is referenced by the build script,
+  `.luacheckrc`, `.luacov` and two test files, so renaming it is a change to the build and the test
+  harness in exchange for nothing but consistency.
+- `.claude/skills/<kebab-name>/SKILL.md` has an uppercase filename inside a kebab-cased directory
+  because Claude Code requires that name. It is not ours to choose.
 
 ## Git flow
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - Branch from `develop`: `feature/<something>` or `fix/<something>`. Never commit directly to
   `develop` or `master`.
+- **One exception**: a change confined to `.backlog/` — a new lot, a status change, an index line —
+  goes straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle
+  and protects nothing CI can check. The moment a change touches `skynet-iads-source/`, `test/`,
+  `documentation/`, `CHANGELOG.md` or the build, it goes through a branch and a pull request,
+  including a one-line change.
 - One branch and one pull request per lot, not per ticket. A lot can be split across several pull
   requests when its tickets are genuinely independent — agree the split before starting, rather
   than discovering it halfway through.
@@ -79,7 +119,58 @@ and `test/lua/README.md` explains how to run it.
 convenient proves nothing. When your test needs the stub extended, extend it deliberately, and write
 down which real DCS behaviour it stands in for.
 
+**What stays in the simulator, and what does not.** Only behaviour that genuinely needs DCS —
+terrain elevation, real detection geometry, in-game events, how a DCS group is composed. The numeric
+figures ED states about a unit do not: a missile's reach, its firing ceiling, a radar's detection
+distance live in `test/lua/dcs-figures.lua`, generated from a pinned commit of the DCS database dump,
+with a weekly workflow opening a pull request when one moves. A suite whose every assertion runs
+standalone leaves the in-sim missions altogether.
+
+**No archive in git contains the scripts it runs.** Every `.miz` — the two in-sim suites and the four
+demos — holds a placeholder, and `python build-tools/miz-suite.py build` assembles the playable
+missions into `build/missions/`, which is git-ignored. Build the deliverable first; it is generated
+too. Run that **before testing in DCS**, not before committing: there is nothing to commit, which is
+the point. A committed copy of the code goes stale in silence, and did — the in-sim archives ran a
+build from December 2023 for three years, so both what we measured and what newcomers downloaded were
+code this project had stopped shipping. Never edit a `.miz` by hand: a script is wired into it in
+four places, and `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`, `remove`) is what
+keeps them consistent.
+
+**Coverage is measured and gated** (`.github/workflows/lua-tests.yml`):
+
+```
+SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+lua5.1 build-tools/report-test-coverage.lua
+```
+
+It fails below the floor in `build-tools/test-coverage-floor.txt`, and that figure **only goes up** —
+when your tests carry it past the floor, raise the floor in the same pull request; the report says
+when and to what. What counts is set in `.luacov`: the pure data tables are out of the denominator,
+because loading one is not testing it.
+
 Do not open a pull request with tests failing.
+
+## Static analysis and formatting
+
+`skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
+(`.github/workflows/lint.yml`). Run both the way CI does:
+
+```
+build-tools/lint.sh            # or: build-tools/lint.sh luacheck
+```
+
+On a Windows checkout that script is the only thing that works without fiddling. A luarocks
+`luacheck` often sits in a tree built for a newer Lua than the interpreter that has to run it and
+dies before checking anything, and `core.autocrlf=true` makes `stylua --check` flag every file for
+its line endings alone. The script works around both and exits non-zero only on a real finding.
+
+`.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
+global, because DCS has no module system and the sources are concatenated rather than required.
+`stylua.toml` excludes the vendored `test/lua/luaunit.lua` through `.styluaignore`.
+
+`.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
+file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
+of extending the list — it exists to erode, never to grow.
 
 ## Building
 
@@ -123,6 +214,21 @@ with that, all three checked by `python build-tools/docs-check.py`:
 
 Run the gate and `mkdocs build --strict` before pushing; both also run on the pull request
 (`.github/workflows/docs-check.yml`).
+
+**Which version the site shows.** `develop` publishes as `dev`, the site default while no stable
+release exists. A tag publishes its own version, plus the `latest` alias if it is a plain `vX.Y.Z` —
+a pre-release tag publishes its own version only, so a release candidate never becomes what a
+newcomer reads by default. `master` publishes nothing of its own: a tag is always on `master`, so
+between two releases `master` is not on the site.
+
+A documentation fix landing between two releases therefore reaches nobody until the next tag.
+`gh workflow run docs.yml -f version=3.5.0` republishes that version's **pages** from the current
+branch and leaves the tag, the artifact and the version number alone. Run it from `develop`, and only
+when the pages genuinely describe the released code; omit `version` to redeploy `dev`. It does not
+move `latest` and does not need to — mike rebuilds every alias directory a version already owns, so
+republishing the newest release refreshes `/latest/` on its own. `-f set_latest=true` makes a version
+*become* `latest`, which on an older one drags the site default back to old documentation while the
+run stays green.
 
 ## Versioning
 

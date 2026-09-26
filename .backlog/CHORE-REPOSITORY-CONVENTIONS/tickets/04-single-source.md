@@ -1,6 +1,6 @@
 # 04 — CONTRIBUTING.md becomes the single source
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 
