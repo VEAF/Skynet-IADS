@@ -1,6 +1,6 @@
 # CHORE-REPOSITORY-CONVENTIONS
 
-**Status**: 🔄 in-progress — `feature/repository-conventions`, ticket 13
+**Status**: ✅ done — `feature/repository-conventions`, pull request not yet opened
 
 Put every rule a contributor or an agent follows in exactly one place, and give the files names the
 repository's own conventions predict.
@@ -61,8 +61,7 @@ The same guidance adds a second requirement the earlier draft of this PRD missed
 who is not a person.
 
 The delegation is made verifiable rather than hoped for: for every section removed from `CLAUDE.md`,
-a task-indexed row says where it went — *about to change a source file → CONTRIBUTING.md § Building,
-§ Test first*. A single "read CONTRIBUTING.md first" at the top is the version that fails; it is easy
+a task-indexed row says where it went — *about to change a source file → CONTRIBUTING.md*. A single "read CONTRIBUTING.md first" at the top is the version that fails; it is easy
 to skim and gives no reason to comply.
 
 ## Duplicate identifiers if you must; never duplicate judgement
@@ -169,7 +168,7 @@ reference file this lot is deleting, one reasonable-looking row at a time.
 
 ## Decisions taken during review
 
-Four, all Florent's, all made after the tickets were written. They are here because the archive
+Six, all Florent's, all made after the tickets were written. They are here because the archive
 record is compacted from this file.
 
 **The changelog is scoped to source changes only.** `CLAUDE.md`'s workflow had said to update it on
@@ -194,6 +193,18 @@ unconditionally, which read literally means a PRD for a one-line fix. A lot hold
 required when the work has more than one deliverable, or when it makes a decision worth recording;
 otherwise a branch, a commit and a pull request are enough. The rule is in `BACKLOG-CONVENTIONS.md`
 and the workflow points at it.
+
+**Pointers name files, never headings, and never anchors.** Every rule stated once means every other
+file points at it, and each kind of pointer this lot tried needed a correction: a `§` name dead a day
+after it was written, a generated anchor, then an explicit `<a id>` added to keep a link alive. The
+heading bought almost nothing — an agent following a pointer reads the whole file, a person has
+GitHub's outline — and what makes the table work is the task on its left. A file is rarely renamed,
+and never quietly. The rule is stated under `CLAUDE.md`'s table, where the next row gets written.
+
+**`CONTEXT.md` carries no code names.** This reverses the second review, which had added an *In code*
+column on the grounds that a stale identifier fails on the first search. It fails only when someone
+searches; until then it is read as true, and it is one more reference to keep in step with the code
+by hand, for a class anyone about to change the code finds in seconds.
 
 ## What was refused, and why
 
@@ -289,7 +300,7 @@ they describe what was true when written and are not rewritten.
 | 10 | [*done* means committed, and *merged* becomes a status](tickets/10-done-means-committed.md) | ✅ |
 | 11 | [Review response](tickets/11-review-response.md) | ✅ |
 | 12 | [Second review response](tickets/12-second-review-response.md) | ✅ |
-| 13 | [Pointers name files, not headings](tickets/13-pointers-name-files.md) | 🔄 |
+| 13 | [Pointers name files, not headings](tickets/13-pointers-name-files.md) | ✅ |
 
 One branch, one pull request, and no commit touching more than one ticket.
 

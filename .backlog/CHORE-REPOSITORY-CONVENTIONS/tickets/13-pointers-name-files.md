@@ -1,6 +1,6 @@
 # 13 — Pointers name files, not headings
 
-**Status**: 🔄 in-progress — `feature/repository-conventions`
+**Status**: ✅ done
 
 ## Problem
 
