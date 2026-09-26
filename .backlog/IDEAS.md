@@ -139,6 +139,12 @@ documented it. It is a local, consultative step before a release.
 
 ## "One commit per ticket" states a prohibition and none of its exceptions
 
+**Settled 2026-09-26 and closed.** Florent's call: the rule is against *mixing*, not about counting —
+*a commit must not touch more than one ticket*. `CLAUDE.md` and `CONTRIBUTING.md` now say that, and
+both add the merge method it depends on: a pull request is merged with a merge commit, never
+squashed, because a squash collapses the branch into one commit and destroys the per-ticket history
+the rule exists to keep. The analysis below is what the decision was made on.
+
 Noticed 2026-09-22 while opening `CHORE-REPOSITORY-CONVENTIONS`. The rule reads as a hard limit —
 `CLAUDE.md` "One commit per ticket inside a pull request", `contributing.md` "One commit per ticket.
 Two subjects in one commit cannot be read, reverted or bisected apart." Read cold it forbids

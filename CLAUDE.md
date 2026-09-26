@@ -23,10 +23,10 @@ reason to open it. Everything else is there.
   `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
 - **Edit a `.miz` by hand.** A script is wired into it in four places, and
   `build-tools/miz-suite.py` is what keeps them consistent.
-- **Open a pull request against an upstream repository.** VEAF and the Regroupement de Patrouilles
-  (BFR, NAWACS) maintain this project jointly, here. `regroupement-patrouille/Skynet-IADS` is
-  read-only and walder's has been inactive for years; both are historical archives and neither is a
-  source of truth.
+- **Open a pull request against an upstream repository.** This repository is a GitHub *fork* of
+  `regroupement-patrouille/Skynet-IADS`, so `gh pr create` without `--repo` targets the parent, and
+  so does the web UI's "Compare & pull request" banner. Both that repository and walder's are
+  read-only archives. Always `gh pr create --repo VEAF/Skynet-IADS --base develop`.
 - **Commit directly to `develop` or `master`.** Work on `feature/*` or `fix/*` cut from `develop`.
   The one exception: a change confined to `.backlog/` goes straight to `develop`.
 - **Add a source file to the build script.** The order lives in `build-tools/listToMerge.txt`.
@@ -40,7 +40,9 @@ build-tools/lint.sh                                  # luacheck + stylua, as CI 
 python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 ```
 
-On a Windows checkout `lua5.1` is not on `PATH`, and PowerShell needs the call operator:
+If `lua5.1` is not on `PATH` — common on Windows — call the interpreter by its path. *Lua for
+Windows* installs to the location below by default, and PowerShell needs the call operator because
+the command line starts with a quoted path:
 
 ```powershell
 & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
@@ -56,8 +58,12 @@ flag every file for its line endings alone. The script works around both.
 - One branch and one pull request **per lot**, not per ticket. A lot may be split across several pull
   requests when its tickets are genuinely independent, but the split is announced in the plan and
   approved before the first branch is cut — never decided ticket by ticket as the work goes.
-- **One commit per ticket** inside a pull request. Two subjects in one commit read fine at the time
-  and cannot be read, reverted or bisected apart six months later.
+- **A commit must not touch more than one ticket.** Two subjects in one commit read fine at the time
+  and cannot be read, reverted or bisected apart six months later. The rule is against mixing, not
+  about counting: opening the lot is its own commit, and a review response is appended rather than
+  squashed back into the ticket it amends.
+- **Pull requests are merged with a merge commit**, never squashed or rebased. A squash collapses the
+  branch into a single commit and destroys the per-ticket history the rule above exists to keep.
 - Conventional Commits, in English. Branches are deleted on merge.
 - English for everything inside the repository: code, comments, commits, pull requests, the backlog,
   `CONTRIBUTING.md`. What a *user* reads is the exception — the documentation site is bilingual, and
@@ -90,7 +96,3 @@ If the change can only be judged inside DCS, stop and wait for explicit approval
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 
 A row here means a new *kind* of task, never a new subsection of one already listed.
-
-## Bash
-
-All Bash commands are authorized. Never block work waiting for approval on one.

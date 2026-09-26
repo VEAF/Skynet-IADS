@@ -6,7 +6,9 @@ Thanks for your interest in Skynet.
 [Regroupement's repository](https://github.com/regroupement-patrouille/Skynet-IADS) is read-only and
 [walder's](https://github.com/walder/Skynet-IADS) has been inactive for years; both are historical
 archives, and the two communities agreed to carry the project on together here. So this is where
-issues, discussions and pull requests belong — not upstream.
+issues, discussions and pull requests belong — not upstream. One practical consequence: this
+repository is a GitHub *fork* of the Regroupement's, so `gh pr create` and the web UI's
+"Compare & pull request" banner both default to the parent. Check the base before opening one.
 
 Before spending time on a feature, propose it: open an issue, or bring it to the
 [VEAF Discord](https://discord.gg/veaf). Feedback before code saves more time than it costs.
@@ -80,7 +82,12 @@ Two exceptions, named so that they read as decisions rather than oversights:
 - One branch and one pull request per lot, not per ticket. A lot can be split across several pull
   requests when its tickets are genuinely independent — agree the split before starting, rather
   than discovering it halfway through.
-- One commit per ticket. Two subjects in one commit cannot be read, reverted or bisected apart.
+- A commit must not touch more than one ticket. Two subjects in one commit cannot be read, reverted
+  or bisected apart. The rule is against mixing, not about counting: opening the lot is its own
+  commit, a ticket may need more than one, and a review response is appended rather than squashed
+  back into the ticket it amends.
+- Pull requests are merged with a **merge commit**, never squashed or rebased. A squash collapses the
+  branch into one commit and destroys the per-ticket history the rule above exists to keep.
 - [Conventional Commits](https://www.conventionalcommits.org/), in English.
 - Branches are deleted on merge — this is automatic.
 
