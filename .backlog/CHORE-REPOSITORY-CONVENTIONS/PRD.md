@@ -92,6 +92,26 @@ The zero-duplication version exists: commands defined once in a task runner, wit
 `make test`. It is recorded in `.backlog/IDEAS.md` rather than built here — it changes the build,
 which this lot's scope excludes, and it needs `make` or `just` on a Windows-first project.
 
+### A second allowed duplication: rules without their reasons
+
+Review found the one place the policy above had not been applied, and the copies had already drifted
+inside this lot. Git flow was written out in full in both files: on splitting a lot one said the
+split is *announced in the plan and approved before the first branch is cut*, the other *agree the
+split before starting*, and where the `.backlog/` exception stops was in one only.
+
+`CLAUDE.md` now carries the git rules **bare** — no reasons, no edge cases — and says outright that
+`CONTRIBUTING.md` is where they are stated and the only place they may be changed. That is a second
+kind of duplication this lot allows, and it needs naming rather than leaving as an exception nobody
+wrote down.
+
+**Why it is allowed**: what prevents the mistake is the prohibition, and a prohibition is close to an
+identifier — short, and wrong loudly rather than quietly. What was drifting was the *reasoning*
+around it, which is judgement and now exists once.
+
+**The drift it accepts**: a rule could still be changed in `CONTRIBUTING.md` and not in `CLAUDE.md`.
+The mitigation is the sentence naming one file as the only place a rule may change; there is no gate.
+If a third copy of anything appears, this exception is the first thing to re-examine.
+
 ## A guidance file never argues from the backlog
 
 **A rule states itself.** No guidance file explains or justifies a convention by pointing at a PRD, a
@@ -146,6 +166,34 @@ courtesy to be dropped later when the file feels long.
 For the same reason the table indexes **tasks, not sections**. A new row means a genuinely new kind
 of work, never a new subsection of an existing one — otherwise `CLAUDE.md` grows back into the
 reference file this lot is deleting, one reasonable-looking row at a time.
+
+## Decisions taken during review
+
+Four, all Florent's, all made after the tickets were written. They are here because the archive
+record is compacted from this file.
+
+**The changelog is scoped to source changes only.** `CLAUDE.md`'s workflow had said to update it on
+every change while `CONTRIBUTING.md` required an entry only for `skynet-iads-source/` — the same
+shape as defect 1 above. The changelog's reader is the repository that vendors the artifact, deciding
+whether a build is worth taking, and repository conventions are noise between the entries that reader
+needs. The rule is stated in `CONTRIBUTING.md` alone; the workflow says to add an entry if the
+sources changed and no longer restates where it goes. This lot's own four entries went with the
+decision.
+
+**`CLAUDE.md` states the git rules bare, `CONTRIBUTING.md` explains them.** See *A second allowed
+duplication* above.
+
+**`README.md` is authoritative for joint maintenance.** It is user-facing, bilingual, and where a
+newcomer lands. `CONTRIBUTING.md` links to it and keeps only what a contributor needs and a user does
+not: that the work happens here, and the fork trap — `gh pr create` and the compare banner default to
+the parent, so a pull request opened without checking the base lands on a read-only archive and looks
+like it worked.
+
+**A lot is not required for every change.** The workflow had said to create or pick one
+unconditionally, which read literally means a PRD for a one-line fix. A lot holds reasoning, so it is
+required when the work has more than one deliverable, or when it makes a decision worth recording;
+otherwise a branch, a commit and a pull request are enough. The rule is in `BACKLOG-CONVENTIONS.md`
+and the workflow points at it.
 
 ## What was refused, and why
 
