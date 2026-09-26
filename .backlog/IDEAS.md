@@ -269,3 +269,20 @@ required, and the Shilka case that explains it — and stays as it is.
 
 Minor, and a source change, so it rides along with the next lot that touches `skynet-iads.lua`
 rather than earning one of its own.
+
+## Nothing checks that CLAUDE.md's pointers still resolve
+
+`CLAUDE.md`'s *Before you do these, read* table is load-bearing: it survives compaction, and it is
+the only route back to everything delegated out of that file. Each row names a section, `§ X`, in
+another file.
+
+Nothing verifies those names. One was already dead within a day of being written —
+`§ The README is hand-written, the documentation is published` outlived the heading it named by a
+single commit, because the section was renamed to `## Documentation` in the same lot. A row that
+points nowhere fails silently and exactly when it is needed.
+
+**The check is small**: extract every `§ <name>` from `CLAUDE.md`, resolve each against the headings
+of the file named beside it, fail on one that does not match. `build-tools/docs-check.py` already
+does the same kind of work for `documentation/`, and the repository has `test/python/` to put it in.
+
+Worth doing the moment a second row goes stale; one occurrence is an anecdote.

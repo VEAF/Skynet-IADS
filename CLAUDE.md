@@ -87,9 +87,9 @@ If the change can only be judged inside DCS, stop and wait for explicit approval
 |---|---|
 | change a source file | `CONTRIBUTING.md` § Test first, § Building, § Static analysis and formatting |
 | add or change a test | `CONTRIBUTING.md` § Test first; `test/lua/README.md` for how to run one |
-| touch `documentation/` | `CONTRIBUTING.md` § The README is hand-written, the documentation is published — three conventions, all gated |
+| touch `documentation/` | `CONTRIBUTING.md` § Documentation — three conventions, all gated |
 | touch a `.miz`, or test in DCS | `CONTRIBUTING.md` § Test first; `unit-tests/README.md` for the in-sim smoke gate |
-| open a pull request | `CONTRIBUTING.md` § Git flow, § Changelog |
+| open a pull request | `CONTRIBUTING.md` § Git flow, § Changelog and versioning |
 | create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
 | touch the radar element hierarchy | `CONTEXT.md` — several of its terms are narrower than they sound |
 | cut a release | the `release` skill |
