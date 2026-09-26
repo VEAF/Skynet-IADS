@@ -18,8 +18,6 @@ Download the compiled artifact from the [latest
 release](https://github.com/VEAF/Skynet-IADS/releases/latest) and load it into your mission — the
 documentation's *Setting up an IADS* page says how.
 
-<a id="maintenance"></a>
-
 ## Maintenance
 
 [VEAF](https://github.com/VEAF) and the Regroupement de Patrouilles (BFR, NAWACS) maintain this

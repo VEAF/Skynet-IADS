@@ -1,6 +1,6 @@
 # Contributing
 
-Who maintains Skynet-IADS, and how it got here, is in [`README.md`](README.md#maintenance). What
+Who maintains Skynet-IADS, and how it got here, is in [`README.md`](README.md). What
 matters for contributing is that **this repository is where the work happens** — issues, discussions
 and pull requests belong here, not in either historical repository upstream.
 
@@ -156,8 +156,6 @@ global, because DCS has no module system and the sources are concatenated rather
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
 of extending the list — it exists to erode, never to grow.
 
-<a id="documentation"></a>
-
 ## Documentation
 
 `README.md` is a short, hand-written entry point. The documentation is `documentation/*.md`, built
@@ -201,7 +199,7 @@ run stays green.
 backlog, this file. The users of this project are not only French-speaking.
 
 What a *user* reads is the exception, and only there: the site is French at the root with English
-under `/en/`, and `README.md` carries both. See [Documentation](#documentation).
+under `/en/`, and `README.md` carries both.
 
 ## Git flow
 
