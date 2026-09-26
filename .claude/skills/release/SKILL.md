@@ -12,11 +12,10 @@ consumes this project.
 
 ## Read this first: building and publishing are automated, the rest is not
 
-`CHORE-PROFESSIONALIZE-THE-REPO` ticket 03 added `.github/workflows/release.yml`: pushing a tag
-matching `v*` builds the artifact, runs it against the DCS stub, and publishes a GitHub release
-carrying it — attaching whatever is currently under `## [Unreleased]` in `CHANGELOG.md` as the
-release notes. A tag that is not a plain `vX.Y.Z` (a pre-release like `v3.5.0-rc1`) publishes as a
-pre-release, matching the CTLD model.
+`.github/workflows/release.yml` does it: pushing a tag matching `v*` builds the artifact, runs it
+against the DCS stub, and publishes a GitHub release carrying it — attaching whatever is currently
+under `## [Unreleased]` in `CHANGELOG.md` as the release notes. A tag that is not a plain `vX.Y.Z`
+(a pre-release like `v3.5.0-rc1`) publishes as a pre-release.
 
 That last point reorders one thing versus a hand-rolled release: **do not rename `[Unreleased]` to
 the version heading before tagging** — the workflow reads that heading literally, and a renamed
@@ -65,10 +64,10 @@ community suffix. A change to what a mission sees at runtime is at least a minor
    python build-tools/run-smoke.py --target lastline --tier slow
    ```
 
-   **Consultative, not a gate** — David's call, 2026-09-21. A red check is a conversation, not a
-   stop: report the table and ask, rather than refusing to continue. No DCS to hand means the runner
-   skips and exits 0; that is a legitimate outcome, and the honest thing is to say the release went
-   out unflown rather than to imply it was checked. See `unit-tests/README.md`.
+   **Consultative, not a gate.** A red check is a conversation, not a stop: report the table and
+   ask, rather than refusing to continue. No DCS to hand means the runner skips and exits 0; that is
+   a legitimate outcome, and the honest thing is to say the release went out unflown rather than to
+   imply it was checked. See `unit-tests/README.md`.
 
    It goes here, before the version is bumped, because CI cannot do it: GitHub runners have no DCS.
    Everything after this point is automated and will happily publish a build nobody ever loaded.
