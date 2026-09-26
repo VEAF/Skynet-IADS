@@ -54,20 +54,16 @@ flag every file for its line endings alone. The script works around both.
 
 ## Git flow
 
+The rules, without their reasons or their edge cases. Those are in `CONTRIBUTING.md` § Git flow,
+which is where they are stated and the only place they may be changed.
+
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
-- One branch and one pull request **per lot**, not per ticket. A lot may be split across several pull
-  requests when its tickets are genuinely independent, but the split is announced in the plan and
-  approved before the first branch is cut — never decided ticket by ticket as the work goes.
-- **A commit must not touch more than one ticket.** Two subjects in one commit read fine at the time
-  and cannot be read, reverted or bisected apart six months later. The rule is against mixing, not
-  about counting: opening the lot is its own commit, and a review response is appended rather than
-  squashed back into the ticket it amends.
-- **Pull requests are merged with a merge commit**, never squashed or rebased. A squash collapses the
-  branch into a single commit and destroys the per-ticket history the rule above exists to keep.
+- One branch and one pull request **per lot**. Splitting a lot across several is agreed before the
+  first branch is cut, never as the work goes.
+- A commit must not touch more than one ticket.
+- Merge with a merge commit. Never squash, never rebase.
 - Conventional Commits, in English. Branches are deleted on merge.
-- English for everything inside the repository: code, comments, commits, pull requests, the backlog,
-  `CONTRIBUTING.md`. What a *user* reads is the exception — the documentation site is bilingual, and
-  French is what a visitor gets by default.
+- Everything written in the repository is in English. What a *user* reads is the exception.
 
 ## Default workflow
 
