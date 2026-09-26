@@ -1,6 +1,6 @@
 # CHORE-REPOSITORY-CONVENTIONS
 
-**Status**: ✅ done — `feature/repository-conventions`, pull request not yet opened
+**Status**: 🔄 in-progress — `feature/repository-conventions`, ticket 13
 
 Put every rule a contributor or an agent follows in exactly one place, and give the files names the
 repository's own conventions predict.
@@ -289,6 +289,7 @@ they describe what was true when written and are not rewritten.
 | 10 | [*done* means committed, and *merged* becomes a status](tickets/10-done-means-committed.md) | ✅ |
 | 11 | [Review response](tickets/11-review-response.md) | ✅ |
 | 12 | [Second review response](tickets/12-second-review-response.md) | ✅ |
+| 13 | [Pointers name files, not headings](tickets/13-pointers-name-files.md) | 🔄 |
 
 One branch, one pull request, and no commit touching more than one ticket.
 
