@@ -21,12 +21,10 @@ reason to open it. Everything else is there.
 
 - **Edit `demo-missions/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
   `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
-- **Edit a `.miz` by hand.** A script is wired into it in four places, and
-  `build-tools/miz-suite.py` is what keeps them consistent.
-- **Open a pull request against an upstream repository.** This repository is a GitHub *fork* of
-  `regroupement-patrouille/Skynet-IADS`, so `gh pr create` without `--repo` targets the parent, and
-  so does the web UI's "Compare & pull request" banner. Both that repository and walder's are
-  read-only archives. Always `gh pr create --repo VEAF/Skynet-IADS --base develop`.
+- **Edit a `.miz` by hand.** `build-tools/miz-suite.py` is what writes into one.
+- **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
+  `gh pr create` and the web UI's compare banner default to the read-only parent. Always
+  `gh pr create --repo VEAF/Skynet-IADS --base develop`.
 - **Commit directly to `develop` or `master`.** Work on `feature/*` or `fix/*` cut from `develop`.
   The one exception: a change confined to `.backlog/` may go straight to `develop`.
 - **Add a source file to the build script.** The order lives in `build-tools/listToMerge.txt`.
@@ -40,22 +38,18 @@ bash build-tools/lint.sh                             # luacheck + stylua, as CI 
 python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 ```
 
-If `lua5.1` is not on `PATH` — common on Windows — call the interpreter by its path. *Lua for
-Windows* installs to the location below by default, and PowerShell needs the call operator because
-the command line starts with a quoted path:
+If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:
 
 ```powershell
 & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
 ```
 
-`build-tools/lint.sh` exists because of that platform too: a luarocks `luacheck` often targets a
-newer Lua than the interpreter that has to run it, and `core.autocrlf=true` makes `stylua --check`
-flag every file for its line endings alone. The script works around both.
+On Windows, run `luacheck` and `stylua` only through `build-tools/lint.sh`.
 
 ## Git flow
 
-The rules, without their reasons or their edge cases. Those are in `CONTRIBUTING.md`, which is
-where they are stated and the only place they may be changed.
+The rules, bare. Their reasons and edge cases live in `CONTRIBUTING.md` and only there; a rule
+changes there first, then here.
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - One branch and one pull request **per lot**. Splitting a lot across several is agreed before the
