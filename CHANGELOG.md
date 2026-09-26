@@ -87,34 +87,6 @@ Until that release is cut, the build date in the artifact's first line remains t
   page now says who created Skynet, who maintains it today, and thanks him — keeping his own
   acknowledgements to Spearzone, Coranthia and Grimes, which are other people's credit and not
   ours to drop.
-- The idea tracker moved from `docs/evolutions.md` to `.backlog/IDEAS.md`. It records what is
-  noticed but not yet committed to, which is the same subject as the rest of `.backlog/` and the
-  step before a lot — keeping it one directory away made it the one tracker nobody opened while
-  looking at the others.
-- `CONTEXT.md` now carries the domain and stops cataloguing the code. Much of it came from an agent
-  reading the *compiled* artifact vendored in another repository rather than these sources, and it
-  showed: `goDark()` under HARM defence was described as refusing when the code makes it go dark
-  unconditionally, autonomy was called the opposite of what the word means and its second behaviour
-  mode went unmentioned, and the EWR was credited with an engagement decision the network and the
-  site make between them. A technical peculiarity with a home in the code is now recorded as owed to
-  the code, so the file shrinks as the code improves instead of growing with every incident.
-- The backlog's own rules moved to `BACKLOG-CONVENTIONS.md` at the root, and `.backlog/README.md`
-  became `.backlog/INDEX.md`. The rules were in `docs/agents/`, which sat beside `documentation/` —
-  one letter apart in name, a whole concept apart in content — and `docs/` is now gone entirely. The
-  status vocabulary had been stated twice, in the index and in `docs/agents/triage-labels.md`, free
-  to drift; it is stated once. Rules at the root rather than inside `.backlog/` for a second reason:
-  a change confined to `.backlog/` goes straight to `develop` with no pull request, an exception
-  written for status changes and index lines, and rules that other files depend on should not inherit
-  it.
-- **`CLAUDE.md` is 231 lines shorter by two thirds, and `CONTRIBUTING.md` is the guide.** Seven
-  subjects had been stated in both, and the drift between the copies had already produced two
-  defects: the two files disagreed on whether a tracker-only change may go straight to `develop`, and
-  the lint gate that fails a first pull request was documented only in the file a contributor has no
-  reason to open. What stays in `CLAUDE.md` is what someone can get wrong before opening the guide —
-  never edit the deliverable, never open a pull request upstream, never commit to `develop` — plus
-  the commands, which cannot be guessed, and a table sending each kind of task to the section that
-  covers it. What left is the reference half. The file also stopped justifying its rules by pointing
-  at closed lots and commits: a rule states itself and its reason, and the tracker keeps the history.
 
 ## [3.5.0] — 2026-09-21
 

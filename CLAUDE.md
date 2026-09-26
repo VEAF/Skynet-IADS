@@ -72,9 +72,8 @@ flag every file for its line endings alone. The script works around both.
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
-with its tests → run the suite → rebuild if the sources changed → update `CHANGELOG.md` under
-`[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
-`develop` → address review and CI → merge.
+with its tests → run the suite → rebuild if the sources changed, and add a `CHANGELOG.md` entry if
+they did → commit and push → pull request to `develop` → address review and CI → merge.
 
 Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
 assembled on demand. That is the step to run before testing in DCS, not before committing.
