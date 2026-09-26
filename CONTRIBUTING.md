@@ -230,11 +230,10 @@ under `/en/`, and `README.md` carries both. See [Documentation](#documentation).
 Every pull request that changes `skynet-iads-source/` adds an entry to `CHANGELOG.md`, appended at
 the **end** of the `[Unreleased]` section.
 
-This is not bookkeeping. The main consumer of this project is another repository —
-[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors the built
-artifact under `src/scripts/community/` — and the changelog is how they know whether a new build is
-worth taking. A change here reaches missions only once that repository re-vendors it, a deliberate
-step on their side; that copy has run a month behind without anyone noticing.
+This is not bookkeeping. What this project ships is a script other repositories vendor into the
+missions they build, so a change here reaches no mission until one of them takes a new copy — a
+deliberate step on their side, and one that has lagged a long way behind before now. The changelog is
+how whoever is deciding knows whether a new build is worth taking.
 
 [Semantic versioning](https://semver.org/), continuing the **artifact's** lineage rather than the
 inherited tags, because the artifact's number is what people read in a log. A change to what a

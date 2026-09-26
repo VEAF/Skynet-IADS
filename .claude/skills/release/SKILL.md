@@ -25,12 +25,11 @@ is out, as a follow-up commit on `develop`. Everything else below is still done 
 
 ## Why it matters more than usual here
 
-The consumer of this repository is another repository:
-[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors
-`demo-missions/skynet-iads-compiled.lua` into `src/scripts/community/`. Nothing reaches a mission until they
-re-vendor, and that copy has run a month behind without anyone noticing. **A release is the signal
-that makes the copy possible** — so the release notes are written for them as much as for players,
-and a release without a changelog entry is a release nobody can act on.
+This repository ships a script that other repositories vendor into the missions they build. Nothing
+reaches a mission until one of them takes a new copy, and a copy can sit behind for a long time
+without anyone noticing. **A release is the signal that makes the copy possible** — so release notes
+are written for whoever has to decide whether to take it, as much as for players, and a release
+without a changelog entry is a release nobody can act on.
 
 ## Versioning
 
@@ -106,8 +105,8 @@ community suffix. A change to what a mission sees at runtime is at least a minor
    the tag would have shipped an empty release — the workflow reads the `[Unreleased]` heading
    literally.
 
-8. **Tell the consumer.** The release does not reach a single mission by itself. Say so, and say
-   what is waiting on it — normally a vendoring lot in VEAF-Mission-Creation-Tools. If that lot
+8. **Tell whoever vendors it.** The release does not reach a single mission by itself. Say so, and
+   say what is waiting on it — normally a vendoring lot in the consuming repository. If that lot
    exists, name it; if it does not, say that it needs to.
 
 ## What not to do
