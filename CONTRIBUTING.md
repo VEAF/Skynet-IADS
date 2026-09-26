@@ -43,6 +43,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
+| `CONTEXT.md` | the domain: what the words mean, and what Skynet is for |
 | `.backlog/` | what is planned, in progress and done |
 | `BACKLOG-CONVENTIONS.md` | how the tracker works |
 
@@ -143,7 +144,7 @@ Two rules worth knowing before you get there:
 (`.github/workflows/lint.yml`). Run both the way CI does:
 
 ```
-build-tools/lint.sh            # or: build-tools/lint.sh luacheck
+bash build-tools/lint.sh       # or: bash build-tools/lint.sh luacheck
 ```
 
 On a Windows checkout that script is the only thing that works without fiddling: a luarocks
@@ -158,6 +159,8 @@ global, because DCS has no module system and the sources are concatenated rather
 `.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
 of extending the list — it exists to erode, never to grow.
+
+<a id="documentation"></a>
 
 ## Documentation
 
@@ -210,7 +213,7 @@ under `/en/`, and `README.md` carries both. See [Documentation](#documentation).
 - Branch from `develop`: `feature/<something>` or `fix/<something>`. Never commit directly to
   `develop` or `master`.
 - **One exception**: a change confined to `.backlog/` — a new lot, a status change, an index line —
-  goes straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle
+  may go straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle
   and protects nothing CI can check. The moment a change touches `skynet-iads-source/`, `test/`,
   `documentation/`, `CHANGELOG.md` or the build, it goes through a branch and a pull request,
   including a one-line change.

@@ -28,7 +28,7 @@ reason to open it. Everything else is there.
   so does the web UI's "Compare & pull request" banner. Both that repository and walder's are
   read-only archives. Always `gh pr create --repo VEAF/Skynet-IADS --base develop`.
 - **Commit directly to `develop` or `master`.** Work on `feature/*` or `fix/*` cut from `develop`.
-  The one exception: a change confined to `.backlog/` goes straight to `develop`.
+  The one exception: a change confined to `.backlog/` may go straight to `develop`.
 - **Add a source file to the build script.** The order lives in `build-tools/listToMerge.txt`.
 
 ## Commands
@@ -36,7 +36,7 @@ reason to open it. Everything else is there.
 ```
 pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
 lua5.1 test/lua/run.lua                              # the standalone suite; a name filters
-build-tools/lint.sh                                  # luacheck + stylua, as CI runs them
+bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
 python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 ```
 
@@ -91,7 +91,7 @@ If the change can only be judged inside DCS, stop and wait for explicit approval
 | touch a `.miz`, or test in DCS | `CONTRIBUTING.md` § Test first; `unit-tests/README.md` for the in-sim smoke gate |
 | open a pull request | `CONTRIBUTING.md` § Git flow, § Changelog and versioning |
 | create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
-| touch the radar element hierarchy | `CONTEXT.md` — several of its terms are narrower than they sound |
+| change how sites, radars or the network behave | `CONTEXT.md` — the domain, and the words the code uses for it |
 | cut a release | the `release` skill |
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 

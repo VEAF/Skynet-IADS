@@ -44,7 +44,7 @@ know whether it is theirs.
 | | |
 |---|---|
 | **GitHub issues** | Reports arriving from outside. A report that becomes work becomes a lot; the issue is then closed referencing it. |
-| **`.backlog/IDEAS.md`** | Ideas and things noticed in passing. An evolution is a thought; a lot is committed work. Promoting one to the other is the normal path. |
+| **`.backlog/IDEAS.md`** | Ideas and things noticed in passing. An idea is a thought; a lot is committed work. Promoting one to the other is the normal path. |
 | **`.backlog/`** | What is planned, in progress or done. |
 
 Never create a separate todo file. In-session task lists stay in the session.
@@ -84,7 +84,7 @@ who opens a single ticket never sees the PRD.
 
 ## Archiving
 
-A lot closed for more than a few days is compacted into `.backlog/archive/<LOT-ID>.md`: the defect or
+A lot merged or marked wontfix more than a few days ago is compacted into `.backlog/archive/<LOT-ID>.md`: the defect or
 the goal, the decisions **and why the alternatives were refused**, the figures that were measured, the
 pull requests, and the notes that say *do not reopen this without a new reason*. What it drops is the
 ticket-by-ticket working material and the process scaffolding — all still in git history, and most of
