@@ -1,7 +1,8 @@
 # SkynetIADS — context
 
-The domain, and the words the code uses for it. For how a feature behaves or how to set one up, the
-published documentation is the reference; this file is for someone about to read or change the code.
+The domain's vocabulary, and what to have in your head before reading the code. For how a feature
+behaves or how to set one up, the published documentation is the reference; this file is for someone
+about to read or change the code.
 
 ## What is SkynetIADS
 
@@ -22,21 +23,21 @@ missile's guidance.
 
 ## Vocabulary
 
-| Term | Meaning | In code |
-|---|---|---|
-| DCS | Digital Combat Simulator, the military flight simulator SkynetIADS is designed for. | — |
-| IADS | Integrated Air Defence System. One network, usually one per coalition. | `SkynetIADS` |
-| SAM site | A DCS group holding launchers and radars. Dark by default under network control. | `SkynetIADSSamSite` |
-| EWR | An early-warning radar. Lit by default — it goes dark only to evade a HARM — and feeds contacts to the network. | `SkynetIADSEWRadar` |
-| AWACS | An airborne or shipborne radar. An EWR that moves. | `SkynetIADSAWACSRadar` |
-| HARM | High speed anti radiation missile — a missile that homes on a radar's emissions. | `SkynetIADSHARMDetection` |
-| Command centre | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. | `SkynetIADSCommandCenter` |
-| Connection node | An optional structure an element depends on to stay part of the network. No class of its own: a DCS static passed to `addConnectionNode`. | `addConnectionNode` |
-| Point defence | A short-range SAM site attached to another, to cover it while it hides from a HARM. | `addPointDefence` |
-| Contact | Something the network has detected and is tracking: one target, as the network knows it, merged from whatever saw it. | `SkynetIADSContact` |
-| Acting as EW | A SAM site set to feed the network as an EWR does. It then stays live permanently, and is visible and targetable in exchange. | `setActAsEW` |
-| Autonomous | Cut off from the network and handed back to the DCS AI. | `goAutonomous`, `setAutonomousBehaviour` |
-| Live / Dark | Emission state of a radar. This is the lever the whole design turns on. | `goLive`, `goDark` |
+| Term | Meaning |
+|---|---|
+| DCS | Digital Combat Simulator, the military flight simulator SkynetIADS is designed for. |
+| IADS | Integrated Air Defence System. One network, usually one per coalition. |
+| SAM site | A DCS group holding launchers and radars. Dark by default under network control. |
+| EWR | An early-warning radar. Lit by default — it goes dark only to evade a HARM — and feeds contacts to the network. |
+| AWACS | An airborne or shipborne radar. An EWR that moves. |
+| HARM | High speed anti radiation missile — a missile that homes on a radar's emissions. |
+| Command centre | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. |
+| Connection node | An optional structure an element depends on to stay part of the network. |
+| Point defence | A short-range SAM site attached to another, to cover it while it hides from a HARM. |
+| Contact | Something the network has detected and is tracking: one target, as the network knows it, merged from whatever saw it. |
+| Acting as EW | A SAM site set to feed the network as an EWR does. It then stays live permanently, and is visible and targetable in exchange. |
+| Autonomous | Cut off from the network and handed back to the DCS AI. |
+| Live / Dark | Emission state of a radar. This is the lever the whole design turns on. |
 
 ## Notable concepts
 
