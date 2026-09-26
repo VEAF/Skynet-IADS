@@ -21,6 +21,25 @@ BACKLOG-CONVENTIONS.md       these rules
 `<LOT-ID>` is uppercase and kebab-cased, prefixed by intent: `FEAT-`, `FIX-`, `CHORE-`,
 `INVESTIGATE-`, `REFACTOR-`.
 
+## When a lot is required
+
+Not every change needs one. A lot exists to hold reasoning, and work with no reasoning to hold does
+not need the apparatus.
+
+**Open a lot when either is true:**
+
+- the work has **more than one deliverable** — anything you would naturally describe as several
+  steps, or that will land as several commits;
+- it makes a **decision worth recording**: something was measured, an alternative was refused, or a
+  trade-off was taken knowingly. That is what a PRD is for, and six months later it is the only
+  thing anyone wants back.
+
+**Otherwise a branch, a commit and a pull request are enough.** A typo, a dead link, a one-line
+guard: writing a PRD for it produces a record nobody will ever read and delays the fix.
+
+If you find halfway through that the work has grown a second deliverable or a real decision, open the
+lot then. That is the normal way lots are born, and it is cheaper than guessing at the outset.
+
 ## What goes where
 
 **The PRD** carries the reasoning. Not just what to build — what was measured, what was rejected and

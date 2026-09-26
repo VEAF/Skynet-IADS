@@ -67,7 +67,8 @@ which is where they are stated and the only place they may be changed.
 
 ## Default workflow
 
-Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
+Sync (`git pull --ff-only` on `develop`) → open or pick a lot **if the work needs one**
+(`BACKLOG-CONVENTIONS.md` § When a lot is required) → branch → implement
 with its tests → run the suite → rebuild if the sources changed, and add a `CHANGELOG.md` entry if
 they did → commit and push → pull request to `develop` → address review and CI → merge.
 
