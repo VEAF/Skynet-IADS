@@ -230,8 +230,13 @@ they describe what was true when written and are not rewritten.
 | 04 | [CONTRIBUTING.md becomes the single source](tickets/04-single-source.md) | ⬜ |
 | 05 | [CLAUDE.md keeps what prevents damage](tickets/05-claude-md-shrinks.md) | ⬜ |
 | 06 | [What CONTEXT.md is for, and what survives](tickets/06-context-corrections.md) | 🔄 |
+| 07 | [Streamline CONTRIBUTING.md](tickets/07-streamline-contributing.md) | ⏸ |
 
 One branch, one pull request, one commit per ticket.
+
+Ticket 07 is **paused, not ready**: it must not be started before 04 and 05 have landed, because both
+move material into the file it would reorganise. Nothing is expected of anyone; 04 and 05 merging is
+what restarts it.
 
 Ticket 06 is **blocked on Florent**, who reported errors in `CONTEXT.md` that a read of the file
 against the sources did not surface. The other five are independent of it and proceed. If the answer
