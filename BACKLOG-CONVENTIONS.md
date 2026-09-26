@@ -62,7 +62,7 @@ know whether it is theirs.
 
 | | |
 |---|---|
-| **GitHub issues** | Reports arriving from outside. A report that becomes work becomes a lot; the issue is then closed referencing it. |
+| **GitHub issues** | Reports arriving from outside. A report that becomes work goes through the test above like anything else — a lot if it earns one, otherwise a branch and a pull request. The issue is closed referencing whichever it became. |
 | **`.backlog/IDEAS.md`** | Ideas and things noticed in passing. An idea is a thought; a lot is committed work. Promoting one to the other is the normal path. |
 | **`.backlog/`** | What is planned, in progress or done. |
 
@@ -103,8 +103,9 @@ who opens a single ticket never sees the PRD.
 
 ## Archiving
 
-A lot merged or marked wontfix more than a few days ago is compacted into `.backlog/archive/<LOT-ID>.md`: the defect or
-the goal, the decisions **and why the alternatives were refused**, the figures that were measured, the
-pull requests, and the notes that say *do not reopen this without a new reason*. What it drops is the
-ticket-by-ticket working material and the process scaffolding — all still in git history, and most of
-it restated in `CHANGELOG.md` and in the commit messages.
+A lot merged or marked wontfix more than a few days ago is compacted into
+`.backlog/archive/<LOT-ID>.md`: the defect or the goal, the decisions **and why the alternatives were
+refused**, the figures that were measured, the pull requests, and the notes that say *do not reopen
+this without a new reason*. What it drops is the ticket-by-ticket working material and the process
+scaffolding — all still in git history, and most of it restated in `CHANGELOG.md` and in the commit
+messages.

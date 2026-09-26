@@ -35,8 +35,9 @@ and a release without a changelog entry is a release nobody can act on.
 ## Versioning
 
 Semantic versioning, continuing the **artifact's** lineage rather than the inherited tags, because
-the artifact's number is what anyone reads in a log. Tags take the shape `vX.Y.Z`, and the number
-carries no community suffix. A change to what a mission sees at runtime is at least a minor.
+the artifact's number is what anyone reads in a log. A release is tagged `vX.Y.Z`; a pre-release
+carries a suffix, and anything that is not a plain `vX.Y.Z` publishes as one. The number carries no
+community suffix. A change to what a mission sees at runtime is at least a minor.
 
 `CHANGELOG.md` carries how the two numbering schemes were reconciled, if you need it.
 
