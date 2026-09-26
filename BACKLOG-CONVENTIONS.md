@@ -28,11 +28,13 @@ not need the apparatus.
 
 **Open a lot when either is true:**
 
-- the work has **more than one deliverable** — anything you would naturally describe as several
-  steps;
-- it makes a **decision worth recording**: something was measured, an alternative was refused, or a
-  trade-off was taken knowingly. That is what a PRD is for, and six months later it is the only
-  thing anyone wants back.
+- the work has **more than one deliverable** — more than one change that could be reviewed and
+  shipped on its own. The steps of a single change, such as its test, its fix and its changelog
+  entry, are one deliverable;
+- it makes a **decision worth recording**, one somebody will later ask *why* about: a measurement
+  that settles a question, a design refused, a trade-off taken knowingly. Choosing between two ways
+  to write the same fix is not one. Recording such decisions is what a PRD is for, and six months
+  later it is the only thing anyone wants back.
 
 **Otherwise a branch and a pull request are enough**, however many commits it takes. A typo, a dead
 link, a one-line guard, a bug fix that needed two or three iterations after testing: writing a PRD
