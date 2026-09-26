@@ -198,10 +198,10 @@ settings files — so it cannot be shipped to contributors.
 
 **A constraint on how it is written**: `@path` imports are Claude's own feature. Copilot would read
 `@CONTRIBUTING.md` as literal text. So `AGENTS.md` has to *instruct* — "before changing a source
-file, read CONTRIBUTING.md § Building" — rather than import. Pointers as prose work everywhere.
+file, read CONTRIBUTING.md" — rather than import. Pointers as prose work everywhere.
 
 **Shape if taken**: `AGENTS.md` carries the vendor-neutral instructions, `CLAUDE.md` shrinks to the
-import plus what is genuinely Claude-only (skills, bash authorization, `.claude/rules/`).
+import plus what is genuinely Claude-only (skills, `.claude/rules/`).
 
 **The risk to design against**, and the reason it is a lot rather than an afternoon: `AGENTS.md` and
 `CONTRIBUTING.md` become a new pair that can drift — the failure `CHORE-REPOSITORY-CONVENTIONS`
@@ -290,3 +290,26 @@ of the file named beside it, fail on one that does not match. `build-tools/docs-
 does the same kind of work for `documentation/`, and the repository has `test/python/` to put it in.
 
 Worth doing the moment a second row goes stale; one occurrence is an anecdote.
+
+## The test READMEs still argue from the backlog
+
+Guidance files state their rules without citing a lot, a ticket, a person or a date, and without
+naming a consumer. `CHORE-REPOSITORY-CONVENTIONS` applied that to the root instruction files and the
+skills, and left the two READMEs inside the test directories as they were.
+
+Noticed 2026-09-26, in its third review:
+
+- `test/lua/README.md` justifies retiring six legacy suites by "David's call, 2026-09-19; done by
+  `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04", and its coverage section is largely a record of which
+  lot brought which tests. It also names the repository that vendors the artifact, and calls a
+  decision about the artifact's public surface one for VEAF alone, where the project is maintained
+  jointly.
+- `unit-tests/README.md` justifies the smoke gate being consultative by "David's call, 2026-09-21",
+  and supports it by two sibling projects.
+
+**Why it was not done there**: `test/lua/README.md` is some 350 lines, and separating the reference a
+contributor needs from the history of how the suite got here is a rewrite, not an edit. Each passage
+has to be checked for whether its reason survives without its citation — most do.
+
+The shape to aim for is the one the root files reached: the rule, and its reason in general form.
+The history is already in the archived lot records.

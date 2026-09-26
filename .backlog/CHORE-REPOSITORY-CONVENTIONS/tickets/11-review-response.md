@@ -12,9 +12,9 @@ already readable as its own commit.
 
 **A dead pointer in the table the PRD calls load-bearing.** Ticket 07 renamed a section and the row
 naming it was not updated — dead within a day, in the one table that survives compaction and is the
-only route back to delegated content. All six pointers then in the file were audited: five resolved, one did not. Two more were added
-afterwards, by the commits for the git-flow and lot-threshold decisions, so the table now holds ten
-references to seven sections across two files.
+only route back to delegated content. All six pointers then in the file were audited: five
+resolved, one did not. Two more were added afterwards, by the commits for the git-flow and
+lot-threshold decisions, so the table now holds ten references to seven sections across two files.
 `.backlog/IDEAS.md` carries the follow-up, that nothing verifies these names and the check is small.
 
 **The autonomy claim in `CONTEXT.md` was one trigger of four.** `hasValidParentRadar` requires the

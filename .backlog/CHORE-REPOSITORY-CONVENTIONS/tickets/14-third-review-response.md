@@ -1,6 +1,6 @@
 # 14 — Third review response
 
-**Status**: 🔄 in-progress — `feature/repository-conventions`
+**Status**: ✅ done
 
 ## Problem
 

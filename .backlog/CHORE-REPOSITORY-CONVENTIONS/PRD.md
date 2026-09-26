@@ -1,6 +1,6 @@
 # CHORE-REPOSITORY-CONVENTIONS
 
-**Status**: 🔄 in-progress — `feature/repository-conventions`, ticket 14
+**Status**: ✅ done — `feature/repository-conventions`, pull request not yet opened
 
 Put every rule a contributor or an agent follows in exactly one place, and give the files names the
 repository's own conventions predict.
@@ -61,8 +61,9 @@ The same guidance adds a second requirement the earlier draft of this PRD missed
 who is not a person.
 
 The delegation is made verifiable rather than hoped for: for every section removed from `CLAUDE.md`,
-a task-indexed row says where it went — *about to change a source file → CONTRIBUTING.md*. A single "read CONTRIBUTING.md first" at the top is the version that fails; it is easy
-to skim and gives no reason to comply.
+a task-indexed row says where it went — *about to change a source file → CONTRIBUTING.md*. A
+single "read CONTRIBUTING.md first" at the top is the version that fails; it is easy to skim and
+gives no reason to comply.
 
 ## Duplicate identifiers if you must; never duplicate judgement
 
@@ -78,8 +79,9 @@ and a missing script is the least silent failure there is.
 
 A command is an identifier, like `skynet-iads-source/`, which appears in a dozen files without anyone
 calling it duplication. What must never be stated twice is anything encoding a decision. So the three
-commands are repeated; their explanations — why the suites are split, what the stub warning means,
-how the coverage floor moves — live only in `CONTRIBUTING.md`.
+commands are repeated; their explanations live once each — why the suites are split in
+`CONTRIBUTING.md`, what the stub warning means and how the coverage floor moves in
+`test/lua/README.md`.
 
 The cost of the opposite policy was measured here, 2026-09-24. The Windows invocation of the test
 runner is documented, correctly and in full, in `test/lua/README.md` — and in that one place only.
@@ -129,6 +131,13 @@ This applies in one direction only. A file **under** `.backlog/` that serves bac
 `BACKLOG-CONVENTIONS.md` for the tracker's own rules. What is forbidden is a guidance file leaning on
 a *lot* to make its case.
 
+**What counts as a guidance file**: the instruction files at the root — `CLAUDE.md`,
+`CONTRIBUTING.md`, `BACKLOG-CONVENTIONS.md`, `CONTEXT.md`, `README.md` — and the skills under
+`.claude/skills/`. The same holds for *no guidance file names a consumer*, below. The READMEs
+inside `test/lua/` and `unit-tests/` are references for their suites and still carry history of this
+kind; they are recorded in `.backlog/IDEAS.md` rather than cleaned here, because sorting
+`test/lua/README.md` alone is a lot of its own.
+
 ## The tracker's rules sit at the root, its index does not
 
 `BACKLOG-CONVENTIONS.md` is a root file and `.backlog/INDEX.md` stays in the directory. That is not
@@ -168,7 +177,7 @@ reference file this lot is deleting, one reasonable-looking row at a time.
 
 ## Decisions taken during review
 
-Six, all Florent's, all made after the tickets were written. They are here because the archive
+Ten, all Florent's, all made after the tickets were written. They are here because the archive
 record is compacted from this file.
 
 **The changelog is scoped to source changes only.** `CLAUDE.md`'s workflow had said to update it on
@@ -205,6 +214,28 @@ and never quietly. The rule is stated under `CLAUDE.md`'s table, where the next 
 column on the grounds that a stale identifier fails on the first search. It fails only when someone
 searches; until then it is read as true, and it is one more reference to keep in step with the code
 by hand, for a class anyone about to change the code finds in seconds.
+
+**No guidance file names a consumer.** The reason behind the changelog rule had been one repository
+and its vendoring habits, stated in three files. Skynet has no consumer of its own to single out; the
+reason survives in general form — what this project ships is vendored by other repositories, and a
+change reaches no mission until one of them takes a new copy — which covers every consumer rather
+than one.
+
+**"Guidance file" means the root instruction files and the skills.** The rule against arguing from the
+backlog, and the one against naming a consumer, had been applied to `CLAUDE.md` and `CONTRIBUTING.md`
+only. The `release` skill still opened with a pointer to an archived lot's ticket — this lot's own
+opening defect — and is cleaned; the two test READMEs are deferred. See *What counts as a guidance
+file* above.
+
+**`CONTEXT.md` keeps intent, not definitions.** Three reviews found errors in it, and nearly all were
+in the vocabulary table: a one-line definition invites an absolute — "only", "permanently" — and the
+absolute is what goes wrong. `documentation/setting-up` defines the same terms for the reader who
+needs them, so the table went and nothing is owed to the code for it. What stays is the premise and
+four concepts, each something that looks like a bug and is not.
+
+**A lot is required for deliverables and decisions, not commits.** The threshold had also named
+"work that will land as several commits", while `CONTRIBUTING.md` says a ticket may need more than
+one. The clause left the threshold; the commit rule is unchanged.
 
 ## What was refused, and why
 
@@ -256,7 +287,7 @@ and the entry is closed. Ticket 08 carries it.
 
 - **`docs/` disappears.** With the idea tracker moved and `docs/agents/` dissolved, nothing is left.
   That removes a real trap: `docs/` and `documentation/` are one letter apart in name and a whole
-  concept apart in content. `CLAUDE.md` currently spends a sentence distinguishing them, and a
+  concept apart in content. `CLAUDE.md` had to spend a sentence distinguishing them, and a
   newcomer who guesses that `docs/` holds the documentation guesses wrong.
 - **`CONTRIBUTING.md` becomes the file to read**, at the name GitHub surfaces in the issue and pull
   request composer. It grows, because it absorbs what `CLAUDE.md` was holding for it — including the
@@ -266,7 +297,7 @@ and the entry is closed. Ticket 08 carries it.
   above — would removing this line cause a mistake?
 - **The guidance files stop arguing from the tracker.** Five passages go, and the rules they
   justified stay — stated as rules, with their reasons, and without the lot, ticket or commit that
-  produced them. Roughly half the git-flow section is citation today.
+  produced them. Roughly half the git-flow section had been citation.
 - The naming conventions every directory already follows are written down for the first time. Only
   `<LOT-ID>` was ever specified; everything else was practice, which is why two outliers were
   indistinguishable from deliberate exceptions.
@@ -301,7 +332,7 @@ they describe what was true when written and are not rewritten.
 | 11 | [Review response](tickets/11-review-response.md) | ✅ |
 | 12 | [Second review response](tickets/12-second-review-response.md) | ✅ |
 | 13 | [Pointers name files, not headings](tickets/13-pointers-name-files.md) | ✅ |
-| 14 | [Third review response](tickets/14-third-review-response.md) | 🔄 |
+| 14 | [Third review response](tickets/14-third-review-response.md) | ✅ |
 
 One branch, one pull request, and no commit touching more than one ticket.
 
