@@ -34,8 +34,9 @@ not need the apparatus.
   trade-off was taken knowingly. That is what a PRD is for, and six months later it is the only
   thing anyone wants back.
 
-**Otherwise a branch, a commit and a pull request are enough.** A typo, a dead link, a one-line
-guard: writing a PRD for it produces a record nobody will ever read and delays the fix.
+**Otherwise a branch and a pull request are enough**, however many commits it takes. A typo, a dead
+link, a one-line guard, a bug fix that needed two or three iterations after testing: writing a PRD
+for it produces a record nobody will ever read and delays the fix.
 
 If you find halfway through that the work has grown a second deliverable or a real decision, open the
 lot then. That is the normal way lots are born, and it is cheaper than guessing at the outset.
