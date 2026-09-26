@@ -43,7 +43,7 @@ shape of the existing tags, colliding with none of them. The `RP` suffix is drop
 Regroupement de Patrouilles (BFR, NAWACS) carry the project on together, so the number belongs to
 both and has no reason to carry either name.
 
-Semantic versioning from there, as `contributing.md` already states. A change to what a mission sees
+Semantic versioning from there, as `CONTRIBUTING.md` already states. A change to what a mission sees
 at runtime is at least a minor.
 
 ## Steps

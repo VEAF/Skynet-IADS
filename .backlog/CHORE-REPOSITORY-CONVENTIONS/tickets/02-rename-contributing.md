@@ -1,6 +1,6 @@
 # 02 — contributing.md takes the name the repository predicts
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 

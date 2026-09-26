@@ -13,7 +13,7 @@ treat them as a source of truth.
 ## Language
 
 English for everything inside the repository: code, comments, commits, pull requests, the backlog,
-`contributing.md`. The users of this project are not only French-speaking.
+`CONTRIBUTING.md`. The users of this project are not only French-speaking.
 
 **What a user reads is bilingual, and French is the default.** Under `documentation/`, the
 unsuffixed `page.md` holds the **French** text and `page.en.md` its English twin; a page never
