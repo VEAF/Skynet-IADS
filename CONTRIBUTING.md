@@ -42,7 +42,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
-| `CONTEXT.md` | the domain: what the words mean, and what Skynet is for |
+| `CONTEXT.md` | what Skynet is for, and what in its design looks like a bug and is not |
 | `.backlog/` | what is planned, in progress and done |
 | `BACKLOG-CONVENTIONS.md` | how the tracker works |
 
