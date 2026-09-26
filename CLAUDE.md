@@ -62,9 +62,14 @@ changes there first, then here.
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → open or pick a lot **if the work needs one**
-(`BACKLOG-CONVENTIONS.md` says when) → branch → implement
-with its tests → run the suite → rebuild if the sources changed, and add a `CHANGELOG.md` entry if
-they did → commit and push → pull request to `develop` → address review and CI → merge.
+(`BACKLOG-CONVENTIONS.md` says when) → branch → implement with its tests → run the suite and the
+lint gate → rebuild if the sources changed, and add a `CHANGELOG.md` entry if they did → commit and
+push → pull request to `develop` → address review and CI. Merging is a maintainer's call: an agent
+merges only when asked to.
+
+Planning and analysis skills — superpowers and the like — follow this repository's conventions over
+their own: a spec is a lot's `PRD.md`, a plan becomes its tickets or stays in the session, and
+nothing is written under `docs/`.
 
 Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
 assembled on demand. That is the step to run before testing in DCS, not before committing.
