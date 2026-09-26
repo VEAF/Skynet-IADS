@@ -1,14 +1,13 @@
 # Contributing
 
-Skynet-IADS was built by [walder](https://github.com/walder/Skynet-IADS), whose repository has not
-moved since 2024. It was forked to
-[regroupement-patrouille](https://github.com/regroupement-patrouille/Skynet-IADS), and that fork was
-forked again to the VEAF home you are reading now.
+Who maintains Skynet-IADS, and how it got here, is in [`README.md`](README.md#maintenance). What
+matters for contributing is that **this repository is where the work happens** — issues, discussions
+and pull requests belong here, not in either historical repository upstream.
 
-**VEAF and regroupement-patrouille (BFR, NAWACS) maintain the project jointly, here.** Both upstream
-repositories are historical, so this is where issues, discussions and pull requests belong. One
-practical consequence: because this repository is a GitHub *fork*, `gh pr create` and the web UI's
-"Compare & pull request" banner both default to the parent. Check the base before opening one.
+One practical consequence, and it is a trap: this repository is a GitHub *fork*, so `gh pr create`
+and the web UI's "Compare & pull request" banner both default to the **parent**. A pull request
+opened without checking the base lands on a read-only archive and looks like it worked. Use
+`gh pr create --repo VEAF/Skynet-IADS --base develop`.
 
 Before spending time on a feature, propose it: open an issue, or bring it to the
 [VEAF Discord](https://discord.gg/veaf). Feedback before code saves more time than it costs.
