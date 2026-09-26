@@ -15,7 +15,7 @@ BACKLOG-CONVENTIONS.md       these rules
     tickets/
       01-<slug>.md           one deliverable each
   archive/
-    <LOT-ID>.md              a closed lot, compacted into one file
+    <LOT-ID>.md              a merged or wontfix lot, compacted into one file
 ```
 
 `<LOT-ID>` is uppercase and kebab-cased, prefixed by intent: `FEAT-`, `FIX-`, `CHORE-`,
@@ -29,7 +29,7 @@ not need the apparatus.
 **Open a lot when either is true:**
 
 - the work has **more than one deliverable** — anything you would naturally describe as several
-  steps, or that will land as several commits;
+  steps;
 - it makes a **decision worth recording**: something was measured, an alternative was refused, or a
   trade-off was taken knowingly. That is what a PRD is for, and six months later it is the only
   thing anyone wants back.
