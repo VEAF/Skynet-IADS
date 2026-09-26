@@ -32,19 +32,13 @@ re-vendor, and that copy has run a month behind without anyone noticing. **A rel
 that makes the copy possible** — so the release notes are written for them as much as for players,
 and a release without a changelog entry is a release nobody can act on.
 
-## Versioning — settled 2026-09-19
+## Versioning
 
-Two numbering schemes had coexisted without ever being reconciled: the inherited tags stop at
-`v2.0.1` (walder's lineage), while the artifact has long called itself `3.4.0RP-VEAF`.
+Semantic versioning, continuing the **artifact's** lineage rather than the inherited tags, because
+the artifact's number is what anyone reads in a log. Tags take the shape `vX.Y.Z`, and the number
+carries no community suffix. A change to what a mission sees at runtime is at least a minor.
 
-**David's decision**: continue the artifact's lineage, because that is the number anyone actually
-reads in a log. The first release under joint maintenance is **`3.5.0`**, tagged **`v3.5.0`** — the
-shape of the existing tags, colliding with none of them. The `RP` suffix is dropped: VEAF and the
-Regroupement de Patrouilles (BFR, NAWACS) carry the project on together, so the number belongs to
-both and has no reason to carry either name.
-
-Semantic versioning from there, as `CONTRIBUTING.md` already states. A change to what a mission sees
-at runtime is at least a minor.
+`CHANGELOG.md` carries how the two numbering schemes were reconciled, if you need it.
 
 ## Steps
 

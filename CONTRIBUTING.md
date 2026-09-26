@@ -127,11 +127,8 @@ Those two files are the reference: how to run each suite, how to add to it, what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
-Two rules worth knowing before you get there:
+One rule worth knowing before you get there:
 
-- **A test that passes only because `dcs-stub.lua` returned something convenient proves nothing.**
-  When a test needs the stub extended, extend it deliberately and write down which real DCS behaviour
-  it stands in for.
 - **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
   ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
   pinned data dump, and a weekly workflow opens a pull request when one moves. Asserted inside a
