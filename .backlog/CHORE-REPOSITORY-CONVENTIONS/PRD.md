@@ -288,6 +288,7 @@ they describe what was true when written and are not rewritten.
 | 09 | [The shipped settings stop pre-approving every shell command](tickets/09-settings-blanket-grants.md) | ✅ |
 | 10 | [*done* means committed, and *merged* becomes a status](tickets/10-done-means-committed.md) | ✅ |
 | 11 | [Review response](tickets/11-review-response.md) | ✅ |
+| 12 | [Second review response](tickets/12-second-review-response.md) | ✅ |
 
 One branch, one pull request, and no commit touching more than one ticket.
 
