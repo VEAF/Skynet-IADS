@@ -87,6 +87,7 @@ If the change can only be judged inside DCS, stop and wait for explicit approval
 | touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `unit-tests/README.md` for the in-sim smoke gate |
 | open a pull request | `CONTRIBUTING.md` — git flow and the changelog |
 | create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
+| edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |
 | change how sites, radars or the network behave | `CONTEXT.md` — what Skynet is for, and what in its design looks like a bug and is not |
 | cut a release | the `release` skill |
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |

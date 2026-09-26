@@ -201,6 +201,22 @@ backlog, this file. The users of this project are not only French-speaking.
 What a *user* reads is the exception, and only there: the site is French at the root with English
 under `/en/`, and `README.md` carries both.
 
+## Writing guidance
+
+The guidance files are the instruction files at the root: `CLAUDE.md`, this file,
+`BACKLOG-CONVENTIONS.md`, `CONTEXT.md` and `README.md`. They follow five rules.
+
+- **A rule is stated once**, with its reasons and edge cases, and every other file points at it. A
+  command may be repeated, and so may a rule in `CLAUDE.md` given bare, with at most a clause of why:
+  a drifting copy of either fails loudly. An explanation is never repeated.
+- **A rule states its own reason.** It never cites a lot, a ticket, a commit, a person or a date to
+  justify itself; that history is in `.backlog/`, for whoever asks why.
+- **No consumer is named.** Other repositories vendor what this one ships; say that, not which.
+- **A pointer names a file**, never a heading or an anchor. A heading is reworded as a matter of
+  course; a file is rarely renamed, and never quietly.
+- **`CLAUDE.md` is read in every agent session**, so each line in it must prevent a mistake. What it
+  delegates is reached through its table, one row per kind of task.
+
 ## Git flow
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
