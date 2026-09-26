@@ -134,7 +134,13 @@ the point. A committed copy of the code goes stale in silence, and did — the i
 build from December 2023 for three years, so both what we measured and what newcomers downloaded were
 code this project had stopped shipping. Never edit a `.miz` by hand: a script is wired into it in
 four places, and `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`, `remove`) is what
-keeps them consistent.
+keeps them consistent. `miz-suite.py check` guards against an archive carrying a build old enough to
+hide a rename, and CI runs it, assembles every mission and parses every Lua file inside them on every
+pull request. The tool reads a `mission` written by DCS or by VEAF's mission editor, which serialise
+the same table differently; `python -m unittest discover -s test/python` covers both shapes.
+
+Only `demo-missions/` archives are attached to a release. The `unit-tests/` ones never are — they are
+a gate, not a thing to download.
 
 **Coverage is measured and gated** (`.github/workflows/lua-tests.yml`):
 
@@ -247,9 +253,10 @@ Every pull request that changes `skynet-iads-source/` adds an entry to `CHANGELO
 the **end** of the `[Unreleased]` section.
 
 This is not bookkeeping. The main consumer of this project is another repository —
-[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) copies the built
-artifact into the missions it produces — and the changelog is how they know whether a new build is
-worth taking. That copy has run a month behind without anyone noticing.
+[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors the built
+artifact under `src/scripts/community/` — and the changelog is how they know whether a new build is
+worth taking. A change here reaches missions only once that repository re-vendors it, a deliberate
+step on their side; that copy has run a month behind without anyone noticing.
 
 ## Editor
 

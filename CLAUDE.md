@@ -1,26 +1,12 @@
 # Skynet-IADS — Claude Code Instructions
 
-> Skynet gives DCS World an Integrated Air Defence System: early-warning radars feed contacts to
-> SAM sites, which stay dark until the network tells them to engage. Pure Lua 5.1 sources in
+> Skynet gives DCS World an Integrated Air Defence System: early-warning radars feed contacts to SAM
+> sites, which stay dark until the network tells them to engage. Pure Lua 5.1 sources in
 > `skynet-iads-source/` are concatenated into a single deliverable `skynet-iads-compiled.lua` by a
 > PowerShell build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
 
-**VEAF and the Regroupement de Patrouilles (BFR, NAWACS) maintain this project jointly**, in this
-repository. `regroupement-patrouille/Skynet-IADS` is read-only and walder has been inactive for
-years — both are historical archives. Never open pull requests against either upstream, and never
-treat them as a source of truth.
-
-## Language
-
-English for everything inside the repository: code, comments, commits, pull requests, the backlog,
-`CONTRIBUTING.md`. The users of this project are not only French-speaking.
-
-**What a user reads is bilingual, and French is the default.** Under `documentation/`, the
-unsuffixed `page.md` holds the **French** text and `page.en.md` its English twin; a page never
-ships without its twin, because the i18n plugin falls back rather than failing and a missing
-English page means the English URL silently serves French. The root `README.md` is bilingual too,
-in a single file — English first, then French, with a switcher at the top of each half, as
-VEAF-Mission-Creation-Tools does it. See *Documentation* below.
+**`CONTRIBUTING.md` is the guide.** This file holds what you can get wrong before you would have any
+reason to open it. Everything else is there.
 
 ## Behaviour (surgical mode)
 
@@ -31,199 +17,79 @@ VEAF-Mission-Creation-Tools does it. See *Documentation* below.
   API behaviour — verify it against the [dcs-lua-datamine
   dataset](https://github.com/Quaggles/dcs-lua-datamine) or a real log.
 
-## The generated deliverable — never edit it
+## Never
 
-`demo-missions/skynet-iads-compiled.lua` is the **deliverable**, concatenated from
-`skynet-iads-source/*.lua`. Editing it is lost at the next build, silently.
+- **Edit `demo-missions/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
+  `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
+- **Edit a `.miz` by hand.** A script is wired into it in four places, and
+  `build-tools/miz-suite.py` is what keeps them consistent.
+- **Open a pull request against an upstream repository.** VEAF and the Regroupement de Patrouilles
+  (BFR, NAWACS) maintain this project jointly, here. `regroupement-patrouille/Skynet-IADS` is
+  read-only and walder's has been inactive for years; both are historical archives and neither is a
+  source of truth.
+- **Commit directly to `develop` or `master`.** Work on `feature/*` or `fix/*` cut from `develop`.
+  The one exception: a change confined to `.backlog/` goes straight to `develop`.
+- **Add a source file to the build script.** The order lives in `build-tools/listToMerge.txt`.
 
-`README.md` at the root is hand-written and short — a door pointing at the published documentation
-in `documentation/`, built with MkDocs. See ticket 06 in `CHORE-PROFESSIONALIZE-THE-REPO`.
-
-Build from any working directory — paths resolve from the script's own location, and the version
-comes from `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`, not from an argument:
+## Commands
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1
+pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
+lua5.1 test/lua/run.lua                              # the standalone suite; a name filters
+build-tools/lint.sh                                  # luacheck + stylua, as CI runs them
+python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 ```
 
-The source order lives in `build-tools/listToMerge.txt`, one path per line, commented with why the
-order is what it is — edit that file to add or reorder a source, never the script.
+On a Windows checkout `lua5.1` is not on `PATH`, and PowerShell needs the call operator:
 
-CI (`.github/workflows/build.yml`) runs the build on every push and pull request, then loads and
-executes the artifact against the DCS stub with `build-tools/check-artifact.lua` — a build proves
-the files concatenate, not that the result runs. A tag matching `v*`
-(`.github/workflows/release.yml`) builds, verifies, and publishes a GitHub release carrying the
-artifact and the `[Unreleased]` section of `CHANGELOG.md`; a tag that is not a plain `vX.Y.Z` is
-published as a pre-release.
+```powershell
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+```
 
-## Documentation
-
-The published documentation is `documentation/*.md`, built with MkDocs Material and versioned with
-`mike`, deployed by `.github/workflows/docs.yml` to <https://veaf.github.io/Skynet-IADS/>. Prose
-lives in exactly one place: either a page under `documentation/`, or the root `README.md` — never
-both. `develop` publishes as `dev` (the site default while no stable release exists) and a tag
-publishes its own version — plus the `latest` alias if the tag is a plain `vX.Y.Z`; a pre-release
-tag publishes its own version only, so a release candidate never becomes what a newcomer reads by
-default. `master` publishes nothing of its own: a tag is always on `master`, so between two
-releases `master` is not on the site.
-
-A documentation fix that lands between two releases therefore reaches nobody until the next tag.
-`gh workflow run docs.yml -f version=3.5.0` republishes that version's **pages** from the current
-branch, leaving the tag, the artifact and the version number alone — run it from `develop`, and
-only when the pages genuinely describe the released code. Omit `version` to redeploy `dev`.
-
-It does **not** move `latest`, and it does not need to: mike rebuilds every alias directory the
-version already owns, so republishing the newest release refreshes `/latest/` on its own. Pass
-`-f set_latest=true` only to make a version *become* `latest` — on an older one it drags the site
-default back to old documentation, and the run stays green while doing it.
-
-The site is **bilingual, French by default**, on the VEAF-Mission-Creation-Tools model:
-`mkdocs-static-i18n` in `suffix` mode, French at the site root and English under `/en/`. Three
-conventions come with it, and `build-tools/docs-check.py` enforces all three — run it before
-pushing, and `mkdocs build --strict` with it:
-
-- **Every page has a twin.** `page.md` French, `page.en.md` English, both listed nowhere but the
-  single unsuffixed `nav` entry, which the plugin resolves per language. This one is a real
-  defect: the plugin falls back rather than failing, so an untranslated page is served in the
-  other language under its own URL, and mkdocs logs a page outside the nav as `INFO`.
-- **A heading targeted by a cross-page link declares its anchor**, `## Point defence
-  {#point-defence}`, with the **same id in both languages**. A generated anchor differs between
-  the twins and breaks on the next reword.
-- **An English page links to `page.en.md`**, never to `page.md`. Style, not breakage — measured:
-  the plugin rewrites either spelling to the same URL and the reader stays in English. What the
-  rule buys is that the file says what the reader gets, so a twin going away reads as wrong before
-  it behaves as wrong.
-
-The deliverable is vendored by
-[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) under
-`src/scripts/community/`. A change here reaches missions only once that repository re-vendors it,
-which is a deliberate step on their side — the copy has run a month behind before now.
-
-## Static analysis and formatting
-
-`skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
-(`.github/workflows/lint.yml`). `.luacheckrc` lists the DCS Scripting Engine's globals and this
-project's own (every class is a bare global — DCS has no module system, and the sources are
-concatenated, not required); `stylua.toml` excludes the vendored `test/lua/luaunit.lua` via
-`.styluaignore`.
-
-Run both gates the way CI does with `build-tools/lint.sh` (or one of them:
-`build-tools/lint.sh luacheck`). On a Windows checkout it is the only thing that works without
-fiddling: a luarocks `luacheck` often sits in a tree for a newer Lua than the interpreter that has
-to run it and dies before checking anything, and `core.autocrlf=true` makes `stylua --check` flag
-every file for line endings alone. The script works around both and exits non-zero on a real
-finding.
-
-`.luacheckrc` also pins a **ratchet**: warnings the first run already had, scoped to their exact
-file and code, so a *new* warning of the same kind in the same file still fails. Fix new code
-instead of extending it — it exists to erode, never to grow.
-
-## Tests
-
-- New **logic** tests go in `test/lua/`, run with `lua5.1 test/lua/run.lua` (a suite name filters:
-  `lua5.1 test/lua/run.lua contact`). They use the DCS stub in `test/lua/dcs-stub.lua`.
-- `unit-tests/` holds every mission that needs the simulator. Two are the legacy in-sim suite, being
-  migrated — `unit-tests/skynet-unit-tests.miz` and
-  `unit-tests/highdigitsams/highdigitsams-unit-tests.miz`; the third,
-  `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`, is a check driven from
-  outside through VEAF's `dcs-bridge` with no player task. The directory is also what a release
-  reads: `demo-missions/` archives are attached to it, `unit-tests/` ones never are.
-  **`unit-tests/README.md` is the door**: how to run the in-sim smoke gate
-  (`python build-tools/run-smoke.py`), what each check asks, and the rule for adding one — a check
-  returns a *word*, because `dcs-bridge` flattens a Lua `false` to the empty string. The gate is
-  consultative and local; DCS cannot run on a GitHub runner, and the `release` skill runs it before
-  the version is bumped.
-  Only behaviour that genuinely needs the simulator — terrain elevation, real detection geometry,
-  in-game events, how a DCS group is composed — stays there. **The numeric figures ED states about a
-  unit do not**: a missile's reach, its firing ceiling, a radar's detection distance are recorded in
-  `test/lua/dcs-figures.lua`, generated from a pinned datamine commit, and a weekly workflow opens a
-  pull request when one moves. A suite whose every assertion runs standalone is removed from both
-  copies, the loose `unit-tests/*.lua` and the one inside the `.miz`.
-- **No archive in git contains the scripts it runs** — neither the two in-sim ones nor the four
-  under `demo-missions/`. Each holds a placeholder, and `python build-tools/miz-suite.py build`
-  assembles the playable missions into `build/missions/`, which is git-ignored — build the
-  deliverable first, it is generated too. A committed copy of the code goes stale in silence: the
-  in-sim archives ran Skynet 3.3.0 from December 2023 to 2026-09-20, and three of the four demos ran
-  3.2 from the same December, so both what we measured and what newcomers downloaded were code this
-  project had stopped shipping. An assembled mission cannot, and one opened unbuilt says so on
-  screen. Never edit a `.miz` by hand: a script is wired into it in four places, and
-  `build-tools/miz-suite.py` (`build`, `check`, `stub`, `extract`, `remove`) is what keeps them
-  consistent; every command covers all six archives unless `--miz <path>` narrows it. CI runs
-  `check`, assembles every mission and parses every Lua file in them on every pull request, and
-  `.github/workflows/release.yml` attaches the assembled **demos** to a release — that is where a
-  playable demo comes from now. The tool reads a `mission` written by DCS or by VEAF's mission
-  editor, which serialise the same table differently; `python -m unittest discover -s test/python`
-  covers both shapes. See `test/lua/README.md`.
-- **Test first**: write the failing test, make it pass, refactor. New or changed logic ships with
-  its tests.
-- **Test coverage is measured and gated** (`.github/workflows/lua-tests.yml`, `Test coverage` job):
-  `SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua` then
-  `lua5.1 build-tools/report-test-coverage.lua`. It fails below the floor in
-  `build-tools/test-coverage-floor.txt`, which **only goes up** — when your tests carry the figure
-  past it, raise it in the same pull request; the report says when and to what. What counts is in
-  `.luacov`: the pure data tables are out of the denominator, because loading one is not testing it.
-- A test that passes only because the stub returns something convenient is worth nothing. When a
-  test needs the stub extended, extend it deliberately and write down what real behaviour it stands
-  in for.
+`build-tools/lint.sh` exists because of that platform too: a luarocks `luacheck` often targets a
+newer Lua than the interpreter that has to run it, and `core.autocrlf=true` makes `stylua --check`
+flag every file for its line endings alone. The script works around both.
 
 ## Git flow
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
-- Work on `feature/*` or `fix/*` cut from `develop`. Never commit directly to `develop` or `master`.
-- **One exception**: a change confined to `.backlog/` — a new lot, a status change, an index line —
-  goes straight to `develop`. David's call, 2026-09-19: a pull request whose entire diff is the
-  tracker costs a review cycle and protects nothing CI can check. The moment a change touches
-  `skynet-iads-source/`, `test/`, `documentation/`, `CHANGELOG.md` or the build, it goes through a
-  branch and a pull request — including a one-line change.
-- One branch and one pull request per lot, not per ticket. A lot may be split across several pull
-  requests when its tickets are genuinely independent, but **the split is announced in the plan and
-  approved before the first branch is cut** — never decided ticket by ticket as the work goes.
-  David's call, 2026-09-19, after `CHORE-PROFESSIONALIZE-THE-REPO` reached nine pull requests and
-  `CHORE-TEST-COVERAGE-FLOOR` five, none of which he had been asked about. The rule already allowed
-  the split; what was missing was his say in it.
-- **One commit per ticket** inside a pull request. Two tickets in one commit reads fine at the time
-  and is unreadable six months later: `FEAT-LAST-LINE-OF-DEFENSE` shipped the proximity wake-up and
-  the coverage rebuild as a single commit (`0ebbc01`), so neither can be read, reverted or bisected
-  on its own. Flogas caught it. A lot shared by two tickets does not justify a commit shared by two
-  subjects.
-- Conventional Commits, in English.
-- Branches are deleted on merge.
-
-## Backlog
-
-`.backlog/` is the tracker: one directory per lot, holding `PRD.md` and one file per ticket under
-`tickets/`, with `.backlog/INDEX.md` as the hand-maintained index. Lots closed for more than a few
-days are compacted into `.backlog/archive/<LOT-ID>.md`.
-
-GitHub issues are for reports arriving from outside. A report that turns into work becomes a lot.
-`.backlog/IDEAS.md` is the idea tracker: an evolution is a thought, a lot is committed work.
+- One branch and one pull request **per lot**, not per ticket. A lot may be split across several pull
+  requests when its tickets are genuinely independent, but the split is announced in the plan and
+  approved before the first branch is cut — never decided ticket by ticket as the work goes.
+- **One commit per ticket** inside a pull request. Two subjects in one commit read fine at the time
+  and cannot be read, reverted or bisected apart six months later.
+- Conventional Commits, in English. Branches are deleted on merge.
+- English for everything inside the repository: code, comments, commits, pull requests, the backlog,
+  `CONTRIBUTING.md`. What a *user* reads is the exception — the documentation site is bilingual, and
+  French is what a visitor gets by default.
 
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → create or pick a lot in `.backlog/` → branch → implement
-with its tests → `lua5.1 test/lua/run.lua` → rebuild if the sources changed → update `CHANGELOG.md`
-under `[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
+with its tests → run the suite → rebuild if the sources changed → update `CHANGELOG.md` under
+`[Unreleased]`, appending at the **end** of the section → commit and push → pull request to
 `develop` → address review and CI → merge.
 
-Nothing to do about the mission archives, in-sim or demo: they hold placeholders, and the mission
-DCS opens is assembled on demand by `python build-tools/miz-suite.py build`. That is the step to run
-**before** testing in DCS, not before committing.
+Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
+assembled on demand. That is the step to run before testing in DCS, not before committing.
 
 If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
 
-## Domain
+## Before you do these, read
 
-`CONTEXT.md` holds the vocabulary — what an IADS is here, what "covered" means, and the words the
-code uses. Read it before touching the radar element hierarchy; several of its terms mean something
-narrower than they sound.
+| About to… | Read |
+|---|---|
+| change a source file | `CONTRIBUTING.md` § Test first, § Building, § Static analysis and formatting |
+| add or change a test | `CONTRIBUTING.md` § Test first; `test/lua/README.md` for how to run one |
+| touch `documentation/` | `CONTRIBUTING.md` § The README is hand-written, the documentation is published — three conventions, all gated |
+| touch a `.miz`, or test in DCS | `CONTRIBUTING.md` § Test first; `unit-tests/README.md` for the in-sim smoke gate |
+| open a pull request | `CONTRIBUTING.md` § Git flow, § Changelog |
+| create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
+| touch the radar element hierarchy | `CONTEXT.md` — several of its terms are narrower than they sound |
+| cut a release | the `release` skill |
+| diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 
-## Agent notes
-
-- Backlog conventions and the status vocabulary: `BACKLOG-CONVENTIONS.md`. Read it before creating
-  or editing a lot, a PRD or a ticket.
-- Runtime diagnosis from a DCS log: the `skynet-runtime-debug` skill
-- Cutting a release: the `release` skill (manual today — see
-  `CHORE-PROFESSIONALIZE-THE-REPO` ticket 03)
+A row here means a new *kind* of task, never a new subsection of one already listed.
 
 ## Bash
 

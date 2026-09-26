@@ -106,6 +106,15 @@ Until that release is cut, the build date in the artifact's first line remains t
   a change confined to `.backlog/` goes straight to `develop` with no pull request, an exception
   written for status changes and index lines, and rules that other files depend on should not inherit
   it.
+- **`CLAUDE.md` is 231 lines shorter by two thirds, and `CONTRIBUTING.md` is the guide.** Seven
+  subjects had been stated in both, and the drift between the copies had already produced two
+  defects: the two files disagreed on whether a tracker-only change may go straight to `develop`, and
+  the lint gate that fails a first pull request was documented only in the file a contributor has no
+  reason to open. What stays in `CLAUDE.md` is what someone can get wrong before opening the guide —
+  never edit the deliverable, never open a pull request upstream, never commit to `develop` — plus
+  the commands, which cannot be guessed, and a table sending each kind of task to the section that
+  covers it. What left is the reference half. The file also stopped justifying its rules by pointing
+  at closed lots and commits: a rule states itself and its reason, and the tracker keeps the history.
 
 ## [3.5.0] — 2026-09-21
 

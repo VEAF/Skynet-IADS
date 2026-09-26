@@ -1,6 +1,6 @@
 # 05 — CLAUDE.md keeps what prevents damage
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 
