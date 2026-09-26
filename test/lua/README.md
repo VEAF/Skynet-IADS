@@ -27,6 +27,17 @@ cmd.exe takes the quoted path as-is:
 
     "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
 
+## Adding a suite
+
+Create `test/lua/test_<module>.lua`. It pulls in `luaunit.lua` and `dcs-stub.lua`, loads the source
+module through `skynet-loader.lua`, and ends with `os.exit(luaunit.LuaUnit.run())`; `run.lua`
+discovers it by name and aggregates its exit code. `test_skynet_iads_contact.lua` is the pattern to
+copy.
+
+One warning about the stub: a test that passes only because `dcs-stub.lua` returned something
+convenient proves nothing. When a test needs the stub extended, extend it deliberately and write down
+which real DCS behaviour it stands in for.
+
 ## Test coverage
 
 How much of `skynet-iads-source/` the suite actually executes. Beware the word: in Skynet,

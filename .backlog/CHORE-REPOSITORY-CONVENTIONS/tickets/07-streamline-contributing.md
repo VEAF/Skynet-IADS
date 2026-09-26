@@ -1,12 +1,6 @@
 # 07 — Streamline CONTRIBUTING.md
 
-**Status**: ⏸ paused — to analyse
-
-> **Do not start this before tickets 04 and 05 have landed.** Nothing is expected of anyone; this is
-> sequencing. Ticket 04 moves the seven duplicated subjects, the lint section and the naming
-> conventions *into* this file, and ticket 05 empties the rest of `CLAUDE.md` towards it. Streamlining
-> beforehand would be reorganising a file that is about to change shape. **What restarts it**: 04 and
-> 05 merged, or abandoned.
+**Status**: ✅ done
 
 ## Problem
 

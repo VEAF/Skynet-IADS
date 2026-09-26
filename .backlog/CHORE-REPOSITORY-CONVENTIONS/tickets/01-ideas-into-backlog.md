@@ -1,6 +1,6 @@
 # 01 — The idea tracker moves into the backlog
 
-**Status**: 🔄 in-progress
+**Status**: ✅ done
 
 ## Problem
 

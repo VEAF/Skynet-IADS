@@ -1,6 +1,6 @@
 # 06 — What CONTEXT.md is for, and what survives
 
-**Status**: 🔄 in-progress — amended and reviewed, pending commit
+**Status**: ✅ done
 
 ## Problem
 
