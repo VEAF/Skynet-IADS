@@ -35,12 +35,35 @@ describes `-rc1` pre-releases; and the archiving paragraph ran past the file's w
 
 ## Decisions
 
-**`documentation/` does not count as a second home for `CONTEXT.md`'s material.** The review proposed
-cutting the file to roughly 40 lines, on the grounds that the FAQ already answers what *covered*
-means and `setting-up` covers command centres and connection nodes — both verified, and the FAQ
-answer is nearly word for word. Florent's call: the published site serves a mission maker and this
-file serves someone reading the code, and the same fact explained for two audiences is not the
-duplication this lot targets. The sections stay; only the wrong claims were fixed.
+**`CONTEXT.md` is cut by a different test than the review proposed.** The review wanted it reduced to
+what has no home in `documentation/` — the FAQ answers what *covered* means nearly word for word, and
+`setting-up` covers command centres and connection nodes, both verified. Florent refused that framing:
+the published site serves a mission maker and this file serves someone reading the code, and the same
+fact for two audiences is not the duplication this lot targets. He also refused the review's proposal
+that the file end by pointing at the FAQ.
+
+The test he gave instead is sharper and cuts *within* sections rather than removing them:
+
+> A concept section says why something is the way it is, or what will surprise you. A code
+> transcription lists what the code does.
+
+The first survives a refactor. The second is wrong the moment somebody edits the function, and is a
+worse copy of the code kept where the code cannot see it. Three passages failed it and are gone — the
+cycle's five steps, autonomy's four conditions, and coverage as a flat 2D distance — each leaving
+behind what it was for.
+
+**Autonomy does not make an element more dangerous.** The claim survived from the compiled-artifact
+analysis this file was built on, and was reintroduced during this round before Florent caught it. An
+autonomous element is lit, uncoordinated and sees only its own radar: the DCS default Skynet exists
+to improve on. Losing the network degrades the IADS, which is the concept.
+
+**The code-name column is the one thing here with no other home**, and it was the part of the review's
+item 2 that had nothing to do with cutting. It was lost because the question put to Florent bundled it
+with the proposal he rejected. Every identifier is verified against the sources: `setPointDefence`
+does not exist — it is `addPointDefence` — and connection nodes have no class at all.
+
+`CLAUDE.md`'s table is unchanged: its row already promises "the domain, and the words the code uses
+for it", a promise the file now keeps.
 
 **No rule names a consumer.** The reason behind the changelog rule was one repository and its
 vendoring habits, in three files. Florent's call: remove it from all of them, Skynet has no consumer
