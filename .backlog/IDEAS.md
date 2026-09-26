@@ -294,8 +294,8 @@ Worth doing the moment a second row goes stale; one occurrence is an anecdote.
 ## The test READMEs still argue from the backlog
 
 Guidance files state their rules without citing a lot, a ticket, a person or a date, and without
-naming a consumer. `CHORE-REPOSITORY-CONVENTIONS` applied that to the root instruction files and the
-skills, and left the two READMEs inside the test directories as they were.
+naming a consumer. `CHORE-REPOSITORY-CONVENTIONS` applied that to the root instruction files, and left the two
+READMEs inside the test directories as they were.
 
 Noticed 2026-09-26, in its third review:
 
@@ -313,3 +313,24 @@ has to be checked for whether its reason survives without its citation — most 
 
 The shape to aim for is the one the root files reached: the rule, and its reason in general form.
 The history is already in the archived lot records.
+
+## The skills are outside the guidance rules, and out of step with them
+
+The rules for writing guidance in `CONTRIBUTING.md` cover the root instruction files. The skills
+under `.claude/skills/` were left out of `CHORE-REPOSITORY-CONVENTIONS` and still disagree with
+those files in places:
+
+- **`skynet-runtime-debug`** names VEAF three times: its debug configuration, its helper's
+  `RADAR RANGE ZERO` lines and its vendored copy running behind. It calls a battery acting as EW
+  "a permanent watcher", which HARM defence contradicts and `CONTEXT.md` no longer claims, and says
+  a battery without ammunition "will never go live again".
+- **`release`** freezes the changelog with a commit straight on `develop`, which the git flow
+  forbids for any change touching `CHANGELOG.md`. It bumps the version on a `release/x.y.z` branch,
+  a prefix the git flow does not list. It says to promote to `master` "per the project's branching
+  model", which no file describes.
+- **`CLAUDE.md` sends an agent to the `release` skill**, which sets `disable-model-invocation: true`.
+  An agent cannot invoke it, and the row should say that the user runs `/release`.
+
+**Open question before doing it**: whether a skill counts as guidance at all. The VEAF configuration
+in the debug skill is how most users actually turn debug output on, which may be reason enough to
+keep it and say so.
