@@ -3,10 +3,6 @@
 How work is tracked in this repository. The live list of lots is [`.backlog/INDEX.md`](.backlog/INDEX.md);
 this file is the rules behind it.
 
-The shape is the one [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools)
-and [CTLD](https://github.com/VEAF/CTLD) use, so that anyone moving between the three repositories
-finds the same thing.
-
 ## Shape
 
 ```
@@ -65,8 +61,13 @@ lot nobody trusts.
 | 🔄 | in-progress | Someone is on it. Say who, or which branch. |
 | 🧑 | waiting-human | Blocked on a person: a decision, a test in DCS, a credential, an answer. **Say what is expected and from whom** — a waiting-human with no named expectation is a lot nobody will ever unblock. |
 | ⏸ | paused | Deliberately parked. Unlike 🧑, nothing is expected of anyone; unlike ⬜, nobody should pick it up. Say what would restart it. |
-| ✅ | done | Merged. |
+| ✅ | done | The work is committed. For a ticket that is the end of it. |
+| 🔀 | merged | **Lots only.** The pull request has landed on `develop`. Next stop is the archive. |
 | 🚫 | wontfix | Decided against. **Keep the reasoning** — a wontfix without a reason gets reopened. |
+
+A ticket never reaches 🔀: it is finished when its commit lands on the branch, and it is the lot that
+is merged. A lot reaches ✅ when every one of its tickets has, which is the moment its pull request
+is worth opening — the work exists and is not yet in `develop`.
 
 ### The distinction that matters
 
