@@ -54,8 +54,8 @@ flag every file for its line endings alone. The script works around both.
 
 ## Git flow
 
-The rules, without their reasons or their edge cases. Those are in `CONTRIBUTING.md` § Git flow,
-which is where they are stated and the only place they may be changed.
+The rules, without their reasons or their edge cases. Those are in `CONTRIBUTING.md`, which is
+where they are stated and the only place they may be changed.
 
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - One branch and one pull request **per lot**. Splitting a lot across several is agreed before the
@@ -68,7 +68,7 @@ which is where they are stated and the only place they may be changed.
 ## Default workflow
 
 Sync (`git pull --ff-only` on `develop`) → open or pick a lot **if the work needs one**
-(`BACKLOG-CONVENTIONS.md` § When a lot is required) → branch → implement
+(`BACKLOG-CONVENTIONS.md` says when) → branch → implement
 with its tests → run the suite → rebuild if the sources changed, and add a `CHANGELOG.md` entry if
 they did → commit and push → pull request to `develop` → address review and CI → merge.
 
@@ -81,14 +81,15 @@ If the change can only be judged inside DCS, stop and wait for explicit approval
 
 | About to… | Read |
 |---|---|
-| change a source file | `CONTRIBUTING.md` § Test first, § Building, § Static analysis and formatting |
-| add or change a test | `CONTRIBUTING.md` § Test first; `test/lua/README.md` for how to run one |
-| touch `documentation/` | `CONTRIBUTING.md` § Documentation — three conventions, all gated |
-| touch a `.miz`, or test in DCS | `CONTRIBUTING.md` § Test first; `unit-tests/README.md` for the in-sim smoke gate |
-| open a pull request | `CONTRIBUTING.md` § Git flow, § Changelog and versioning |
+| change a source file | `CONTRIBUTING.md` — testing first, the build, the lint gate |
+| add or change a test | `CONTRIBUTING.md` for which suite; `test/lua/README.md` for how to run and add one |
+| touch `documentation/` | `CONTRIBUTING.md` — three conventions, all gated |
+| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `unit-tests/README.md` for the in-sim smoke gate |
+| open a pull request | `CONTRIBUTING.md` — git flow and the changelog |
 | create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
 | change how sites, radars or the network behave | `CONTEXT.md` — the domain, and the words the code uses for it |
 | cut a release | the `release` skill |
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 
-A row here means a new *kind* of task, never a new subsection of one already listed.
+A row here means a new *kind* of task, never a new subsection of one already listed. A row names a
+file, never a heading inside it.

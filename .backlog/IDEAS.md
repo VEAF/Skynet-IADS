@@ -272,6 +272,10 @@ rather than earning one of its own.
 
 ## Nothing checks that CLAUDE.md's pointers still resolve
 
+**Closed 2026-09-26.** Florent's call: `CLAUDE.md` names files, never headings, so there is nothing
+left for a check to resolve. A heading gets reworded as a matter of course; a file is rarely renamed,
+and never quietly. The analysis below is what the decision was made on.
+
 `CLAUDE.md`'s *Before you do these, read* table is load-bearing: it survives compaction, and it is
 the only route back to everything delegated out of that file. Each row names a section, `§ X`, in
 another file.
