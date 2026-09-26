@@ -1,22 +1,13 @@
 # Backlog — Skynet-IADS (VEAF)
 
-Per-lot backlog. Active lots are directories under `.backlog/<LOT-ID>/`, each holding a `PRD.md` and
-one file per ticket under `tickets/`. Completed lots are compacted into
-`.backlog/archive/<LOT-ID>.md`. This index is the source of truth for **scope and status**, and it
-is maintained by hand.
+The lots, and where each one stands. This index is the source of truth for **scope and status**, and
+it is maintained by hand.
 
-[IDEAS.md](IDEAS.md) sits beside it and is not a lot: ideas and things noticed in passing. Promoting
-one to a lot is the normal path.
+[`../BACKLOG-CONVENTIONS.md`](../BACKLOG-CONVENTIONS.md) has the rules: the shape of a lot, what
+belongs in a PRD as against a ticket, and what each status glyph means — ⬜ ready · 🔄 in-progress ·
+🧑 waiting-human · ⏸ paused · ✅ done · 🚫 wontfix.
 
-The convention is the one used by [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools)
-and [CTLD](https://github.com/VEAF/CTLD), so that anyone moving between the three repositories finds
-the same shape.
-
-## Legend
-
-- **Status**: ⬜ ready · 🔄 in-progress · 🧑 waiting-human · ⏸ paused · ✅ done · 🚫 wontfix
-- ⏸ **paused** is *deliberately parked*, not blocked: unlike 🧑 nothing is expected of anyone, and
-  unlike ⬜ an agent should not pick it up.
+[IDEAS.md](IDEAS.md) sits beside this file and is not a lot: ideas and things noticed in passing.
 
 ## Active lots
 

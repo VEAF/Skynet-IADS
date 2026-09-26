@@ -192,7 +192,7 @@ instead of extending it — it exists to erode, never to grow.
 ## Backlog
 
 `.backlog/` is the tracker: one directory per lot, holding `PRD.md` and one file per ticket under
-`tickets/`, with `.backlog/README.md` as the hand-maintained index. Lots closed for more than a few
+`tickets/`, with `.backlog/INDEX.md` as the hand-maintained index. Lots closed for more than a few
 days are compacted into `.backlog/archive/<LOT-ID>.md`.
 
 GitHub issues are for reports arriving from outside. A report that turns into work becomes a lot.
@@ -219,8 +219,8 @@ narrower than they sound.
 
 ## Agent notes
 
-- Issue tracker and lot conventions: `docs/agents/issue-tracker.md`
-- Status vocabulary: `docs/agents/triage-labels.md`
+- Backlog conventions and the status vocabulary: `BACKLOG-CONVENTIONS.md`. Read it before creating
+  or editing a lot, a PRD or a ticket.
 - Runtime diagnosis from a DCS log: the `skynet-runtime-debug` skill
 - Cutting a release: the `release` skill (manual today — see
   `CHORE-PROFESSIONALIZE-THE-REPO` ticket 03)

@@ -226,7 +226,7 @@ they describe what was true when written and are not rewritten.
 |---|--------|--------|
 | 01 | [The idea tracker moves into the backlog](tickets/01-ideas-into-backlog.md) | 🔄 |
 | 02 | [contributing.md takes the name the repository predicts](tickets/02-rename-contributing.md) | ✅ |
-| 03 | [The tracker documents itself; docs/ disappears](tickets/03-backlog-conventions.md) | ⬜ |
+| 03 | [The tracker documents itself; docs/ disappears](tickets/03-backlog-conventions.md) | ✅ |
 | 04 | [CONTRIBUTING.md becomes the single source](tickets/04-single-source.md) | ⬜ |
 | 05 | [CLAUDE.md keeps what prevents damage](tickets/05-claude-md-shrinks.md) | ⬜ |
 | 06 | [What CONTEXT.md is for, and what survives](tickets/06-context-corrections.md) | 🔄 |

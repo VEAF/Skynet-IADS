@@ -1,0 +1,90 @@
+# Backlog conventions
+
+How work is tracked in this repository. The live list of lots is [`.backlog/INDEX.md`](.backlog/INDEX.md);
+this file is the rules behind it.
+
+The shape is the one [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools)
+and [CTLD](https://github.com/VEAF/CTLD) use, so that anyone moving between the three repositories
+finds the same thing.
+
+## Shape
+
+```
+BACKLOG-CONVENTIONS.md       these rules
+.backlog/
+  INDEX.md                   the lots, with their status. Maintained by hand
+  IDEAS.md                   noticed but not committed to
+  <LOT-ID>/
+    PRD.md                   why, what was decided, and why it was decided that way
+    tickets/
+      01-<slug>.md           one deliverable each
+  archive/
+    <LOT-ID>.md              a closed lot, compacted into one file
+```
+
+`<LOT-ID>` is uppercase and kebab-cased, prefixed by intent: `FEAT-`, `FIX-`, `CHORE-`,
+`INVESTIGATE-`, `REFACTOR-`.
+
+## What goes where
+
+**The PRD** carries the reasoning. Not just what to build — what was measured, what was rejected and
+why, and which trade-offs were taken knowingly. A PRD that only lists tasks is worthless six months
+later, when the question is no longer *what* but *why like this*.
+
+Write the measurements down with their limits. "Measured on the log: 7 933 dark status lines, zero
+ever lit" is useful; so is "the reporter's own close pass is not in this log, so the mechanism is
+proven from the code, not from this measurement". A reader who cannot tell what was proven from what
+was inferred will redo the work.
+
+**A ticket** is one deliverable, with its own definition of done. It says what to build and what must
+be true when it is finished — including the test that would catch the regression nobody would notice
+in play.
+
+**The index** carries one line per lot, describing it well enough that nobody has to open the file to
+know whether it is theirs.
+
+## The three trackers
+
+| | |
+|---|---|
+| **GitHub issues** | Reports arriving from outside. A report that becomes work becomes a lot; the issue is then closed referencing it. |
+| **`.backlog/IDEAS.md`** | Ideas and things noticed in passing. An evolution is a thought; a lot is committed work. Promoting one to the other is the normal path. |
+| **`.backlog/`** | What is planned, in progress or done. |
+
+Never create a separate todo file. In-session task lists stay in the session.
+
+## Status
+
+One vocabulary, used identically in `.backlog/INDEX.md` and at the top of every `PRD.md` and ticket.
+The status in the index and the status in the PRD must agree — a lot whose two statuses disagree is a
+lot nobody trusts.
+
+| | Status | Meaning |
+|---|---|---|
+| ⬜ | ready | Specified and unblocked. An agent may pick it up and start. |
+| 🔄 | in-progress | Someone is on it. Say who, or which branch. |
+| 🧑 | waiting-human | Blocked on a person: a decision, a test in DCS, a credential, an answer. **Say what is expected and from whom** — a waiting-human with no named expectation is a lot nobody will ever unblock. |
+| ⏸ | paused | Deliberately parked. Unlike 🧑, nothing is expected of anyone; unlike ⬜, nobody should pick it up. Say what would restart it. |
+| ✅ | done | Merged. |
+| 🚫 | wontfix | Decided against. **Keep the reasoning** — a wontfix without a reason gets reopened. |
+
+### The distinction that matters
+
+⬜ and ⏸ look alike and are opposites. `ready` invites an agent to start; `paused` tells it not to. A
+lot waiting on something that has not shipped yet is **paused**, not ready — and its note should say
+what it is waiting for, so nobody has to reconstruct it.
+
+### Blocking
+
+When a lot must not be started — because a decision belongs to someone else, or because starting
+would pre-empt a conversation — write the block at the **top of the PRD and of every ticket**, in a
+blockquote, naming who is expected to act. A status glyph alone is too easy to skim past, and someone
+who opens a single ticket never sees the PRD.
+
+## Archiving
+
+A lot closed for more than a few days is compacted into `.backlog/archive/<LOT-ID>.md`: the defect or
+the goal, the decisions **and why the alternatives were refused**, the figures that were measured, the
+pull requests, and the notes that say *do not reopen this without a new reason*. What it drops is the
+ticket-by-ticket working material and the process scaffolding — all still in git history, and most of
+it restated in `CHANGELOG.md` and in the commit messages.

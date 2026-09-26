@@ -1,6 +1,6 @@
 # 03 — The tracker documents itself; docs/ disappears
 
-**Status**: ⬜ ready
+**Status**: ✅ done
 
 ## Problem
 

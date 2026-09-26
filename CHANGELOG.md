@@ -98,6 +98,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   mode went unmentioned, and the EWR was credited with an engagement decision the network and the
   site make between them. A technical peculiarity with a home in the code is now recorded as owed to
   the code, so the file shrinks as the code improves instead of growing with every incident.
+- The backlog's own rules moved to `BACKLOG-CONVENTIONS.md` at the root, and `.backlog/README.md`
+  became `.backlog/INDEX.md`. The rules were in `docs/agents/`, which sat beside `documentation/` —
+  one letter apart in name, a whole concept apart in content — and `docs/` is now gone entirely. The
+  status vocabulary had been stated twice, in the index and in `docs/agents/triage-labels.md`, free
+  to drift; it is stated once. Rules at the root rather than inside `.backlog/` for a second reason:
+  a change confined to `.backlog/` goes straight to `develop` with no pull request, an exception
+  written for status changes and index lines, and rules that other files depend on should not inherit
+  it.
 
 ## [3.5.0] — 2026-09-21
 
