@@ -74,7 +74,8 @@ nothing is written under `docs/`.
 Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
 assembled on demand. That is the step to run before testing in DCS, not before committing.
 
-If the change can only be judged inside DCS, stop and wait for explicit approval before continuing.
+If only DCS can show whether the change works, stop and ask the user to test it in-game before going
+further.
 
 ## Before you do these, read
 
