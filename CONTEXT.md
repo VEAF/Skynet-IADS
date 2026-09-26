@@ -38,6 +38,7 @@ missile's guidance.
 | AWACS | An airborne or shipborne radar. An EWR that moves. |
 | HARM | High speed anti radiation missile — a missile that homes on a radar's emissions. |
 | Command centre | An optional unit the network depends on. Destroy them all and every element goes autonomous. A network with **no** command centre declared is considered to have a working one. |
+| Connection node | An optional structure an element depends on to stay part of the network. Lose it and that element goes autonomous, whatever the radars around it are doing. |
 | Point defence | A short-range SAM site attached to another, to cover it while it hides from a HARM. |
 | Contact | A target detected by the network, with an age and a HARM state. |
 | Acting as EW | A SAM site set to feed the network as an EWR does. It then stays live permanently, and is visible and targetable in exchange. |
@@ -67,14 +68,26 @@ their radars is smaller than the EWR's detection range: no horizon, no terrain, 
 whether the EWR is near the battery. So a mission can be built in which a site is covered by an EWR
 that cannot see anything in that site's engagement range.
 
-### Autonomous SAM sites
+### Autonomous elements
 
-An autonomous SAM site is still part of the IADS but has been handed back to the DCS AI, which runs
-it on its own radar. This happens when no EWR covers it any more — an isolated site, or one whose
-covering EWRs have been destroyed.
+An autonomous element is still part of the IADS but has been handed back to the DCS AI, which runs it
+on its own radar. What it does then is a per-element setting: by default it goes live and fights on
+its own, but it can be configured to stay dark instead.
 
-What it does then is a per-element setting: by default it goes live and fights on its own, but it can
-be configured to stay dark instead.
+A **SAM site** goes autonomous when nothing connects it to the network any more. Any one of these is
+enough, and the last is the one people expect:
+
+- its own connection node is gone;
+- no command centre is usable;
+- every EWR covering it has been destroyed, has lost power or its connection node, or has stopped
+  acting as EW;
+- nothing covered it in the first place — an isolated site.
+
+An **EWR** goes autonomous on a shorter rule: its connection node is gone, or no command centre is
+usable. It has no parent to lose.
+
+So a network can go autonomous without a single radar being touched, by losing the command centres or
+the connection nodes instead.
 
 ### "Go live" and "go dark"
 
