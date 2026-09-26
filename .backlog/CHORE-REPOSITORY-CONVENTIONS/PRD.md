@@ -187,10 +187,11 @@ mechanism and the trap that makes the obvious approach fail silently. **The orde
 establishes `CONTRIBUTING.md` as the single source, which is what an `AGENTS.md` would point at.
 Taken the other way round there is nothing to point to.
 
-**"One commit per ticket" states a prohibition and none of its exceptions** — also in
-`.backlog/IDEAS.md`. Ticket 04 rewrites the git-flow section and must carry that rule across
-verbatim, leaving the entry open. Rewriting the section while leaving the wording wrong is the one
-outcome to avoid.
+**"One commit per ticket" stated a prohibition and none of its exceptions.** Ticket 04 carried the
+wording across verbatim and left the `.backlog/IDEAS.md` entry open, on the grounds that changing how
+the project works does not belong inside a documentation merge. Florent decided it during review
+instead, which is the right forum: the rule is now *a commit must not touch more than one ticket*,
+and the entry is closed. Ticket 08 carries it.
 
 ## Consequences a reader will notice
 
@@ -213,9 +214,13 @@ outcome to avoid.
 
 ## Scope
 
-`CLAUDE.md`, `contributing.md`, `CONTEXT.md`, `docs/agents/`, `.backlog/INDEX.md`, and the files
-that reference them. No change to `skynet-iads-source/`, to the build, to the tests or to
-`documentation/`.
+`CLAUDE.md`, `CONTRIBUTING.md`, `CONTEXT.md`, `README.md`, `CHANGELOG.md`, `docs/agents/`,
+`.backlog/`, and — as the work went on — `BACKLOG-CONVENTIONS.md` and the status vocabulary it
+defines, `.claude/settings.json`, `.claude/skills/release/SKILL.md` and `test/lua/README.md`.
+
+No change to `skynet-iads-source/`, to the build, to the tests or to `documentation/`. One source
+file was touched, `test/lua/test_skynet_iads_contact.lua`, and only to remove a comment citing a
+tracker entry that no longer exists.
 
 History is left as written. `CHANGELOG.md` and the archived lot records name paths that later moved;
 they describe what was true when written and are not rewritten.
@@ -231,13 +236,31 @@ they describe what was true when written and are not rewritten.
 | 05 | [CLAUDE.md keeps what prevents damage](tickets/05-claude-md-shrinks.md) | ✅ |
 | 06 | [What CONTEXT.md is for, and what survives](tickets/06-context-corrections.md) | ✅ |
 | 07 | [Streamline CONTRIBUTING.md](tickets/07-streamline-contributing.md) | ✅ |
+| 08 | [The commit rule, and four corrections to the instruction files](tickets/08-commit-rule-and-instruction-fixes.md) | ✅ |
+| 09 | [The shipped settings stop pre-approving every shell command](tickets/09-settings-blanket-grants.md) | ✅ |
+| 10 | [*done* means committed, and *merged* becomes a status](tickets/10-done-means-committed.md) | ✅ |
+| 11 | [Review response](tickets/11-review-response.md) | ✅ |
 
-One branch, one pull request, one commit per ticket.
+One branch, one pull request, and no commit touching more than one ticket.
 
-Ticket 07 is **paused, not ready**: it must not be started before 04 and 05 have landed, because both
-move material into the file it would reorganise. Nothing is expected of anyone; 04 and 05 merging is
-what restarts it.
+## Where this lot broke its own rules
 
-Ticket 06 is **blocked on Florent**, who reported errors in `CONTEXT.md` that a read of the file
-against the sources did not surface. The other five are independent of it and proceed. If the answer
-has not come by the time 05 is done, 06 leaves this lot rather than holding the pull request.
+Recorded because the archive record is compacted from this file, and a record that only lists
+successes is not worth keeping.
+
+- **`79f5bb2`, ticket 01, carries more than ticket 01.** It added the `IDEAS.md` entries belonging to
+  the lot opening and to ticket 06 along with the move itself. Named in its own commit message, not
+  rewritten.
+- **`500a2ce` carries several subjects** — the commit rule, the merge method, the upstream mechanism,
+  the Windows note, the `Bash` section. It is one review response and was committed as one; ticket 08
+  describes it.
+- **Ticket 04 said the commit rule was not to be decided inside this lot** and it was decided inside
+  this lot, during review. The forum was right — it was put to Florent as a question — but the
+  ticket's own text said otherwise and now says what happened.
+- **Ticket 07's done-when was not met when the ticket was closed.** The cross-reference still used a
+  generated anchor. Fixed in ticket 11 rather than by quietly amending the condition.
+
+History is not rewritten to tidy any of this.
+
+Ticket 06 waited on Florent, who reported errors in `CONTEXT.md` that a read against the sources had
+not surfaced. He amended the file and the review worked from that diff.

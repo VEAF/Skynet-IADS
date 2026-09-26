@@ -79,3 +79,16 @@ reader who follows only `CLAUDE.md` still cannot edit the deliverable, commit to
 pull request upstream by accident.
 
 No line count is a target. The file will land where those tests put it.
+
+## Changed afterwards
+
+Two things in the list above did not survive review.
+
+**Bash authorization** is gone rather than kept. It granted nothing — permissions are enforced by
+`settings.json` — and its only effect was to tell an agent never to pause, including before a
+destructive command. **Ticket 08**, which also removed the blanket grants from the settings file
+itself in **ticket 09**.
+
+**The git-flow rules no longer keep their reasons here.** The copies in the two files had already
+drifted, so `CLAUDE.md` now states the prohibitions bare and names `CONTRIBUTING.md` as the only
+place they may be changed. **Ticket 11.**

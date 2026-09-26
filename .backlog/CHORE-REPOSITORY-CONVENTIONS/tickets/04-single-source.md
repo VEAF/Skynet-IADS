@@ -58,3 +58,12 @@ and the naming conventions; the git-flow section states the `.backlog/` exceptio
 ticket" is unchanged from its current wording; and every subject `CLAUDE.md` holds today is either
 present in `CONTRIBUTING.md` or deliberately staying inline — checked section by section against
 `CLAUDE.md` as it stands before ticket 05 touches it, so that nothing is dropped rather than moved.
+
+## Changed afterwards
+
+The instruction to carry "one commit per ticket" across verbatim held only until the review. Florent
+decided the rule there — it is now *a commit must not touch more than one ticket* — and the
+`.backlog/IDEAS.md` entry this ticket left open is closed. **Ticket 08** carries it.
+
+The changelog rule this ticket moved has since been scoped to source changes only, and `CLAUDE.md`'s
+workflow made consistent with it without restating it. **Ticket 11.**
