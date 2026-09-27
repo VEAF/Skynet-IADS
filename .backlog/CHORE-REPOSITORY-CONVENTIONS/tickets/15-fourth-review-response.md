@@ -28,6 +28,14 @@ exhaustive list it looks like, "the moment a change touches `skynet-iads-source/
 `documentation/`, `CHANGELOG.md` or the build" licenses committing `CLAUDE.md` straight to `develop`.
 This branch is its own counter-example.
 
+**Archiving was described by its output and nothing else.** Eight lines said what a record keeps and
+drops; no file said who compacts a lot, what the steps are, that the lot's directory disappears, that
+its index row moves into the *Archive* table, or what shape a record takes. There is no script and no
+CI step, and it has been done once, by hand, in `eb77bd9` — which left the procedure recoverable only
+from that commit's own message. The paragraph describing the output was also **stated twice** — in `BACKLOG-CONVENTIONS.md`
+and in `.backlog/INDEX.md` — and the two copies had already drifted, the index's naming one thing the
+rules' did not. An explanation repeated is this lot's defect 1, inside the tracker.
+
 **Two records were stale**: ticket 11 pointed at a PRD section the last commit had restructured away —
 the failure ticket 13 legislated against, two commits after it was legislated — and ticket 10
 described a status that is being removed.
@@ -51,6 +59,10 @@ Florent's, taken on this review:
   `feature/…`. Left as it is and recorded in `.backlog/IDEAS.md` rather than imposed now.
 - **The shipped settings stay as they are.** Pre-approving the four documented commands was considered
   and refused; the prompts are acceptable.
+- **Compaction stays a hand job, and needs no lot.** Writing the record is the whole of the work —
+  deciding what survives is the only reason the archive earns its place, and a generated record is one
+  nobody reads — so what gets written down is the bookkeeping around it, not a script. Being confined
+  to `.backlog/`, it goes straight to `develop` in one commit, however many lots it covers.
 
 ## Work
 
@@ -59,6 +71,10 @@ Florent's, taken on this review:
 - `CLAUDE.md`: the release row goes; the workflow ends by setting the lot to ✅ in its `PRD.md` and in
   the index, which is the step the review found missing from it.
 - `BACKLOG-CONVENTIONS.md`: 🔀 out of the vocabulary, and the archiving trigger stated without it.
+  *Archiving* gains the record's shape, the actor, the four mechanical steps and the fact that no lot
+  and no pull request are needed.
+- `.backlog/INDEX.md`: the duplicated paragraph out, leaving the fact — compacted on that date, eleven
+  lots — and a pointer to the rules, as its header already does for the status glyphs.
 - `.backlog/INDEX.md`: the three lots at 🔀 become ✅, and the glyph legend follows.
 - `.backlog/IDEAS.md`: the skills entry becomes the next lot's seed and gains the `release` skill's
   procedure and the undescribed `develop` → `master` promotion; two new entries, for branch naming and
@@ -69,4 +85,5 @@ Florent's, taken on this review:
 
 `CONTRIBUTING.md`, the PRD and `.backlog/IDEAS.md` give one answer to what a guidance file is; 🔀 is
 a status nowhere and only a record of one in ticket 10; `CLAUDE.md` names no task an agent cannot
-perform; and every open finding of this review is either fixed or in `.backlog/IDEAS.md`.
+perform; how a lot is compacted is written down once; and every open finding of this review is either
+fixed or in `.backlog/IDEAS.md`.

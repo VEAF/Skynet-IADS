@@ -109,6 +109,24 @@ who opens a single ticket never sees the PRD.
 A lot whose pull request has landed, or which is marked wontfix, is compacted a few days later into
 `.backlog/archive/<LOT-ID>.md`: the defect or the goal, the decisions **and why the alternatives were
 refused**, the figures that were measured, the pull requests, and the notes that say *do not reopen
-this without a new reason*. What it drops is the ticket-by-ticket working material and the process
-scaffolding — all still in git history, and most of it restated in `CHANGELOG.md` and in the commit
-messages.
+this without a new reason*. What it drops is the ticket-by-ticket working material, the
+definition-of-done checklists and the process scaffolding — all still in git history, and most of it
+restated in `CHANGELOG.md` and in the commit messages.
+
+A record opens with `# <LOT-ID> — the defect or the goal in one line`, then one line giving the date
+it closed and its pull requests. Its sections are named after what they hold: there is no template,
+because what is worth keeping differs from one lot to the next, and a record that could have been
+generated is one nobody needs.
+
+**It is done by hand** — by a maintainer, or by an agent asked to — and writing the record is the
+whole of the work. What is left is bookkeeping:
+
+- write `.backlog/archive/<LOT-ID>.md` from the lot's `PRD.md` and tickets;
+- delete the lot's directory;
+- move its row out of *Active lots* into the *Archive* table of `.backlog/INDEX.md`, with the date it
+  closed and its pull requests;
+- keep in full, beside the record, anything nobody could cheaply re-run — a measurement, a test
+  report — rather than compacting it.
+
+**Compaction needs no lot and no pull request.** It is confined to `.backlog/`, which
+`CONTRIBUTING.md` lets go straight to `develop`: one commit, however many lots it covers.

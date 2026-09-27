@@ -20,13 +20,9 @@ belongs in a PRD as against a ticket, and what each status glyph means — ⬜ r
 
 ## Archive
 
-Compacted on 2026-09-21: eleven lots, 59 files and 5 199 lines, down to one record each.
-
-What a record keeps: the defect or the goal, the **decisions and why the alternatives were refused**,
-the figures that were measured, the pull requests, and the notes that say *do not reopen this without
-a new reason*. What it drops: the ticket-by-ticket working material, the definition-of-done
-checklists and the process scaffolding — all still in git history, and most of it restated in
-`CHANGELOG.md` and in the commit messages.
+Compacted on 2026-09-21: eleven lots, 59 files and 5 199 lines, down to one record each. What a
+record keeps, what it drops and how a compaction is done are in
+[`../BACKLOG-CONVENTIONS.md`](../BACKLOG-CONVENTIONS.md).
 
 | Lot | Closed | Pull requests |
 |-----|--------|---------------|
