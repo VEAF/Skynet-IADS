@@ -314,23 +314,74 @@ has to be checked for whether its reason survives without its citation — most 
 The shape to aim for is the one the root files reached: the rule, and its reason in general form.
 The history is already in the archived lot records.
 
-## The skills are outside the guidance rules, and out of step with them
+## The skills are out of step with the files they sit beside — a lot, soon
 
-The rules for writing guidance in `CONTRIBUTING.md` cover the root instruction files. The skills
-under `.claude/skills/` were left out of `CHORE-REPOSITORY-CONVENTIONS` and still disagree with
-those files in places:
+`CONTRIBUTING.md` says a guidance file is one of the root instruction files, and that is where
+`CHORE-REPOSITORY-CONVENTIONS` stopped. Its third review tried to pull the skills in and its fourth
+put them back out, because a skill is not the same object: it carries a **procedure** as well as
+reasons, and deleting a citation does not fix a procedure that contradicts the git flow. Hence a lot
+of its own, rather than an editing pass appended to another.
 
-- **`skynet-runtime-debug`** names VEAF three times: its debug configuration, its helper's
-  `RADAR RANGE ZERO` lines and its vendored copy running behind. It calls a battery acting as EW
-  "a permanent watcher", which HARM defence contradicts and `CONTEXT.md` no longer claims, and says
-  a battery without ammunition "will never go live again".
-- **`release`** freezes the changelog with a commit straight on `develop`, which the git flow
-  forbids for any change touching `CHANGELOG.md`. It bumps the version on a `release/x.y.z` branch,
-  a prefix the git flow does not list. It says to promote to `master` "per the project's branching
-  model", which no file describes.
-- **`CLAUDE.md` sends an agent to the `release` skill**, which sets `disable-model-invocation: true`.
-  An agent cannot invoke it, and the row should say that the user runs `/release`.
+**Settle this first**: whether a skill is guidance. The two are not obviously the same kind of file,
+and one detail argues against a blanket yes — the VEAF debug configuration in `skynet-runtime-debug`
+is how most users actually turn Skynet's output on, so naming it may be the useful thing to do and
+the rule against naming a consumer may simply not reach a procedure. Answer that and the rest is
+mechanical.
 
-**Open question before doing it**: whether a skill counts as guidance at all. The VEAF configuration
-in the debug skill is how most users actually turn debug output on, which may be reason enough to
-keep it and say so.
+**`release`, and it is the substantial half.** Three conflicts with the git flow, in a skill the user
+invokes and an agent then executes step by step:
+
+- it freezes the changelog with a commit straight on `develop`, which the git flow forbids for
+  anything touching `CHANGELOG.md`;
+- it bumps the version on a `release/x.y.z` branch, a prefix the git flow does not list;
+- it says to promote to `master` "per the project's branching model" — and **no file describes that
+  model**. `CONTRIBUTING.md` says `master` carries releases and that every pull request targets
+  `develop`, then stops. How `develop` reaches `master` is the one hole left in the git flow, and the
+  only file that describes it is the one contradicting the rest. That hole is `CONTRIBUTING.md`'s to
+  fill, and filling it is what gives the skill something to comply with. Do it before touching the
+  skill's steps, or the steps will be rewritten against nothing.
+
+**`skynet-runtime-debug`** names VEAF three times — its debug configuration, its helper's
+`RADAR RANGE ZERO` lines, its vendored copy running behind — and states two things the source
+contradicts, both of them absolutes of the kind `CONTEXT.md` dropped for being false at the edges:
+
+- "a permanent watcher", of a battery acting as EW. `pointDefencesStopActingAsEW()` clears that flag
+  whenever the site it protects goes live, and HARM defence makes no exception for it either;
+- "it will never go live again", of a battery out of ammunition. `goLive()` refuses while
+  `hasRemainingAmmo()` is false, which is a current state and not a terminal one.
+
+**Already done, so that the lot does not redo it**: `CLAUDE.md` no longer has a row for cutting a
+release. It sent an agent to a skill setting `disable-model-invocation: true`, which no agent can
+invoke; the tag workflow performs the release and the user invokes the skill for the rest.
+
+## Branch names could be derived from the lot they carry
+
+Lot IDs are prefixed by intent — `FEAT-`, `FIX-`, `CHORE-`, `INVESTIGATE-`, `REFACTOR-` — and branches
+take `feature/` or `fix/`. So a `CHORE-` lot branches `feature/…`, as `CHORE-REPOSITORY-CONVENTIONS`
+did, and the two vocabularies cannot be lined up by a reader. The rule an agent follows is stated bare
+in `CLAUDE.md`, so nothing goes wrong; what is missing is any sign that the mismatch is deliberate,
+which is the same complaint that got `listToMerge.txt` written down as an exception.
+
+**Not imposed for now.** The version worth considering is a branch named after its lot —
+`chore/repository-conventions` for `CHORE-REPOSITORY-CONVENTIONS` — which makes the lot findable from
+`git branch` and the branch findable from the index. The cost is two more prefixes in the git flow and
+a rule to remember for work that has no lot at all, which is most of it. The signal that it has
+stopped being a wash is somebody having to guess which branch a lot is on.
+
+## Four imprecisions in the guidance, each a one-line fix
+
+Measured against the workflows and the source on 2026-09-27, in the fourth review of
+`CHORE-REPOSITORY-CONVENTIONS`. None of them misleads about a rule; all four are facts stated slightly
+wrong, and each is a single line to repair. Grouped here so that fixing them is one small pass rather
+than four.
+
+- `CONTRIBUTING.md` says CI runs the build "on every push and pull request". `build.yml` triggers on
+  pushes to `master` and `develop` only, so a push to a feature branch runs nothing until a pull
+  request exists. Worth being exact about: it is what an agent waits for after pushing.
+- the same file names one stylua exclusion, `test/lua/luaunit.lua`. `.styluaignore` also excludes
+  `test/lua/dcs-figures.lua`, and its own comment warns that `stylua --check` on that path fails *by
+  design* — a generated file whose shape belongs to its generator.
+- the build, lint, docs and release gates each name their workflow file; the standalone suite and the
+  weekly figures check are described without naming `lua-tests.yml` or `dcs-data-drift.yml`.
+- `CONTEXT.md` is titled `SkynetIADS` where every other root file writes `Skynet-IADS`. That spelling
+  is the class name, which is the one thing the same ticket took out of that file.
