@@ -35,11 +35,11 @@ several commits", while `CONTRIBUTING.md` says a ticket may need more than one.
 
 Florent's, taken on this review:
 
-- **"Guidance file" means the root instruction files and the skills.** The `release` skill is
-  cleaned here: it is in this lot's scope and carries the lot's own opening defect. The two test
-  READMEs keep their history for now and are recorded in `.backlog/IDEAS.md` — `test/lua/README.md`
-  alone is some 350 lines, much of it a record of which lot brought which tests, and sorting that is
-  a lot of its own.
+- **"Guidance file" means the root instruction files.** The `release` skill is still cleaned here,
+  because it opens on a pointer to an archived lot whose directory is gone — this lot's own defect 3,
+  in a file the table used to send an agent to. The two test READMEs keep their history for now and
+  are recorded in `.backlog/IDEAS.md`: `test/lua/README.md` alone is some 350 lines, much of it a
+  record of which lot brought which tests, and sorting that is a lot of its own.
 - **`CONTEXT.md` keeps intent only.** The premise and the four concept sections stay, corrected; the
   vocabulary table goes. What survives is a set of reasons — each concept is something that looks
   like a bug and is not, which is what someone about to change the code would otherwise fix. The
@@ -61,6 +61,14 @@ Florent's, taken on this review:
 
 ## Done when
 
-No skill or root guidance file cites a lot, ticket, person, date or consumer to justify a rule;
-`CONTEXT.md` carries no definitions and no claim the sources contradict; and nothing in the PRD
-describes the files as they were before the work.
+No root guidance file cites a lot, ticket, person, date or consumer to justify a rule; the `release`
+skill no longer opens on a dangling pointer; `CONTEXT.md` carries no definitions and no claim the
+sources contradict; and nothing in the PRD describes the files as they were before the work.
+
+## Changed afterwards
+
+The boundary this ticket drew included the skills, and it was redrawn without them. Bringing a skill
+under the guidance rules turned out not to be an editing pass: a skill carries a procedure as well as
+reasons, and the `release` skill's procedure contradicts the git flow — a commit on `develop`, a
+branch prefix no file allows, and a `develop` → `master` promotion no file describes. That is a lot
+of its own, and `.backlog/IDEAS.md` holds it. **Ticket 15.**

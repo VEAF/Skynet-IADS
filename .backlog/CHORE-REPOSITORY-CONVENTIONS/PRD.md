@@ -69,7 +69,12 @@ about to edit a guidance file.
 
 - **Guidance files are the root instruction files**: `CLAUDE.md`, `CONTRIBUTING.md`,
   `BACKLOG-CONVENTIONS.md`, `CONTEXT.md`, `README.md`. The skills under `.claude/skills/` and the two
-  test READMEs are not covered yet; what they still carry is in `.backlog/IDEAS.md`.
+  test READMEs are outside that boundary, and whether a skill belongs inside it is a question this lot
+  does not answer: a skill also carries a procedure, and the `release` skill's procedure contradicts
+  the git flow in ways no deletion of citations repairs. That is a lot of its own, and
+  `.backlog/IDEAS.md` holds what the skills and the two READMEs still carry. The `release` skill was
+  edited here for one thing only — it opened on a pointer to an archived lot whose directory is gone,
+  which is this lot's defect 3, in a file the table used to send an agent to.
 - **A rule states its own reason.** It never cites a lot, a ticket, a commit, a person or a date.
   Those records answer *why* for whoever asks; a guide whose rules only make sense with the tracker
   open cannot be followed from one file. The reason stays, in general form: *two subjects in one
@@ -113,8 +118,11 @@ links straight to it.
 change. A lot holds reasoning; a one-line fix has none to hold, and a branch and a pull request are
 enough however many commits it takes.
 
-**✅ done means committed; 🔀 merged is its own status, for lots only.** A lot at ✅ has all its work
-on its branch and none in `develop`, which is when its pull request is worth opening.
+**✅ done means committed, and it is the last status a lot carries.** A lot at ✅ has all its work on
+its branch, which is when its pull request is worth opening. A *merged* status was tried and dropped:
+it split one state into two to answer a question — which of these ✅ lots is already in `develop`? —
+that archiving answers better. A lot leaves the index a few days after its pull request lands, so a
+lot still listed is either unmerged or newly merged, and the glyph has nothing left to add.
 
 ## Git flow and the changelog
 
@@ -172,7 +180,8 @@ All in `.backlog/IDEAS.md`:
 
 - **One instruction file for Claude and Copilot alike (`AGENTS.md`).** This lot comes first: it makes
   `CONTRIBUTING.md` the single source an `AGENTS.md` would point at.
-- **The skills and the two test READMEs**, brought under the guidance rules.
+- **The skills and the two test READMEs.** Whether they are guidance, what in them contradicts the
+  root files, and the `release` skill's procedure against the git flow.
 - **The commands defined once, in a task runner.**
 
 ## Consequences a reader will notice
@@ -182,7 +191,8 @@ All in `.backlog/IDEAS.md`:
   concept apart in content.
 - **`CONTRIBUTING.md` is the file to read**, and longer for it.
 - **`CLAUDE.md` is behaviour, commands and gotchas.** No line count was a target; the test above
-  decides.
+  decides. Cutting a release is not among them: the tag workflow does the release, the skill that
+  drives the rest is the user's to invoke, and a row an agent cannot act on fails the test.
 - **The naming conventions are written down**, in `CONTRIBUTING.md`. Only `<LOT-ID>` had been
   specified; the rest was practice, so outliers could not be told from exceptions.
 
@@ -213,3 +223,4 @@ written: `CHANGELOG.md` and the archived records name paths that later moved.
 | 12 | [Second review response](tickets/12-second-review-response.md) | ✅ |
 | 13 | [Pointers name files, not headings](tickets/13-pointers-name-files.md) | ✅ |
 | 14 | [Third review response](tickets/14-third-review-response.md) | ✅ |
+| 15 | [Fourth review response](tickets/15-fourth-review-response.md) | ✅ |

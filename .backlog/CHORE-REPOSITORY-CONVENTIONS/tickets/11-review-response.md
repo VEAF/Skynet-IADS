@@ -36,8 +36,8 @@ survive a reword. It targets an explicit `<a id>` now, as `README.md` already do
 
 ## Decisions taken during the review
 
-Four were Florent's. Each is recorded in the PRD § *Decisions taken during review*, which is what
-the archive record is compacted from; they are listed here only so this ticket is readable alone:
+Four were Florent's. Each is recorded in `PRD.md`, which is what the archive record is compacted
+from; they are listed here only so this ticket is readable alone:
 
 - the changelog is scoped to source changes, stated in one file, and this lot's four entries go;
 - `CLAUDE.md` keeps the git rules bare and `CONTRIBUTING.md` explains them;
