@@ -84,12 +84,12 @@ lot nobody trusts.
 | 🧑 | waiting-human | Blocked on a person: a decision, a test in DCS, a credential, an answer. **Say what is expected and from whom** — a waiting-human with no named expectation is a lot nobody will ever unblock. |
 | ⏸ | paused | Deliberately parked. Unlike 🧑, nothing is expected of anyone; unlike ⬜, nobody should pick it up. Say what would restart it. |
 | ✅ | done | The work is committed. For a ticket that is the end of it. |
-| 🔀 | merged | **Lots only.** The pull request has landed on `develop`. Next stop is the archive. |
 | 🚫 | wontfix | Decided against. **Keep the reasoning** — a wontfix without a reason gets reopened. |
 
-A ticket never reaches 🔀: it is finished when its commit lands on the branch, and it is the lot that
-is merged. A lot reaches ✅ when every one of its tickets has, which is the moment its pull request
-is worth opening — the work exists and is not yet in `develop`.
+A ticket is finished when its commit lands on the branch. A lot reaches ✅ when every one of its
+tickets has, which is the moment its pull request is worth opening — the work exists and is not yet
+in `develop`. ✅ is the last status either one carries: what a lot does after that is leave the
+index, which is what archiving is for.
 
 ### The distinction that matters
 
@@ -106,7 +106,7 @@ who opens a single ticket never sees the PRD.
 
 ## Archiving
 
-A lot merged or marked wontfix more than a few days ago is compacted into
+A lot whose pull request has landed, or which is marked wontfix, is compacted a few days later into
 `.backlog/archive/<LOT-ID>.md`: the defect or the goal, the decisions **and why the alternatives were
 refused**, the figures that were measured, the pull requests, and the notes that say *do not reopen
 this without a new reason*. What it drops is the ticket-by-ticket working material and the process

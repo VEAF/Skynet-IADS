@@ -25,3 +25,11 @@ which is the moment its pull request is worth opening.
 ## Done when
 
 The index distinguishes the two states, and no ticket carries 🔀.
+
+## Changed afterwards
+
+The 🔀 half did not survive. Florent's call on the fourth review: one status for committed work is
+enough, and the question 🔀 answered — which listed lot is already in `develop`? — is answered by
+archiving a merged lot out of the index instead. What this ticket settled and keeps is ✅: **done
+means committed**, which is what let the lot mark its tickets done before the pull request existed.
+**Ticket 15.**
