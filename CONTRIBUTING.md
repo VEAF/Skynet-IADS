@@ -222,11 +222,12 @@ The guidance files are the instruction files at the root: `CLAUDE.md`, this file
 - `develop` is the default branch and the target of every pull request. `master` carries releases.
 - Branch from `develop`: `feature/<something>` or `fix/<something>`. Never commit directly to
   `develop` or `master`.
-- **One exception**: a change confined to `.backlog/` — a new lot, a status change, an index line —
-  may go straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle
-  and protects nothing CI can check. The moment a change touches `skynet-iads-source/`, `test/`,
-  `documentation/`, `CHANGELOG.md` or the build, it goes through a branch and a pull request,
-  including a one-line change.
+- **One exception, and it is the whole of it**: a change confined to `.backlog/` — a new lot, a
+  status change, an index line — may go straight to `develop`. A pull request whose entire diff is
+  the tracker costs a review cycle and protects nothing CI can check. Anything outside that
+  directory goes through a branch and a pull request, including a one-line change, and including a
+  change to this file or to any other guidance file: a rule everyone then works from is exactly what
+  review is for.
 - One branch and one pull request per lot, not per ticket. A lot can be split across several pull
   requests when its tickets are genuinely independent — agree the split before starting, rather than
   discovering it halfway through.
