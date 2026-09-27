@@ -64,8 +64,9 @@ changes there first, then here.
 Sync (`git pull --ff-only` on `develop`) → open or pick a lot **if the work needs one**
 (`BACKLOG-CONVENTIONS.md` says when) → branch → implement with its tests → run the suite and the
 lint gate → rebuild if the sources changed, and add a `CHANGELOG.md` entry if they did → commit and
-push → pull request to `develop` → address review and CI. Merging is a maintainer's call: an agent
-merges only when asked to.
+push → pull request to `develop` → address review and CI. The final commit of a lot sets it to ✅ in
+its `PRD.md` and in `.backlog/INDEX.md`. Merging is a maintainer's call: an agent merges only when
+asked to.
 
 Planning and analysis skills — superpowers and the like — follow this repository's conventions over
 their own: a spec is a lot's `PRD.md`, a plan becomes its tickets or stays in the session, and
@@ -89,7 +90,6 @@ further.
 | create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
 | edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |
 | change how sites, radars or the network behave | `CONTEXT.md` — what Skynet is for, and what in its design looks like a bug and is not |
-| cut a release | the `release` skill |
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 
 A row here means a new *kind* of task, never a new subsection of one already listed. A row names a
