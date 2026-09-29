@@ -7,7 +7,8 @@ and pull requests belong here, not in either historical repository upstream.
 One practical consequence, and it is a trap: this repository is a GitHub *fork*, so `gh pr create`
 and the web UI's "Compare & pull request" banner both default to the **parent**. A pull request
 opened without checking the base lands on a read-only archive and looks like it worked. Use
-`gh pr create --repo VEAF/Skynet-IADS --base develop`.
+`gh pr create --repo VEAF/Skynet-IADS --base develop` — `--base master` only for a release's
+promotion.
 
 Before spending time on a feature, propose it: open an issue, or bring it to the
 [VEAF Discord](https://discord.gg/veaf). Feedback before code saves more time than it costs.
@@ -205,7 +206,7 @@ run stays green.
 ## Language
 
 **English for everything inside the repository**: code, comments, commit messages, pull requests, the
-backlog, this file. The users of this project are not only French-speaking.
+tracker, this file. The users of this project are not only French-speaking.
 
 What a *user* reads is the exception, and only there: the site is French at the root with English
 under `/en/`, and `README.md` carries both.
@@ -352,6 +353,10 @@ were reconciled, and is the only place that story is told.
 
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
+
+Before the first, fly the release candidate: the in-sim smoke checks in `unit-tests/README.md` run
+where CI cannot, since GitHub runners have no DCS. They are consultative, not a gate — but a release
+that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in

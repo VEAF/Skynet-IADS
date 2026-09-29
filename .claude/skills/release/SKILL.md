@@ -1,12 +1,12 @@
 ---
 name: release
-description: Cut a Skynet release — build the artifact, prove it runs, freeze the changelog, tag, and publish the GitHub release. Use when the user wants to ship a version.
+description: Cut a Skynet release — build the artifact, prove it runs, tag and publish the GitHub release, then freeze the changelog. Use when the user wants to ship a version.
 disable-model-invocation: true
 ---
 
 # Release
 
-Interactive, step by step, through the procedure in `CONTRIBUTING.md` (*Releasing*). The rules live
+Interactive, step by step, through the release procedure in `CONTRIBUTING.md`. The rules live
 there; this skill walks the user through them. **Wait for the user's confirmation at each step.**
 Never push a tag or publish a release without an explicit go: both are irreversible and both are
 visible to everyone who takes this project.
@@ -45,9 +45,10 @@ implying it was checked. `unit-tests/README.md` has the checks.
 
 ## Then the procedure
 
-Take the user through steps 1 to 5 of *Releasing* in `CONTRIBUTING.md`, one at a time:
+Take the user through every step of the release procedure in `CONTRIBUTING.md`, one at a time:
 
-- open the pull requests with `gh pr create --repo VEAF/Skynet-IADS`, and wait for CI on each;
+- open the pull requests with `gh pr create --repo VEAF/Skynet-IADS`, `--base develop` for the
+  release branches and `--base master --head develop` for the promotion, and wait for CI on each;
 - for the tag, give the user the commands and let them run them:
 
   ```bash

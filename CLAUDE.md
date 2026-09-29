@@ -24,7 +24,8 @@ reason to open it. Everything else is there.
 - **Edit a `.miz` by hand.** `build-tools/miz-suite.py` is what writes into one.
 - **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
   `gh pr create` and the web UI's compare banner default to the read-only parent. Always
-  `gh pr create --repo VEAF/Skynet-IADS --base develop`.
+  `gh pr create --repo VEAF/Skynet-IADS --base develop` — `--base master` only for a release's
+  promotion.
 - **Commit directly to `develop` or `master`**, except a change confined to `.tracker/`. Branch as
   `<type>/<slug>`, with the types `CONTRIBUTING.md` lists.
 - **Merge a pull request** unless asked to. Merging is a maintainer's call.
