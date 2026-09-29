@@ -46,7 +46,7 @@ If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at
 & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
 ```
 
-On Windows, run `luacheck` and `stylua` only through `build-tools/lint.sh`.
+Run `luacheck` and `stylua` only through `build-tools/lint.sh`: it holds the pinned versions.
 
 ## Workflow
 

@@ -247,78 +247,6 @@ Beyond the steps, the tracker and *Releasing* above:
 - *Layout* and *File naming* lose `.backlog/` and gain `.tracker/`, `.drafts/`, `.agents/` and
   `.github/pull_request_template.md`.
 
-## Known gaps, accepted
-
-Neither of these is an oversight.
-
-### The mapping for Pocock's skills is partial
-
-- **Some of his skills hardcode their paths.** `code-review` reads `docs/agents/issue-tracker.md`
-  and looks for specs in `docs/`, `specs/` and `.scratch/`, so it finds neither the mapping in
-  `.agents/` nor a spec in `.tracker/` on its own: the spec's path has to be handed to it. The
-  skills that depend on the configuration — `triage`, `to-spec`, `to-tickets` — take it from wherever
-  setup points them, so `.agents/` serves them. Bringing back `docs/`, or naming the tracker
-  `.scratch/`, would undo two decisions of this spec for the sake of one skill.
-- **The pointer to that configuration is generic.** His setup writes a section into `CLAUDE.md`
-  that names his skills; here a single line points at `.agents/` instead, since no skillset is named
-  outside it. That `triage`, `to-spec` and `to-tickets` find their configuration through that line
-  is expected, and is to be confirmed the first time they are used here.
-- **His triage roles map onto the `Status:` values only partly, in both directions.**
-  `needs-info` → `blocked`, `wontfix` → `dropped`, and both `ready-for-agent` and
-  `ready-for-human` → `open`, which loses the distinction between them; when it matters, the spec
-  says which. `needs-triage` has no target, because nothing enters the tracker untriaged: what is
-  not yet decided lives in `IDEAS.md` or in a GitHub issue. `in-progress`, `paused` and `done` have
-  no role, because triage stops at *ready*.
-
-### The work introducing these rules does not follow them
-
-CHORE-REPOSITORY-CONVENTIONS predates the rules it writes. Its branch is
-`feature/repository-conventions`, not `chore/repository-conventions`, and is not renamed; its spec
-was never committed to `develop` before the branch was cut; its records are a PRD and tickets, and
-its commits follow the old one-ticket rule. It takes the new form only where the move below gives it
-one — its folder name, this `spec.md` and its `Status:` line. The `✅ done` in `PRD.md` is the
-status of the first part, under the old conventions.
-
-## Getting there
-
-All of it on `feature/repository-conventions`, in one pull request. Nothing is published to GitHub.
-
-This work moves first, so that it is tracked under the rules it introduces: its folder becomes
-`.tracker/chore-repository-conventions/`, `PRD.md` and `tickets/` stay as they are, and this spec
-joins them as `spec.md`.
-
-1. **The rules**: `CONTRIBUTING.md`, `CLAUDE.md`, the pull request template, `.agents/`,
-   `.gitignore` for `.drafts/`, and the two skills.
-2. **The move**, with `git mv` so that history follows:
-   - the eleven compacted records go to `.tracker/archive/YYYY-MM-DD-<HISTORICAL-ID>.md`, the date
-     being the one they closed on. They keep their uppercase IDs and stay single files. The in-sim
-     test report moves beside its record under the same date;
-   - FEAT-BILINGUAL-DOCUMENTATION, CHORE-DOCS-MANUAL-REPUBLISH and CHORE-DOCS-RECENT-BEHAVIOUR,
-     merged on 2026-09-21, go to `.tracker/archive/2026-09-21-<HISTORICAL-ID>/` as they are;
-   - `IDEAS.md` goes to `.tracker/IDEAS.md` and takes the new form: entries already taken up, by
-     this work or earlier, are removed; dropped ones stay with their reason; the ideas below are
-     added;
-   - `.tracker/chore-repository-conventions/`, already moved, is archived like any other once its
-     pull request has merged.
-3. **The removal**: `BACKLOG-CONVENTIONS.md`, `.backlog/INDEX.md` and the emptied `.backlog/`.
-
-## Ideas to record
-
-Added to `.tracker/IDEAS.md` as part of step 2.
-
-- **ADRs**: whether Architecture Decision Records would serve this repository better than stating
-  lasting decisions in `CONTEXT.md` and `CONTRIBUTING.md`.
-- **The tracker on GitHub issues**: the in-repository tracker is the starting point; moving to
-  GitHub issues, with the development records migrated, remains an option once it has been used.
-- **An `AGENTS.md`** for agents other than Claude Code.
-- **The two test READMEs**, which still justify rules by lots, people and dates.
-- **The release workflow reads `[Unreleased]` literally**, which forces the changelog freeze into a
-  pull request of its own after the tag.
-- **Four imprecisions in the guidance**: the CI triggers, the second stylua exclusion, the two
-  workflow files left unnamed, and the title of `CONTEXT.md`.
-- **_Battery_ beside _SAM site_**: eleven source comments and the published documentation still say
-  *battery* (*batterie* in French) where the rest says *SAM site*.
-
 ## The lint tools
 
 ### Problem
@@ -391,3 +319,75 @@ What changes with it:
 ### Out of scope
 
 - **macOS.** luacheck publishes no macOS binary; there `lint.sh` runs the tools from `PATH`.
+
+## Known gaps, accepted
+
+Neither of these is an oversight.
+
+### The mapping for Pocock's skills is partial
+
+- **Some of his skills hardcode their paths.** `code-review` reads `docs/agents/issue-tracker.md`
+  and looks for specs in `docs/`, `specs/` and `.scratch/`, so it finds neither the mapping in
+  `.agents/` nor a spec in `.tracker/` on its own: the spec's path has to be handed to it. The
+  skills that depend on the configuration — `triage`, `to-spec`, `to-tickets` — take it from wherever
+  setup points them, so `.agents/` serves them. Bringing back `docs/`, or naming the tracker
+  `.scratch/`, would undo two decisions of this spec for the sake of one skill.
+- **The pointer to that configuration is generic.** His setup writes a section into `CLAUDE.md`
+  that names his skills; here a single line points at `.agents/` instead, since no skillset is named
+  outside it. That `triage`, `to-spec` and `to-tickets` find their configuration through that line
+  is expected, and is to be confirmed the first time they are used here.
+- **His triage roles map onto the `Status:` values only partly, in both directions.**
+  `needs-info` → `blocked`, `wontfix` → `dropped`, and both `ready-for-agent` and
+  `ready-for-human` → `open`, which loses the distinction between them; when it matters, the spec
+  says which. `needs-triage` has no target, because nothing enters the tracker untriaged: what is
+  not yet decided lives in `IDEAS.md` or in a GitHub issue. `in-progress`, `paused` and `done` have
+  no role, because triage stops at *ready*.
+
+### The work introducing these rules does not follow them
+
+CHORE-REPOSITORY-CONVENTIONS predates the rules it writes. Its branch is
+`feature/repository-conventions`, not `chore/repository-conventions`, and is not renamed; its spec
+was never committed to `develop` before the branch was cut; its records are a PRD and tickets, and
+its commits follow the old one-ticket rule. It takes the new form only where the move below gives it
+one — its folder name, this `spec.md` and its `Status:` line. The `✅ done` in `PRD.md` is the
+status of the first part, under the old conventions.
+
+## Getting there
+
+All of it on `feature/repository-conventions`, in one pull request. Nothing is published to GitHub.
+
+This work moves first, so that it is tracked under the rules it introduces: its folder becomes
+`.tracker/chore-repository-conventions/`, `PRD.md` and `tickets/` stay as they are, and this spec
+joins them as `spec.md`.
+
+1. **The rules**: `CONTRIBUTING.md`, `CLAUDE.md`, the pull request template, `.agents/`,
+   `.gitignore` for `.drafts/`, the two skills, and the lint tools.
+2. **The move**, with `git mv` so that history follows:
+   - the eleven compacted records go to `.tracker/archive/YYYY-MM-DD-<HISTORICAL-ID>.md`, the date
+     being the one they closed on. They keep their uppercase IDs and stay single files. The in-sim
+     test report moves beside its record under the same date;
+   - FEAT-BILINGUAL-DOCUMENTATION, CHORE-DOCS-MANUAL-REPUBLISH and CHORE-DOCS-RECENT-BEHAVIOUR,
+     merged on 2026-09-21, go to `.tracker/archive/2026-09-21-<HISTORICAL-ID>/` as they are;
+   - `IDEAS.md` goes to `.tracker/IDEAS.md` and takes the new form: entries already taken up, by
+     this work or earlier, are removed; dropped ones stay with their reason; the ideas below are
+     added;
+   - `.tracker/chore-repository-conventions/`, already moved, is archived like any other once its
+     pull request has merged.
+3. **The removal**: `BACKLOG-CONVENTIONS.md`, `.backlog/INDEX.md` and the emptied `.backlog/`.
+
+## Ideas to record
+
+Added to `.tracker/IDEAS.md` as part of step 2.
+
+- **ADRs**: whether Architecture Decision Records would serve this repository better than stating
+  lasting decisions in `CONTEXT.md` and `CONTRIBUTING.md`.
+- **The tracker on GitHub issues**: the in-repository tracker is the starting point; moving to
+  GitHub issues, with the development records migrated, remains an option once it has been used.
+- **An `AGENTS.md`** for agents other than Claude Code.
+- **The two test READMEs**, which still justify rules by lots, people and dates.
+- **The release workflow reads `[Unreleased]` literally**, which forces the changelog freeze into a
+  pull request of its own after the tag.
+- **Four imprecisions in the guidance**: the CI triggers, the second stylua exclusion, the two
+  workflow files left unnamed, and the title of `CONTEXT.md`.
+- **_Battery_ beside _SAM site_**: eleven source comments and the published documentation still say
+  *battery* (*batterie* in French) where the rest says *SAM site*.
