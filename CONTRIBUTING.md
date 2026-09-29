@@ -25,6 +25,11 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 
 - **PowerShell**, for the build. `pwsh` (PowerShell 7) works on every platform.
 - **Python**, for the documentation gate and the mission tooling.
+- **`gh`**, the GitHub CLI, logged in with `gh auth login`, to open pull requests from the command
+  line. A browser does the same job.
+- **`luacheck` and `stylua`**, for the lint gate. On Windows, `build-tools/lint.sh` looks for them
+  and says in its header which variables to set — `LUACHECK_BIN`, `LUACHECK_TREE`, `LUA51` — when it
+  cannot find them.
 - **DCS** is *not* required for most contributions. It used to be: the whole suite lived inside a
   mission. Logic is now testable on a plain interpreter, and DCS is needed only for what a stub
   cannot answer.
@@ -43,8 +48,10 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
 | `CONTEXT.md` | what Skynet is for, and what in its design looks like a bug and is not |
-| `.backlog/` | what is planned, in progress and done |
-| `BACKLOG-CONVENTIONS.md` | how the tracker works |
+| `.tracker/` | work in progress and work done, and `IDEAS.md` — see *Tracking work* below |
+| `.drafts/` | local working space, git-ignored |
+| `.agents/` | configuration for agent toolsets — maps these rules onto a toolset, never restates them |
+| `.github/pull_request_template.md` | the sections a pull request description is suggested to have |
 
 ## File naming
 
@@ -55,18 +62,20 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `build-tools/` | kebab-case |
 | `documentation/` | kebab-case, with an `.en.md` twin |
 | `test/lua/`, `test/python/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
-| `.backlog/` | `UPPERCASE.md` for files, `<LOT-ID>/` for a lot, `NN-slug.md` for a ticket |
+| `.tracker/` | `<type>-<slug>/` for a piece of work, `archive/YYYY-MM-DD-<type>-<slug>/` once archived, lowercase kebab, the types as in *Git flow*; `spec.md` lowercase inside it; `IDEAS.md` uppercase |
 
 The snake_case in the test directories is not an inconsistency: Python cannot import a module whose
 name contains a hyphen, so `test/python/` has no choice, and `test/lua/` mirrors it.
 
-Two exceptions:
+Three exceptions:
 
 - `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script,
   `.luacheckrc`, `.luacov` and two test files. Renaming it changes the build and the test harness in
   exchange for nothing but consistency.
 - `.claude/skills/<kebab-name>/SKILL.md` is uppercase inside a kebab-cased directory because Claude
   Code requires that name.
+- Records archived before these conventions keep their uppercase names —
+  `.tracker/archive/YYYY-MM-DD-<NAME>.md` or `/` — because they are not rewritten.
 
 ## Building
 
@@ -203,40 +212,124 @@ under `/en/`, and `README.md` carries both.
 
 ## Writing guidance
 
-The guidance files are the instruction files at the root: `CLAUDE.md`, this file,
-`BACKLOG-CONVENTIONS.md`, `CONTEXT.md` and `README.md`. They follow five rules.
+The guidance files are the instruction files at the root — `CLAUDE.md`, this file, `CONTEXT.md` and
+`README.md` — and the skills under `.claude/skills/`. They follow six rules.
 
 - **A rule is stated once**, with its reasons and edge cases, and every other file points at it. A
   command may be repeated, and so may a rule in `CLAUDE.md` given bare, with at most a clause of why:
   a drifting copy of either fails loudly. An explanation is never repeated.
-- **A rule states its own reason.** It never cites a lot, a ticket, a commit, a person or a date to
-  justify itself; that history is in `.backlog/`, for whoever asks why.
-- **No consumer is named.** Other repositories vendor what this one ships; say that, not which.
+- **A rule states its own reason.** It never cites a piece of work, an issue, a commit, a person or a
+  date to justify itself; that history is in `.tracker/` and the pull requests, for whoever asks why.
+- **No consumer is named.** Other repositories vendor what this one ships; say that, not which. A
+  skill describing a procedure may show a consumer's configuration as an example beside the direct
+  way, never as the only way.
+- **No agent skillset is named**, and no practice is justified by one. What a toolset needs to fit
+  these rules is configuration, and lives in `.agents/`.
 - **A pointer names a file**, never a heading or an anchor. A heading is reworded as a matter of
   course; a file is rarely renamed, and never quietly.
 - **`CLAUDE.md` is read in every agent session**, so each line in it must prevent a mistake. What it
   delegates is reached through its table, one row per kind of task.
 
+## How a change is made
+
+These steps are mandatory, whatever tools you work with.
+
+1. **Check what is already known** before proposing a change to how something behaves: search
+   `.tracker/`, its archive and `IDEAS.md` included.
+2. **Open the work**, if it needs a spec — see *Tracking work*: commit
+   `.tracker/<type>-<slug>/spec.md` straight to `develop` with `Status: in-progress`, then branch
+   from that commit. A spec committed as `open` is taken up the same way later. The idea the work
+   takes up, if any, leaves `IDEAS.md` in the same commit.
+3. **Branch** from an up-to-date `develop`, named as *Git flow* says.
+4. **Test first**, then implement — see *Test first*.
+5. **Run the suite and the lint gate.** When only DCS can show that the change works, say so.
+6. **Add a `CHANGELOG.md` entry** for any change to `skynet-iads-source/` — see *Changelog and
+   versioning*.
+7. **Commit** as *Git flow* says.
+8. **Open a pull request to `develop`.** Its description says what changed and why, and how it was
+   verified — including "not flown" when it was not tested in DCS — and carries `Closes #N` when it
+   answers a GitHub issue. `.github/pull_request_template.md` suggests sections for it; they are a
+   helper, not a required structure. Amendments to the spec ride with the pull request, down to
+   `Status: done`, set by the last pull request when the work spans several. A decision that
+   warrants it — most do not: the code, the spec and the pull request carry them — goes into
+   `CONTEXT.md` or this file in the same pull request.
+9. **Merging is a maintainer's call.**
+10. **Archive** the work's folder, at your discretion, once its last pull request has merged or it
+    has been dropped — see *Tracking work*.
+
+## Tracking work
+
+`.tracker/` records work in progress and work done. It is not a backlog: what might be done some day
+is an entry in `.tracker/IDEAS.md`, or a GitHub issue when it comes from outside.
+
+```
+.tracker/
+  IDEAS.md                           prospective work
+  <type>-<slug>/                     one piece of work
+    spec.md                          the only required file
+    …                                anything else, at the contributor's discretion
+  archive/
+    YYYY-MM-DD-<type>-<slug>/        a piece of work merged or dropped
+```
+
+`<type>` and `<slug>` are those of the branch carrying the work: `fix/stale-harm-silence` goes with
+`.tracker/fix-stale-harm-silence/`.
+
+**A spec is worth writing** when there is something to decide before coding, or when the work will
+span several pull requests. Otherwise a branch and a pull request are enough. The threshold is your
+call. A suggested shape: the problem; what to build; the decisions taken, with the alternatives
+turned down and why; what is out of scope; discussion appended under `## Comments`. A spec is kept
+true while the work is under way, and is a record once its pull request has merged: from then on it
+is not edited.
+
+What is strict is only what a search relies on:
+
+- **The location.** A piece of work is a folder directly under `.tracker/`, with `spec.md` at its
+  root.
+- **The `Status:` line** is the first line of `spec.md` after its title:
+
+  | Status | Meaning |
+  |---|---|
+  | `open` | Written, not started |
+  | `in-progress` | Someone has taken it on. Its work is carried by the branch `<type>/<slug>`, created from the commit that sets this status |
+  | `blocked` | Waiting on something or someone — the line says what, and who is expected to act |
+  | `paused` | Deliberately set aside: nobody picks it up and nothing is expected of anyone — the line says what would restart it. For work whose spec, or branch, is worth keeping as it is; work never really started goes back to `IDEAS.md` instead |
+  | `done` | The work is complete. Set in the pull request itself, so that it reaches `develop` when the pull request merges and never before |
+  | `dropped` | Decided against — the line or the spec says why, so that it is not reopened without a new reason |
+
+  What is under way is found by search, not by an index:
+  `grep -l "Status: in-progress" .tracker/*/spec.md`. Only the spec is searched: a file a toolset
+  adds beside it may carry a status line of its own. Anything in `archive/` is finished; the records
+  archived before these conventions carry no such line, and their outcome is in their text.
+- **The archive.** A folder moves as it is to `archive/YYYY-MM-DD-<type>-<slug>/`, the date being the
+  day its last pull request merged or, for dropped work, the day it was dropped.
+- **`IDEAS.md`** is a free list. An idea taken up leaves it in the commit that opens its spec. A
+  dropped idea stays, with its reason, so that the search before a proposal finds it.
+
+The state is never part of a file name: a rename on each change of state would break every link to
+the file and scatter its history. The archive's date is set once, when it moves.
+
+**GitHub issues are for reports from outside.** A report that becomes work gets a folder whose spec
+links to it, and the pull request closes it.
+
 ## Git flow
 
-- `develop` is the default branch and the target of every pull request. `master` carries releases.
-- Branch from `develop`: `feature/<something>` or `fix/<something>`. Never commit directly to
-  `develop` or `master`.
-- **One exception, and it is the whole of it**: a change confined to `.backlog/` — a new lot, a
-  status change, an index line — may go straight to `develop`. A pull request whose entire diff is
-  the tracker costs a review cycle and protects nothing CI can check. Anything outside that
-  directory goes through a branch and a pull request, including a one-line change, and including a
-  change to this file or to any other guidance file: a rule everyone then works from is exactly what
-  review is for.
-- One branch and one pull request per lot, not per ticket. A lot can be split across several pull
-  requests when its tickets are genuinely independent — agree the split before starting, rather than
-  discovering it halfway through.
-- A commit must not touch more than one ticket. Two subjects in one commit cannot be read, reverted
-  or bisected apart. The rule is against mixing, not about counting: opening the lot is its own
-  commit, a ticket may need more than one, and a review response is appended rather than squashed
-  back into the ticket it amends.
-- Pull requests are merged with a **merge commit**, never squashed or rebased. A squash collapses the
-  branch into one commit and destroys the per-ticket history the rule above exists to keep.
+- `develop` is the default branch and the target of every pull request. `master` carries releases
+  and receives them only through *Releasing*.
+- Branch from `develop` as `<type>/<slug>`. `<type>` is one of `feat`, `fix`, `docs`, `chore`,
+  `refactor`, `test` — the Conventional Commits types — and `<slug>` is lowercase kebab. A release
+  uses `release/<x.y.z>`, then `release/<x.y.z>-freeze`. Work spanning several pull requests reuses
+  its slug, suffixed `-2`, `-3`… after the first.
+- Never commit directly to `develop` or `master`. **One exception, and it is the whole of it**: a
+  change confined to `.tracker/` — opening a piece of work, a status change, an idea, archiving —
+  goes straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle and
+  protects nothing CI can check. Anything outside that directory goes through a branch and a pull
+  request, including a one-line change, and including a change to a guidance file: a rule everyone
+  then works from is exactly what review is for.
+- Split commits sensibly. A commit that mixes unrelated subjects cannot be read, reverted or bisected
+  apart; beyond that there is no hard rule.
+- Pull requests are merged with a **merge commit**, never squashed or rebased, so that those commits
+  stay readable apart.
 - [Conventional Commits](https://www.conventionalcommits.org/), in English.
 - Branches are deleted on merge — this is automatic.
 
