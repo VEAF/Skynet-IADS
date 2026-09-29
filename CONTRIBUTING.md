@@ -347,3 +347,24 @@ how whoever is deciding knows whether a new build is worth taking.
 inherited tags, because the artifact's number is what people read in a log. A change to what a
 mission sees at runtime is at least a minor. `CHANGELOG.md` carries how the two numbering schemes
 were reconciled, and is the only place that story is told.
+
+## Releasing
+
+A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
+request.
+
+1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
+   `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in
+   `CHANGELOG.md`. Pull request to `develop`.
+2. **Promote**: a pull request from `develop` to `master`, merged with a merge commit.
+3. **Tag** `v<x.y.z>` on `master` and push it. `.github/workflows/release.yml` builds, checks and
+   publishes the release, taking its notes from `## [Unreleased]` as it stands. A tag that is not a
+   plain `vX.Y.Z` publishes as a pre-release.
+4. **Freeze the changelog**, on a `release/<x.y.z>-freeze` branch: rename `[Unreleased]` to
+   `[x.y.z] — YYYY-MM-DD` and open a fresh `[Unreleased]` above it. Pull request to `develop`. This
+   comes after the tag because the workflow reads `[Unreleased]` literally: renamed earlier, the
+   release would ship with empty notes.
+5. **Tell whoever vendors the script** that a release is out. Nothing reaches a mission until a
+   consuming repository takes the new copy.
+
+A tag is never reused or moved. If a release is wrong, cut the next one.
