@@ -25,8 +25,9 @@ reason to open it. Everything else is there.
 - **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
   `gh pr create` and the web UI's compare banner default to the read-only parent. Always
   `gh pr create --repo VEAF/Skynet-IADS --base develop`.
-- **Commit directly to `develop` or `master`.** Work on `feature/*` or `fix/*` cut from `develop`.
-  The one exception: a change confined to `.backlog/` may go straight to `develop`.
+- **Commit directly to `develop` or `master`**, except a change confined to `.tracker/`. Branch as
+  `<type>/<slug>`, with the types `CONTRIBUTING.md` lists.
+- **Merge a pull request** unless asked to. Merging is a maintainer's call.
 - **Add a source file to the build script.** The order lives in `build-tools/listToMerge.txt`.
 
 ## Commands
@@ -46,37 +47,22 @@ If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at
 
 On Windows, run `luacheck` and `stylua` only through `build-tools/lint.sh`.
 
-## Git flow
+## Workflow
 
-The rules, bare. Their reasons and edge cases live in `CONTRIBUTING.md` and only there; a rule
-changes there first, then here.
+**The steps in `CONTRIBUTING.md` are mandatory, and they are not copied here.** Read them before
+starting a change, and again after a context compaction: this file is the only one that stays loaded.
 
-- `develop` is the default branch and the target of every pull request. `master` carries releases.
-- One branch and one pull request **per lot**. Splitting a lot across several is agreed before the
-  first branch is cut, never as the work goes.
-- A commit must not touch more than one ticket.
-- Merge with a merge commit. Never squash, never rebase.
-- Conventional Commits, in English. Branches are deleted on merge.
+- `gh pr create` skips the pull request template: the description still carries what
+  `CONTRIBUTING.md` requires of it.
+- If only DCS can show whether the change works, stop and ask the user to test it in-game before
+  going further.
+- Planning and analysis skills write their specs and plans to `.drafts/`, which is git-ignored, and
+  nowhere else in the repository. What is worth keeping becomes a spec in `.tracker/`.
+- Configuration for agent toolsets is in `.agents/`.
 - Everything written in the repository is in English. What a *user* reads is the exception.
-
-## Default workflow
-
-Sync (`git pull --ff-only` on `develop`) → open or pick a lot **if the work needs one**
-(`BACKLOG-CONVENTIONS.md` says when) → branch → implement with its tests → run the suite and the
-lint gate → rebuild if the sources changed, and add a `CHANGELOG.md` entry if they did → commit and
-push → pull request to `develop` → address review and CI. The final commit of a lot sets it to ✅ in
-its `PRD.md` and in `.backlog/INDEX.md`. Merging is a maintainer's call: an agent merges only when
-asked to.
-
-Planning and analysis skills — superpowers and the like — follow this repository's conventions over
-their own: a spec is a lot's `PRD.md`, a plan becomes its tickets or stays in the session, and
-nothing is written under `docs/`.
 
 Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
 assembled on demand. That is the step to run before testing in DCS, not before committing.
-
-If only DCS can show whether the change works, stop and ask the user to test it in-game before going
-further.
 
 ## Before you do these, read
 
@@ -86,11 +72,11 @@ further.
 | add or change a test | `CONTRIBUTING.md` for which suite; `test/lua/README.md` for how to run and add one |
 | touch `documentation/` | `CONTRIBUTING.md` — three conventions, all gated |
 | touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `unit-tests/README.md` for the in-sim smoke gate |
-| open a pull request | `CONTRIBUTING.md` — git flow and the changelog |
-| create or edit a lot, a PRD or a ticket | `BACKLOG-CONVENTIONS.md` |
+| open a pull request | `CONTRIBUTING.md` — the steps, git flow and the changelog |
+| open, update or archive a piece of work | `CONTRIBUTING.md` — how work is tracked |
 | edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |
 | change how sites, radars or the network behave | `CONTEXT.md` — what Skynet is for, and what in its design looks like a bug and is not |
 | diagnose in-game behaviour from a log | the `skynet-runtime-debug` skill |
 
 A row here means a new *kind* of task, never a new subsection of one already listed. A row names a
-file, never a heading inside it.
+file or a skill, never a heading inside it.

@@ -322,8 +322,8 @@ links to it, and the pull request closes it.
   its slug, suffixed `-2`, `-3`… after the first.
 - Never commit directly to `develop` or `master`. **One exception, and it is the whole of it**: a
   change confined to `.tracker/` — opening a piece of work, a status change, an idea, archiving —
-  goes straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle and
-  protects nothing CI can check. Anything outside that directory goes through a branch and a pull
+  goes straight to `develop`. A pull request whose entire diff is the tracker costs a review cycle
+  and protects nothing CI can check. Anything outside that directory goes through a branch and a pull
   request, including a one-line change, and including a change to a guidance file: a rule everyone
   then works from is exactly what review is for.
 - Split commits sensibly. A commit that mixes unrelated subjects cannot be read, reverted or bisected
