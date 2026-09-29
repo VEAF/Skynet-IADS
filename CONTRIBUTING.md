@@ -109,7 +109,7 @@ python build-tools/miz-suite.py build
 
 They land in `build/missions/`, which is git-ignored. Run that **before testing in DCS**, never
 before committing — there is nothing to commit, which is the point. A committed copy of the code
-goes stale in silence, and did: the in-sim archives ran a December 2023 build for three years.
+goes stale in silence.
 
 **Never edit a `.miz` by hand.** A script is wired into one in four places, and
 `build-tools/miz-suite.py` is what keeps them consistent. `test/lua/README.md` has the wiring and the
@@ -141,8 +141,7 @@ One rule worth knowing before you get there:
 - **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
   ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
   pinned data dump, and a weekly workflow opens a pull request when one moves. Asserted inside a
-  mission instead, a changed figure is a red test nobody sees for three years, which is what
-  happened.
+  mission instead, a changed figure is a red test nobody sees.
 
 ## Static analysis and formatting
 
