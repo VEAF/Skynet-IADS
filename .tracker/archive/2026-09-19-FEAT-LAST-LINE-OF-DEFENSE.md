@@ -1,7 +1,7 @@
 # FEAT-LAST-LINE-OF-DEFENSE — a dark site can notice what flies over it
 
 Closed 2026-09-19. [PR #17](https://github.com/VEAF/Skynet-IADS/pull/17).
-Measurement report kept beside this file: [in-sim-test-report-2026-09-19.md](FEAT-LAST-LINE-OF-DEFENSE-in-sim-test-report-2026-09-19.md).
+Measurement report kept beside this file: [in-sim-test-report-2026-09-19.md](2026-09-19-FEAT-LAST-LINE-OF-DEFENSE-in-sim-test-report.md).
 
 ## The report, and the defect behind it
 

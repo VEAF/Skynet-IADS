@@ -1,27 +1,5 @@
 # Skynet-IADS — Notes, ideas and future evolutions
 
-## VEAF issue #3 — `cleanUp()` leaves `harmSilenceID` stale
-
-**Issue:** https://github.com/VEAF/Skynet-IADS/issues/3
-
-**Suggested fix (from the issue):** have `cleanUp()` clear what it cancels:
-
-```lua
-SkynetIADSUtils.removeFunction(self.harmScanID)
-self.harmScanID = nil
-SkynetIADSUtils.removeFunction(self.harmSilenceID)
-self.harmSilenceID = nil
-self.harmShutdownTime = 0
-```
-
-or simply call `finishHarmDefence`.
-
-**Rough steps:**
-- Apply the fix in `skynet-iads-abstract-radar-element.lua:75-82`
-- Add a regression test. `abstract-radar-element` is NOT ported to `test/lua` yet (still on the DCS-only list). Decide: port a slice of that suite, or write a narrow standalone test that loads `SkynetIADSAbstractRadarElement`, arms a HARM silence, calls `cleanUp()`, asserts `isDefendingHARM() == false` and `harmSilenceID == nil`
-- Full suite green, commit
-- Close VEAF issue #3 referencing the fix
-
 ## Possible issues detected to check
 
 Neither was requested work and neither is a confirmed bug — they are latent-robustness questions worth a look, especially because this exact failure class (one bad object aborting a whole loop) already bit the project once, in David's `458b64f` "a destroyed group truncated prefix-based discovery".
@@ -121,60 +99,6 @@ So ED's data leaves the simulator entirely: it becomes a generated table and a s
 
 Related to *Smoke tests* below: both are about the same suite, from opposite ends — this one asks
 what to do with it as it rots, that one asks what to replace it with.
-
-## Smoke tests
-
-**Done, 2026-09-21, by [FEAT-IN-SIM-SMOKE-TESTS](archive/FEAT-IN-SIM-SMOKE-TESTS.md).**
-
-The entry asked three things. *Something that can talk to a running DCS mission* — yes, VEAF's
-dcs-bridge, and `build-tools/run-smoke.py` uses it; the log file turned out not to be needed.
-*Transform the legacy `unit-test` into something more usable* — that was the migration in
-`CHORE-PROFESSIONALIZE-THE-REPO` ticket 04, which is finished: a suite whose every assertion runs
-standalone has left both copies. *Build in-sim smoke tests* — seven of them, across two missions, in
-`unit-tests/README.md`.
-
-One thing the entry guessed at and the answer contradicts: this cannot be a CI gate. GitHub runners
-have no DCS, no licence and no GPU, and both CTLD_Next and VMCT reached that conclusion before us and
-documented it. It is a local, consultative step before a release.
-
-## "One commit per ticket" states a prohibition and none of its exceptions
-
-**Settled 2026-09-26 and closed.** Florent's call: the rule is against *mixing*, not about counting —
-*a commit must not touch more than one ticket*. `CLAUDE.md` and `CONTRIBUTING.md` now say that, and
-both add the merge method it depends on: a pull request is merged with a merge commit, never
-squashed, because a squash collapses the branch into one commit and destroys the per-ticket history
-the rule exists to keep. The analysis below is what the decision was made on.
-
-Noticed 2026-09-22 while opening `CHORE-REPOSITORY-CONVENTIONS`. The rule reads as a hard limit —
-`CLAUDE.md` "One commit per ticket inside a pull request", `contributing.md` "One commit per ticket.
-Two subjects in one commit cannot be read, reverted or bisected apart." Read cold it forbids
-everything the project actually does.
-
-**What the history shows.** PR #38 carried six tickets in twelve commits, PR #32 four tickets in
-thirteen. The pattern in both is the same, and it is sound:
-
-- one commit opening the lot, touching `.backlog/` only;
-- exactly one commit per ticket, in ticket order;
-- review-response commits appended afterwards, outside the count.
-
-So the rule governs the *shape* of the merged history — each ticket revertable and bisectable on its
-own, which is what `0ebbc01` broke — and not the number of commits in a pull request.
-
-**Three things the wording should admit:**
-
-- the lot-opening commit is not a ticket;
-- review responses are appended, not squashed back into the ticket they amend. Rewriting history a
-  reviewer has already read costs more than the extra commit;
-- a ticket that genuinely wants two commits was two tickets. Splitting it in the PRD is the intended
-  escape, and it is why tickets here stay small.
-
-**One real cost, worth stating rather than hiding**: working commits inside a ticket do not survive,
-so checkpointing mid-ticket means `--amend` or a squash before pushing. It also cuts against the
-test-first rhythm — red commit, green commit — because the ticket, not the test cycle, is the unit.
-
-**Coupled to `CHORE-REPOSITORY-CONVENTIONS`**: that lot rewrites the git-flow section in both files.
-Whoever does it either carries this rule across verbatim and leaves this entry open, or resolves it
-there. Rewriting the section while leaving the wording wrong is the one outcome to avoid.
 
 ## One agent instruction file, read by Claude and Copilot alike
 
@@ -314,60 +238,6 @@ has to be checked for whether its reason survives without its citation — most 
 The shape to aim for is the one the root files reached: the rule, and its reason in general form.
 The history is already in the archived lot records.
 
-## The skills are out of step with the files they sit beside — a lot, soon
-
-`CONTRIBUTING.md` says a guidance file is one of the root instruction files, and that is where
-`CHORE-REPOSITORY-CONVENTIONS` stopped. Its third review tried to pull the skills in and its fourth
-put them back out, because a skill is not the same object: it carries a **procedure** as well as
-reasons, and deleting a citation does not fix a procedure that contradicts the git flow. Hence a lot
-of its own, rather than an editing pass appended to another.
-
-**Settle this first**: whether a skill is guidance. The two are not obviously the same kind of file,
-and one detail argues against a blanket yes — the VEAF debug configuration in `skynet-runtime-debug`
-is how most users actually turn Skynet's output on, so naming it may be the useful thing to do and
-the rule against naming a consumer may simply not reach a procedure. Answer that and the rest is
-mechanical.
-
-**`release`, and it is the substantial half.** Three conflicts with the git flow, in a skill the user
-invokes and an agent then executes step by step:
-
-- it freezes the changelog with a commit straight on `develop`, which the git flow forbids for
-  anything touching `CHANGELOG.md`;
-- it bumps the version on a `release/x.y.z` branch, a prefix the git flow does not list;
-- it says to promote to `master` "per the project's branching model" — and **no file describes that
-  model**. `CONTRIBUTING.md` says `master` carries releases and that every pull request targets
-  `develop`, then stops. How `develop` reaches `master` is the one hole left in the git flow, and the
-  only file that describes it is the one contradicting the rest. That hole is `CONTRIBUTING.md`'s to
-  fill, and filling it is what gives the skill something to comply with. Do it before touching the
-  skill's steps, or the steps will be rewritten against nothing.
-
-**`skynet-runtime-debug`** names VEAF three times — its debug configuration, its helper's
-`RADAR RANGE ZERO` lines, its vendored copy running behind — and states two things the source
-contradicts, both of them absolutes of the kind `CONTEXT.md` dropped for being false at the edges:
-
-- "a permanent watcher", of a battery acting as EW. `pointDefencesStopActingAsEW()` clears that flag
-  whenever the site it protects goes live, and HARM defence makes no exception for it either;
-- "it will never go live again", of a battery out of ammunition. `goLive()` refuses while
-  `hasRemainingAmmo()` is false, which is a current state and not a terminal one.
-
-**Already done, so that the lot does not redo it**: `CLAUDE.md` no longer has a row for cutting a
-release. It sent an agent to a skill setting `disable-model-invocation: true`, which no agent can
-invoke; the tag workflow performs the release and the user invokes the skill for the rest.
-
-## Branch names could be derived from the lot they carry
-
-Lot IDs are prefixed by intent — `FEAT-`, `FIX-`, `CHORE-`, `INVESTIGATE-`, `REFACTOR-` — and branches
-take `feature/` or `fix/`. So a `CHORE-` lot branches `feature/…`, as `CHORE-REPOSITORY-CONVENTIONS`
-did, and the two vocabularies cannot be lined up by a reader. The rule an agent follows is stated bare
-in `CLAUDE.md`, so nothing goes wrong; what is missing is any sign that the mismatch is deliberate,
-which is the same complaint that got `listToMerge.txt` written down as an exception.
-
-**Not imposed for now.** The version worth considering is a branch named after its lot —
-`chore/repository-conventions` for `CHORE-REPOSITORY-CONVENTIONS` — which makes the lot findable from
-`git branch` and the branch findable from the index. The cost is two more prefixes in the git flow and
-a rule to remember for work that has no lot at all, which is most of it. The signal that it has
-stopped being a wash is somebody having to guess which branch a lot is on.
-
 ## Four imprecisions in the guidance, each a one-line fix
 
 Measured against the workflows and the source on 2026-09-27, in the fourth review of
@@ -385,3 +255,27 @@ than four.
   weekly figures check are described without naming `lua-tests.yml` or `dcs-data-drift.yml`.
 - `CONTEXT.md` is titled `SkynetIADS` where every other root file writes `Skynet-IADS`. That spelling
   is the class name, which is the one thing the same ticket took out of that file.
+
+## ADRs
+
+Whether Architecture Decision Records would serve this repository better than stating lasting
+decisions in `CONTEXT.md` and `CONTRIBUTING.md`. The current choice keeps one current statement of
+each rule and leaves its history to the tracker and the pull requests; an ADR log keeps every past
+decision as its own file. Worth revisiting if the guidance files start to fill with reasoning.
+
+## The tracker on GitHub issues
+
+The in-repository tracker is the starting point. Moving to GitHub issues — work and discussion
+outside the repository, history reached through commit, pull request and issue — remains an option
+once `.tracker/` has been used for a while, with the development records migrated as closed issues.
+
+## The release workflow reads `[Unreleased]` literally
+
+`.github/workflows/release.yml` takes its notes from the `## [Unreleased]` heading as it stands, so
+the changelog can only be frozen after the tag, in a pull request of its own. A workflow that
+accepted the version heading as well would let the freeze ride with the release preparation.
+
+## *Battery* beside *SAM site*
+
+Eleven comments in `skynet-iads-source/` and the published documentation still say *battery*
+(*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say *SAM site*.

@@ -40,6 +40,6 @@ Artifact `3.5.0 | 20.09.2026 1704Z`, no script error, no MiST. The network lit `
 ## Two findings recorded rather than fixed
 
 The demo destroyed its own jammer at mission start — taken up and fixed by
-[FIX-DEMO-DESTROYS-ITS-JAMMER](FIX-DEMO-DESTROYS-ITS-JAMMER.md) on 2026-09-21, which also found it
+[FIX-DEMO-DESTROYS-ITS-JAMMER](2026-09-21-FIX-DEMO-DESTROYS-ITS-JAMMER.md) on 2026-09-21, which also found it
 affected **both** Persian Gulf demos rather than one. And the last-line-of-defence check moved to
 `unit-tests/`, since it was never a demo.
