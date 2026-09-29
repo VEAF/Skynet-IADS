@@ -1,6 +1,6 @@
 # Repository conventions — how work is tracked
 
-Status: in-progress
+Status: done
 
 The rules this repository adopts for tracking work, replacing `.backlog/` and
 `BACKLOG-CONVENTIONS.md`. Once they have landed, they live in `CONTRIBUTING.md`, and this spec is the
