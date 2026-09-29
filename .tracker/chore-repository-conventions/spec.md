@@ -237,7 +237,7 @@ point at. One exception, for procedures: a skill may show a consumer's configura
 Beyond the steps, the tracker and *Releasing* above:
 
 - *What you need* gains `gh`, logged in, for opening pull requests from the command line, and the
-  two lint tools, pointing at `build-tools/lint.sh` for the Windows variables.
+  two lint tools, which on Windows need no install — see *The lint tools*.
 - *Writing guidance* lists the guidance files without `BACKLOG-CONVENTIONS.md`, adds the skills, and
   says the history behind a rule is in `.tracker/` and the pull requests. Its rule against citing
   becomes: never a piece of work, an issue, a commit, a person or a date. It gains the rule that no
@@ -318,3 +318,76 @@ Added to `.tracker/IDEAS.md` as part of step 2.
   workflow files left unnamed, and the title of `CONTEXT.md`.
 - **_Battery_ beside _SAM site_**: eleven source comments and the published documentation still say
   *battery* (*batterie* in French) where the rest says *SAM site*.
+
+## The lint tools
+
+### Problem
+
+The lint gate asks every contributor for a system-wide install of `luacheck` and `stylua`, where a
+TypeScript or Python project would keep its linters local to the checkout, at a pinned version.
+*What you need* names the two tools and says nothing of how to install them. On Windows the install
+is also fragile: a `luacheck` rock built for a newer Lua than the interpreter that must run it dies
+before checking anything, and `build-tools/lint.sh` spends most of its length finding the rock, its
+module tree and a Lua 5.1 to run it with. When no rock is found at all it reports luacheck as
+*broken*, which points at a bad install rather than a missing one. Nothing pins a version locally,
+so a contributor can pass the gate with a `stylua` that formats differently from CI's.
+
+### What to build
+
+**`lint.sh` fetches its own tools, and CI runs `lint.sh`.** On first run the script downloads a
+pinned release binary of each tool for the platform it runs on into `.tools/`, git-ignored, checks
+it against a SHA-256 written in the script, and runs it from there; later runs reuse it. Nothing is
+installed system-wide, and the only prerequisites are `bash`, `curl` and `unzip`, which Git for
+Windows and the GitHub Linux runners already ship.
+
+| Platform | luacheck v1.2.0 (`lunarmodules/luacheck`) | stylua v2.4.0 (`JohnnyMorganz/StyLua`) |
+|---|---|---|
+| Windows, under Git Bash | `luacheck.exe` | `stylua-windows-x86_64.zip`, unzipped |
+| Linux x86-64 | `luacheck`, made executable | `stylua-linux-x86_64.zip`, unzipped |
+
+Both luacheck builds are standalone executables with their interpreter and dependencies built in. The
+platform is read from `uname -s`; on any other platform, macOS included, `lint.sh` runs the tools
+from `PATH`, as it does today.
+
+The versions are pinned once, in `lint.sh`, with their hashes; bumping a tool is a change to that
+file alone. v1.2.0 is the latest luacheck release and 2.4.0 the stylua CI already pins, so the switch
+changes no result.
+
+What changes with it:
+
+- `lint.sh`: the per-platform table, the download, the hash check and the cache. The rock search —
+  `find_lua51`, `find_luacheck_rock`, `find_module_tree` and the `LUA_PATH` assembly — goes, and with
+  it `LUACHECK_BIN`, `LUACHECK_TREE` and `LUA51`. The CRLF copy for stylua stays: under
+  `core.autocrlf=true` stylua still flags every file for its line endings.
+- `.github/workflows/lint.yml`: each job runs `bash build-tools/lint.sh <gate>` after the checkout,
+  in place of its `apt`, `luarocks` and `curl` steps. Its luacheck job currently installs whatever
+  version luarocks resolves; the pin in `lint.sh` ends that.
+- `.gitignore` gains `.tools/`.
+- `CONTRIBUTING.md`: *What you need* says the lint tools need no install; *Static analysis and
+  formatting* loses the rock workaround, keeps the CRLF one, and says CI runs the same script.
+
+### Decisions
+
+- **Release binaries, fetched and pinned by the script**, the way a Gradle or Maven wrapper fetches
+  its build tool. Turned down:
+  - *a Python dev requirements file* for stylua: covers only one of the two tools, since luacheck is
+    not a Python package, and adds an install step and a virtual environment;
+  - *vendoring luacheck's sources*, as `luaunit.lua` is: it depends on `argparse` and on
+    `luafilesystem`, a C module;
+  - *a project-local luarocks tree*: still built by the luarocks that causes the version mismatch;
+  - *editor extensions*: they help while editing but cannot be the gate, which needs a command line.
+- **CI runs the script, on Linux.** Local and CI then run the same versions through the same code, and
+  a version lives in one file. Moving the lint jobs to `windows-latest` would have needed only the
+  Windows binaries, and was turned down to keep CI on the runners every other workflow uses; the
+  Linux rows cost two lines of the table.
+- **The embedded interpreter does not matter.** `luacheck.exe` runs on Lua 5.4; what it checks against
+  is `std = "lua51"` in `.luacheckrc`, not the interpreter running it.
+- **Each platform downloads only its own build.** Git Bash resolves an extensionless `luacheck`
+  before `luacheck.exe` in the same folder, and the Linux build carries that name.
+- **If the Linux luacheck binary does not run on `ubuntu-latest`**, the luacheck job goes back to
+  `luarocks install luacheck 1.2.0`, pinned, and the table keeps its Windows row alone for luacheck.
+  The first CI run of the pull request settles it.
+
+### Out of scope
+
+- **macOS.** luacheck publishes no macOS binary; there `lint.sh` runs the tools from `PATH`.

@@ -23,6 +23,9 @@ Thumbs.db
 # the archives in unit-tests/ hold placeholders, and the real scripts are put in on demand.
 /build/
 
+# Lint tools, fetched at pinned versions by build-tools/lint.sh.
+/.tools/
+
 # Python bytecode, from build-tools/*.py
 __pycache__/
 *.pyc

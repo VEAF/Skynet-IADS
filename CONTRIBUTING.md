@@ -28,9 +28,9 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 - **Python**, for the documentation gate and the mission tooling.
 - **`gh`**, the GitHub CLI, logged in with `gh auth login`, to open pull requests from the command
   line. A browser does the same job.
-- **`luacheck` and `stylua`**, for the lint gate. On Windows, `build-tools/lint.sh` looks for them
-  and says in its header which variables to set — `LUACHECK_BIN`, `LUACHECK_TREE`, `LUA51` — when it
-  cannot find them.
+- **Nothing to install for the lint gate.** `build-tools/lint.sh` fetches `luacheck` and `stylua` at
+  pinned versions on Windows and Linux; it needs `bash`, `curl` and `unzip`, which Git for Windows
+  ships. On macOS it takes both from `PATH`.
 - **DCS** is *not* required for most contributions. It used to be: the whole suite lived inside a
   mission. Logic is now testable on a plain interpreter, and DCS is needed only for what a stub
   cannot answer.
@@ -146,16 +146,16 @@ One rule worth knowing before you get there:
 ## Static analysis and formatting
 
 `skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
-(`.github/workflows/lint.yml`). Run both the way CI does:
+(`.github/workflows/lint.yml`). CI runs the same script you do:
 
 ```
 bash build-tools/lint.sh       # or: bash build-tools/lint.sh luacheck
 ```
 
-On a Windows checkout that script is the only thing that works without fiddling: a luarocks
-`luacheck` often sits in a tree built for a newer Lua than the interpreter that has to run it, and
-`core.autocrlf=true` makes `stylua --check` flag every file for its line endings alone. The script
-works around both and exits non-zero only on a real finding.
+The script pins both tools: it downloads their release binaries into `.tools/`, git-ignored, checks
+each against a SHA-256 it holds, and reuses them afterwards. A version is bumped there and nowhere
+else. It also works around `core.autocrlf=true`, which makes `stylua --check` flag every file for its
+line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.

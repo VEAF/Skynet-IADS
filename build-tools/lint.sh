@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
 #
-# Runs the two static-analysis gates -- luacheck and stylua --check -- over the same paths CI
-# checks, from any working directory.
+# Runs the two static-analysis gates -- luacheck and stylua --check -- over the same paths, locally
+# and in CI (.github/workflows/lint.yml runs this script), from any working directory.
 #
-# It exists because doing that by hand on a Windows checkout needs two workarounds that are easy
-# to get wrong and tedious to retype:
+# Nothing has to be installed first. On Windows under Git Bash and on Linux x86-64, the script
+# downloads a pinned release binary of each tool into .tools/ (git-ignored), checks it against the
+# SHA-256 below, and reuses it on later runs. The versions live here and nowhere else: bumping a
+# tool means changing its version and the hashes of its assets. On any other platform -- macOS,
+# for which luacheck publishes no binary -- the tools are taken from PATH.
 #
-#   luacheck  a luarocks install can put the rock in a tree for a newer Lua than the interpreter
-#             that has to run it; the binary then dies on "attempt to assign to const variable"
-#             before checking anything. The fix is to run the rock's own bin script under a 5.1
-#             interpreter with LUA_PATH pointed at the rock tree. Set LUACHECK_BIN, LUACHECK_TREE
-#             and LUA51 to override what is guessed below.
-#
-#   stylua    stylua.toml asks for Unix line endings, and a checkout made with core.autocrlf=true
-#             has CRLF on disk, so --check flags every file for line endings alone -- which says
-#             nothing about the code. This copies the sources to a scratch directory with the CRs
-#             stripped, puts stylua.toml beside them, and checks there. A real formatting problem
-#             still fails; a checkout artefact no longer does.
-#
-# On Linux, where luacheck runs straight from PATH and the checkout is LF, both paths collapse to
-# just running the tools. That is what CI does.
+# One workaround remains, for stylua: stylua.toml asks for Unix line endings, and a checkout made
+# with core.autocrlf=true has CRLF on disk, so --check flags every file for line endings alone --
+# which says nothing about the code. This copies the sources to a scratch directory with the CRs
+# stripped, puts stylua.toml beside them, and checks there. A real formatting problem still fails;
+# a checkout artefact no longer does.
 #
 # Usage:  build-tools/lint.sh            both gates
 #         build-tools/lint.sh luacheck   one of them
@@ -31,94 +25,98 @@ cd "$(dirname "$0")/.."
 readonly ROOT="$PWD"
 readonly TARGETS=(skynet-iads-source test/lua)
 
+readonly LUACHECK_VERSION=1.2.0
+readonly STYLUA_VERSION=2.4.0
+
 fail() {
 	echo "lint.sh: $*" >&2
 	exit 1
 }
 
+# --- tools ------------------------------------------------------------------------------------
+
+platform() {
+	case "$(uname -s)" in
+	MINGW* | MSYS* | CYGWIN*) echo windows ;;
+	Linux) [ "$(uname -m)" = x86_64 ] && echo linux || echo other ;;
+	*) echo other ;;
+	esac
+}
+
+# The release asset of a tool for a platform, and its SHA-256. Each platform gets only its own
+# build: Git Bash resolves an extensionless `luacheck` before `luacheck.exe` in the same folder.
+asset() {
+	case "$1-$2" in
+	luacheck-windows) echo "luacheck.exe 0f1c69c4d09f1ebb4d8df14c215e4553e2e639bd4cb7bf3c639b0daa6198317b" ;;
+	luacheck-linux) echo "luacheck d68da17fca0697d9e2fb04201f3884abd259fa558b3a449bccaed47f1390defc" ;;
+	stylua-windows) echo "stylua-windows-x86_64.zip 3803853280cb524560c6ce0d4140f6d9f02e03f55e1ce50bb4f5e51e07565794" ;;
+	stylua-linux) echo "stylua-linux-x86_64.zip f9c84c210712061cb03ab8354a34a5d4f5fcf1f369d2ce916bea3ab9f7addac8" ;;
+	*) return 1 ;;
+	esac
+}
+
+release_url() {
+	case "$1" in
+	luacheck) echo "https://github.com/lunarmodules/luacheck/releases/download/v$LUACHECK_VERSION/$2" ;;
+	stylua) echo "https://github.com/JohnnyMorganz/StyLua/releases/download/v$STYLUA_VERSION/$2" ;;
+	esac
+}
+
+# Prints the path of the tool's executable, downloading it first if it is not cached yet. The cache
+# directory carries the version, so a bump fetches the new binary instead of reusing the old one.
+tool() {
+	local name="$1" platform entry
+	platform="$(platform)"
+	if ! entry="$(asset "$name" "$platform")"; then
+		command -v "$name" >/dev/null 2>&1 || fail "no pinned $name for this platform, and none on PATH"
+		command -v "$name"
+		return
+	fi
+
+	local file="${entry% *}" sha="${entry#* }" version exe
+	[ "$name" = luacheck ] && version="$LUACHECK_VERSION" || version="$STYLUA_VERSION"
+	local dir="$ROOT/.tools/$name-$version"
+	exe="$dir/$name"
+	[ "$platform" = windows ] && exe="$exe.exe"
+	if [ -x "$exe" ]; then
+		echo "$exe"
+		return
+	fi
+
+	echo "lint.sh: fetching $name $version into .tools/" >&2
+	mkdir -p "$dir"
+	local part="$dir/$file.part"
+	curl -fsSL -o "$part" "$(release_url "$name" "$file")" || fail "could not download $file"
+	local actual
+	actual="$(sha256sum "$part" | cut -d ' ' -f 1)"
+	if [ "$actual" != "$sha" ]; then
+		rm -f "$part"
+		fail "$file has SHA-256 $actual, expected $sha"
+	fi
+	case "$file" in
+	*.zip)
+		unzip -oq "$part" -d "$dir"
+		rm -f "$part"
+		;;
+	*) mv "$part" "$exe" ;;
+	esac
+	chmod +x "$exe"
+	echo "$exe"
+}
+
 # --- luacheck ---------------------------------------------------------------------------------
 
-find_lua51() {
-	if [ -n "${LUA51:-}" ]; then
-		echo "$LUA51"
-		return
-	fi
-	local candidate
-	for candidate in lua5.1 lua51 lua "/c/Program Files (x86)/Lua/5.1/lua.exe"; do
-		if command -v "$candidate" >/dev/null 2>&1; then
-			if "$candidate" -e 'if _VERSION ~= "Lua 5.1" then os.exit(1) end' >/dev/null 2>&1; then
-				command -v "$candidate"
-				return
-			fi
-		elif [ -x "$candidate" ]; then
-			echo "$candidate"
-			return
-		fi
-	done
-	return 1
-}
-
-# The rock's bin script, and the tree its modules live in, when luacheck cannot run on its own.
-find_luacheck_rock() {
-	if [ -n "${LUACHECK_BIN:-}" ]; then
-		echo "$LUACHECK_BIN"
-		return
-	fi
-	local luarocks_root
-	luarocks_root="$(command -v luarocks 2>/dev/null || true)"
-	[ -n "$luarocks_root" ] || return 1
-	luarocks_root="$(dirname "$(dirname "$luarocks_root")")"
-	find "$luarocks_root" -type f -name luacheck -path '*/bin/*' 2>/dev/null | head -1
-}
-
-# The rock's bin script sits several levels below the tree holding share/lua; walk up to it rather
-# than counting directories, since the depth differs between luarocks layouts.
-find_module_tree() {
-	local dir
-	dir="$(dirname "$1")"
-	while [ "$dir" != "/" ] && [ -n "$dir" ]; do
-		if [ -d "$dir/share/lua" ]; then
-			echo "$dir"
-			return
-		fi
-		local parent
-		parent="$(dirname "$dir")"
-		[ "$parent" = "$dir" ] && break
-		dir="$parent"
-	done
-	return 1
-}
-
 run_luacheck() {
-	if command -v luacheck >/dev/null 2>&1 && luacheck --version >/dev/null 2>&1; then
-		luacheck "${TARGETS[@]}"
-		return
-	fi
-
-	local lua bin tree
-	lua="$(find_lua51)" || fail "no Lua 5.1 interpreter found; set LUA51"
-	bin="$(find_luacheck_rock)" || fail "luacheck is broken and no rock was found; set LUACHECK_BIN"
-	tree="${LUACHECK_TREE:-$(find_module_tree "$bin")}" || fail "no share/lua above $bin; set LUACHECK_TREE"
-
-	echo "lint.sh: luacheck is not runnable on its own, using the rock under $(dirname "$bin")"
-	local candidate path=""
-	for candidate in "$tree"/share/lua/*; do
-		# A native Windows interpreter cannot read the /c/... form: MSYS translates arguments that
-		# look like paths, but never the contents of an environment variable, so LUA_PATH has to be
-		# handed over already converted.
-		[ -d "$candidate" ] || continue
-		if command -v cygpath >/dev/null 2>&1; then
-			candidate="$(cygpath -m "$candidate")"
-		fi
-		path="$path$candidate/?.lua;$candidate/?/init.lua;"
-	done
-	LUA_PATH="$path;" "$lua" "$bin" "${TARGETS[@]}"
+	local luacheck
+	luacheck="$(tool luacheck)"
+	"$luacheck" --codes "${TARGETS[@]}"
 }
 
 # --- stylua -----------------------------------------------------------------------------------
 
 run_stylua() {
-	command -v stylua >/dev/null 2>&1 || fail "stylua is not on PATH"
+	local stylua
+	stylua="$(tool stylua)"
 
 	local scratch
 	scratch="$(mktemp -d)"
@@ -136,7 +134,7 @@ run_stylua() {
 	done
 
 	# Reported paths are the scratch copies; the trailing sed points them back at the repository.
-	if ! (cd "$scratch" && stylua --check .) 2>&1 | sed "s|$scratch/||g"; then
+	if ! (cd "$scratch" && "$stylua" --check .) 2>&1 | sed "s|$scratch/||g"; then
 		return 1
 	fi
 }
