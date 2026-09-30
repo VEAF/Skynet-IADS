@@ -277,7 +277,7 @@ reach no one.
 ### Act as EW radar
 
 Will set the SAM site to act as an EW radar. This will result in the SAM site always having its
-radar on. Contacts the SAM site sees are reported to the IADS. This option is recommended for long
+radar on. Contacts the SAM site detects are passed to the IADS. This option is recommended for long
 range systems like the S-300:
 
 ```lua

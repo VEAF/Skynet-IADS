@@ -93,6 +93,10 @@ Until that release is cut, the build date in the artifact's first line remains t
   page now says who created Skynet, who maintains it today, and thanks him — keeping his own
   acknowledgements to Spearzone, Coranthia and Grimes, which are other people's credit and not
   ours to drop.
+- The last line of defense moved to its own file, `skynet-iads-last-line-of-defence.lua`, and what a
+  reported contact does to a SAM site moved to the site, `SkynetIADSSamSite:informOfReportedContact`.
+  No change in behaviour: `SkynetIADS:reportContact` and the `setLastLineOfDefence*` settings are
+  unchanged.
 
 ## [3.5.0] — 2026-09-21
 

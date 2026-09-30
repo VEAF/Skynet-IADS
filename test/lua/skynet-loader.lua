@@ -30,6 +30,7 @@ local ORDER = {
 	"skynet-iads-sam-tracking-radar",
 	"skynet-iads-sam-launcher",
 	"skynet-iads-harm-detection",
+	"skynet-iads-last-line-of-defence",
 }
 
 local M = { _loaded = {}, ORDER = ORDER }
