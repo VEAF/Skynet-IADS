@@ -183,7 +183,7 @@ are not, that file stays unguarded.
 
 ## A source comment names one consumer
 
-`skynet-iads-source/skynet-iads.lua:94` explains why `wakeSamSiteOnDCSUnit` is public with "code
+`skynet-iads-source/skynet-iads.lua:93` explains why `wakeSamSiteOnDCSUnit` is public with "code
 outside Skynet — VEAF's spotter network — has to be able to wake a site". Skynet has no consumer of
 its own and should name none: the comment ships inside the compiled artifact that every consumer
 downloads, VEAF's and otherwise.
@@ -195,27 +195,6 @@ required, and the Shilka case that explains it — and stays as it is.
 
 Minor, and a source change, so it rides along with the next lot that touches `skynet-iads.lua`
 rather than earning one of its own.
-
-## Nothing checks that CLAUDE.md's pointers still resolve
-
-**Closed 2026-09-26.** Florent's call: `CLAUDE.md` names files, never headings, so there is nothing
-left for a check to resolve. A heading gets reworded as a matter of course; a file is rarely renamed,
-and never quietly. The analysis below is what the decision was made on.
-
-`CLAUDE.md`'s *Before you do these, read* table is load-bearing: it survives compaction, and it is
-the only route back to everything delegated out of that file. Each row names a section, `§ X`, in
-another file.
-
-Nothing verifies those names. One was already dead within a day of being written —
-`§ The README is hand-written, the documentation is published` outlived the heading it named by a
-single commit, because the section was renamed to `## Documentation` in the same lot. A row that
-points nowhere fails silently and exactly when it is needed.
-
-**The check is small**: extract every `§ <name>` from `CLAUDE.md`, resolve each against the headings
-of the file named beside it, fail on one that does not match. `build-tools/docs-check.py` already
-does the same kind of work for `documentation/`, and the repository has `test/python/` to put it in.
-
-Worth doing the moment a second row goes stale; one occurrence is an anecdote.
 
 ## The test READMEs still argue from the backlog
 
@@ -279,8 +258,10 @@ accepted the version heading as well would let the freeze ride with the release 
 
 ## *Battery* beside *SAM site*
 
-Eleven comments in `skynet-iads-source/` and the published documentation still say *battery*
-(*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say *SAM site*.
+Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
+*battery* (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say
+*SAM site*. Fifteen more are in the tooling and guidance: `.github/` — the weekly figures pull
+request among them — `build-tools/`, `CONTRIBUTING.md` and `test/lua/README.md`.
 
 ## Lua 5.1 fetched like the lint tools
 
