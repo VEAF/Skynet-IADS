@@ -1,10 +1,10 @@
-# SkynetIADS — context
+# Skynet-IADS — context
 
 What to have in your head before reading or changing the code: what Skynet is for, and four things
 that look like bugs and are not. The terms themselves are defined in the published documentation, and
 what a function checks is in the function.
 
-## What is SkynetIADS
+## What is Skynet-IADS
 
 Skynet makes DCS air defences behave like a real integrated air defence network. It governs how the
 air defence groups a mission already contains behave. Everything upstream of that — creating those

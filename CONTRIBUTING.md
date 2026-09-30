@@ -91,8 +91,8 @@ It produces `demo-missions/skynet-iads-compiled.lua`, the concatenation of every
 added — never to the script.** The version in the artifact's first line comes from
 `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`; there is no argument to pass.
 
-CI runs the same build on every push and pull request (`.github/workflows/build.yml`), then loads and
-executes the artifact against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
+CI runs the same build on every pull request and on pushes to `develop` and `master`
+(`.github/workflows/build.yml`), then loads and executes the artifact against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
@@ -129,7 +129,7 @@ There are two suites, and which one you want is decided by whether a stub can an
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
-| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
+| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
 | `unit-tests/` | inside DCS | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all | [`unit-tests/README.md`](unit-tests/README.md) |
 
 Those two files are the reference: how to run each suite, how to add to it, what is covered and what
@@ -140,7 +140,8 @@ One rule worth knowing before you get there:
 
 - **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
   ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
-  pinned data dump, and a weekly workflow opens a pull request when one moves. Asserted inside a
+  pinned data dump, and a weekly workflow (`.github/workflows/dcs-data-drift.yml`) opens a pull
+  request when one moves. Asserted inside a
   mission instead, a changed figure is a red test nobody sees.
 
 ## Static analysis and formatting
@@ -159,7 +160,9 @@ line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.
-`stylua.toml` excludes the vendored `test/lua/luaunit.lua` through `.styluaignore`.
+`.styluaignore` excludes the vendored `test/lua/luaunit.lua` and the generated
+`test/lua/dcs-figures.lua`, whose shape belongs to its generator: `stylua --check` run on that path
+directly fails by design.
 
 `.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
