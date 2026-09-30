@@ -156,28 +156,30 @@ scripts may fit better than `make`.
 thing to install and keep working. A CI workflow that duplicated a command a third time, or a
 contributor asking what the commands are, is the signal that it has stopped being a wash.
 
-## Two facts that left CONTEXT.md and have not yet reached the code
+## Every unit type in `samTypesDB` checked against the datamine
 
-`CONTEXT.md` was cut back on the rule that a fact with a home in the code belongs there, not in a
-satellite file that drifts. Two entries were removed on that basis and their homes are still empty,
-so for now they live nowhere.
+`samTypesDB` is maintained by hand: it maps DCS unit type names to NATO names, to the role each unit
+plays in a site, and to `harm_detection_chance`. When ED renames a unit, the site that places it is
+classified without that unit, and nothing says so.
 
-**`setupRangeData` reads a radar's detection range once.** It reads `getSensors()` at the moment the
-element is built and nothing reads it again, so a bad answer at that instant fixes the range for the
-whole mission — the site detects nothing and never lights up. The name reads like a getter and the
-behaviour is a one-shot cache. Its home is a comment on that function, or a name that says `cache`.
+Part of this is already guarded. `build-tools/dcs-figures.py` resolves every `searchRadar` and
+`trackingRadar` type of `skynet-iads-supported-types.lua` against `_G/db/Units/` at the pinned
+datamine commit, and fails on one it cannot find — so the weekly bump in `dcs-data-drift.yml` fails
+on a renamed radar too.
 
-**`samTypesDB` is a hand-maintained truth source.** `skynet-iads-supported-types.lua` is 500 lines
-mapping unit type names to NATO names, to which units count as search radar, tracking radar and
-launcher, and to `harm_detection_chance`, assigned straight to `SkynetIADS.database`. A unit ED
-renames, or a new variant, and a site is silently mis-classified. Nothing regenerates it and no gate
-checks it — unlike ED's numeric figures, which left the suites for a generated table with a weekly
-drift check. The filename reads like a capability list. Its home is a line at the top of that file
-saying what it is and how it goes stale.
+**Not guarded:**
 
-Both are source changes, which is why neither happened in `CHORE-REPOSITORY-CONVENTIONS`. Small
-enough to ride along with the next lot that touches those files; the second one may deserve more than
-a comment, since the drift is the same class the datamine work already solved once.
+- the `launchers` of `samTypesDB`, which no figure reads;
+- the types added by `highdigitsams/skynet-iads-high-digit-sams-suported-types.lua`, which the
+  generator does not read at all.
+
+**Shape if taken**: `dcs-figures.py check` asserts that every unit type either file names, in every
+role, exists under `_G/db/Units/` at the pin. The weekly bump then fails on a rename rather than
+opening no pull request. It catches a type that disappeared; it cannot catch a unit placed in the
+wrong role, nor anything Skynet decides for itself — NATO names and `harm_detection_chance`.
+
+Open question: the high-digit SAMs are a mod, so their types may not be in ED's dump at all. If they
+are not, that file stays unguarded.
 
 ## A source comment names one consumer
 
@@ -306,3 +308,12 @@ with apt. It passes its arguments on to `test/lua/run.lua`. That removes the ins
 
 `run.lua` starts each suite with `arg[-1]`, the interpreter it was launched with, so a fetched
 interpreter is used for every child process with no change to the runner.
+
+## Dropped
+
+### A comment saying `setupRangeData` reads a radar's range once
+
+Search and tracking radars read `getSensors()` once, when the element is built; launchers re-read
+their ammunition, and their range, on every ammo query. A comment was proposed to say so. Dropped:
+the call sites show it at once, and the failure it would have warned about — DCS answering badly at
+spawn — has never been observed. If a log ever shows it, that is a bug report, not a comment.
