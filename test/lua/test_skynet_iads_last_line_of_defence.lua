@@ -196,6 +196,24 @@ function TestSkynetIADSLastLineOfDefence:testSiteStaysLitForThePersistenceThenGo
 	luaunit.assertEquals(samSite:isActive(), false)
 end
 
+--the same, for a site whose autonomous behaviour is AUTONOMOUS_STATE_DARK: it is not autonomous,
+--so that setting does not apply
+function TestSkynetIADSLastLineOfDefence:testNonAutonomousSiteWithDarkBehaviourGoesDarkAfterThePersistence()
+	local iads, samSite = self:buildNetwork()
+	self.iads = iads
+	samSite:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+	local intruder = F.aircraftGroup("intruder", { pos = { x = 8000, y = 500, z = 0 }, coalition = BLUE })
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), true)
+
+	intruder:__setPos({ x = 200000, y = 500, z = 0 })
+	dcsStub.setClock(46)
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), false)
+end
+
 function TestSkynetIADSLastLineOfDefence:testPersistenceIsSettable()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads

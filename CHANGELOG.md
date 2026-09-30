@@ -46,6 +46,12 @@ Until that release is cut, the build date in the artifact's first line remains t
   the code block beside it — the paragraph above copied and its call left in place. The method is
   `getGroundSpeedInKnots(decimals)`, `decimals` defaulting to 2. Found by the review of this lot,
   which had faithfully translated the mistake into a second language.
+- **A SAM site set to `AUTONOMOUS_STATE_DARK` now goes dark once its target is gone.** The autonomous
+  behaviour only applies once a site is autonomous, but the end of each cycle read it on every SAM
+  site: a site that is not autonomous went dark only in `AUTONOMOUS_STATE_DCS_AI`, the default. With
+  `AUTONOMOUS_STATE_DARK`, a site woken by an EW radar or by the last line of defense stayed live
+  until a HARM, an empty magazine or a lost power source switched it off. It changes what a mission
+  sees wherever a SAM site is set to `AUTONOMOUS_STATE_DARK`.
 
 ### Added
 

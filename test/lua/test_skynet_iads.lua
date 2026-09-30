@@ -103,6 +103,48 @@ function TestSkynetIADS:testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage()
 	iads:deactivate()
 end
 
+--the autonomous behaviour only applies once a site is autonomous. A site that is not autonomous
+--goes dark when the target leaves, whatever its autonomous behaviour is set to.
+function TestSkynetIADS:testNonAutonomousSiteWithDarkBehaviourGoesDarkWhenTargetLeaves()
+	local iads = SkynetIADS:create()
+
+	F.earlyWarningRadarUnit("EW-west23")
+	local ewRadar = iads:addEarlyWarningRadar("EW-west23")
+
+	dcsStub.makeUnit({
+		name = "test-in-firing-range-of-sa-2",
+		type = "F-16C",
+		pos = { x = 10000, y = 2000, z = 0 },
+		desc = { category = Unit.Category.AIRPLANE },
+	})
+
+	local ewContacts = { F.iadsContact("test-in-firing-range-of-sa-2") }
+	function ewRadar:getDetectedTargets()
+		return ewContacts
+	end
+
+	F.samGroup("SA-2", "SAM-SA-2")
+	local samSite = iads:addSAMSite("SAM-SA-2")
+	samSite:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
+
+	function samSite:getDetectedTargets()
+		return {}
+	end
+
+	iads:activate()
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), true)
+
+	--the EW radar no longer detects anything
+	ewContacts = {}
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), false)
+
+	iads:deactivate()
+end
+
 -- ---- the network facade (CHORE-TEST-COVERAGE-FLOOR ticket 05) -----------------------------
 
 local RED = 1 -- coalition.side.RED
