@@ -35,6 +35,10 @@ looked around for itself would have to emit, which is the one thing the network 
 last line of defence — a short radius around a dark site inside which an intruder wakes it anyway —
 is the deliberate exception, and it is deliberate precisely because the blindness is.
 
+Two words keep the routes apart. A contact is **detected** when a DCS radar sees it — an EWR's, or a
+SAM site's own once it is live. It is **reported** when something tells the network about it with no
+radar involved: the last line of defence, or a script calling `SkynetIADS:reportContact`.
+
 ### "Covered" means near, not informed
 
 Coverage says an EWR is within range of a SAM site. It never says the EWR is feeding it anything, or
