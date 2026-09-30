@@ -11,7 +11,12 @@ Read it before theorising.
 
 ## Get the output
 
-Skynet only prints when debug is on. Through VEAF:
+Skynet only prints when debug is on. The flags live in `SkynetIADSLogger`'s `debugOutput` table —
+`IADSStatus`, `contacts`, `radarWentLive`, `radarWentDark`, `addedSAMSite`, `addedEWRadar`,
+`harmDefence`, `jammerProbability`. `IADSStatus` is the one that prints the page;
+`radarWentLive`/`radarWentDark` give one line per state change and are worth having together.
+
+A consuming framework may expose them in its own configuration. VEAF's, for example:
 
 ```yaml
 modules:
@@ -19,11 +24,6 @@ modules:
     enabled: true
     debug_red: true      # or debug_blue
 ```
-
-Directly: the flags live in `SkynetIADSLogger`'s `debugOutput` table — `IADSStatus`, `contacts`,
-`radarWentLive`, `radarWentDark`, `addedSAMSite`, `addedEWRadar`, `harmDefence`, `jammerProbability`.
-`IADSStatus` is the one that prints the page; `radarWentLive`/`radarWentDark` give one line per
-state change and are worth having together.
 
 Log location: `%USERPROFILE%\Saved Games\DCS\Logs\dcs.log`. Everything is prefixed `SKYNET:`.
 
@@ -48,10 +48,10 @@ What each field tells you:
 | `ACTIVE: false / AUTONOMOUS: false` | held dark by the network. Normal — and the state to count. |
 | `ACTIVE: true / AUTONOMOUS: true` | no valid parent, handed to the DCS AI. It fires on its own. |
 | `ACTIVE: true / AUTONOMOUS: false` | the network designated a target. **This is the line that proves the chain works.** |
-| `IS ACTING AS EW: true` | this battery is a permanent watcher, lit on purpose. |
-| `HAS AMMO: false` | it will never go live again — `goLive` refuses without ammunition. |
+| `IS ACTING AS EW: true` | lit on purpose, as a watcher — set by the mission, or by the network for a point defence. A point defence stops acting as EW when the SAM site it protects goes live, and HARM defence takes any of them dark. |
+| `HAS AMMO: false` | it cannot go live while this holds — `goLive` refuses without ammunition. The count is read afresh each time: a state, not a verdict. |
 | `DEFENDING HARM: true` | deliberately silent, evading a missile. Do not read it as a failure. |
-| `SAM SITES IN COVERED AREA: N` | how many batteries this element **covers**, which is a distance, not a promise. See `CONTEXT.md`. |
+| `SAM SITES IN COVERED AREA: N` | how many SAM sites this element **covers**, which is a distance, not a promise. See `CONTEXT.md`. |
 | `CONTACT: … DISTANCE NM:` | distance from **the element printing the block**, not from the player. |
 
 ## The measurements that decide
@@ -60,7 +60,7 @@ Counting across the whole log beats reading one cycle. These are the ones that h
 reports:
 
 ```bash
-# Did any battery ever light up under network control? Zero here means the chain never closed.
+# Did any SAM site ever light up under network control? Zero here means the chain never closed.
 grep -o "ACTIVE: [a-z]* | AUTONOMOUS: [a-z]*" dcs.log | sort | uniq -c
 
 # Do the early-warning radars see anything at all?
@@ -74,27 +74,27 @@ grep -c "GOING DARK" dcs.log
 ```
 
 A network where every site reads `ACTIVE: false / AUTONOMOUS: false` for the whole mission and no
-`GOING LIVE` appears after start-up is not broken at the battery — the contacts never arrived.
+`GOING LIVE` appears after start-up is not broken at the SAM site — the contacts never arrived.
 
 ## The three shapes a report takes
 
 | What the log shows at the moment of the pass | Where the problem is |
 |---|---|
 | EWRs at `DETECTED TARGETS: 0` | nothing was detected. Terrain, radar horizon, a badly placed radar — tactics, usually, not code |
-| An EWR holds contacts, the covered battery stays `ACTIVE: false` | the chain is broken between designation and go-live. This is the one worth reading code for |
-| The battery is already `AUTONOMOUS: true` | no parent covers it; it is on its own and the question is something else |
+| An EWR holds contacts, the covered SAM site stays `ACTIVE: false` | the chain is broken between designation and go-live. This is the one worth reading code for |
+| The SAM site is already `AUTONOMOUS: true` | no parent covers it; it is on its own and the question is something else |
 
 ## Traps that have cost time
 
-- **A silent element is not necessarily a broken one.** Check `RADAR RANGE ZERO` lines (VEAF's
-  helper emits them): a radar whose range was read as zero detects nothing for the whole mission and
-  looks identical to one that is simply out of position.
+- **A silent element is not necessarily a broken one.** A radar whose range was read as zero detects
+  nothing for the whole mission and looks identical to one that is simply out of position. Skynet
+  does not print it; a consuming framework's helper may, as a `RADAR RANGE ZERO` line.
 - **Coverage grows and never shrinks** for a moving element, because the incremental rebuild only
-  adds. An AWACS that has transited may "cover" batteries hundreds of kilometres behind it.
+  adds. An AWACS that has transited may "cover" SAM sites hundreds of kilometres behind it.
 - **The distances in the page are element-relative.** A contact at 4 NM in a SAM block is 4 NM from
-  that battery; in an EWR block, 4 NM from that radar. Do not compare them across blocks.
+  that SAM site; in an EWR block, 4 NM from that radar. Do not compare them across blocks.
 - **Correlate with the DCS lines, not only the Skynet ones.** `ASYNCNET`, `release unit` and slot
   changes sit in the same file and often explain the millisecond before an error.
 - **Check the version first.** The first line of the compiled script prints its version and build
-  date. A mission may be running a build that predates the fix you are looking for — the VEAF copy
+  date. A mission may be running a build that predates the fix you are looking for — a vendored copy
   has run a month behind.

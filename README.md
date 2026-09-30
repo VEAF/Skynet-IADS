@@ -28,7 +28,7 @@ is archived, and [walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) has
 
 ## Contributing
 
-See [contributing.md](contributing.md) for the branching model, the test suite, and how to build
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the branching model, the test suite, and how to build
 the artifact locally. That file is in English, like everything living in the repository; only the
 published documentation is bilingual.
 
@@ -68,7 +68,7 @@ archivé, et [walder/Skynet-IADS](https://github.com/walder/Skynet-IADS) n'a plu
 
 ## Contribuer
 
-Voir [contributing.md](contributing.md) pour le modèle de branches, la suite de tests et la
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour le modèle de branches, la suite de tests et la
 construction de l'artefact en local. Ce fichier est en anglais, comme tout ce qui vit dans le
 dépôt ; seule la documentation publiée est bilingue.
 

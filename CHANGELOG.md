@@ -8,9 +8,9 @@ All notable changes to this project are documented here. The format follows
 the `[Unreleased]` section. Appending rather than prepending: two pull requests landing the same day
 conflict far less that way.
 
-This matters more here than in most projects. The consumer of this repository is another repository
-— [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors the
-built artifact — and until now nothing told it what had changed between two copies.
+This matters more here than in most projects. What this repository ships is a script that other
+repositories vendor into the missions they build, and until now nothing told them what had changed
+between two copies.
 
 ## A note on version numbers
 
