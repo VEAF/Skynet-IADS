@@ -105,23 +105,14 @@ do
 		if self.targetsInRange == true or self.actAsEW == true or self:hasFreshReportedContact() then
 			return
 		end
+		-- an autonomous site in DCS AI mode stays live
 		if
-			self:getAutonomousState() == false
+			self:getAutonomousState() == true
 			and self:getAutonomousBehaviour() == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DCS_AI
 		then
-			self:goDark()
+			return
 		end
-		-- A site the network does not hold, and whose autonomous behaviour is to stay dark, is never
-		-- lit by anything but a reported contact -- the branch above deliberately leaves it alone. So
-		-- nothing else would ever switch it back off, and the last line of defense would light it for
-		-- the rest of the mission. Only a site that was actually woken that way is touched here.
-		if
-			self.lastReportedContactTime ~= nil
-			and self:getAutonomousState() == true
-			and self:getAutonomousBehaviour() == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
-		then
-			self:goDark()
-		end
+		self:goDark()
 	end
 
 	function SkynetIADSSamSite:informOfContact(contact)
