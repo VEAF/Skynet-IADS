@@ -181,21 +181,6 @@ wrong role, nor anything Skynet decides for itself — NATO names and `harm_dete
 Open question: the high-digit SAMs are a mod, so their types may not be in ED's dump at all. If they
 are not, that file stays unguarded.
 
-## A source comment names one consumer
-
-`skynet-iads-source/skynet-iads.lua:93` explains why `wakeSamSiteOnDCSUnit` is public with "code
-outside Skynet — VEAF's spotter network — has to be able to wake a site". Skynet has no consumer of
-its own and should name none: the comment ships inside the compiled artifact that every consumer
-downloads, VEAF's and otherwise.
-
-**Resolution**: amend the comment to say the entry point is public so that external callers have
-finer control than writing into `targetsInRange` and its friends on every cycle, without naming a
-caller. The rest of that comment is sound and vendor-neutral — why the firing envelope is not
-required, and the Shilka case that explains it — and stays as it is.
-
-Minor, and a source change, so it rides along with the next lot that touches `skynet-iads.lua`
-rather than earning one of its own.
-
 ## The test READMEs still argue from the backlog
 
 Guidance files state their rules without citing a lot, a ticket, a person or a date, and without
