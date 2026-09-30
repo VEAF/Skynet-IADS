@@ -219,24 +219,6 @@ has to be checked for whether its reason survives without its citation — most 
 The shape to aim for is the one the root files reached: the rule, and its reason in general form.
 The history is already in the archived lot records.
 
-## Four imprecisions in the guidance, each a one-line fix
-
-Measured against the workflows and the source on 2026-09-27, in the fourth review of
-`CHORE-REPOSITORY-CONVENTIONS`. None of them misleads about a rule; all four are facts stated slightly
-wrong, and each is a single line to repair. Grouped here so that fixing them is one small pass rather
-than four.
-
-- `CONTRIBUTING.md` says CI runs the build "on every push and pull request". `build.yml` triggers on
-  pushes to `master` and `develop` only, so a push to a feature branch runs nothing until a pull
-  request exists. Worth being exact about: it is what an agent waits for after pushing.
-- the same file names one stylua exclusion, `test/lua/luaunit.lua`. `.styluaignore` also excludes
-  `test/lua/dcs-figures.lua`, and its own comment warns that `stylua --check` on that path fails *by
-  design* — a generated file whose shape belongs to its generator.
-- the build, lint, docs and release gates each name their workflow file; the standalone suite and the
-  weekly figures check are described without naming `lua-tests.yml` or `dcs-data-drift.yml`.
-- `CONTEXT.md` is titled `SkynetIADS` where every other root file writes `Skynet-IADS`. That spelling
-  is the class name, which is the one thing the same ticket took out of that file.
-
 ## ADRs
 
 Whether Architecture Decision Records would serve this repository better than stating lasting
