@@ -279,3 +279,30 @@ accepted the version heading as well would let the freeze ride with the release 
 
 Eleven comments in `skynet-iads-source/` and the published documentation still say *battery*
 (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say *SAM site*.
+
+## Lua 5.1 fetched like the lint tools
+
+`build-tools/lint.sh` needs nothing installed: it downloads pinned release binaries of luacheck and
+stylua into `.tools/`, checks each against a SHA-256, and falls back to `PATH` where no binary is
+pinned. The standalone suite still asks a Windows contributor to install *Lua for Windows*, and
+`CLAUDE.md` carries its default path as a fallback.
+
+**Shape if taken**: a `build-tools/test.sh` built the same way. On Windows it fetches a pinned Lua
+5.1.5 into `.tools/lua-5.1.5/`; elsewhere it takes `lua5.1` from `PATH`, as CI already installs it
+with apt. It passes its arguments on to `test/lua/run.lua`. That removes the install step from
+`CONTRIBUTING.md` and the hard-coded path from `CLAUDE.md`.
+
+**What makes it harder than the lint tools:**
+
+- lua.org publishes source only. The usual Windows build is *LuaBinaries* on SourceForge
+  (`lua-5.1.5_Win64_bin.zip`: `lua5.1.exe` and `lua5.1.dll`), whose download URLs redirect and have
+  been less stable than GitHub release assets. The hash check turns a bad download into a failure
+  rather than a wrong interpreter. The asset name and hash are still to be checked.
+- Lua for Windows ships `luacov`; LuaBinaries does not. `luacov` is pure Lua, so a pinned source
+  tarball in `.tools/`, reached through `LUA_PATH`, would serve `SKYNET_TEST_COVERAGE=1`. The plain
+  suite does not need it.
+- On Linux a pin is optional: the lua.org 5.1.5 tarball builds in seconds with `make posix`, which
+  needs only a C compiler.
+
+`run.lua` starts each suite with `arg[-1]`, the interpreter it was launched with, so a fetched
+interpreter is used for every child process with no change to the runner.
