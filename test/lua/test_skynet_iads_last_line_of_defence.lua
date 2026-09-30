@@ -289,8 +289,8 @@ function TestSkynetIADSLastLineOfDefence:testHostileAirUnitsAreEnumeratedOnceFor
 	iads:activate()
 
 	local enumerations = 0
-	local realGetHostileAirUnits = SkynetIADS.getHostileAirUnits
-	function iads:getHostileAirUnits()
+	local realGetHostileAirUnits = SkynetIADSLastLineOfDefence.getHostileAirUnits
+	function iads.lastLineOfDefence:getHostileAirUnits()
 		enumerations = enumerations + 1
 		return realGetHostileAirUnits(self)
 	end
@@ -358,7 +358,7 @@ function TestSkynetIADSLastLineOfDefence:testAutonomousDCSAISiteIsLeftAlone()
 	luaunit.assertEquals(samSite:isActive(), true)
 end
 
---the public door itself, called the way VEAF's spotter network will call it
+--the public door itself, called the way external code calls it
 function TestSkynetIADSLastLineOfDefence:testReportContactIsAPublicEntryPoint()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads

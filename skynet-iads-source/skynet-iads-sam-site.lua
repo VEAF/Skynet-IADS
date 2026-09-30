@@ -32,9 +32,14 @@ do
 		self.lastLineOfDefenceRadius = nil
 	end
 
-	--- Records that something reported a contact to this site; see SkynetIADS:reportContact.
-	function SkynetIADSSamSite:markContactReported()
-		self.lastReportedContactTime = timer.getTime()
+	function SkynetIADSSamSite:isEligibleForLastLineOfDefence()
+		if self:hasTargetsInRange() or self:getActAsEW() then
+			return false
+		end
+		if self:getAutonomousState() == false then
+			return true
+		end
+		return self:getAutonomousBehaviour() == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
 	end
 
 	--- Is that report recent enough to keep the site lit?
@@ -129,5 +134,26 @@ do
 			self:goLive()
 			self.targetsInRange = true
 		end
+	end
+
+	--- A contact reported to this site rather than detected by a radar; see SkynetIADS:reportContact.
+	--
+	-- Unlike informOfContact() it does not require the target to be inside the firing envelope: a
+	-- site goes live because it was told the aircraft is there, not because it can hit it. Requiring
+	-- the kill zone would mean a Shilka, useful range ~2.5 km, never wakes. The go-live constraints
+	-- and goLive()'s guards still hold, so a site silenced to evade a HARM, out of ammunition, without
+	-- power or destroyed stays dark.
+	--
+	-- Answers whether the site is live after the call.
+	function SkynetIADSSamSite:informOfReportedContact(contact)
+		if self:areGoLiveConstraintsSatisfied(contact) == false then
+			return false
+		end
+		self:goLive()
+		if self:isActive() == false then
+			return false
+		end
+		self.lastReportedContactTime = timer.getTime()
+		return true
 	end
 end

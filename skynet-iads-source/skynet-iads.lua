@@ -22,47 +22,33 @@ do
 		iads.maxTargetAge = 32
 		iads.name = name
 		iads.harmDetection = SkynetIADSHARMDetection:create(iads)
+		iads.lastLineOfDefence = SkynetIADSLastLineOfDefence:create(iads)
 		iads.logger = SkynetIADSLogger:create(iads)
 		if iads.name == nil then
 			iads.name = ""
 		end
 		iads.contactUpdateInterval = 5
-		iads.lastLineOfDefenceEnabled = true
-		iads.lastLineOfDefenceMinRadius = 10000
-		iads.lastLineOfDefenceMaxRadius = 15000
-		iads.lastLineOfDefencePersistence = 45
 		iads.coverageRefreshInterval = 10
 		world.addEventHandler(iads)
 		return iads
 	end
 
-	-- Last line of defense ------------------------------------------------------------------------
-	--
-	-- A SAM site held dark by the network has its emission switched off, so it is blind: the only
-	-- route back to life is an EW radar that covers it holding the target. Fly under the radar
-	-- horizon and no battery reacts, whatever the distance — proximity to the site is an input
-	-- nowhere in the cycle, because the only sensor that could measure it is the one that was just
-	-- switched off. So a dark site keeps a short virtual detection radius of its own, Skynet's, with
-	-- no DCS radar involved.
-	--
-	-- On by default: off means nobody finds it, and the report comes back in six months.
-
 	function SkynetIADS:setLastLineOfDefence(state)
 		if state == true or state == false then
-			self.lastLineOfDefenceEnabled = state
+			self.lastLineOfDefence.enabled = state
 		end
 		return self
 	end
 
 	function SkynetIADS:getLastLineOfDefence()
-		return self.lastLineOfDefenceEnabled
+		return self.lastLineOfDefence.enabled
 	end
 
 	--- Bounds, in metres, of the radius each site draws once for the whole mission.
 	function SkynetIADS:setLastLineOfDefenceRadius(minRadius, maxRadius)
 		if minRadius and maxRadius and minRadius > 0 and maxRadius >= minRadius then
-			self.lastLineOfDefenceMinRadius = minRadius
-			self.lastLineOfDefenceMaxRadius = maxRadius
+			self.lastLineOfDefence.minRadius = minRadius
+			self.lastLineOfDefence.maxRadius = maxRadius
 			--sites that already drew a radius have to draw again, from the new bounds
 			for i = 1, #self.samSites do
 				self.samSites[i]:clearLastLineOfDefenceRadius()
@@ -73,131 +59,32 @@ do
 
 	--- Answers the minimum and the maximum, in that order.
 	function SkynetIADS:getLastLineOfDefenceRadius()
-		return self.lastLineOfDefenceMinRadius, self.lastLineOfDefenceMaxRadius
+		return self.lastLineOfDefence.minRadius, self.lastLineOfDefence.maxRadius
 	end
 
 	--- How long a site stays lit after the last contact reported to it, in seconds.
 	function SkynetIADS:setLastLineOfDefencePersistence(seconds)
 		if seconds and seconds >= 0 then
-			self.lastLineOfDefencePersistence = seconds
+			self.lastLineOfDefence.persistence = seconds
 		end
 		return self
 	end
 
 	function SkynetIADS:getLastLineOfDefencePersistence()
-		return self.lastLineOfDefencePersistence
+		return self.lastLineOfDefence.persistence
 	end
 
 	--- Wakes a SAM site on a DCS unit, as if something had reported that aircraft to the network.
 	--
-	-- This is a public entry point of Skynet, and the last line of defense below is its first
-	-- caller. It is public because code outside Skynet — VEAF's spotter network — has to be able to
-	-- wake a site, and the alternative is that code writing into targetsInRange and its friends on
-	-- every cycle.
-	--
-	-- Unlike SkynetIADSSamSite:informOfContact() it does not require the target to be inside the
-	-- firing envelope: a site lights up because something told it the aircraft is there, not because
-	-- it can hit it. Requiring the kill zone would mean a Shilka, useful range ~2.5 km, never wakes.
-	-- Everything else still holds — the site's own go-live constraints, and goLive()'s guards, so a
-	-- site silenced to evade a HARM, out of ammunition, without power or destroyed stays dark.
+	-- A public entry point: external code can wake a site directly rather than writing into
+	-- targetsInRange every cycle.
 	--
 	-- Answers whether the site is live after the call.
 	function SkynetIADS:reportContact(dcsUnit, samSite)
 		if dcsUnit == nil or samSite == nil or dcsUnit:isExist() == false then
 			return false
 		end
-		local contact = SkynetIADSContact:create({ object = dcsUnit }, samSite)
-		if samSite:areGoLiveConstraintsSatisfied(contact) == false then
-			return false
-		end
-		samSite:goLive()
-		if samSite:isActive() == false then
-			return false
-		end
-		samSite:markContactReported()
-		return true
-	end
-
-	--- Every hostile aircraft and helicopter currently flying.
-	--
-	-- Enumerated once per cycle and shared by every site: a mission carrying sixty batteries would
-	-- otherwise sweep the coalitions sixty times every five seconds. Neutral is not hostile.
-	function SkynetIADS:getHostileAirUnits()
-		local hostileUnits = {}
-		local categories = { Group.Category.AIRPLANE, Group.Category.HELICOPTER }
-		for _, coalitionID in pairs(coalition.side) do
-			if coalitionID ~= self:getCoalition() and coalitionID ~= coalition.side.NEUTRAL then
-				for i = 1, #categories do
-					local groups = coalition.getGroups(coalitionID, categories[i]) or {}
-					for _, group in pairs(groups) do
-						--coalition.getGroups can hand back a group that no longer exists; asking it for
-						--its units raises, and inside a pairs loop that aborts the whole listing
-						if group and (group.isExist == nil or group:isExist()) then
-							for _, unit in pairs(group:getUnits() or {}) do
-								if unit:isExist() and unit:inAir() then
-									table.insert(hostileUnits, unit)
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return hostileUnits
-	end
-
-	--- Is this site one the last line of defense has to look after?
-	--
-	-- The sites that matter are the ones something is holding in the dark: the network, or their own
-	-- autonomous behaviour when it is set to stay dark. A site already triggered by an EW radar this
-	-- cycle, one acting as an EW radar, and one the DCS AI is already running are all left alone.
-	function SkynetIADS:isSiteEligibleForLastLineOfDefence(samSite)
-		if samSite:hasTargetsInRange() or samSite:getActAsEW() then
-			return false
-		end
-		if samSite:getAutonomousState() == false then
-			return true
-		end
-		return samSite:getAutonomousBehaviour() == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
-	end
-
-	--- Wakes every dark site an enemy aircraft is flying over.
-	function SkynetIADS:evaluateLastLineOfDefence(samSites)
-		if self.lastLineOfDefenceEnabled == false then
-			return
-		end
-		local hostileUnits = nil
-		local hostilePositions = nil
-		for i = 1, #samSites do
-			local samSite = samSites[i]
-			if self:isSiteEligibleForLastLineOfDefence(samSite) then
-				--built at most once per cycle, and not at all when every site is already busy. The
-				--positions are read here too: asking each unit again for every site would be one DCS
-				--call per site per aircraft, sixty times over on a mission carrying sixty batteries
-				if hostileUnits == nil then
-					hostileUnits = self:getHostileAirUnits()
-					if #hostileUnits == 0 then
-						--nothing is flying; reading each site's position would be pure waste
-						return
-					end
-					hostilePositions = {}
-					for j = 1, #hostileUnits do
-						hostilePositions[j] = hostileUnits[j]:getPosition().p
-					end
-				end
-				local samSitePosition = samSite:getElementPosition()
-				if samSitePosition ~= nil then
-					local radius = samSite:getLastLineOfDefenceRadius()
-					for j = 1, #hostileUnits do
-						--2D, the way Skynet measures everything else
-						local distance = samSite:getDistanceToUnit(samSitePosition, hostilePositions[j])
-						if distance <= radius and self:reportContact(hostileUnits[j], samSite) then
-							break
-						end
-					end
-				end
-			end
-		end
+		return samSite:informOfReportedContact(SkynetIADSContact:create({ object = dcsUnit }, samSite))
 	end
 
 	-- Skynet acts on no world event of its own: the elements handle the ones that matter to them,
@@ -622,7 +509,7 @@ do
 			end
 		end
 
-		self:evaluateLastLineOfDefence(samSites)
+		self.lastLineOfDefence:evaluate(samSites)
 
 		for i = 1, #samSites do
 			local samSite = samSites[i]

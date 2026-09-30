@@ -102,7 +102,7 @@ function TestSkynetIADSHarmSilenceCleanup:testCleanedUpSiteStillWakesOnTheLastLi
 	luaunit.assertEquals(samSite:isActive(), true)
 end
 
---the public door, the one VEAF's spotter network calls
+--the public door, the one external code calls
 function TestSkynetIADSHarmSilenceCleanup:testCleanedUpSiteStillAnswersReportContact()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads

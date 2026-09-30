@@ -77,9 +77,9 @@ world = {
 }
 
 -- coalition: SkynetIADSUtils' prefix listing walks coalition.side and calls coalition.getGroups,
--- and SkynetIADS:getHostileAirUnits() asks it for the aircraft of every hostile side. Group
--- fixtures register themselves in dcsStub.groups with the coalition and category their spec
--- carries; a fixture that declares neither is simply never returned here.
+-- and SkynetIADSLastLineOfDefence:getHostileAirUnits() asks it for the aircraft of every hostile
+-- side. Group fixtures register themselves in dcsStub.groups with the coalition and category their
+-- spec carries; a fixture that declares neither is simply never returned here.
 coalition = { side = { NEUTRAL = 0, RED = 1, BLUE = 2 } }
 function coalition.getGroups(side, category)
 	local groups = {}
@@ -375,8 +375,9 @@ function dcsStub.makeUnit(spec)
 	function u:getCoalition()
 		return spec.coalition
 	end
-	-- DCS Unit.inAir(). SkynetIADS:getHostileAirUnits() uses it so a battery does not wake for an
-	-- aircraft parked on a nearby ramp. Aircraft fixtures are airborne unless a spec says otherwise.
+	-- DCS Unit.inAir(). SkynetIADSLastLineOfDefence:getHostileAirUnits() uses it so a battery does
+	-- not wake for an aircraft parked on a nearby ramp. Aircraft fixtures are airborne unless a spec
+	-- says otherwise.
 	function u:inAir()
 		if spec.inAir == nil then
 			return true
