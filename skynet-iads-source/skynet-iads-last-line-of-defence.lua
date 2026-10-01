@@ -6,7 +6,7 @@ do
 	-- switched off. So a dark site keeps a short virtual detection radius of its own, Skynet's, with
 	-- no DCS radar involved.
 	--
-	-- On by default: off means nobody finds it, and the report comes back in six months.
+	-- On by default.
 	SkynetIADSLastLineOfDefence = {}
 	SkynetIADSLastLineOfDefence.__index = SkynetIADSLastLineOfDefence
 
