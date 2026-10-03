@@ -257,6 +257,19 @@ with apt. It passes its arguments on to `test/lua/run.lua`. That removes the ins
 `run.lua` starts each suite with `arg[-1]`, the interpreter it was launched with, so a fetched
 interpreter is used for every child process with no change to the runner.
 
+## Should an air-to-air missile wake a SAM site?
+
+The work on weapon contacts gives each SAM site the classes of munition it can engage, and a weapon
+contact wakes only a site that can engage its class. Air-to-air missiles are excluded from those
+classes: an AMRAAM crossing a Pantsir's envelope at another aircraft wakes nothing.
+
+The reasoning is practical, not measured: an air-to-air missile is usually too fast, too high, or in
+flight too briefly for a SAM site to engage it. Whether DCS lets a Pantsir, a Tor M2 or a C-RAM
+shoot one down has not been flown.
+
+**Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
+engage them, the change is one more class in that system's entry in the supported-types table.
+
 ## Dropped
 
 ### A comment saying `setupRangeData` reads a radar's range once
