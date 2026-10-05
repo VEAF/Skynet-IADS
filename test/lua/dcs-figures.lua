@@ -1,7 +1,7 @@
 --- Figures DCS states about the units Skynet models. GENERATED -- DO NOT EDIT BY HAND.
 --
 -- Written by `python build-tools/dcs-figures.py generate` from the DCS database dump at
--- Quaggles/dcs-lua-datamine, commit fe1d8008e6e8. CI regenerates this and fails on any
+-- Quaggles/dcs-lua-datamine, commit fdd11ed960d5. CI regenerates this and fails on any
 -- difference, and a weekly workflow bumps the pin and opens a pull request -- whose diff is
 -- the point of this file. It is how anyone finds out that ED moved a figure: the SA-11's
 -- missile went from 35000 m to 46000 m at some point between December 2023 and September
@@ -26,7 +26,7 @@
 -- getMaximumFiringAltitude() reports.
 
 return {
-	datamineRef = "fe1d8008e6e8dc4c1c4e85558cd1b0b29a02da3f",
+	datamineRef = "fdd11ed960d5402909a876558b7bec3b2653b268",
 	referenceRcs = 0.2,
 
 	radars = {

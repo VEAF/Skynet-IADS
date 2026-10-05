@@ -59,7 +59,7 @@ DATAMINE_REPO = "https://github.com/Quaggles/dcs-lua-datamine.git"
 
 #: Pinned upstream commit. Bump it (and regenerate) to pick up a newer DCS data dump. Shared with
 #: VEAF-Mission-Creation-Tools, which pins the same dataset for its own units database.
-DATAMINE_REF = "fe1d8008e6e8dc4c1c4e85558cd1b0b29a02da3f"
+DATAMINE_REF = "fdd11ed960d5402909a876558b7bec3b2653b268"
 
 #: Only these subtrees are checked out, which keeps the clone small.
 SPARSE_PATHS = ["_G/db/Sensors", "_G/db/Units", "_G/rockets"]
