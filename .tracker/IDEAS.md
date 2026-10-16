@@ -257,6 +257,22 @@ with apt. It passes its arguments on to `test/lua/run.lua`. That removes the ins
 `run.lua` starts each suite with `arg[-1]`, the interpreter it was launched with, so a fetched
 interpreter is used for every child process with no change to the runner.
 
+## `can_engage_harm` says "wake for it" and "stay live against it"
+
+The flag decides two things: whether a HARM wakes the site, and whether HARM defence lets the site
+stay live to engage it (`shallIgnoreHARMShutdown`, which also counts launchers and missiles left
+against the number of HARMs inbound). The second assumes the site shoots each HARM down. In DCS
+2.9.30, two flagged types do not:
+
+- **Patriot** fires one missile per engagement, at the first of several munitions, and lets the
+  rest through — with or without Skynet. Against four HARMs it stays live on the strength of its
+  launchers and missiles, and fires once.
+- **IRIS-T SLM** engages HARMs, bombs and missiles, but rarely stops them: 26 missiles fired for 2
+  kills in one series; every Maverick and bomb it shot at still hit in another.
+
+**Open for discussion**: a separate capability for "stays live under HARM attack", or a
+per-type cap on how many HARMs a site is trusted to stop.
+
 ## Should an air-to-air missile wake a SAM site?
 
 The work on weapon contacts gives each SAM site the classes of munition it can engage, and a weapon
