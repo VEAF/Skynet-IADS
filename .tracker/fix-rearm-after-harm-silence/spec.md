@@ -47,6 +47,10 @@ end
 
 `cleanUp()` does the same where it clears `harmSilenceID`, when a silence was under way.
 
+`goSilentToEvadeHARM()` no longer calls `finishHarmDefence()`: it cancels the silence under way,
+if any, with `SkynetIADSUtils.removeFunction(self.harmSilenceID)`, then starts the new one.
+`finishHarmDefence()` runs only when a silence ends.
+
 ## Decisions
 
 - **AI on, emission off.** It is a dark site's normal state: a Skynet site under the network sits
@@ -54,6 +58,13 @@ end
   itself keeps the AI off, as now, for the multiplayer bug.
 - **No change to `goLive()`'s ammunition check.** An empty site has no reason to emit; it needs its
   AI only to be rearmed.
+- **A new silence does not finish the one under way.** A second HARM can silence a site already
+  silent. Through `finishHarmDefence()`, the AI would come back on, and `goDark()`, which does
+  nothing for a site already dark, would not turn it off again: the site would sit through the new
+  silence with its AI on. All the new silence needs from the old one is that its timer stops. The
+  `goAutonomous()` it also ran is dropped with it: on an autonomous DCS-AI site it lit the radar and
+  `goDark()` put it out in the same frame. Turning the AI back off in `goSilentToEvadeHARM()`
+  instead was turned down: it switches the AI on and off in the same frame for nothing.
 
 ## Tests to follow
 
@@ -63,7 +74,8 @@ Standalone suite:
 - it does not touch the emission;
 - an autonomous site in either behaviour ends the silence with its controller on;
 - `cleanUp` mid-silence turns the controller back on; outside a silence it does not call `setOnOff`;
-- a destroyed site: no call.
+- a destroyed site: no call;
+- a second silence during the first keeps the controller off until the second one ends.
 
 ## Before merging
 
