@@ -52,6 +52,14 @@ Until that release is cut, the build date in the artifact's first line remains t
   `AUTONOMOUS_STATE_DARK`, a site woken by an EW radar or by the last line of defense stayed live
   until a HARM, an empty magazine or a lost power source switched it off. It changes what a mission
   sees wherever a SAM site is set to `AUTONOMOUS_STATE_DARK`.
+- **A SAM site that HARM defence silenced after it ran out of missiles is rearmed again by nearby
+  ammo trucks.** The silence turns the site's AI off, against a DCS multiplayer bug, and DCS does
+  not rearm a unit whose AI is off. Only going live turned it back on, which an empty site never
+  does: it stayed off, and empty, for the rest of the mission. A silence now ends with the AI back
+  on and the radar still off, so trucks rearm the site and it goes live for its next contact; a site
+  discarded mid-silence, by re-adding a network's sites, gets its AI back the same way. On the way,
+  a live autonomous site in `AUTONOMOUS_STATE_DARK` now has its AI turned off during the silence
+  too, as every other site already did.
 
 ### Added
 

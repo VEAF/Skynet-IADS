@@ -85,9 +85,13 @@ do
 		-- to autonomy, and to the last line of defense -- with nothing left to clear the field: the
 		-- task that would have is the one just removed. Not finishHarmDefence(), which ends in
 		-- goAutonomous() and would light a DCS-AI site's radar on the way out; teardown forgets the
-		-- HARM defence, it does not finish it.
+		-- HARM defence, it does not finish it. The AI the silence turned off comes back on all the
+		-- same: the DCS group outlives this site, and an ammo truck does not rearm it with its AI off.
 		SkynetIADSUtils.removeFunction(self.harmScanID)
 		self.harmScanID = nil
+		if self.harmSilenceID ~= nil and self:isDestroyed() == false then
+			self:getController():setOnOff(true)
+		end
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		self.harmSilenceID = nil
 		self.harmShutdownTime = 0
@@ -873,7 +877,9 @@ do
 	end
 
 	function SkynetIADSAbstractRadarElement:goSilentToEvadeHARM(timeToImpact)
-		self:finishHarmDefence(self)
+		--not finishHarmDefence(): the AI it turns back on would stay on through this silence, since
+		--goDark() leaves a site already dark as it is
+		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		if timeToImpact == nil then
 			timeToImpact = 0
 		end
@@ -914,6 +920,10 @@ do
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		self.harmSilenceID = nil
 		self.harmShutdownTime = 0
+		--the silence turned the AI off, and a DCS ammo truck does not rearm a unit whose AI is off
+		if self:isDestroyed() == false then
+			self:getController():setOnOff(true)
+		end
 
 		if self:getAutonomousState() == true then
 			self:goAutonomous()
