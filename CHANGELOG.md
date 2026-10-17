@@ -137,10 +137,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   and drove off by itself, outside Skynet's HARM defence, and could stop engaging: in DCS 2.9.30 a
   Tor, which shoots HARMs down, fired nothing. A mission that sets the option on while a radar is
   live keeps it until that radar next goes live. AWACS radars, airborne or naval, are left alone.
-- **A radar no longer loses its detection cycle to a static that is gone.** On one server, DCS raised
-  `Static doesn't exist` when Skynet read the type of an object a radar reported, every ~14 s for a
-  whole session. The error ended the radar's detection cycle, and every object reported after that
-  one went unseen. An object DCS cannot describe is now skipped, and the rest of the cycle goes on.
+- **A radar no longer loses its detection cycle to a static that is gone.** DCS can still report an
+  object a script has removed, and raises `Static doesn't exist` as soon as Skynet reads its type:
+  on one server, every ~14 s for a whole session. The error ended the radar's detection cycle, and
+  every object reported after that one went unseen. A radar now skips any object that no longer
+  exists — a removed unit or static, an ended weapon, a wreck — before reading anything else from it.
 
 ## [3.5.0] — 2026-09-21
 

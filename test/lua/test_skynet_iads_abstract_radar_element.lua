@@ -1656,30 +1656,41 @@ function TestSkynetIADSAbstractRadarElement:testAnEnemyOrNeutralObjectIsReported
 	luaunit.assertEquals(#contacts, 2)
 end
 
--- DCS raises "Weapon doesn't exist" from getCoalition() on a weapon that has just ended
-function TestSkynetIADSAbstractRadarElement:testAnObjectWhoseCoalitionCannotBeReadIsDropped()
-	local ended = dcsStub.makeUnit({ name = "ended-weapon", category = Object.Category.WEAPON })
-	function ended:getCoalition()
-		error("Weapon doesn't exist")
+--- `object` as DCS 2.9 leaves it once it is gone -- a unit or a static removed, a weapon ended:
+-- isExist() answers false and getName() still answers, while every other getter raises.
+local function gone(object, message)
+	function object:isExist()
+		return false
 	end
+	for _, getter in ipairs({ "getTypeName", "getCoalition", "getCategory", "getPosition", "getDesc" }) do
+		object[getter] = function()
+			error(message)
+		end
+	end
+	return object
+end
+
+function TestSkynetIADSAbstractRadarElement:testAWeaponThatHasEndedIsDropped()
+	local ended =
+		gone(dcsStub.makeUnit({ name = "ended-weapon", category = Object.Category.WEAPON }), "Weapon doesn't exist")
 	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
 end
 
--- DCS raises "Static doesn't exist" from getTypeName() on a static that is gone, while getName()
--- still answers; whether getCoalition() and isExist() still answer is not known, so here they do
 function TestSkynetIADSAbstractRadarElement:testAStaticThatIsGoneDoesNotCostTheRestOfTheCycle()
-	local gone = dcsStub.makeStatic({ name = "gone-static", coalition = coalition.side.BLUE })
-	function gone:getTypeName()
-		error("Static doesn't exist")
-	end
 	local contacts = reportedBy(self, {
 		dcsStub.makeUnit({ name = "enemy-jet-1", coalition = coalition.side.BLUE }),
-		gone,
+		gone(dcsStub.makeStatic({ name = "gone-static" }), "Static doesn't exist"),
 		dcsStub.makeUnit({ name = "enemy-jet-2", coalition = coalition.side.BLUE }),
 	})
 	luaunit.assertEquals(#contacts, 2)
 	luaunit.assertEquals(contacts[1]:getName(), "enemy-jet-1")
 	luaunit.assertEquals(contacts[2]:getName(), "enemy-jet-2")
+end
+
+-- a destroyed unit or static stays a wreck that answers every getter, but isExist() is false
+function TestSkynetIADSAbstractRadarElement:testAWreckIsDropped()
+	local wreck = dcsStub.makeStatic({ name = "wreck", coalition = coalition.side.BLUE, exists = false })
+	luaunit.assertEquals(#reportedBy(self, { wreck }), 0)
 end
 
 -- ---- DCS's own "Evasion of ARM" ---------------------------------------------------------------

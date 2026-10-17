@@ -1027,21 +1027,18 @@ do
 				for i = 1, #targets do
 					local target = targets[i]
 					-- there are cases when a destroyed object is still visible as a target to the radar, don't add it, will cause errors everywhere the dcs object is accessed
-					-- nor an object of the IADS's own side, or one whose side cannot be read: DCS
-					-- raises on getCoalition() for a weapon that has just ended
-					local coalitionRead, targetCoalition
-					if target.object then
-						coalitionRead, targetCoalition = pcall(target.object.getCoalition, target.object)
-					end
-					if target.object and coalitionRead and targetCoalition ~= self.iads:getCoalition() then
-						-- nor an object DCS cannot describe: it raises "Static doesn't exist" from
-						-- getTypeName() on a static that is gone, which would end this loop
-						local created, iadsTarget = pcall(SkynetIADSContact.create, SkynetIADSContact, target, self)
-						if created then
-							iadsTarget:refresh()
-							if self:isTargetInRange(iadsTarget) then
-								table.insert(self.cachedTargets, iadsTarget)
-							end
+					-- nor an object of the IADS's own side. isExist() goes first: on an object that is
+					-- gone -- a unit or a static removed, a weapon ended -- every other getter but
+					-- getName() raises, "Static doesn't exist" for a static
+					if
+						target.object
+						and target.object:isExist()
+						and target.object:getCoalition() ~= self.iads:getCoalition()
+					then
+						local iadsTarget = SkynetIADSContact:create(target, self)
+						iadsTarget:refresh()
+						if self:isTargetInRange(iadsTarget) then
+							table.insert(self.cachedTargets, iadsTarget)
 						end
 					end
 				end
