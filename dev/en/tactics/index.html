@@ -669,6 +669,8 @@ radar, the chance of it being identified as a HARM is increased.
 See
 <a href="https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua">skynet-iads-supported-types.lua</a>
 field <code>harm_detection_chance</code> for the probability per radar system.</p>
+<p>Skynet turns DCS's own "Evasion of ARM" option off each time a SAM site or EW radar goes live,
+whatever the mission sets: when a radar shuts down for a HARM is Skynet's decision alone.</p>
 <h3 id="harm-detection">HARM detection<a class="headerlink" href="#harm-detection" title="Permanent link">&para;</a></h3>
 <p>Let's say SAM site A has a 60% HARM detection chance and SAM site B has a 50% HARM detection
 chance. If a HARM is picked up by both radars the chance the IADS will identify the HARM will be

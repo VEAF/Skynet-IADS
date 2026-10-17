@@ -669,6 +669,9 @@ détecté par plusieurs radars, la probabilité qu'il soit identifié comme tel 
 Le champ <code>harm_detection_chance</code> de
 <a href="https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua">skynet-iads-supported-types.lua</a>
 donne la probabilité de chaque système radar.</p>
+<p>Skynet désactive l'option « Evasion of ARM » de DCS chaque fois qu'un site SAM ou un EW radar
+s'allume, quoi que la mission ait réglé : c'est Skynet seul qui décide quand un radar s'éteint face
+à un HARM.</p>
 <h3 id="détection-des-harm">Détection des HARM<a class="headerlink" href="#détection-des-harm" title="Permanent link">&para;</a></h3>
 <p>Admettons que le site SAM A ait une probabilité de détection de 60 % et le site SAM B une
 probabilité de 50 %. Si un HARM est accroché par les deux radars, la probabilité que l'IADS
