@@ -20,12 +20,17 @@ The listings `SkynetIADSUtils.getUnitNames()` and `getGroupNames()` are not a le
 
 ## What to build
 
-1. **Find the static.** Wrap the `getTypeName` call in `SkynetIADSAbstractDCSObjectWrapper:create` so that a failure logs the object's name and the caller's stack once. Load the Sinai mission and read the log. Because the error starts before any shot, the static is present or already gone at load time.
-2. **Skip what does not exist.** A contact whose object does not exist, or whose `getTypeName` fails, is not added — which is what the comment above `getDetectedTargets` already intends.
-3. **Say whether the radar was losing its cycle**, measured: a SAM's contacts with the error, then without.
-4. A test for the failing case in `test/lua/`.
-5. **Correct the two listing comments** ([#49](https://github.com/VEAF/Skynet-IADS/issues/49)): in `addEarlyWarningRadarsByPrefix`, the `Unit.getByName` guard covers a unit that disappears between the enumeration and the lookup; in `addSAMSitesByPrefix`, `getGroupNames()` returns group names only.
-6. A `CHANGELOG.md` entry under `[Unreleased]`.
+1. **Skip what DCS cannot describe.** In `getDetectedTargets`, a contact whose `SkynetIADSContact:create` raises is not added, and the loop goes on — which is what the comment above `getDetectedTargets` already intends.
+2. **The radar was losing its cycle**, read from the code: the error escaped the loop over the detected targets, so every target after the static went unreported that cycle.
+3. A test for the failing case in `test/lua/`: a static between two aircraft, which answers `getName()` and raises `Static doesn't exist` from `getTypeName()`, as the log shows.
+4. **Correct the two listing comments** ([#49](https://github.com/VEAF/Skynet-IADS/issues/49)): in `addEarlyWarningRadarsByPrefix`, the `Unit.getByName` guard covers a unit that disappears between the enumeration and the lookup; in `addSAMSitesByPrefix`, `getGroupNames()` returns group names only.
+5. A `CHANGELOG.md` entry under `[Unreleased]`.
+
+## Decisions
+
+- **The static is not identified.** The mission places none dead, so it is created and removed during play by another script, which is outside Skynet; the error did not reproduce in a local run of the same mission. Knowing which static it is would not change the fix.
+- **`getDetectedTargets` is the path.** The other candidate, `SkynetIADS:reportContact`, is called inside Skynet only by the last line of defence, which hands it units of groups that exist and are in the air — never a static.
+- **The guard is a `pcall` around the contact's creation**, not a check of `isExist()` or `getCoalition()` beforehand: the log shows only that `getName()` still answers and `getTypeName()` raises, and what the other two answer on such an object is not known. The `pcall` holds whatever they answer.
 
 ## Out of scope
 
