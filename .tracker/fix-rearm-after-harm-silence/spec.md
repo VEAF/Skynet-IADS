@@ -1,6 +1,6 @@
 # A site silenced by HARM defence gets its AI back, so it can be rearmed
 
-Status: in-progress
+Status: done
 
 ## The problem
 
