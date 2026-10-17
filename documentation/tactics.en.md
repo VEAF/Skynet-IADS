@@ -11,6 +11,9 @@ See
 [skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua)
 field `harm_detection_chance` for the probability per radar system.
 
+Skynet turns DCS's own "Evasion of ARM" option off each time a SAM site or EW radar goes live,
+whatever the mission sets: when a radar shuts down for a HARM is Skynet's decision alone.
+
 ### HARM detection
 
 Let's say SAM site A has a 60% HARM detection chance and SAM site B has a 50% HARM detection

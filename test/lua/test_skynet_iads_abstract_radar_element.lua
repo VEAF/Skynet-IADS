@@ -1665,4 +1665,63 @@ function TestSkynetIADSAbstractRadarElement:testAnObjectWhoseCoalitionCannotBeRe
 	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
 end
 
+-- ---- DCS's own "Evasion of ARM" ---------------------------------------------------------------
+--
+-- goLive() turns it off on every go-live, beside ALARM_STATE and ROE: an option holds whatever was
+-- set last, so a mission that sets it on after the element was added loses it at the next go-live.
+
+local function optionCount(element, optionId)
+	local count = 0
+	for _, call in ipairs(element:getDCSRepresentation().__controllerCalls or {}) do
+		if call.id == optionId then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function TestSkynetIADSAbstractRadarElement:testASAMSiteGoingLiveTurnsEvasionOfARMOffEveryTime()
+	F.samGroup("SA-6", "SAM-SA-6")
+	local samSite = self.skynetIADS:addSAMSite("SAM-SA-6")
+	luaunit.assertEquals(lastOption(samSite, AI.Option.Ground.id.EVASION_OF_ARM), false)
+
+	local count = optionCount(samSite, AI.Option.Ground.id.EVASION_OF_ARM)
+	samSite:goDark()
+	samSite:goLive()
+	luaunit.assertEquals(samSite:isActive(), true)
+	luaunit.assertEquals(optionCount(samSite, AI.Option.Ground.id.EVASION_OF_ARM), count + 1)
+	luaunit.assertEquals(lastOption(samSite, AI.Option.Ground.id.EVASION_OF_ARM), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnEWRadarGoingLiveTurnsEvasionOfARMOffOnItsUnit()
+	F.earlyWarningRadarUnit("EW-west2")
+	local ewRadar = self.skynetIADS:addEarlyWarningRadar("EW-west2")
+	luaunit.assertEquals(lastOption(ewRadar, AI.Option.Ground.id.EVASION_OF_ARM), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnAWACSRadarGoingLiveLeavesEvasionOfARMAlone()
+	F.awacsUnit("AWACS-1")
+	local awacs = self.skynetIADS:addEarlyWarningRadar("AWACS-1")
+	luaunit.assertEquals(awacs:isActive(), true)
+	luaunit.assertEquals(optionCount(awacs, AI.Option.Ground.id.EVASION_OF_ARM), 0)
+end
+
+-- a DCS build that predates the option has no such entry in AI.Option.Ground.id
+function TestSkynetIADSAbstractRadarElement:testGoingLiveWithoutTheEvasionOfARMOptionStillWorks()
+	local evasionOfARM = AI.Option.Ground.id.EVASION_OF_ARM
+	AI.Option.Ground.id.EVASION_OF_ARM = nil
+	local ok, err = pcall(function()
+		F.samGroup("SA-6", "SAM-SA-6")
+		local samSite = self.skynetIADS:addSAMSite("SAM-SA-6")
+		samSite:goLive()
+		luaunit.assertEquals(samSite:isActive(), true)
+		F.earlyWarningRadarUnit("EW-west2")
+		luaunit.assertEquals(self.skynetIADS:addEarlyWarningRadar("EW-west2"):isActive(), true)
+	end)
+	AI.Option.Ground.id.EVASION_OF_ARM = evasionOfARM
+	if not ok then
+		error(err, 0)
+	end
+end
+
 os.exit(luaunit.LuaUnit.run())

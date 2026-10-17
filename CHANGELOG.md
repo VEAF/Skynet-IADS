@@ -132,6 +132,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   be identified, whatever its speed; `harm_detection_chance` still decides whether a radar's crew
   recognises it. A contact seen only once no longer stops the other contacts from being evaluated
   that cycle.
+- **Skynet turns DCS's own "Evasion of ARM" off**, each time a SAM site or EW radar goes live,
+  whatever the mission sets. With it on, the unit an anti-radiation missile is aimed at went dark
+  and drove off by itself, outside Skynet's HARM defence, and could stop engaging: in DCS 2.9.30 a
+  Tor, which shoots HARMs down, fired nothing. A mission that sets the option on while a radar is
+  live keeps it until that radar next goes live. AWACS radars, airborne or naval, are left alone.
 
 ## [3.5.0] — 2026-09-21
 
