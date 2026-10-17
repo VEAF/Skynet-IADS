@@ -1430,4 +1430,61 @@ function TestSkynetIADSAbstractRadarElement:testCacheInvalidatedFirstfewSecondsA
 	luaunit.assertIs(samSite:getDetectedTargets(), samSite:getDetectedTargets(), "and the window closes")
 end
 
+-- ---- the coalition filter -------------------------------------------------------------------
+--
+-- getDetectedTargets() drops what belongs to the IADS's own side before it builds a contact, so
+-- nothing downstream -- the wake, HARM detection, the logger -- ever sees a friendly object.
+
+--- What the real getDetectedTargets() answers for a RED network whose radar sees `objects`.
+local function reportedBy(test, objects)
+	test.samSiteName = "SAM-SA-6"
+	test:setUp()
+	test.skynetIADS:setCoalition(dcsStub.makeUnit({ coalition = coalition.side.RED }))
+	local detected = {}
+	for i = 1, #objects do
+		detected[i] = { object = objects[i] }
+	end
+	function test.samSite:getController()
+		return {
+			getDetectedTargets = function()
+				return detected
+			end,
+		}
+	end
+	function test.samSite:isTargetInRange()
+		return true
+	end
+	return SkynetIADSAbstractRadarElement.getDetectedTargets(test.samSite)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAFriendlyAircraftOrWeaponIsNotReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "friendly-jet", coalition = coalition.side.RED }),
+		dcsStub.makeUnit({
+			name = "friendly-bomb",
+			category = Object.Category.WEAPON,
+			desc = { category = Weapon.Category.BOMB },
+			coalition = coalition.side.RED,
+		}),
+	})
+	luaunit.assertEquals(#contacts, 0)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnEnemyOrNeutralObjectIsReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "enemy-jet", coalition = coalition.side.BLUE }),
+		dcsStub.makeUnit({ name = "neutral-jet", coalition = coalition.side.NEUTRAL }),
+	})
+	luaunit.assertEquals(#contacts, 2)
+end
+
+-- DCS raises "Weapon doesn't exist" from getCoalition() on a weapon that has just ended
+function TestSkynetIADSAbstractRadarElement:testAnObjectWhoseCoalitionCannotBeReadIsDropped()
+	local ended = dcsStub.makeUnit({ name = "ended-weapon", category = Object.Category.WEAPON })
+	function ended:getCoalition()
+		error("Weapon doesn't exist")
+	end
+	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
+end
+
 os.exit(luaunit.LuaUnit.run())
