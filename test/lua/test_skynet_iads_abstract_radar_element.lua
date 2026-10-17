@@ -639,6 +639,51 @@ function TestSkynetIADSAbstractRadarElement:testCanEngageByClass()
 	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), false)
 end
 
+-- ---- going dark ------------------------------------------------------------------------------
+--
+-- goDark() counts only what the site's own radar sees and the site can engage: a bomb passing
+-- over a site that cannot shoot at it does not hold the site up.
+
+--- A live SA-6 whose radar sees `contacts`, with its bomb flag off.
+local function liveSiteSeeing(test, contacts)
+	test.samSiteName = "SAM-SA-6-2"
+	test:setUp()
+	test.samSite:setCanEngageBomb(false)
+	function test.samSite:getDetectedTargets()
+		return contacts
+	end
+	luaunit.assertEquals(test.samSite:isActive(), true)
+	return test.samSite
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsGoesDark()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOneEngageableContactStaysLive()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_AIRCRAFT),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
+-- its own missiles still guide on whatever it fired at: it stays live until they land
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsWaitsForItsMissiles()
+	local site = liveSiteSeeing(self, { classedContact(SkynetIADSContact.CLASS_BOMB) })
+	function site:hasMissilesInFlight()
+		return true
+	end
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
 --- Which types the database says engage each class, measured in DCS 2.9.30.
 function TestSkynetIADSAbstractRadarElement:testSupportedTypesCapabilities()
 	local function typesWith(field)

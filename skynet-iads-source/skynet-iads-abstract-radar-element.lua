@@ -675,11 +675,28 @@ do
 		end
 	end
 
+	--- How many of the contacts this element's radar sees it can engage.
+	function SkynetIADSAbstractRadarElement:getNumberOfEngageableDetectedTargets()
+		local count = 0
+		local targets = self:getDetectedTargets()
+		for i = 1, #targets do
+			if self:canEngage(targets[i]) then
+				count = count + 1
+			end
+		end
+		return count
+	end
+
 	function SkynetIADSAbstractRadarElement:goDark()
+		-- only what the element can engage holds it up: read only where the condition below asks
+		local engageableTargets = 0
+		if self.aiState == true and self.harmSilenceID == nil then
+			engageableTargets = self:getNumberOfEngageableDetectedTargets()
+		end
 		if
 			(self:hasWorkingPowerSource() == false)
 			or (self.aiState == true)
-				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and #self:getDetectedTargets() == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and #self:getDetectedTargets() > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
+				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and engageableTargets == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and engageableTargets > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
 		then
 			if self:isDestroyed() == false then
 				self:getDCSRepresentation():enableEmission(false)
