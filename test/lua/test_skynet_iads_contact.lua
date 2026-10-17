@@ -132,15 +132,6 @@ function TestSkynetIADSContact:test_getNumberOfTimesHitByRadar()
 	luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 1)
 end
 
-function TestSkynetIADSContact:test_refresh_calls_updateSimpleAltitudeProfile()
-	local called = false
-	function self.contact:updateSimpleAltitudeProfile()
-		called = true
-	end
-	self.contact:refresh()
-	luaunit.assertEquals(called, true)
-end
-
 function TestSkynetIADSContact:test_refresh_computes_ground_speed()
 	self.contact:refresh() -- baseline at clock 1000, position (0,_,0)
 	-- move 185 200 m over 3600 s: 185200 m = 100 NM; 3600 s = 1 h => 100 kt
@@ -154,42 +145,6 @@ function TestSkynetIADSContact:test_getAge()
 	-- clock 1000, lastTimeSeen forced to 0 => age 1000
 	self.contact.lastTimeSeen = dcsStub.now() - 1000
 	luaunit.assertEquals(self.contact:getAge(), 1000)
-end
-
--- ---- altitude profile (ported near-verbatim) --------------------
-
-function TestSkynetIADSContact:test_updateSimpleAltitudeProfile_descend_then_climb()
-	local mock = {}
-	local y = 100
-	function mock:getPosition()
-		return { p = { y = y } }
-	end
-	function self.contact:getDCSRepresentation()
-		return mock
-	end
-
-	self.contact.position.p.y = 200 -- was higher, now 100 => DESCEND
-	self.contact:updateSimpleAltitudeProfile()
-	local profile = self.contact:getSimpleAltitudeProfile()
-	luaunit.assertEquals(profile[1], SkynetIADSContact.DESCEND)
-	luaunit.assertEquals(#profile, 1)
-
-	self.contact.position.p.y = 200
-	y = 200 -- no change => no new entry
-	self.contact:updateSimpleAltitudeProfile()
-	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 1)
-
-	self.contact.position.p.y = 100
-	y = 200 -- was lower, now 200 => CLIMB
-	self.contact:updateSimpleAltitudeProfile()
-	profile = self.contact:getSimpleAltitudeProfile()
-	luaunit.assertEquals(profile[2], SkynetIADSContact.CLIMB)
-	luaunit.assertEquals(#profile, 2)
-
-	self.contact.position.p.y = 100
-	y = 200 -- still climbing (100 < 200), but previousPath == CLIMB => not appended
-	self.contact:updateSimpleAltitudeProfile()
-	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 2)
 end
 
 -- ---- HARM state (ported verbatim) ------------------------------

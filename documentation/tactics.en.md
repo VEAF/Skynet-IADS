@@ -23,17 +23,12 @@ impact. These systems will not have a very good HARM defence with Skynet.
 
 ![Skynet IADS overview](images/skynet-harm-detection.jpg)
 
-### HARM flight path analysis
+### HARM identification
 
-The contact needs to be traveling faster than 800 kt and it may not have changed its flight path
-more than 2 times (e.g. `climb-descend`, `climb` or `descend`). This is to minimise false
-positives, for example a fighter flying very fast.
-
-![Skynet IADS overview](images/skynet-harm-flightpath.jpg)
-
-This implementation is closer to real life. SAM sites like the Patriot and most likely modern
-Russian systems calculate the flight path and analyse the radar cross section to determine if a
-contact heading inbound is a HARM.
+Only an anti-radiation missile can be identified as a HARM: a missile DCS describes as guided by a
+passive radar seeker. Its speed and flight path play no part, so a fast aircraft or another missile
+flying fast and low, such as a Maverick or a cruise missile, is never taken for one. Whether a
+radar's crew recognises the missile is then decided by the HARM detection chance above.
 
 If identified as a HARM the IADS will shut down radars 15 degrees left and right of the HARM's
 flight path up to a distance of 20 nautical miles in front of the HARM.

@@ -126,6 +126,12 @@ Until that release is cut, the build date in the artifact's first line remains t
   weapons were off now holds, instead of being reset from the database. Radars also drop objects
   of their own coalition before reporting anything: DCS reports none today, so nothing changes in
   practice.
+- **HARM defence recognises an anti-radiation missile by its seeker.** It used to take any contact
+  faster than 800 kt on a flat flight path for a HARM: a Maverick could shut an early warning radar
+  down for minutes, and the next Mavericks went unseen. Now only a passive-radar-guided missile can
+  be identified, whatever its speed; `harm_detection_chance` still decides whether a radar's crew
+  recognises it. A contact seen only once no longer stops the other contacts from being evaluated
+  that cycle.
 
 ## [3.5.0] — 2026-09-21
 

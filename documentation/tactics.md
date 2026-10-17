@@ -24,17 +24,13 @@ contre les HARM avec Skynet.
 
 ![Détection des HARM par Skynet IADS](images/skynet-harm-detection.jpg)
 
-### Analyse de la trajectoire des HARM
+### Identification des HARM
 
-Le contact doit voler à plus de 800 kt et ne pas avoir changé de trajectoire plus de deux fois
-(par exemple `montée-descente`, `montée` ou `descente`). Le but est de limiter les faux positifs :
-un chasseur volant très vite, par exemple.
-
-![Analyse de trajectoire des HARM par Skynet IADS](images/skynet-harm-flightpath.jpg)
-
-Cette implémentation est plus proche de la réalité. Des systèmes comme le Patriot, et très
-probablement les systèmes russes modernes, calculent la trajectoire et analysent la surface
-équivalente radar pour déterminer si un contact entrant est un HARM.
+Seul un missile antiradar peut être identifié comme HARM : un missile que DCS décrit comme guidé par
+un autodirecteur radar passif. Sa vitesse et sa trajectoire n'entrent pas en compte, si bien qu'un
+avion rapide ou un autre missile volant vite et bas, comme un Maverick ou un missile de croisière,
+n'est jamais pris pour un HARM. Que l'équipage d'un radar reconnaisse le missile dépend ensuite de
+la probabilité de détection des HARM décrite plus haut.
 
 Une fois un contact identifié comme HARM, l'IADS éteint les radars situés dans un secteur de 15
 degrés de part et d'autre de sa trajectoire, jusqu'à 20 milles nautiques devant lui.
