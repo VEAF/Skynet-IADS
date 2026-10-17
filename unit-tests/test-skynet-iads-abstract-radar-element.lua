@@ -837,6 +837,9 @@ function TestSkynetIADSAbstractRadarElement:testInformOfContactInRangeWhenEarlyW
 	self:setUp()
 	self.samSite:setActAsEW(true)
 	local mockContact = {}
+	function mockContact:getTargetClass()
+		return SkynetIADSContact.CLASS_AIRCRAFT
+	end
 	
 	function self.samSite:isTargetInRange(target)
 		lu.assertIs(target, mockContact)
