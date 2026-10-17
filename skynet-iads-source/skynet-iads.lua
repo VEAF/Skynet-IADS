@@ -167,7 +167,7 @@ do
 		self.earlyWarningRadars = {}
 		for unitName in pairs(SkynetIADSUtils.getUnitNames()) do
 			local pos = self:findSubString(unitName, prefix)
-			--the listing can contain StaticObjects, we check to see we only add Units
+			--the listing holds unit names only; this skips a unit gone between the listing and here
 			local unit = Unit.getByName(unitName)
 			if pos and pos == 1 and unit then
 				self:addEarlyWarningRadar(unitName)
@@ -246,7 +246,7 @@ do
 		for groupName in pairs(SkynetIADSUtils.getGroupNames()) do
 			local pos = self:findSubString(groupName, prefix)
 			if pos and pos == 1 then
-				--the listing returns groups, units and, StaticObjects
+				--the listing holds group names only; this skips a group gone between the listing and here
 				local dcsObject = Group.getByName(groupName)
 				if dcsObject and dcsObject:getUnits()[1]:isActive() then
 					self:addSAMSite(groupName)
