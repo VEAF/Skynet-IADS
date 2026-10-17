@@ -1026,9 +1026,9 @@ do
 				local targets = self:getController():getDetectedTargets(Controller.Detection.RADAR)
 				for i = 1, #targets do
 					local target = targets[i]
-					-- there are cases when a destroyed object is still visible as a target to the radar, don't add it, will cause errors everywhere the dcs object is accessed
-					-- nor an object of the IADS's own side. isExist() is checked first, because once an
-					-- object is gone every other getter raises
+					-- skip an object of the IADS's own side, and one that no longer exists: DCS can still
+					-- report it, and every getter on it then raises except isExist(), checked first
+					-- for that reason
 					if
 						target.object
 						and target.object:isExist()
