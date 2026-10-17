@@ -21,6 +21,24 @@ so **bombs and missiles are now deliberately passed**. Weapons transit friendly 
 
 **Interesting because:** it's a behaviour change from this integration widening a surface the original author explicitly marked as coalition-unsafe.
 
+### A site already dark keeps its AI on through a HARM silence
+
+HARM defence silences a site whatever its state: `informOfHARM` calls `goSilentToEvadeHARM` on every
+usable site a HARM is heading for, live or dark. The AI is turned off inside `goDark()`, and only
+for a site that is live: `goDark()` does nothing when `aiState` is already false. So a site that went
+dark normally — its target left the envelope at the end of a cycle — and is then aimed at by a HARM
+sits through the whole silence with emission off and its AI **on**.
+
+That is exactly the state the AI-off guard exists for: the comment in `goDark()` cites a DCS
+multiplayer bug where a HARM still finds an emitter whose emission alone is off. A HARM launched
+while the site was live and arriving after it went dark is the common case.
+
+Its point defences are unaffected: `informOfHARM` wakes them itself, before the silence.
+
+**Shape if taken**: `goSilentToEvadeHARM` turns the AI off itself when the site is already dark, or
+`goDark()` applies the HARM branch whatever `aiState` is. Either way `finishHarmDefence` already
+turns it back on. Not measured: whether the multiplayer bug still exists in current DCS.
+
 ## The in-sim suite drifts, and nothing says so
 
 `unit-tests/*.miz` is the legacy suite. Nothing runs it — not the CI, not the default workflow — so
