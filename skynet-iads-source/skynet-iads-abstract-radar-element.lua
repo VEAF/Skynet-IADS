@@ -656,6 +656,7 @@ do
 				cont:setOnOff(true)
 				cont:setOption(AI.Option.Ground.id.ALARM_STATE, AI.Option.Ground.val.ALARM_STATE.RED)
 				cont:setOption(AI.Option.Air.id.ROE, AI.Option.Air.val.ROE.WEAPON_FREE)
+				self:turnOffDCSEvasionOfARM(cont)
 				self:getDCSRepresentation():enableEmission(true)
 				self.goLiveTime = timer.getTime()
 				self.aiState = true
@@ -665,6 +666,16 @@ do
 				self.iads:printOutputToLog("GOING LIVE: " .. self:getDescription())
 			end
 			self:scanForHarms()
+		end
+	end
+
+	--- Turns DCS's own "Evasion of ARM" off: with it on, the unit an ARM is aimed at goes dark and
+	--- drives off by itself, against Skynet's HARM defence. An option holds whatever was set last,
+	--- so goLive() sets it each time, after anything the mission set since. Older DCS builds have no
+	--- such option.
+	function SkynetIADSAbstractRadarElement:turnOffDCSEvasionOfARM(controller)
+		if AI.Option.Ground.id.EVASION_OF_ARM then
+			controller:setOption(AI.Option.Ground.id.EVASION_OF_ARM, false)
 		end
 	end
 

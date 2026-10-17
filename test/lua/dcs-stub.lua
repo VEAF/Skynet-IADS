@@ -309,7 +309,7 @@ AI = {
 			},
 		},
 		Ground = {
-			id = { NO_OPTION = -1, ROE = 0, ALARM_STATE = 9, ENGAGE_AIR_WEAPONS = 20 },
+			id = { NO_OPTION = -1, ROE = 0, ALARM_STATE = 9, ENGAGE_AIR_WEAPONS = 20, EVASION_OF_ARM = 31 },
 			val = {
 				ROE = { OPEN_FIRE = 2, RETURN_FIRE = 3, WEAPON_HOLD = 4 },
 				ALARM_STATE = { AUTO = 0, GREEN = 1, RED = 2 },
