@@ -110,12 +110,16 @@ Until that release is cut, the build date in the artifact's first line remains t
   still wakes every site; a munition wakes only a site that can shoot at it, and a site whose radar
   sees only munitions it cannot engage goes dark. Measured in DCS 2.9.30:
   - bombs: Tor M2, Pantsir S1, Iris-T SLM and Phalanx;
-  - air-to-ground missiles: those four, plus S-300, Patriot, NASAMS, Tor, HQ-7 and Roland ADS;
+  - other guided missiles — air-to-ground, anti-ship, cruise: those four, plus S-300, Patriot,
+    NASAMS, Tor, HQ-7 and Roland ADS;
   - anti-radiation missiles: the same, without the Roland ADS. **The HQ-7 now engages HARMs**,
     which also lets it stay live under HARM attack when it has the launchers and missiles for it.
 
+  The High Digit SAMs were not measured and keep their database entries: their S-300 variants still
+  wake for HARMs, but no longer for other missiles.
+
   An anti-radiation missile is now known by its seeker as soon as it is seen, so a HARM no longer
-  wakes the emitter it is aimed at while HARM detection is still making up its mind. Air-to-air and
+  wakes a site that cannot engage it while HARM detection is still making up its mind. Air-to-air and
   surface-to-air missiles, shells and rockets wake nothing. `setCanEngageBomb(state)` and
   `setCanEngageMissile(state)` override the table per site, as `setCanEngageHARM` does;
   `setCanEngageAirWeapons(false)` turns all three off. `setCanEngageHARM(true)` on a site whose air

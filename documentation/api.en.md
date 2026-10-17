@@ -348,8 +348,8 @@ samSite:setCanEngageBomb(true)
 
 ### Engage missiles
 
-Will set the SAM site to engage air-to-ground missiles other than anti-radiation missiles, if it is
-able to do so in DCS. SAM sites that can engage them are set to true by default.
+Will set the SAM site to engage guided missiles — air-to-ground, anti-ship, cruise — other than
+anti-radiation missiles, if it is able to do so in DCS. SAM sites that can engage them are set to true by default.
 
 ```lua
 samSite:setCanEngageMissile(true)
@@ -365,7 +365,8 @@ A SAM site goes live for a contact in its go-live range only if it can engage it
 - an aircraft or a helicopter wakes every SAM site;
 - an anti-radiation missile wakes a SAM site that can engage HARMs. It is recognised by its seeker
   as soon as it is seen;
-- another air-to-ground missile wakes a SAM site that can engage missiles;
+- another guided missile — air-to-ground, anti-ship, cruise — wakes a SAM site that can engage
+  missiles;
 - a bomb wakes a SAM site that can engage bombs;
 - air-to-air and surface-to-air missiles, shells, rockets and ground units wake nothing.
 

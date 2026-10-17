@@ -354,8 +354,8 @@ samSite:setCanEngageBomb(true)
 
 ### Engager les missiles
 
-Autorise le site SAM à engager les missiles air-sol autres que les missiles antiradar, s'il en est
-capable dans DCS. Les sites SAM qui en sont capables sont à `true` par défaut.
+Autorise le site SAM à engager les missiles guidés — air-sol, antinavires, de croisière — autres
+que les missiles antiradar, s'il en est capable dans DCS. Les sites SAM qui en sont capables sont à `true` par défaut.
 
 ```lua
 samSite:setCanEngageMissile(true)
@@ -372,7 +372,8 @@ Un site SAM s'active pour un contact dans sa portée d'activation seulement s'il
 - un avion ou un hélicoptère réveille tous les sites SAM ;
 - un missile antiradar réveille un site SAM capable d'engager les HARM. Il est reconnu à son
   autodirecteur dès qu'il est vu ;
-- un autre missile air-sol réveille un site SAM capable d'engager les missiles ;
+- un autre missile guidé — air-sol, antinavire, de croisière — réveille un site SAM capable
+  d'engager les missiles ;
 - une bombe réveille un site SAM capable d'engager les bombes ;
 - les missiles air-air et sol-air, les obus, les roquettes et les unités au sol ne réveillent rien.
 

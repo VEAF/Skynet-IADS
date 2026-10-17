@@ -23,9 +23,10 @@ au radar.
 ## Quels systèmes SAM peuvent engager les HARM ? {#which-sam-systems-can-engage-harms}
 
 Mesurés dans DCS 2.9.30, ces systèmes engagent des munitions. Tous les autres n'en engagent aucune,
-et ne se réveillent que pour des aéronefs :
+et ne se réveillent que pour des aéronefs — sauf les SAM High Digit, qui n'ont pas été mesurés :
+leurs variantes de S-300 se réveillent toujours pour les HARM.
 
-| Système | Bombes | Missiles air-sol | HARM |
+| Système | Bombes | Autres missiles guidés | HARM |
 |---|---|---|---|
 | Tor M2, Pantsir S1, Iris-T SLM, Phalanx | oui | oui | oui |
 | SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7 | | oui | oui |

@@ -21,9 +21,10 @@ The strength of the Skynet IADS lies with handling long range systems that opera
 ## Which SAM systems can engage HARMS? {#which-sam-systems-can-engage-harms}
 
 Measured in DCS 2.9.30, these systems engage munitions. Every other system engages none, and wakes
-only for aircraft:
+only for aircraft — except the High Digit SAMs, which were not measured: their S-300 variants keep
+waking for HARMs.
 
-| System | Bombs | Air-to-ground missiles | HARMs |
+| System | Bombs | Other guided missiles | HARMs |
 |---|---|---|---|
 | Tor M2, Pantsir S1, Iris-T SLM, Phalanx | yes | yes | yes |
 | SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7 | | yes | yes |
