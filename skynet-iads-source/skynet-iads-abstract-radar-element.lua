@@ -1027,9 +1027,8 @@ do
 				for i = 1, #targets do
 					local target = targets[i]
 					-- there are cases when a destroyed object is still visible as a target to the radar, don't add it, will cause errors everywhere the dcs object is accessed
-					-- nor an object of the IADS's own side. isExist() goes first: on an object that is
-					-- gone -- a unit or a static removed, a weapon ended -- every other getter but
-					-- getName() raises, "Static doesn't exist" for a static
+					-- nor an object of the IADS's own side. isExist() is checked first, because once an
+					-- object is gone every other getter raises
 					if
 						target.object
 						and target.object:isExist()
