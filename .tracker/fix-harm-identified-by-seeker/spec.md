@@ -1,6 +1,6 @@
 # HARM detection identifies an anti-radiation missile by its seeker
 
-Status: in-progress
+Status: done
 
 Depends on `feat-munition-aware-wake`, which gives a contact its target class and already uses it
 for the wake. This spec does the same for HARM detection, and so for HARM defence.
