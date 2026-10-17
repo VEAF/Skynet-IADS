@@ -52,6 +52,10 @@ do
 		instance.isAPointDefence = false
 		instance.canEngageHARM = false
 		instance.dataBaseSupportedTypesCanEngageHARM = false
+		instance.canEngageBomb = false
+		instance.dataBaseSupportedTypesCanEngageBomb = false
+		instance.canEngageMissile = false
+		instance.dataBaseSupportedTypesCanEngageMissile = false
 		-- 5 seconds seems to be a good value for the sam site to find the target with its organic radar
 		instance.noCacheActiveForSecondsAfterGoLive = 5
 		return instance
@@ -452,6 +456,10 @@ do
 				self:setHARMDetectionChance(dataType["harm_detection_chance"])
 				self.dataBaseSupportedTypesCanEngageHARM = dataType["can_engage_harm"]
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self.dataBaseSupportedTypesCanEngageBomb = dataType["can_engage_bomb"] == true
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self.dataBaseSupportedTypesCanEngageMissile = dataType["can_engage_missile"] == true
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 				local natoName = dataType["name"]["NATO"]
 				self:buildNatoName(natoName)
 				break
@@ -461,16 +469,61 @@ do
 
 	function SkynetIADSAbstractRadarElement:setCanEngageHARM(canEngage)
 		if canEngage == true or canEngage == false then
-			self.canEngageHARM = canEngage
+			-- air weapons first: turning them on restores this flag from the database
 			if canEngage == true and self:getCanEngageAirWeapons() == false then
 				self:setCanEngageAirWeapons(true)
 			end
+			self.canEngageHARM = canEngage
 		end
 		return self
 	end
 
 	function SkynetIADSAbstractRadarElement:getCanEngageHARM()
 		return self.canEngageHARM
+	end
+
+	function SkynetIADSAbstractRadarElement:setCanEngageBomb(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageBomb = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageBomb()
+		return self.canEngageBomb
+	end
+
+	function SkynetIADSAbstractRadarElement:setCanEngageMissile(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageMissile = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageMissile()
+		return self.canEngageMissile
+	end
+
+	--- Whether this element can engage the contact's class: an aircraft always, a munition when
+	-- its flag allows it, anything else never.
+	function SkynetIADSAbstractRadarElement:canEngage(contact)
+		local targetClass = contact:getTargetClass()
+		if targetClass == SkynetIADSContact.CLASS_AIRCRAFT then
+			return true
+		elseif targetClass == SkynetIADSContact.CLASS_ARM then
+			return self:getCanEngageHARM() == true
+		elseif targetClass == SkynetIADSContact.CLASS_BOMB then
+			return self:getCanEngageBomb() == true
+		elseif targetClass == SkynetIADSContact.CLASS_MISSILE then
+			return self:getCanEngageMissile() == true
+		end
+		return false
 	end
 
 	function SkynetIADSAbstractRadarElement:setCanEngageAirWeapons(engageAirWeapons)
@@ -482,9 +535,13 @@ do
 				self.engageAirWeapons = true
 				--we set the original value we got when loading info about the SAM site
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 			else
 				controller:setOption(AI.Option.Ground.id.ENGAGE_AIR_WEAPONS, false)
 				self:setCanEngageHARM(false)
+				self:setCanEngageBomb(false)
+				self:setCanEngageMissile(false)
 				self.engageAirWeapons = false
 			end
 		end
@@ -618,11 +675,28 @@ do
 		end
 	end
 
+	--- How many of the contacts this element's radar sees it can engage.
+	function SkynetIADSAbstractRadarElement:getNumberOfEngageableDetectedTargets()
+		local count = 0
+		local targets = self:getDetectedTargets()
+		for i = 1, #targets do
+			if self:canEngage(targets[i]) then
+				count = count + 1
+			end
+		end
+		return count
+	end
+
 	function SkynetIADSAbstractRadarElement:goDark()
+		-- only what the element can engage holds it up: read only where the condition below asks
+		local engageableTargets = 0
+		if self.aiState == true and self.harmSilenceID == nil then
+			engageableTargets = self:getNumberOfEngageableDetectedTargets()
+		end
 		if
 			(self:hasWorkingPowerSource() == false)
 			or (self.aiState == true)
-				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and #self:getDetectedTargets() == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and #self:getDetectedTargets() > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
+				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and engageableTargets == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and engageableTargets > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
 		then
 			if self:isDestroyed() == false then
 				self:getDCSRepresentation():enableEmission(false)
@@ -942,7 +1016,13 @@ do
 				for i = 1, #targets do
 					local target = targets[i]
 					-- there are cases when a destroyed object is still visible as a target to the radar, don't add it, will cause errors everywhere the dcs object is accessed
+					-- nor an object of the IADS's own side, or one whose side cannot be read: DCS
+					-- raises on getCoalition() for a weapon that has just ended
+					local coalitionRead, targetCoalition
 					if target.object then
+						coalitionRead, targetCoalition = pcall(target.object.getCoalition, target.object)
+					end
+					if target.object and coalitionRead and targetCoalition ~= self.iads:getCoalition() then
 						local iadsTarget = SkynetIADSContact:create(target, self)
 						iadsTarget:refresh()
 						if self:isTargetInRange(iadsTarget) then

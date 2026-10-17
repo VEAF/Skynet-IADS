@@ -68,6 +68,7 @@ do
 			},
 			["harm_detection_chance"] = 90,
 			["can_engage_harm"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Buk"] = {
 			["type"] = "complex",
@@ -179,6 +180,7 @@ do
 			},
 			["harm_detection_chance"] = 90,
 			["can_engage_harm"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Hawk"] = {
 			["type"] = "complex",
@@ -217,6 +219,7 @@ do
 				["NATO"] = "Roland ADS",
 			},
 			["harm_detection_chance"] = 60,
+			["can_engage_missile"] = true,
 		},
 		["NASAMS"] = {
 			["type"] = "complex",
@@ -237,6 +240,7 @@ do
 				},
 			},
 			["can_engage_harm"] = true,
+			["can_engage_missile"] = true,
 			["harm_detection_chance"] = 90,
 		},
 		["2S6 Tunguska"] = {
@@ -304,6 +308,7 @@ do
 			},
 			["harm_detection_chance"] = 90,
 			["can_engage_harm"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Gepard"] = {
 			["type"] = "single",
@@ -363,6 +368,8 @@ do
 			},
 			["harm_detection_chance"] = 10,
 			["can_engage_harm"] = true,
+			["can_engage_bomb"] = true,
+			["can_engage_missile"] = true,
 		},
 		["HQ-7"] = {
 			["searchRadar"] = {
@@ -379,6 +386,8 @@ do
 				["NATO"] = "CSA-4",
 			},
 			["harm_detection_chance"] = 30,
+			["can_engage_harm"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Tor M2"] = {
 			["type"] = "single",
@@ -393,6 +402,8 @@ do
 			},
 			["harm_detection_chance"] = 90,
 			["can_engage_harm"] = true,
+			["can_engage_bomb"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Pantsir S1"] = {
 			["type"] = "single",
@@ -407,6 +418,8 @@ do
 			},
 			["harm_detection_chance"] = 10,
 			["can_engage_harm"] = true,
+			["can_engage_bomb"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Iris-T SLM"] = {
 			["type"] = "complex",
@@ -425,6 +438,8 @@ do
 			},
 			["harm_detection_chance"] = 90,
 			["can_engage_harm"] = true,
+			["can_engage_bomb"] = true,
+			["can_engage_missile"] = true,
 		},
 		["Buk Solo"] = {
 			["type"] = "single",

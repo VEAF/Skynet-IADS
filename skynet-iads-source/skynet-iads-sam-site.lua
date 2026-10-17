@@ -125,11 +125,8 @@ do
 		if
 			self.targetsInRange == false
 			and self:areGoLiveConstraintsSatisfied(contact) == true
+			and self:canEngage(contact)
 			and self:isTargetInRange(contact)
-			and (
-				contact:isIdentifiedAsHARM() == false
-				or (contact:isIdentifiedAsHARM() == true and self:getCanEngageHARM() == true)
-			)
 		then
 			self:goLive()
 			self.targetsInRange = true

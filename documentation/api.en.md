@@ -337,6 +337,43 @@ HARMS are set to true by default.
 samSite:setCanEngageHARM(true)
 ```
 
+### Engage bombs
+
+Will set the SAM site to engage bombs, guided or not, if it is able to do so in DCS. SAM sites that
+can engage bombs are set to true by default.
+
+```lua
+samSite:setCanEngageBomb(true)
+```
+
+### Engage missiles
+
+Will set the SAM site to engage guided missiles — air-to-ground, anti-ship, cruise — other than
+anti-radiation missiles, if it is able to do so in DCS. SAM sites that can engage them are set to true by default.
+
+```lua
+samSite:setCanEngageMissile(true)
+```
+
+Setting any of the three to true also turns on air weapons. `setCanEngageAirWeapons(false)` turns
+all three off, and `setCanEngageAirWeapons(true)` restores them to their defaults.
+
+### What wakes a SAM site
+
+A SAM site goes live for a contact in its go-live range only if it can engage it:
+
+- an aircraft or a helicopter wakes every SAM site;
+- an anti-radiation missile wakes a SAM site that can engage HARMs. It is recognised by its seeker
+  as soon as it is seen;
+- another guided missile — air-to-ground, anti-ship, cruise — wakes a SAM site that can engage
+  missiles;
+- a bomb wakes a SAM site that can engage bombs;
+- air-to-air and surface-to-air missiles, shells, rockets and ground units wake nothing.
+
+A live SAM site whose radar sees only munitions it cannot engage goes dark, once its own missiles
+in flight have landed. Which systems engage what by default is in the
+[FAQ](faq.en.md#which-sam-systems-can-engage-harms).
+
 ## Add go live constraints {#add-go-live-constraints}
 
 You can include constraints which must be satisfied for the SAM site to go live. Please note this

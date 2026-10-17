@@ -253,4 +253,115 @@ function TestSkynetIADSContact:testADeadContactAnswersNeutrallyInsteadOfThrowing
 	luaunit.assertEquals(contact:getDesc(), {})
 end
 
+-- ---- getTargetClass ----------------------------------------------------
+--
+-- What a contact is, for the wake: read once from the DCS object's category and description.
+
+local function classOf(category, desc, exists)
+	local unit = dcsStub.makeUnit({ name = "classed", category = category, desc = desc, exists = exists })
+	return SkynetIADSContact:create({ object = unit }):getTargetClass()
+end
+
+local function weaponClass(desc)
+	return classOf(Object.Category.WEAPON, desc)
+end
+
+function TestSkynetIADSContact:testAnAirplaneOrHelicopterIsAircraft()
+	luaunit.assertEquals(
+		classOf(Object.Category.UNIT, { category = Unit.Category.AIRPLANE }),
+		SkynetIADSContact.CLASS_AIRCRAFT
+	)
+	luaunit.assertEquals(
+		classOf(Object.Category.UNIT, { category = Unit.Category.HELICOPTER }),
+		SkynetIADSContact.CLASS_AIRCRAFT
+	)
+end
+
+function TestSkynetIADSContact:testAGroundUnitShipOrStructureHasNoClass()
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.GROUND_UNIT }))
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.SHIP }))
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.STRUCTURE }))
+end
+
+function TestSkynetIADSContact:testABombIsBomb()
+	luaunit.assertEquals(weaponClass({ category = Weapon.Category.BOMB }), SkynetIADSContact.CLASS_BOMB)
+end
+
+function TestSkynetIADSContact:testAPassiveRadarMissileIsArm()
+	luaunit.assertEquals(
+		weaponClass({
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.RADAR_PASSIVE,
+		}),
+		SkynetIADSContact.CLASS_ARM
+	)
+end
+
+function TestSkynetIADSContact:testAnAirToAirOrSurfaceToAirMissileHasNoClass()
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.AAM,
+		guidance = Weapon.GuidanceType.RADAR_ACTIVE,
+	}))
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.SAM,
+		guidance = Weapon.GuidanceType.RADAR_SEMI_ACTIVE,
+	}))
+	-- a passive-radar seeker does not make an air-to-air missile an ARM
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.AAM,
+		guidance = Weapon.GuidanceType.RADAR_PASSIVE,
+	}))
+end
+
+function TestSkynetIADSContact:testAnyOtherMissileIsMissile()
+	local missiles = {
+		-- a laser Maverick
+		{
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.LASER,
+		},
+		{ category = Weapon.Category.MISSILE, missileCategory = Weapon.MissileCategory.CRUISE },
+		{ category = Weapon.Category.MISSILE, missileCategory = Weapon.MissileCategory.ANTI_SHIP },
+		-- DCS describes the JSOW as a missile
+		{
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.INS,
+		},
+		-- no missileCategory to read
+		{ category = Weapon.Category.MISSILE },
+	}
+	for i = 1, #missiles do
+		luaunit.assertEquals(weaponClass(missiles[i]), SkynetIADSContact.CLASS_MISSILE, "missile " .. i)
+	end
+end
+
+function TestSkynetIADSContact:testAShellRocketOrTorpedoHasNoClass()
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.SHELL }))
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.ROCKET }))
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.TORPEDO }))
+end
+
+function TestSkynetIADSContact:testAWeaponGoneBeforeTheContactIsBuiltHasNoClass()
+	luaunit.assertNil(classOf(Object.Category.WEAPON, { category = Weapon.Category.BOMB }, false))
+end
+
+function TestSkynetIADSContact:testTheClassIsReadOnceWhenTheContactIsBuilt()
+	local unit = dcsStub.makeUnit({
+		name = "bomb",
+		category = Object.Category.WEAPON,
+		desc = { category = Weapon.Category.BOMB },
+	})
+	local contact = SkynetIADSContact:create({ object = unit })
+	function unit:getDesc()
+		return { category = Unit.Category.AIRPLANE }
+	end
+	luaunit.assertEquals(contact:getTargetClass(), SkynetIADSContact.CLASS_BOMB)
+end
+
 os.exit(luaunit.LuaUnit.run())

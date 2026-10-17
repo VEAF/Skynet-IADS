@@ -547,6 +547,181 @@ function TestSkynetIADSAbstractRadarElement:testCanEngageHARM()
 	luaunit.assertEquals(airWeaponsSetTo, nil)
 end
 
+-- Setting a flag true on a site whose air weapons are off turns them on, which restores every
+-- flag from the database: the flag has to be set after that, or the database value overwrites it.
+-- No mock here: the overwrite happens inside the real setCanEngageAirWeapons().
+function TestSkynetIADSAbstractRadarElement:testEachSetterHoldsTrueWhenAirWeaponsWereOff()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = false
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageHARM(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageMissile(true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+
+	-- the other two come back from the database, which says false for an SA-6
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageBomb(true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testSetCanEngageBombAndMissileAllowAirWeapons()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageBomb(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageMissile(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAirWeaponsOffClearsAndOnRestoresFromDatabase()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = true
+	self.samSite.dataBaseSupportedTypesCanEngageBomb = true
+	self.samSite.dataBaseSupportedTypesCanEngageMissile = true
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+
+	self.samSite:setCanEngageAirWeapons(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+end
+
+--- A contact double that answers only its class.
+local function classedContact(class)
+	return {
+		getTargetClass = function()
+			return class
+		end,
+	}
+end
+
+function TestSkynetIADSAbstractRadarElement:testCanEngageByClass()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	local site = self.samSite
+
+	for _, state in ipairs({ true, false }) do
+		site:setCanEngageHARM(state)
+		site:setCanEngageBomb(state)
+		site:setCanEngageMissile(state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_AIRCRAFT)), true)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(nil)), false)
+	end
+
+	-- each class follows its own flag, not its neighbours'
+	site:setCanEngageHARM(false)
+	site:setCanEngageBomb(true)
+	site:setCanEngageMissile(false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), true)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), false)
+end
+
+-- ---- going dark ------------------------------------------------------------------------------
+--
+-- goDark() counts only what the site's own radar sees and the site can engage: a bomb passing
+-- over a site that cannot shoot at it does not hold the site up.
+
+--- A live SA-6 whose radar sees `contacts`, with its bomb flag off.
+local function liveSiteSeeing(test, contacts)
+	test.samSiteName = "SAM-SA-6-2"
+	test:setUp()
+	test.samSite:setCanEngageBomb(false)
+	function test.samSite:getDetectedTargets()
+		return contacts
+	end
+	luaunit.assertEquals(test.samSite:isActive(), true)
+	return test.samSite
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsGoesDark()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOneEngageableContactStaysLive()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_AIRCRAFT),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
+-- its own missiles still guide on whatever it fired at: it stays live until they land
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsWaitsForItsMissiles()
+	local site = liveSiteSeeing(self, { classedContact(SkynetIADSContact.CLASS_BOMB) })
+	function site:hasMissilesInFlight()
+		return true
+	end
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
+--- Which types the database says engage each class, measured in DCS 2.9.30.
+function TestSkynetIADSAbstractRadarElement:testSupportedTypesCapabilities()
+	local function typesWith(field)
+		local names = {}
+		for name, entry in pairs(samTypesDB) do
+			if entry[field] == true then
+				names[#names + 1] = name
+			end
+		end
+		table.sort(names)
+		return names
+	end
+	luaunit.assertEquals(typesWith("can_engage_bomb"), { "Iris-T SLM", "Pantsir S1", "Phalanx", "Tor M2" })
+	luaunit.assertEquals(typesWith("can_engage_missile"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"Roland ADS",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
+	luaunit.assertEquals(typesWith("can_engage_harm"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
+end
+
 -- ---- slice 2: the parent / child radar bookkeeping ----------------------------------------
 --
 -- Departure from the .miz, and the reason the mocks below are told apart by a field: the .miz
@@ -1027,6 +1202,9 @@ function TestSkynetIADSAbstractRadarElement:testInformOfContactInRangeWhenEarlyW
 		isIdentifiedAsHARM = function()
 			return false
 		end,
+		getTargetClass = function()
+			return SkynetIADSContact.CLASS_AIRCRAFT
+		end,
 	}
 
 	local askedAbout = nil
@@ -1428,6 +1606,63 @@ function TestSkynetIADSAbstractRadarElement:testCacheInvalidatedFirstfewSecondsA
 
 	dcsStub.advanceClock(6)
 	luaunit.assertIs(samSite:getDetectedTargets(), samSite:getDetectedTargets(), "and the window closes")
+end
+
+-- ---- the coalition filter -------------------------------------------------------------------
+--
+-- getDetectedTargets() drops what belongs to the IADS's own side before it builds a contact, so
+-- nothing downstream -- the wake, HARM detection, the logger -- ever sees a friendly object.
+
+--- What the real getDetectedTargets() answers for a RED network whose radar sees `objects`.
+local function reportedBy(test, objects)
+	test.samSiteName = "SAM-SA-6"
+	test:setUp()
+	test.skynetIADS:setCoalition(dcsStub.makeUnit({ coalition = coalition.side.RED }))
+	local detected = {}
+	for i = 1, #objects do
+		detected[i] = { object = objects[i] }
+	end
+	function test.samSite:getController()
+		return {
+			getDetectedTargets = function()
+				return detected
+			end,
+		}
+	end
+	function test.samSite:isTargetInRange()
+		return true
+	end
+	return SkynetIADSAbstractRadarElement.getDetectedTargets(test.samSite)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAFriendlyAircraftOrWeaponIsNotReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "friendly-jet", coalition = coalition.side.RED }),
+		dcsStub.makeUnit({
+			name = "friendly-bomb",
+			category = Object.Category.WEAPON,
+			desc = { category = Weapon.Category.BOMB },
+			coalition = coalition.side.RED,
+		}),
+	})
+	luaunit.assertEquals(#contacts, 0)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnEnemyOrNeutralObjectIsReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "enemy-jet", coalition = coalition.side.BLUE }),
+		dcsStub.makeUnit({ name = "neutral-jet", coalition = coalition.side.NEUTRAL }),
+	})
+	luaunit.assertEquals(#contacts, 2)
+end
+
+-- DCS raises "Weapon doesn't exist" from getCoalition() on a weapon that has just ended
+function TestSkynetIADSAbstractRadarElement:testAnObjectWhoseCoalitionCannotBeReadIsDropped()
+	local ended = dcsStub.makeUnit({ name = "ended-weapon", category = Object.Category.WEAPON })
+	function ended:getCoalition()
+		error("Weapon doesn't exist")
+	end
+	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
 end
 
 os.exit(luaunit.LuaUnit.run())
