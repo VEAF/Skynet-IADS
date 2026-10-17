@@ -20,9 +20,9 @@ The listings `SkynetIADSUtils.getUnitNames()` and `getGroupNames()` are not a le
 
 ## What to build
 
-1. **Skip what DCS cannot describe.** In `getDetectedTargets`, a contact whose `SkynetIADSContact:create` raises is not added, and the loop goes on — which is what the comment above `getDetectedTargets` already intends.
+1. **Skip what does not exist.** In `getDetectedTargets`, a target whose object answers `isExist()` false is skipped before anything else is read from it — which is what the comment above the loop already intends. The `pcall` around `getCoalition()` goes: the same check covers the ended weapon it was there for.
 2. **The radar was losing its cycle**, read from the code: the error escaped the loop over the detected targets, so every target after the static went unreported that cycle.
-3. A test for the failing case in `test/lua/`: a static between two aircraft, which answers `getName()` and raises `Static doesn't exist` from `getTypeName()`, as the log shows.
+3. Tests in `test/lua/`, with objects shaped as measured below: a removed static between two aircraft, an ended weapon, a wreck.
 4. **Correct the two listing comments** ([#49](https://github.com/VEAF/Skynet-IADS/issues/49)): in `addEarlyWarningRadarsByPrefix`, the `Unit.getByName` guard covers a unit that disappears between the enumeration and the lookup; in `addSAMSitesByPrefix`, `getGroupNames()` returns group names only.
 5. A `CHANGELOG.md` entry under `[Unreleased]`.
 
@@ -30,7 +30,18 @@ The listings `SkynetIADSUtils.getUnitNames()` and `getGroupNames()` are not a le
 
 - **The static is not identified.** The mission places none dead, so it is created and removed during play by another script, which is outside Skynet; the error did not reproduce in a local run of the same mission. Knowing which static it is would not change the fix.
 - **`getDetectedTargets` is the path.** The other candidate, `SkynetIADS:reportContact`, is called inside Skynet only by the last line of defence, which hands it units of groups that exist and are in the air — never a static.
-- **The guard is a `pcall` around the contact's creation**, not a check of `isExist()` or `getCoalition()` beforehand: the log shows only that `getName()` still answers and `getTypeName()` raises, and what the other two answer on such an object is not known. The `pcall` holds whatever they answer.
+- **The guard is `isExist()`, not a `pcall`.** A `pcall` would hide any error in what it wraps, and leave the getters read later in the loop unguarded. `isExist()` covers the whole loop: nothing can remove an object between two calls in it.
+
+What DCS 2.9 answers once an object is gone, measured in a running mission:
+
+| | `isExist()` | `getName()` | other getters |
+|---|---|---|---|
+| a static removed by `destroy()` | `false` | answers | raise `Static doesn't exist` (`getPosition()`: `Object doesn't exist`) |
+| a unit removed by `destroy()` | `false` | answers | raise `Unit doesn't exist` |
+| a weapon that has ended (a Mk-82) | `false` | answers | raise `Weapon doesn't exist` |
+| a static or a unit destroyed by an explosion | `false` | answers | answer: the wreck stays |
+
+`isExist()` never raised, and turned false at the poll where the other getters started raising; right after `destroy()`, every getter still answers until the next frame. The removed static matches the log: `getName()` answers, `getTypeName()` raises.
 
 ## Out of scope
 
