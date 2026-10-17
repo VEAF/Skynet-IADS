@@ -729,9 +729,44 @@ généralement déjà sorti de leur domaine de tir.
 La force de Skynet IADS est ailleurs : dans la gestion des systèmes à longue portée qui travaillent
 au radar.</p>
 <h2 id="which-sam-systems-can-engage-harms">Quels systèmes SAM peuvent engager les HARM ?<a class="headerlink" href="#which-sam-systems-can-engage-harms" title="Permanent link">&para;</a></h2>
-<p>En juillet 2022, seuls le SA-15, le SA-10, le NASAMS et le Patriot ont été confirmés capables
-d'engager des HARM. Pour une défense anti-HARM solide, la meilleure option consiste à disposer des
-SA-15 autour des EW radars et des sites SAM à forte valeur.</p>
+<p>Mesurés dans DCS 2.9.30, ces systèmes engagent des munitions. Tous les autres n'en engagent aucune,
+et ne se réveillent que pour des aéronefs — sauf les SAM High Digit, qui n'ont pas été mesurés :
+leurs variantes de S-300 se réveillent toujours pour les HARM.</p>
+<table>
+<thead>
+<tr>
+<th>Système</th>
+<th>Bombes</th>
+<th>Autres missiles guidés</th>
+<th>HARM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tor M2, Pantsir S1, Iris-T SLM, Phalanx</td>
+<td>oui</td>
+<td>oui</td>
+<td>oui</td>
+</tr>
+<tr>
+<td>SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7</td>
+<td></td>
+<td>oui</td>
+<td>oui</td>
+</tr>
+<tr>
+<td>Roland ADS</td>
+<td></td>
+<td>oui</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Ce sont les valeurs par défaut des champs <code>can_engage_bomb</code>, <code>can_engage_missile</code> et
+<code>can_engage_harm</code> de la base des types pris en charge par Skynet ; une mission peut les changer
+site par site avec <code>setCanEngageBomb</code>, <code>setCanEngageMissile</code> et <code>setCanEngageHARM</code>. Pour une défense
+anti-HARM solide, la meilleure option consiste à disposer des SA-15 autour des EW radars et des
+sites SAM à forte valeur.</p>
 <h2 id="que-fait-skynet-aux-sam-exactement-">Que fait Skynet aux SAM, exactement ?<a class="headerlink" href="#que-fait-skynet-aux-sam-exactement-" title="Permanent link">&para;</a></h2>
 <p>Le moteur de script permet d'allumer et d'éteindre les émetteurs radar. On peut aussi agir sur
 l'état d'alerte et sur les règles d'engagement. En résumé, c'est tout ce que fait Skynet. Il lit

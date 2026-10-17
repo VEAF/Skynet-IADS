@@ -651,6 +651,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#engager-les-bombes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engager les bombes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#engager-les-missiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engager les missiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ce-qui-réveille-un-site-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce qui réveille un site SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1179,6 +1212,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#engager-les-bombes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engager les bombes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#engager-les-missiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engager les missiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ce-qui-réveille-un-site-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce qui réveille un site SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1677,6 +1743,33 @@ fait s'éteindre le site lorsqu'un HARM identifié par l'IADS arrive sur lui. Le
 d'engager des HARM sont à <code>true</code> par défaut.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageHARM</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 </code></pre></div>
+<h3 id="engager-les-bombes">Engager les bombes<a class="headerlink" href="#engager-les-bombes" title="Permanent link">&para;</a></h3>
+<p>Autorise le site SAM à engager les bombes, guidées ou non, s'il en est capable dans DCS. Les sites
+SAM capables d'engager des bombes sont à <code>true</code> par défaut.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageBomb</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="engager-les-missiles">Engager les missiles<a class="headerlink" href="#engager-les-missiles" title="Permanent link">&para;</a></h3>
+<p>Autorise le site SAM à engager les missiles guidés — air-sol, antinavires, de croisière — autres
+que les missiles antiradar, s'il en est capable dans DCS. Les sites SAM qui en sont capables sont à <code>true</code> par défaut.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageMissile</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+<p>Passer l'une des trois options à <code>true</code> active aussi l'engagement des armements aériens.
+<code>setCanEngageAirWeapons(false)</code> désactive les trois, et <code>setCanEngageAirWeapons(true)</code> leur rend
+leur valeur par défaut.</p>
+<h3 id="ce-qui-réveille-un-site-sam">Ce qui réveille un site SAM<a class="headerlink" href="#ce-qui-réveille-un-site-sam" title="Permanent link">&para;</a></h3>
+<p>Un site SAM s'active pour un contact dans sa portée d'activation seulement s'il peut l'engager :</p>
+<ul>
+<li>un avion ou un hélicoptère réveille tous les sites SAM ;</li>
+<li>un missile antiradar réveille un site SAM capable d'engager les HARM. Il est reconnu à son
+  autodirecteur dès qu'il est vu ;</li>
+<li>un autre missile guidé — air-sol, antinavire, de croisière — réveille un site SAM capable
+  d'engager les missiles ;</li>
+<li>une bombe réveille un site SAM capable d'engager les bombes ;</li>
+<li>les missiles air-air et sol-air, les obus, les roquettes et les unités au sol ne réveillent rien.</li>
+</ul>
+<p>Un site SAM actif dont le radar ne voit plus que des munitions qu'il ne peut pas engager s'éteint,
+une fois ses propres missiles en vol arrivés. Quels systèmes engagent quoi par défaut : voir la
+<a href="../faq/#which-sam-systems-can-engage-harms">FAQ</a>.</p>
 <h2 id="add-go-live-constraints">Ajouter des conditions d'activation<a class="headerlink" href="#add-go-live-constraints" title="Permanent link">&para;</a></h2>
 <p>Vous pouvez poser des conditions qui devront être remplies pour que le site SAM s'active. Notez que
 cela ne pilote que l'activation du site.

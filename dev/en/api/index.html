@@ -651,6 +651,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#engage-bombs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engage bombs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#engage-missiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engage missiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-wakes-a-sam-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What wakes a SAM site
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1179,6 +1212,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#engage-bombs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engage bombs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#engage-missiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engage missiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-wakes-a-sam-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What wakes a SAM site
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1671,6 +1737,32 @@ will shut down if a HARM that has been identified by the IADS is inbound. SAM si
 HARMS are set to true by default.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageHARM</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 </code></pre></div>
+<h3 id="engage-bombs">Engage bombs<a class="headerlink" href="#engage-bombs" title="Permanent link">&para;</a></h3>
+<p>Will set the SAM site to engage bombs, guided or not, if it is able to do so in DCS. SAM sites that
+can engage bombs are set to true by default.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageBomb</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="engage-missiles">Engage missiles<a class="headerlink" href="#engage-missiles" title="Permanent link">&para;</a></h3>
+<p>Will set the SAM site to engage guided missiles — air-to-ground, anti-ship, cruise — other than
+anti-radiation missiles, if it is able to do so in DCS. SAM sites that can engage them are set to true by default.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setCanEngageMissile</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+<p>Setting any of the three to true also turns on air weapons. <code>setCanEngageAirWeapons(false)</code> turns
+all three off, and <code>setCanEngageAirWeapons(true)</code> restores them to their defaults.</p>
+<h3 id="what-wakes-a-sam-site">What wakes a SAM site<a class="headerlink" href="#what-wakes-a-sam-site" title="Permanent link">&para;</a></h3>
+<p>A SAM site goes live for a contact in its go-live range only if it can engage it:</p>
+<ul>
+<li>an aircraft or a helicopter wakes every SAM site;</li>
+<li>an anti-radiation missile wakes a SAM site that can engage HARMs. It is recognised by its seeker
+  as soon as it is seen;</li>
+<li>another guided missile — air-to-ground, anti-ship, cruise — wakes a SAM site that can engage
+  missiles;</li>
+<li>a bomb wakes a SAM site that can engage bombs;</li>
+<li>air-to-air and surface-to-air missiles, shells, rockets and ground units wake nothing.</li>
+</ul>
+<p>A live SAM site whose radar sees only munitions it cannot engage goes dark, once its own missiles
+in flight have landed. Which systems engage what by default is in the
+<a href="../faq/#which-sam-systems-can-engage-harms">FAQ</a>.</p>
 <h2 id="add-go-live-constraints">Add go live constraints<a class="headerlink" href="#add-go-live-constraints" title="Permanent link">&para;</a></h2>
 <p>You can include constraints which must be satisfied for the SAM site to go live. Please note this
 only controls activation of the SAM site.

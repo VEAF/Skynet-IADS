@@ -727,8 +727,43 @@ This is due to the short range of their radars. By the time the IADS wakes them 
 likely passed their engagement range.
 The strength of the Skynet IADS lies with handling long range systems that operate by radar.</p>
 <h2 id="which-sam-systems-can-engage-harms">Which SAM systems can engage HARMS?<a class="headerlink" href="#which-sam-systems-can-engage-harms" title="Permanent link">&para;</a></h2>
-<p>As of July 2022 only the SA-15, SA-10, NASAMS and Patriot have been confirmed to engage HARMS. The
-best option for a solid HARM defence is to add SA-15's around EW radars or high value SAM sites.</p>
+<p>Measured in DCS 2.9.30, these systems engage munitions. Every other system engages none, and wakes
+only for aircraft — except the High Digit SAMs, which were not measured: their S-300 variants keep
+waking for HARMs.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Bombs</th>
+<th>Other guided missiles</th>
+<th>HARMs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tor M2, Pantsir S1, Iris-T SLM, Phalanx</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7</td>
+<td></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Roland ADS</td>
+<td></td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>These are the defaults of the <code>can_engage_bomb</code>, <code>can_engage_missile</code> and <code>can_engage_harm</code> fields
+in Skynet's database of supported types; a mission can change them per SAM site with
+<code>setCanEngageBomb</code>, <code>setCanEngageMissile</code> and <code>setCanEngageHARM</code>. The best option for a solid HARM
+defence is to add SA-15's around EW radars or high value SAM sites.</p>
 <h2 id="what-exactly-does-skynet-do-with-the-sams">What exactly does Skynet do with the SAMs?<a class="headerlink" href="#what-exactly-does-skynet-do-with-the-sams" title="Permanent link">&para;</a></h2>
 <p>Via the scripting engine one can toggle the radar emitters on and off. Further options are the
 alarm state and the rules of engagement. In a nutshell that's all that Skynet does. Skynet does
