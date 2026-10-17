@@ -4,23 +4,6 @@
 
 Neither was requested work and neither is a confirmed bug — they are latent-robustness questions worth a look, especially because this exact failure class (one bad object aborting a whole loop) already bit the project once, in David's `458b64f` "a destroyed group truncated prefix-based discovery".
 
-### No coalition check on weapon contacts
-
-[skynet-iads.lua:348](../skynet-iads-source/skynet-iads.lua) carries a pre-existing note:
-
-```lua
--- the DCS Radar only returns enemy aircraft, if that should change a coalition check will be required
-```
-
-`ad60e92` widened what `evaluateContacts` hands to SAM sites from "aircraft (and, by accident, missiles)" to "aircraft + weapons, minus SHELL/ROCKET" —
-so **bombs and missiles are now deliberately passed**. Weapons transit friendly airspace far more than enemy aircraft do.
-
-**Check:** does DCS radar detection (`Controller.getDetectedTargets`, which is what feeds `self.contacts`) ever surface *friendly* ordnance? If it can, a Phalanx / C-RAM could be told to engage a friendly bomb overflying the site.
-
-**If confirmed:** gate the weapon branch on `contact:getDCSRepresentation():getCoalition()` (or check it once when the contact is built). The `ad60e92` essay in the source already flags this as "another matter" and "Note 1: we could enhance that by only turning the site on when they can indeed engage the target".
-
-**Interesting because:** it's a behaviour change from this integration widening a surface the original author explicitly marked as coalition-unsafe.
-
 ### A site already dark keeps its AI on through a HARM silence
 
 HARM defence silences a site whatever its state: `informOfHARM` calls `goSilentToEvadeHARM` on every
