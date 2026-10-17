@@ -1665,6 +1665,23 @@ function TestSkynetIADSAbstractRadarElement:testAnObjectWhoseCoalitionCannotBeRe
 	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
 end
 
+-- DCS raises "Static doesn't exist" from getTypeName() on a static that is gone, while getName()
+-- still answers; whether getCoalition() and isExist() still answer is not known, so here they do
+function TestSkynetIADSAbstractRadarElement:testAStaticThatIsGoneDoesNotCostTheRestOfTheCycle()
+	local gone = dcsStub.makeStatic({ name = "gone-static", coalition = coalition.side.BLUE })
+	function gone:getTypeName()
+		error("Static doesn't exist")
+	end
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "enemy-jet-1", coalition = coalition.side.BLUE }),
+		gone,
+		dcsStub.makeUnit({ name = "enemy-jet-2", coalition = coalition.side.BLUE }),
+	})
+	luaunit.assertEquals(#contacts, 2)
+	luaunit.assertEquals(contacts[1]:getName(), "enemy-jet-1")
+	luaunit.assertEquals(contacts[2]:getName(), "enemy-jet-2")
+end
+
 -- ---- DCS's own "Evasion of ARM" ---------------------------------------------------------------
 --
 -- goLive() turns it off on every go-live, beside ALARM_STATE and ROE: an option holds whatever was

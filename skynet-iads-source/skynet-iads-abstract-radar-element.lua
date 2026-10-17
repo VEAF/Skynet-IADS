@@ -1034,10 +1034,14 @@ do
 						coalitionRead, targetCoalition = pcall(target.object.getCoalition, target.object)
 					end
 					if target.object and coalitionRead and targetCoalition ~= self.iads:getCoalition() then
-						local iadsTarget = SkynetIADSContact:create(target, self)
-						iadsTarget:refresh()
-						if self:isTargetInRange(iadsTarget) then
-							table.insert(self.cachedTargets, iadsTarget)
+						-- nor an object DCS cannot describe: it raises "Static doesn't exist" from
+						-- getTypeName() on a static that is gone, which would end this loop
+						local created, iadsTarget = pcall(SkynetIADSContact.create, SkynetIADSContact, target, self)
+						if created then
+							iadsTarget:refresh()
+							if self:isTargetInRange(iadsTarget) then
+								table.insert(self.cachedTargets, iadsTarget)
+							end
 						end
 					end
 				end
