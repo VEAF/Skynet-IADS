@@ -461,10 +461,11 @@ do
 
 	function SkynetIADSAbstractRadarElement:setCanEngageHARM(canEngage)
 		if canEngage == true or canEngage == false then
-			self.canEngageHARM = canEngage
+			-- air weapons first: turning them on restores this flag from the database
 			if canEngage == true and self:getCanEngageAirWeapons() == false then
 				self:setCanEngageAirWeapons(true)
 			end
+			self.canEngageHARM = canEngage
 		end
 		return self
 	end

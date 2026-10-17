@@ -547,6 +547,20 @@ function TestSkynetIADSAbstractRadarElement:testCanEngageHARM()
 	luaunit.assertEquals(airWeaponsSetTo, nil)
 end
 
+-- Setting a flag true on a site whose air weapons are off turns them on, which restores every
+-- flag from the database: the flag has to be set after that, or the database value overwrites it.
+-- No mock here: the overwrite happens inside the real setCanEngageAirWeapons().
+function TestSkynetIADSAbstractRadarElement:testEachSetterHoldsTrueWhenAirWeaponsWereOff()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = false
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageHARM(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+end
+
 -- ---- slice 2: the parent / child radar bookkeeping ----------------------------------------
 --
 -- Departure from the .miz, and the reason the mocks below are told apart by a field: the .miz
