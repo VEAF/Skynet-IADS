@@ -779,10 +779,10 @@ function TestSkynetIADS:testTheSameAircraftSeenTwiceIsOneContactCarryingBothRada
 	)
 end
 
---- The network wakes a battery for an aircraft, and for a missile, but not for a shell or a
---- rocket in flight -- otherwise every artillery barrage in the mission lights up the air
---- defence.
-function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
+--- The network tells a battery of a contact with a target class only: a missile or a bomb, not an
+--- air-to-air missile, a shell or a rocket in flight -- otherwise every artillery barrage in the
+--- mission lights up the air defence. Whether the battery can engage it is its own call.
+function TestSkynetIADS:testABatteryIsInformedOnlyOfAClassedContact()
 	local iads = self:buildNetwork()
 	local lonely = iads:getSAMSiteByGroupName("RED-SAM-lonely")
 
@@ -791,15 +791,14 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 		informedOf[#informedOf + 1] = contact:getName()
 	end
 
-	-- a weapon in flight: Object.getCategory answers WEAPON, and desc.category tells a missile
-	-- from a shell
-	local function weaponContact(name, weaponCategory)
+	-- a weapon in flight: Object.getCategory answers WEAPON, and its desc gives its class
+	local function weaponContact(name, desc)
 		local unit = dcsStub.makeUnit({
 			name = name,
 			type = name,
 			pos = { x = 400100, y = 2000, z = 0 },
 			category = Object.Category.WEAPON,
-			desc = { category = weaponCategory },
+			desc = desc,
 		})
 		local contact = SkynetIADSContact:create({ object = unit })
 		contact:refresh()
@@ -810,9 +809,19 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 	watcher:setActAsEW(true)
 	function watcher:getDetectedTargets()
 		return {
-			weaponContact("inbound-missile", Weapon.Category.MISSILE),
-			weaponContact("outgoing-shell", Weapon.Category.SHELL),
-			weaponContact("outgoing-rocket", Weapon.Category.ROCKET),
+			weaponContact("inbound-maverick", {
+				category = Weapon.Category.MISSILE,
+				missileCategory = Weapon.MissileCategory.OTHER,
+				guidance = Weapon.GuidanceType.LASER,
+			}),
+			weaponContact("inbound-bomb", { category = Weapon.Category.BOMB }),
+			weaponContact("passing-amraam", {
+				category = Weapon.Category.MISSILE,
+				missileCategory = Weapon.MissileCategory.AAM,
+				guidance = Weapon.GuidanceType.RADAR_ACTIVE,
+			}),
+			weaponContact("outgoing-shell", { category = Weapon.Category.SHELL }),
+			weaponContact("outgoing-rocket", { category = Weapon.Category.ROCKET }),
 		}
 	end
 	-- the cycle asks which covered batteries are *usable*, not which are covered
@@ -821,7 +830,7 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 	end
 
 	iads:evaluateContacts()
-	luaunit.assertEquals(informedOf, { "inbound-missile" })
+	luaunit.assertEquals(informedOf, { "inbound-maverick", "inbound-bomb" })
 end
 
 -- ---- the table delegator ---------------------------------------------------------------------

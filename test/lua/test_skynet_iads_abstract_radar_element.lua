@@ -1157,6 +1157,9 @@ function TestSkynetIADSAbstractRadarElement:testInformOfContactInRangeWhenEarlyW
 		isIdentifiedAsHARM = function()
 			return false
 		end,
+		getTargetClass = function()
+			return SkynetIADSContact.CLASS_AIRCRAFT
+		end,
 	}
 
 	local askedAbout = nil

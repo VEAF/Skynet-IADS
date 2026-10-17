@@ -123,6 +123,9 @@ function TestSkynetIADSSAMSite:testInformOfContactInRange()
 	function mockContact:isIdentifiedAsHARM()
 		return false
 	end
+	function mockContact:getTargetClass()
+		return SkynetIADSContact.CLASS_AIRCRAFT
+	end
 	function self.samSite:isTargetInRange(target)
 		luaunit.assertIs(target, mockContact)
 		return true
@@ -140,6 +143,9 @@ function TestSkynetIADSSAMSite:testInformOfContactNotInRange()
 	self.samSiteName = "SAM-SA-6"
 	self:setUp()
 	local mockContact = {}
+	function mockContact:getTargetClass()
+		return SkynetIADSContact.CLASS_AIRCRAFT
+	end
 	function self.samSite:isTargetInRange(target)
 		luaunit.assertIs(target, mockContact)
 		return false
@@ -163,6 +169,9 @@ function TestSkynetIADSSAMSite:testInformOfHARMContactSAMCanEngageHARM()
 	function mockTarget:isIdentifiedAsHARM()
 		return true
 	end
+	function mockTarget:getTargetClass()
+		return SkynetIADSContact.CLASS_ARM
+	end
 	self.samSite:goDark()
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	self.samSite:setCanEngageHARM(true)
@@ -180,11 +189,104 @@ function TestSkynetIADSSAMSite:testInformOfHARMContactSAMCanNotEngageHARM()
 	function mockTarget:isIdentifiedAsHARM()
 		return true
 	end
+	function mockTarget:getTargetClass()
+		return SkynetIADSContact.CLASS_ARM
+	end
 	self.samSite:goDark()
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	self.samSite:setCanEngageHARM(false)
 	self.samSite:informOfContact(mockTarget)
 	luaunit.assertEquals(self.samSite:isActive(), false)
+end
+
+-- ---- what wakes a site, by class -------------------------------------------------------------
+--
+-- A site wakes for a contact in range only if it can engage the contact's class: an aircraft
+-- always, a munition when the site's flag for that class allows it.
+
+--- A contact double of `class`, identified as a HARM or not by HARM detection.
+local function classedContact(class, identifiedAsHARM)
+	return {
+		getTargetClass = function()
+			return class
+		end,
+		isIdentifiedAsHARM = function()
+			return identifiedAsHARM == true
+		end,
+	}
+end
+
+--- Whether a dark SA-6, set up by `configure`, goes live when told of `contact` in range.
+local function wakesFor(test, contact, configure)
+	test.samSiteName = "SAM-SA-6"
+	test:setUp()
+	function test.samSite:isTargetInRange()
+		return true
+	end
+	configure(test.samSite)
+	test.samSite:goDark()
+	test.samSite:targetCycleUpdateStart()
+	test.samSite:informOfContact(contact)
+	local isLive = test.samSite:isActive()
+	test:tearDown()
+	return isLive
+end
+
+function TestSkynetIADSSAMSite:testABombWakesABombCapableSiteOnly()
+	local bomb = classedContact(SkynetIADSContact.CLASS_BOMB)
+	luaunit.assertEquals(
+		wakesFor(self, bomb, function(site)
+			site:setCanEngageBomb(true)
+		end),
+		true
+	)
+	luaunit.assertEquals(
+		wakesFor(self, bomb, function(site)
+			site:setCanEngageBomb(false)
+		end),
+		false
+	)
+end
+
+-- the class comes from the seeker, so HARM detection's verdict does not matter here
+function TestSkynetIADSSAMSite:testAnArmWakesAHarmCapableSiteOnlyWhateverItsHARMState()
+	for _, identified in ipairs({ false, true }) do
+		local arm = classedContact(SkynetIADSContact.CLASS_ARM, identified)
+		luaunit.assertEquals(
+			wakesFor(self, arm, function(site)
+				site:setCanEngageHARM(true)
+			end),
+			true
+		)
+		luaunit.assertEquals(
+			wakesFor(self, arm, function(site)
+				site:setCanEngageHARM(false)
+			end),
+			false
+		)
+	end
+end
+
+-- a Maverick HARM detection takes for a HARM is still a missile to the wake
+function TestSkynetIADSSAMSite:testAMissileTakenForAHARMWakesAMissileCapableSite()
+	local maverick = classedContact(SkynetIADSContact.CLASS_MISSILE, true)
+	luaunit.assertEquals(
+		wakesFor(self, maverick, function(site)
+			site:setCanEngageHARM(false)
+			site:setCanEngageMissile(true)
+		end),
+		true
+	)
+end
+
+function TestSkynetIADSSAMSite:testAnAircraftWakesEverySite()
+	local aircraft = classedContact(SkynetIADSContact.CLASS_AIRCRAFT)
+	luaunit.assertEquals(
+		wakesFor(self, aircraft, function(site)
+			site:setCanEngageAirWeapons(false)
+		end),
+		true
+	)
 end
 
 function TestSkynetIADSSAMSite:testSA2InformOfContactTargetNotInRange()
@@ -200,6 +302,7 @@ function TestSkynetIADSSAMSite:testSA2InformOfContactTargetNotInRange()
 	dcsStub.makeUnit({ -- self-registers into dcsStub.world (name given)
 		name = "test-not-in-firing-range-of-sa-2",
 		type = "F-16C",
+		desc = { category = Unit.Category.AIRPLANE },
 		pos = { x = 500000, y = 3000, z = 0 },
 	})
 	local target = F.iadsContact("test-not-in-firing-range-of-sa-2")
@@ -221,6 +324,7 @@ function TestSkynetIADSSAMSite:testSA2InforOfContactInSearchRangeSAMSiteGoLiveWh
 	dcsStub.makeUnit({ -- self-registers into dcsStub.world (name given)
 		name = "test-not-in-firing-range-of-sa-2",
 		type = "F-16C",
+		desc = { category = Unit.Category.AIRPLANE },
 		pos = { x = 50000, y = 3000, z = 0 },
 	})
 	local target = F.iadsContact("test-not-in-firing-range-of-sa-2")
@@ -235,6 +339,9 @@ function TestSkynetIADSSAMSite:testInformOfContactMultipleTimesOnlyOneIsTargetIn
 	local mockContact = {}
 	function mockContact:isIdentifiedAsHARM()
 		return false
+	end
+	function mockContact:getTargetClass()
+		return SkynetIADSContact.CLASS_AIRCRAFT
 	end
 	local numTimesCalledTargetInRange = 0
 
@@ -266,6 +373,7 @@ function TestSkynetIADSSAMSite:testGoLiveConstraint()
 	dcsStub.makeUnit({ -- self-registers into dcsStub.world (name given)
 		name = "test-in-firing-range-of-sa-2",
 		type = "F-16C",
+		desc = { category = Unit.Category.AIRPLANE },
 		pos = { x = 10000, y = 2000, z = 0 },
 	})
 	local contact = F.iadsContact("test-in-firing-range-of-sa-2")
@@ -296,6 +404,7 @@ function TestSkynetIADSSAMSite:testRemoveGoLiveConstraint()
 	dcsStub.makeUnit({ -- self-registers into dcsStub.world (name given)
 		name = "test-in-firing-range-of-sa-2",
 		type = "F-16C",
+		desc = { category = Unit.Category.AIRPLANE },
 		pos = { x = 10000, y = 2000, z = 0 },
 	})
 	local contact = F.iadsContact("test-in-firing-range-of-sa-2")
@@ -337,6 +446,7 @@ function TestSkynetIADSSAMSite:testSAMSiteWillNotGoLiveIfConstraintFailesAndCont
 	dcsStub.makeUnit({ -- self-registers into dcsStub.world (name given)
 		name = "test-in-firing-range-of-sa-2",
 		type = "F-16C",
+		desc = { category = Unit.Category.AIRPLANE },
 		pos = { x = 10000, y = 2000, z = 0 },
 	})
 	local contact = F.iadsContact("test-in-firing-range-of-sa-2")
