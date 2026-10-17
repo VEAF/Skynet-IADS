@@ -9,6 +9,12 @@ do
 	SkynetIADSContact.NOT_HARM = "NOT_HARM"
 	SkynetIADSContact.HARM_UNKNOWN = "HARM_UNKNOWN"
 
+	-- what a contact is, for deciding whether a site wakes for it; see getTargetClass()
+	SkynetIADSContact.CLASS_AIRCRAFT = "aircraft"
+	SkynetIADSContact.CLASS_ARM = "arm"
+	SkynetIADSContact.CLASS_MISSILE = "missile"
+	SkynetIADSContact.CLASS_BOMB = "bomb"
+
 	function SkynetIADSContact:create(dcsRadarTarget, abstractRadarElementDetected)
 		local instance = self:superClass():create(dcsRadarTarget.object)
 		setmetatable(instance, self)
@@ -23,7 +29,40 @@ do
 		instance.speed = 0
 		instance.harmState = SkynetIADSContact.HARM_UNKNOWN
 		instance.simpleAltitudeProfile = {}
+		instance.targetClass = instance:readTargetClass()
 		return instance
+	end
+
+	-- the class depends only on the DCS object's type, so it is read once
+	function SkynetIADSContact:readTargetClass()
+		local objectCategory = self:getCategory()
+		local desc = self:getDesc()
+		if objectCategory == Object.Category.UNIT then
+			if desc.category == Unit.Category.AIRPLANE or desc.category == Unit.Category.HELICOPTER then
+				return SkynetIADSContact.CLASS_AIRCRAFT
+			end
+		elseif objectCategory == Object.Category.WEAPON then
+			if desc.category == Weapon.Category.BOMB then
+				return SkynetIADSContact.CLASS_BOMB
+			elseif desc.category == Weapon.Category.MISSILE then
+				if
+					desc.missileCategory == Weapon.MissileCategory.AAM
+					or desc.missileCategory == Weapon.MissileCategory.SAM
+				then
+					return nil
+				elseif desc.guidance == Weapon.GuidanceType.RADAR_PASSIVE then
+					return SkynetIADSContact.CLASS_ARM
+				end
+				return SkynetIADSContact.CLASS_MISSILE
+			end
+		end
+		return nil
+	end
+
+	--- One of the CLASS_ constants, or nil for a contact no site wakes for: a ground unit, a ship, a
+	-- structure, a shell, a rocket, a torpedo, an air-to-air or a surface-to-air missile.
+	function SkynetIADSContact:getTargetClass()
+		return self.targetClass
 	end
 
 	function SkynetIADSContact:setHARMState(state)

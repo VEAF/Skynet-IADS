@@ -54,7 +54,21 @@ function Object.getCategory(o)
 	return o.__category or Object.Category.UNIT
 end
 
-Weapon = { Category = { SHELL = 0, MISSILE = 1, ROCKET = 2, BOMB = 3 } }
+-- Verbatim from DCS 2.9.30, read in a running mission.
+Weapon = {
+	Category = { SHELL = 0, MISSILE = 1, ROCKET = 2, BOMB = 3, TORPEDO = 4 },
+	GuidanceType = {
+		INS = 1,
+		IR = 2,
+		RADAR_ACTIVE = 3,
+		RADAR_SEMI_ACTIVE = 4,
+		RADAR_PASSIVE = 5,
+		TV = 6,
+		LASER = 7,
+		TELE = 8,
+	},
+	MissileCategory = { AAM = 1, SAM = 2, BM = 3, ANTI_SHIP = 4, CRUISE = 5, OTHER = 6 },
+}
 
 -- Skynet's wrapper does `getmetatable(rep) ~= Group` to tell a Group from a
 -- Unit/Static. A plain Unit/Static fixture has a nil metatable, so it takes the
