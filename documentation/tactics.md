@@ -11,6 +11,10 @@ Le champ `harm_detection_chance` de
 [skynet-iads-supported-types.lua](https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua)
 donne la probabilité de chaque système radar.
 
+Skynet désactive l'option « Evasion of ARM » de DCS chaque fois qu'un site SAM ou un EW radar
+s'allume, quoi que la mission ait réglé : c'est Skynet seul qui décide quand un radar s'éteint face
+à un HARM.
+
 ### Détection des HARM
 
 Admettons que le site SAM A ait une probabilité de détection de 60 % et le site SAM B une
