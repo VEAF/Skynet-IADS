@@ -20,8 +20,19 @@ The strength of the Skynet IADS lies with handling long range systems that opera
 
 ## Which SAM systems can engage HARMS? {#which-sam-systems-can-engage-harms}
 
-As of July 2022 only the SA-15, SA-10, NASAMS and Patriot have been confirmed to engage HARMS. The
-best option for a solid HARM defence is to add SA-15's around EW radars or high value SAM sites.
+Measured in DCS 2.9.30, these systems engage munitions. Every other system engages none, and wakes
+only for aircraft:
+
+| System | Bombs | Air-to-ground missiles | HARMs |
+|---|---|---|---|
+| Tor M2, Pantsir S1, Iris-T SLM, Phalanx | yes | yes | yes |
+| SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7 | | yes | yes |
+| Roland ADS | | yes | |
+
+These are the defaults of the `can_engage_bomb`, `can_engage_missile` and `can_engage_harm` fields
+in Skynet's database of supported types; a mission can change them per SAM site with
+`setCanEngageBomb`, `setCanEngageMissile` and `setCanEngageHARM`. The best option for a solid HARM
+defence is to add SA-15's around EW radars or high value SAM sites.
 
 ## What exactly does Skynet do with the SAMs?
 

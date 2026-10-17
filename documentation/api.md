@@ -343,6 +343,43 @@ d'engager des HARM sont à `true` par défaut.
 samSite:setCanEngageHARM(true)
 ```
 
+### Engager les bombes
+
+Autorise le site SAM à engager les bombes, guidées ou non, s'il en est capable dans DCS. Les sites
+SAM capables d'engager des bombes sont à `true` par défaut.
+
+```lua
+samSite:setCanEngageBomb(true)
+```
+
+### Engager les missiles
+
+Autorise le site SAM à engager les missiles air-sol autres que les missiles antiradar, s'il en est
+capable dans DCS. Les sites SAM qui en sont capables sont à `true` par défaut.
+
+```lua
+samSite:setCanEngageMissile(true)
+```
+
+Passer l'une des trois options à `true` active aussi l'engagement des armements aériens.
+`setCanEngageAirWeapons(false)` désactive les trois, et `setCanEngageAirWeapons(true)` leur rend
+leur valeur par défaut.
+
+### Ce qui réveille un site SAM
+
+Un site SAM s'active pour un contact dans sa portée d'activation seulement s'il peut l'engager :
+
+- un avion ou un hélicoptère réveille tous les sites SAM ;
+- un missile antiradar réveille un site SAM capable d'engager les HARM. Il est reconnu à son
+  autodirecteur dès qu'il est vu ;
+- un autre missile air-sol réveille un site SAM capable d'engager les missiles ;
+- une bombe réveille un site SAM capable d'engager les bombes ;
+- les missiles air-air et sol-air, les obus, les roquettes et les unités au sol ne réveillent rien.
+
+Un site SAM actif dont le radar ne voit plus que des munitions qu'il ne peut pas engager s'éteint,
+une fois ses propres missiles en vol arrivés. Quels systèmes engagent quoi par défaut : voir la
+[FAQ](faq.md#which-sam-systems-can-engage-harms).
+
 ## Ajouter des conditions d'activation {#add-go-live-constraints}
 
 Vous pouvez poser des conditions qui devront être remplies pour que le site SAM s'active. Notez que

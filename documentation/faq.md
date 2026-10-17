@@ -22,9 +22,20 @@ au radar.
 
 ## Quels systèmes SAM peuvent engager les HARM ? {#which-sam-systems-can-engage-harms}
 
-En juillet 2022, seuls le SA-15, le SA-10, le NASAMS et le Patriot ont été confirmés capables
-d'engager des HARM. Pour une défense anti-HARM solide, la meilleure option consiste à disposer des
-SA-15 autour des EW radars et des sites SAM à forte valeur.
+Mesurés dans DCS 2.9.30, ces systèmes engagent des munitions. Tous les autres n'en engagent aucune,
+et ne se réveillent que pour des aéronefs :
+
+| Système | Bombes | Missiles air-sol | HARM |
+|---|---|---|---|
+| Tor M2, Pantsir S1, Iris-T SLM, Phalanx | oui | oui | oui |
+| SA-10 (S-300), Patriot, NASAMS, SA-15 (Tor), HQ-7 | | oui | oui |
+| Roland ADS | | oui | |
+
+Ce sont les valeurs par défaut des champs `can_engage_bomb`, `can_engage_missile` et
+`can_engage_harm` de la base des types pris en charge par Skynet ; une mission peut les changer
+site par site avec `setCanEngageBomb`, `setCanEngageMissile` et `setCanEngageHARM`. Pour une défense
+anti-HARM solide, la meilleure option consiste à disposer des SA-15 autour des EW radars et des
+sites SAM à forte valeur.
 
 ## Que fait Skynet aux SAM, exactement ?
 
