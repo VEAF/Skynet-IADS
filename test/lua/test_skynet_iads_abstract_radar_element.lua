@@ -559,6 +559,122 @@ function TestSkynetIADSAbstractRadarElement:testEachSetterHoldsTrueWhenAirWeapon
 	self.samSite:setCanEngageHARM(true)
 	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
 	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageMissile(true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+
+	-- the other two come back from the database, which says false for an SA-6
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageBomb(true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testSetCanEngageBombAndMissileAllowAirWeapons()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageBomb(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageMissile(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAirWeaponsOffClearsAndOnRestoresFromDatabase()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = true
+	self.samSite.dataBaseSupportedTypesCanEngageBomb = true
+	self.samSite.dataBaseSupportedTypesCanEngageMissile = true
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+
+	self.samSite:setCanEngageAirWeapons(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+end
+
+--- A contact double that answers only its class.
+local function classedContact(class)
+	return {
+		getTargetClass = function()
+			return class
+		end,
+	}
+end
+
+function TestSkynetIADSAbstractRadarElement:testCanEngageByClass()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	local site = self.samSite
+
+	for _, state in ipairs({ true, false }) do
+		site:setCanEngageHARM(state)
+		site:setCanEngageBomb(state)
+		site:setCanEngageMissile(state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_AIRCRAFT)), true)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(nil)), false)
+	end
+
+	-- each class follows its own flag, not its neighbours'
+	site:setCanEngageHARM(false)
+	site:setCanEngageBomb(true)
+	site:setCanEngageMissile(false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), true)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), false)
+end
+
+--- Which types the database says engage each class, measured in DCS 2.9.30.
+function TestSkynetIADSAbstractRadarElement:testSupportedTypesCapabilities()
+	local function typesWith(field)
+		local names = {}
+		for name, entry in pairs(samTypesDB) do
+			if entry[field] == true then
+				names[#names + 1] = name
+			end
+		end
+		table.sort(names)
+		return names
+	end
+	luaunit.assertEquals(typesWith("can_engage_bomb"), { "Iris-T SLM", "Pantsir S1", "Phalanx", "Tor M2" })
+	luaunit.assertEquals(typesWith("can_engage_missile"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"Roland ADS",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
+	luaunit.assertEquals(typesWith("can_engage_harm"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
 end
 
 -- ---- slice 2: the parent / child radar bookkeeping ----------------------------------------

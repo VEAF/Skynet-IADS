@@ -52,6 +52,10 @@ do
 		instance.isAPointDefence = false
 		instance.canEngageHARM = false
 		instance.dataBaseSupportedTypesCanEngageHARM = false
+		instance.canEngageBomb = false
+		instance.dataBaseSupportedTypesCanEngageBomb = false
+		instance.canEngageMissile = false
+		instance.dataBaseSupportedTypesCanEngageMissile = false
 		-- 5 seconds seems to be a good value for the sam site to find the target with its organic radar
 		instance.noCacheActiveForSecondsAfterGoLive = 5
 		return instance
@@ -452,6 +456,10 @@ do
 				self:setHARMDetectionChance(dataType["harm_detection_chance"])
 				self.dataBaseSupportedTypesCanEngageHARM = dataType["can_engage_harm"]
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self.dataBaseSupportedTypesCanEngageBomb = dataType["can_engage_bomb"] == true
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self.dataBaseSupportedTypesCanEngageMissile = dataType["can_engage_missile"] == true
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 				local natoName = dataType["name"]["NATO"]
 				self:buildNatoName(natoName)
 				break
@@ -474,6 +482,50 @@ do
 		return self.canEngageHARM
 	end
 
+	function SkynetIADSAbstractRadarElement:setCanEngageBomb(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageBomb = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageBomb()
+		return self.canEngageBomb
+	end
+
+	function SkynetIADSAbstractRadarElement:setCanEngageMissile(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageMissile = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageMissile()
+		return self.canEngageMissile
+	end
+
+	--- Whether this element can engage the contact's class: an aircraft always, a munition when
+	-- its flag allows it, anything else never.
+	function SkynetIADSAbstractRadarElement:canEngage(contact)
+		local targetClass = contact:getTargetClass()
+		if targetClass == SkynetIADSContact.CLASS_AIRCRAFT then
+			return true
+		elseif targetClass == SkynetIADSContact.CLASS_ARM then
+			return self:getCanEngageHARM() == true
+		elseif targetClass == SkynetIADSContact.CLASS_BOMB then
+			return self:getCanEngageBomb() == true
+		elseif targetClass == SkynetIADSContact.CLASS_MISSILE then
+			return self:getCanEngageMissile() == true
+		end
+		return false
+	end
+
 	function SkynetIADSAbstractRadarElement:setCanEngageAirWeapons(engageAirWeapons)
 		if self:isDestroyed() == false then
 			local controller = self:getDCSRepresentation():getController()
@@ -483,9 +535,13 @@ do
 				self.engageAirWeapons = true
 				--we set the original value we got when loading info about the SAM site
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 			else
 				controller:setOption(AI.Option.Ground.id.ENGAGE_AIR_WEAPONS, false)
 				self:setCanEngageHARM(false)
+				self:setCanEngageBomb(false)
+				self:setCanEngageMissile(false)
 				self.engageAirWeapons = false
 			end
 		end
