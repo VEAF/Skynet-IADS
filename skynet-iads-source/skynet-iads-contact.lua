@@ -2,9 +2,6 @@ do
 	SkynetIADSContact = {}
 	SkynetIADSContact = inheritsFrom(SkynetIADSAbstractDCSObjectWrapper)
 
-	SkynetIADSContact.CLIMB = "CLIMB"
-	SkynetIADSContact.DESCEND = "DESCEND"
-
 	SkynetIADSContact.HARM = "HARM"
 	SkynetIADSContact.NOT_HARM = "NOT_HARM"
 	SkynetIADSContact.HARM_UNKNOWN = "HARM_UNKNOWN"
@@ -28,7 +25,6 @@ do
 		instance.numOfTimesRefreshed = 0
 		instance.speed = 0
 		instance.harmState = SkynetIADSContact.HARM_UNKNOWN
-		instance.simpleAltitudeProfile = {}
 		instance.targetClass = instance:readTargetClass()
 		return instance
 	end
@@ -171,30 +167,10 @@ do
 				)
 				local hours = timeDelta / 3600
 				self.speed = (distance / hours)
-				self:updateSimpleAltitudeProfile()
 				self.position = self:getDCSRepresentation():getPosition()
 			end
 		end
 		self.lastTimeSeen = timer.getAbsTime()
-	end
-
-	function SkynetIADSContact:updateSimpleAltitudeProfile()
-		local currentAltitude = self:getDCSRepresentation():getPosition().p.y
-
-		local previousPath = ""
-		if #self.simpleAltitudeProfile > 0 then
-			previousPath = self.simpleAltitudeProfile[#self.simpleAltitudeProfile]
-		end
-
-		if self.position.p.y > currentAltitude and previousPath ~= SkynetIADSContact.DESCEND then
-			table.insert(self.simpleAltitudeProfile, SkynetIADSContact.DESCEND)
-		elseif self.position.p.y < currentAltitude and previousPath ~= SkynetIADSContact.CLIMB then
-			table.insert(self.simpleAltitudeProfile, SkynetIADSContact.CLIMB)
-		end
-	end
-
-	function SkynetIADSContact:getSimpleAltitudeProfile()
-		return self.simpleAltitudeProfile
 	end
 
 	function SkynetIADSContact:getAge()
