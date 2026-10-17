@@ -18,22 +18,7 @@ function TestSkynetIADSHARMDetection:setUp()
 	self.harmDetection = SkynetIADSHARMDetection:create(iads)
 end
 
-function TestSkynetIADSHARMDetection:testContact0GroundSpeed()
-	local mockContact = {}
-	function mockContact:getGroundSpeedInKnots(round)
-		return 0
-	end
-
-	local calledProfileInfo = false
-	function mockContact:getSimpleAltitudeProfile()
-		calledProfileInfo = true
-	end
-	self.harmDetection:setContacts({ mockContact })
-	self.harmDetection:evaluateContacts()
-	luaunit.assertEquals(calledProfileInfo, false)
-end
-
-function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
+function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARM()
 	--test with a contact that shall be identified as a HARM
 	local mockContactHARM = {}
 
@@ -45,8 +30,8 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 		return true
 	end
 
-	function mockContactHARM:getSimpleAltitudeProfile()
-		return { SkynetIADSContact.CLIMB }
+	function mockContactHARM:getTargetClass()
+		return SkynetIADSContact.CLASS_ARM
 	end
 
 	local harmStateCalled = false
@@ -100,54 +85,6 @@ function TestSkynetIADSHARMDetection:testEvaluateContactsContactIsHARMInClimb()
 	luaunit.assertEquals(harmStateCalled, true)
 	luaunit.assertEquals(probCalled, true)
 	luaunit.assertEquals(contactInform, true)
-end
-
-function TestSkynetIADSHARMDetection:testEvaluateContactsContactDetectedAsHARMHas3rdAltitudeChangeRecorded()
-	--a contact previously identified as a HARM has a 3rd altitude change recorded, this means it's an aircraft previously falsely detected as HARM
-	local mockContactHARM = {}
-
-	function mockContactHARM:getGroundSpeedInKnots(round)
-		return 1000
-	end
-
-	function mockContactHARM:isHARMStateUnknown()
-		return false
-	end
-
-	function mockContactHARM:getSimpleAltitudeProfile()
-		return { SkynetIADSContact.DESCEND, SkynetIADSContact.CLIMB, SkynetIADSContact.DESCEND }
-	end
-
-	local harmStateCalled = false
-	function mockContactHARM:setHARMState(state)
-		harmStateCalled = true
-		luaunit.assertEquals(state, SkynetIADSContact.HARM_UNKNOWN)
-	end
-
-	local calls = 0
-	function mockContactHARM:isIdentifiedAsHARM()
-		calls = calls + 1
-		if calls == 2 then
-			return true
-		else
-			return false
-		end
-	end
-
-	local contactInform = false
-	function self.harmDetection:informRadarsOfHARM(contact)
-		contactInform = true
-	end
-
-	function self.harmDetection:getNewRadarsThatHaveDetectedContact(contact)
-		return { "MockRadar" }
-	end
-
-	self.harmDetection:setContacts({ mockContactHARM })
-	self.harmDetection:evaluateContacts()
-
-	luaunit.assertEquals(harmStateCalled, true)
-	luaunit.assertEquals(contactInform, false)
 end
 
 function TestSkynetIADSHARMDetection:testGetDetectionProbability()
@@ -238,23 +175,21 @@ end
 --
 -- The tests above are the port of the .miz suite and drive evaluateContacts() with mock
 -- contacts. What they never reached is the half of the decision that says "no": the branch that
--- marks a contact NOT_HARM, the one that takes an identification back when the track turns out
--- to manoeuvre, the debug output either writes, and the handing of a confirmed HARM to the
--- network. FIX-STALE-HARM-SILENCE exists because this area is easy to get wrong.
+-- marks a contact NOT_HARM, the debug output either writes, and the handing of a confirmed HARM
+-- to the network. FIX-STALE-HARM-SILENCE exists because this area is easy to get wrong.
 
---- A contact that looks exactly like an anti-radiation missile: fast, and on a profile with no
---- more than two legs. `harmState` is what the detection is deciding, so it is real state here
---- rather than an assertion trap.
-local function fastContact(name, profile)
+--- A contact with an anti-radiation seeker, or of `targetClass` when given. `harmState` is what
+--- the detection is deciding, so it is real state here rather than an assertion trap.
+local function armContact(name, targetClass)
 	local contact = {
 		harmState = SkynetIADSContact.HARM_UNKNOWN,
 		__name = name,
 	}
 	function contact:getGroundSpeedInKnots(_)
-		return 1500 -- well past HARM_THRESHOLD_SPEED_KTS
+		return 1500 -- any speed but 0
 	end
-	function contact:getSimpleAltitudeProfile()
-		return profile or { SkynetIADSContact.CLIMB }
+	function contact:getTargetClass()
+		return targetClass or SkynetIADSContact.CLASS_ARM
 	end
 	function contact:getAbstractRadarElementsDetected()
 		return { {
@@ -323,7 +258,7 @@ end
 --- The roll beats the probability, so the network decides this one is not a HARM. Nothing is
 --- silenced, and the contact is marked so the next cycle does not re-evaluate it from scratch.
 function TestSkynetIADSHARMDetection:testAContactTheRollAcquitsIsMarkedNotAHARM()
-	local contact = fastContact("Pilot #12")
+	local contact = armContact("Pilot #12")
 	self.harmDetection:setContacts({ contact })
 	-- detection probability is 90; a roll of 91 is above it, so shallReactToHARM says no
 	withRoll(91, function()
@@ -334,7 +269,7 @@ function TestSkynetIADSHARMDetection:testAContactTheRollAcquitsIsMarkedNotAHARM(
 end
 
 function TestSkynetIADSHARMDetection:testARollAtTheProbabilityIdentifiesTheHARM()
-	local contact = fastContact("Pilot #12")
+	local contact = armContact("Pilot #12")
 	self.harmDetection:setContacts({ contact })
 	-- 90 >= 90: the comparison is inclusive, which is the edge worth pinning
 	withRoll(90, function()
@@ -349,7 +284,7 @@ end
 function TestSkynetIADSHARMDetection:testHARMDefenceLoggingReportsBothOutcomesWithTheProbability()
 	self.harmDetection.iads:getDebugSettings().harmDefence = true
 
-	local identified = fastContact("Pilot #12")
+	local identified = armContact("Pilot #12")
 	self.harmDetection:setContacts({ identified })
 	dcsStub.logs = {}
 	withRoll(1, function()
@@ -360,7 +295,7 @@ function TestSkynetIADSHARMDetection:testHARMDefenceLoggingReportsBothOutcomesWi
 	luaunit.assertStrContains(line, "AGM-88")
 	luaunit.assertStrContains(line, "90%")
 
-	local acquitted = fastContact("Pilot #13")
+	local acquitted = armContact("Pilot #13")
 	self.harmDetection:setContacts({ acquitted })
 	dcsStub.logs = {}
 	withRoll(100, function()
@@ -373,7 +308,7 @@ end
 
 function TestSkynetIADSHARMDetection:testNeitherOutcomeIsLoggedWhileHARMDefenceIsOff()
 	luaunit.assertEquals(self.harmDetection.iads:getDebugSettings().harmDefence, false, "off by default")
-	self.harmDetection:setContacts({ fastContact("Pilot #12") })
+	self.harmDetection:setContacts({ armContact("Pilot #12") })
 	dcsStub.logs = {}
 	withRoll(1, function()
 		self.harmDetection:evaluateContacts()
@@ -381,26 +316,120 @@ function TestSkynetIADSHARMDetection:testNeitherOutcomeIsLoggedWhileHARMDefenceI
 	luaunit.assertNil(lineWith(loggedLines(), "HARM IDENTIFIED:"))
 end
 
---- A missile flies one leg. A track already called a HARM that then shows a third leg was an
---- aircraft manoeuvring all along, and the identification is taken back -- otherwise every
---- battery it overflies stays silent for nothing.
-function TestSkynetIADSHARMDetection:testAnIdentificationIsTakenBackWhenTheTrackManoeuvres()
-	self.harmDetection.iads:getDebugSettings().harmDefence = true
-	local contact = fastContact("Pilot #12", {
-		SkynetIADSContact.CLIMB,
-		SkynetIADSContact.DESCEND,
-		SkynetIADSContact.CLIMB,
-	})
-	contact.harmState = SkynetIADSContact.HARM
+--- The seeker decides, not the flight: a Maverick flies as fast and as flat as a HARM, and before
+--- this fix it shut an early warning radar down while the next Mavericks went unseen.
+function TestSkynetIADSHARMDetection:testAFastFlatMissileIsNeverIdentified()
+	local maverick = armContact("Maverick", SkynetIADSContact.CLASS_MISSILE)
+	self.harmDetection:setContacts({ maverick })
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(maverick.harmState, SkynetIADSContact.HARM_UNKNOWN)
+end
 
+function TestSkynetIADSHARMDetection:testAFastAircraftOrAClasslessContactIsNeverIdentified()
+	local aircraft = armContact("Pilot #12", SkynetIADSContact.CLASS_AIRCRAFT)
+	local classless = armContact("ground unit")
+	function classless:getTargetClass()
+		return nil
+	end
+	self.harmDetection:setContacts({ aircraft, classless })
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(aircraft.harmState, SkynetIADSContact.HARM_UNKNOWN)
+	luaunit.assertEquals(classless.harmState, SkynetIADSContact.HARM_UNKNOWN)
+end
+
+--- A contact seen once has no speed yet, and informOfHARM needs one. It waits for its next
+--- sighting -- the contacts after it in the list do not.
+function TestSkynetIADSHARMDetection:testAZeroSpeedContactDoesNotStopTheNextOne()
+	local seenOnce = armContact("seen once")
+	function seenOnce:getGroundSpeedInKnots(_)
+		return 0
+	end
+	local harm = armContact("Pilot #12")
+	self.harmDetection:setContacts({ seenOnce, harm })
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(harm.harmState, SkynetIADSContact.HARM)
+	luaunit.assertEquals(seenOnce.harmState, SkynetIADSContact.HARM_UNKNOWN)
+	-- its radars are not spent: the next sighting rolls
+	luaunit.assertNil(self.harmDetection.contactRadarsEvaluated[seenOnce])
+end
+
+--- An anti-radiation missile does not stop being one, whatever its flight path does.
+function TestSkynetIADSHARMDetection:testAnIdentifiedHARMStaysIdentified()
+	self.harmDetection.iads:getDebugSettings().harmDefence = true
+	local contact = armContact("Pilot #12")
+	contact.harmState = SkynetIADSContact.HARM
 	self.harmDetection:setContacts({ contact })
 	dcsStub.logs = {}
 	self.harmDetection:evaluateContacts()
+	self.harmDetection:evaluateContacts()
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.HARM)
+	luaunit.assertNil(lineWith(loggedLines(), "CORRECTING HARM STATE"))
+end
 
-	luaunit.assertEquals(contact.harmState, SkynetIADSContact.HARM_UNKNOWN)
-	local line = lineWith(loggedLines(), "CORRECTING HARM STATE")
-	luaunit.assertNotNil(line)
-	luaunit.assertStrContains(line, "Pilot #12")
+--- A failed roll holds until a radar that has not yet had its say sees the contact.
+function TestSkynetIADSHARMDetection:testANotHARMContactIsRolledAgainOnlyByANewRadar()
+	local contact = armContact("Pilot #12")
+	-- armContact builds a new radar on every call; the same radar seeing it twice needs one list
+	local firstRadars = contact:getAbstractRadarElementsDetected()
+	function contact:getAbstractRadarElementsDetected()
+		return firstRadars
+	end
+	self.harmDetection:setContacts({ contact })
+	withRoll(91, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.NOT_HARM)
+
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.NOT_HARM, "same radars: no new roll")
+
+	local secondRadar = {
+		getHARMDetectionChance = function()
+			return 90
+		end,
+	}
+	function contact:getAbstractRadarElementsDetected()
+		return { firstRadars[1], secondRadar }
+	end
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact.harmState, SkynetIADSContact.HARM)
+end
+
+--- End to end with a real contact, so the class comes from readTargetClass() and not from a mock
+--- that could agree with the detection for the wrong reason.
+function TestSkynetIADSHARMDetection:testARealPassiveRadarMissileContactIsIdentified()
+	local unit = dcsStub.makeUnit({
+		name = "harm-1",
+		category = Object.Category.WEAPON,
+		desc = {
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.RADAR_PASSIVE,
+		},
+	})
+	dcsStub.world["harm-1"] = unit
+	local radar = {
+		getHARMDetectionChance = function()
+			return 90
+		end,
+	}
+	local contact = SkynetIADSContact:create({ object = unit }, radar)
+	contact.speed = 1500
+	self.harmDetection:setContacts({ contact })
+	withRoll(1, function()
+		self.harmDetection:evaluateContacts()
+	end)
+	luaunit.assertEquals(contact:isIdentifiedAsHARM(), true)
 end
 
 --- The point of identifying a HARM at all: every usable battery and every usable early warning
@@ -427,7 +456,7 @@ function TestSkynetIADSHARMDetection:testAConfirmedHARMIsHandedToEveryUsableElem
 	F.earlyWarningRadarUnit("EW-north", { pos = { x = 0, y = 0, z = 0 }, coalition = 1 })
 	enrol(iads:addEarlyWarningRadar("EW-north"), "EW-north")
 
-	local contact = fastContact("Pilot #12")
+	local contact = armContact("Pilot #12")
 	contact.harmState = SkynetIADSContact.HARM
 	harmDetection:setContacts({ contact })
 	harmDetection:evaluateContacts()
@@ -456,7 +485,7 @@ function TestSkynetIADSHARMDetection:testAnUnusableBatteryIsNotWarned()
 	samSite:addConnectionNode(F.connectionNodeStatic("RED-SAM-cut-off-node"))
 	dcsStub.world["RED-SAM-cut-off-node"]:__destroy()
 
-	local contact = fastContact("Pilot #12")
+	local contact = armContact("Pilot #12")
 	contact.harmState = SkynetIADSContact.HARM
 	harmDetection:setContacts({ contact })
 	harmDetection:evaluateContacts()
