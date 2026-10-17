@@ -1,6 +1,6 @@
 # DCS's own "Evasion of ARM" is turned off on every IADS group
 
-Status: in-progress
+Status: done
 
 ## The problem
 
