@@ -22,6 +22,17 @@ Its point defences are unaffected: `informOfHARM` wakes them itself, before the 
 `goDark()` applies the HARM branch whatever `aiState` is. Either way `finishHarmDefence` already
 turns it back on. Not measured: whether the multiplayer bug still exists in current DCS.
 
+### Adding EW radars by prefix takes late-activated units too
+
+`addSAMSitesByPrefix` skips a group whose first unit is not active (`isActive()`).
+`addEarlyWarningRadarsByPrefix` has no such check: it adds every unit whose name starts with the
+prefix and that `Unit.getByName` finds. A mission that keeps late-activated radars under the same
+prefix, to activate later, gets them in the IADS from the start, before they exist in the world.
+
+**Shape if taken**: the same `isActive()` check in `addEarlyWarningRadarsByPrefix`. Not measured:
+what Skynet does with an inactive radar it holds, and whether `getUnitNames()` lists late-activated
+units at all in DCS.
+
 ## The in-sim suite drifts, and nothing says so
 
 `unit-tests/*.miz` is the legacy suite. Nothing runs it — not the CI, not the default workflow — so
