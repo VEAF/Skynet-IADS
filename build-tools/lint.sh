@@ -23,7 +23,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 readonly ROOT="$PWD"
-readonly TARGETS=(skynet-iads-source test/lua test/insim/dcs-hotload/user-lib)
+readonly TARGETS=(skynet-iads-source test/lua test/insim/dcs-hotload/user-lib test/insim/engine)
 
 readonly LUACHECK_VERSION=1.2.0
 readonly STYLUA_VERSION=2.4.0
