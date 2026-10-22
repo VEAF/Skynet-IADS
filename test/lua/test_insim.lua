@@ -122,7 +122,7 @@ function TestInsim:testContextCarriesNameAndScenarioTable()
 	I.phase("carry", "setup")
 	local ctx = InsimState.contexts.carry
 	luaunit.assertEquals(ctx.name, "carry")
-	luaunit.assertEquals(ctx.mission.mission, "insim01")
+	luaunit.assertEquals(ctx.mission, "insim01")
 	luaunit.assertEquals(ctx.state.v, 7)
 end
 

@@ -115,8 +115,8 @@ end
 function I.phase(name, phase)
 	local dir = I.scenariosDir() .. "/" .. name
 	if phase == "setup" then
-		local mission = assert(loadfile(dir .. "/scenario.lua"))()
-		InsimState.contexts[name] = newContext(name, mission)
+		local scenario = assert(loadfile(dir .. "/scenario.lua"))()
+		InsimState.contexts[name] = newContext(name, scenario.mission)
 	end
 	local ctx = InsimState.contexts[name]
 	if not ctx then
