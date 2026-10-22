@@ -101,6 +101,13 @@ function TestInsimSkynet:testRewrittenScriptIsNotCurrent()
 	luaunit.assertFalse(S.scriptIsCurrent())
 end
 
+function TestInsimSkynet:testScriptThatFailsToLoadIsNotCurrent()
+	writeFile(self.script, "error('boom')")
+	local ok = pcall(S.boot)
+	luaunit.assertFalse(ok)
+	luaunit.assertFalse(S.scriptIsCurrent())
+end
+
 function TestInsimSkynet:testBootWithoutTheScriptRaises()
 	InsimSkynetState.scriptPath = os.tmpname() .. "-absent/skynet-iads-insim.lua"
 	local ok, err = pcall(S.boot)

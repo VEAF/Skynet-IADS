@@ -30,8 +30,9 @@ function S.boot()
 	if not text then
 		error("cannot read the Skynet script " .. path, 0)
 	end
-	InsimSkynetState.text = text
+	InsimSkynetState.text = nil
 	assert(loadstring(text, "@" .. path))()
+	InsimSkynetState.text = text -- only a script that ran without error counts as loaded
 end
 
 function S.scriptIsCurrent()
