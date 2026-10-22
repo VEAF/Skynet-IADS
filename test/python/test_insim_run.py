@@ -132,6 +132,27 @@ class RunTest(unittest.TestCase):
         self.prepare_script.assert_not_called()
         self.assertEqual([s.name for s in rejudge.call_args[0][1]], ["alpha"])
 
+    def test_mistyped_mission_is_refused_before_anything_is_sent(self):
+        folder = self.repo / "test" / "insim" / "scenarios" / "gamma"
+        folder.mkdir()
+        (folder / "scenario.lua").write_text('return { mission = "typo", timeout = 5 }', encoding="utf-8")
+        for part in ("setup", "run", "verify"):
+            (folder / (part + ".lua")).write_text("", encoding="utf-8")
+        code, out = self.main("gamma")
+        self.assertEqual(code, 2)
+        self.assertIn("gamma", out)
+        self.assertIn("typo", out)
+        self.assertIn("m1", out)
+        self.assertEqual(FakeDriver.created, [])
+
+    def test_verify_writes_report_verify_and_keeps_the_live_report(self):
+        self.main("alpha")
+        folder = self.results()[0]
+        live = (folder / "report.md").read_text(encoding="utf-8")
+        self.main("--verify")
+        self.assertEqual((folder / "report.md").read_text(encoding="utf-8"), live)
+        self.assertTrue((folder / "report-verify.md").is_file())
+
     def test_unknown_scenario_is_refused_before_anything_is_sent(self):
         code, out = self.main("nope")
         self.assertEqual(code, 2)

@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
-from engine import suite  # noqa: E402
+from engine import luadata, suite  # noqa: E402
 from engine.driver import Outcome  # noqa: E402
 
 DONE = Outcome("done")
@@ -91,23 +91,27 @@ class ChainTest(unittest.TestCase):
 
     def test_crash_stops_the_scenario(self):
         v, driver = run_with({"s/run": Outcome("crashed", error="the mission restarted")})
-        self.assertEqual(driver.keys, ["s/setup", "s/run"])
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "the mission restarted during run"))
 
     def test_setup_crash_stops_at_setup(self):
         v, driver = run_with({"s/setup": Outcome("crashed", error="DCS went down")})
-        self.assertEqual(driver.keys, ["s/setup"])
+        self.assertEqual(driver.keys, ["s/setup", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during setup"))
 
     def test_teardown_crash_stops_at_teardown(self):
         v, driver = run_with({"s/teardown": Outcome("crashed", error="DCS went down")})
-        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown"])
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during teardown"))
 
     def test_cleanup_crash_is_crashed(self):
         v, driver = run_with({"s/cleanup": Outcome("crashed", error="DCS went down")})
-        self.assertEqual(driver.keys[-1], "s/cleanup")
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during cleanup"))
+
+    def test_crash_sends_only_cleanup_afterwards(self):
+        _, driver = run_with({"s/run": Outcome("crashed", error="x")})
+        self.assertEqual(driver.calls[-1][2], 'return Hotload.load("insim").cleanup("s")')
 
     def test_judge_is_not_called_after_a_crash_or_a_failed_phase(self):
         for table in (
@@ -177,6 +181,12 @@ class FolderTest(unittest.TestCase):
         with self.assertRaisesRegex(suite.SuiteError, "a.*mission"):
             suite.discover(self.folder)
 
+    def test_block_comment_in_scenario_lua_is_a_suite_error_naming_the_file(self):
+        self.make("a")
+        (self.folder / "a" / "scenario.lua").write_text('--[[\nnote\n]]\nreturn { mission = "m1", timeout = 3 }\n', encoding="utf-8")
+        with self.assertRaisesRegex(suite.SuiteError, "a.*scenario.lua"):
+            suite.discover(self.folder)
+
     def test_plain_files_are_ignored(self):
         self.make("a")
         (self.folder / "README.md").write_text("x", encoding="utf-8")
@@ -236,7 +246,7 @@ class RejudgeTest(unittest.TestCase):
             journal = Path(tmp) / "j.jsonl"
             entries = [
                 {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
-                {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": {"n": 2}}},
+                {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": luadata.dump({"n": 2, 1: 5})}},
                 {"key": "b/setup", "state": "ended", "outcome": {"status": "fail", "error": "boom"}},
                 {"key": "c/setup", "state": "sent", "name": "c-setup-1", "sent_at": 1},
             ]
@@ -249,8 +259,35 @@ class RejudgeTest(unittest.TestCase):
 
             scenarios = [scenario(name=n) for n in "abcd"]
             verdicts = suite.rejudge(journal, scenarios, judge)
-        self.assertEqual(seen, [("a", {"n": 2})])
+        self.assertEqual(seen, [("a", {"n": 2, 1: 5})])
         self.assertEqual([(v.name, v.verdict, v.message) for v in verdicts], [("a", "fail", "expected: 1, actual: 2"), ("b", "fail", "boom")])
+
+    def journal_of(self, tmp, entries):
+        journal = Path(tmp) / "j.jsonl"
+        journal.write_text("".join(json.dumps(e) + "\n" for e in entries), encoding="utf-8")
+        return journal
+
+    def test_rejudge_keeps_a_crash_from_any_phase(self):
+        for phase in ("setup", "run", "teardown", "cleanup"):
+            entries = [
+                {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
+                {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": "return 1\n"}},
+                {"key": "a/" + phase, "state": "ended", "outcome": {"status": "crashed", "error": "gone"}},
+            ]
+            with tempfile.TemporaryDirectory() as tmp:
+                verdicts = suite.rejudge(self.journal_of(tmp, entries), [scenario(name="a")], judge_ok)
+            self.assertEqual([(v.verdict, v.message) for v in verdicts], [("crashed", "gone during " + phase)], phase)
+
+    def test_rejudge_keeps_teardown_and_cleanup_warnings(self):
+        entries = [
+            {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
+            {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": "return 1\n"}},
+            {"key": "a/teardown", "state": "ended", "outcome": {"status": "fail", "error": "t"}},
+            {"key": "a/cleanup", "state": "ended", "outcome": {"status": "fail", "error": "c"}},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            verdicts = suite.rejudge(self.journal_of(tmp, entries), [scenario(name="a")], judge_ok)
+        self.assertEqual([w.split(" failed")[0] for w in verdicts[0].warnings], ["teardown", "cleanup"])
 
     def test_rejudge_omits_a_scenario_whose_run_has_not_ended(self):
         with tempfile.TemporaryDirectory() as tmp:

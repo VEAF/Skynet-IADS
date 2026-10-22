@@ -11,12 +11,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import luadata
-from .driver import Outcome, read_journal
+from .driver import read_journal, read_outcome
 
 __all__ = ["SuiteError", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
 
 INVALID = "INSIM-INVALID: "
 REQUIRED = ("scenario", "setup", "run", "verify")
+PHASES = ("setup", "run", "teardown", "cleanup")
 VERDICTS = ("pass", "fail", "invalid", "crashed", "skipped")
 
 
@@ -50,7 +51,10 @@ def discover(folder):
         for part in REQUIRED:
             if not (path / (part + ".lua")).is_file():
                 raise SuiteError("scenario %s has no %s.lua" % (path.name, part))
-        meta = luadata.parse((path / "scenario.lua").read_text(encoding="utf-8"))
+        try:
+            meta = luadata.parse((path / "scenario.lua").read_text(encoding="utf-8"))
+        except luadata.LuaDataError as e:
+            raise SuiteError("scenario %s: scenario.lua is not a plain `return { ... }` table: %s" % (path.name, e)) from e
         for key in ("mission", "timeout"):
             if not isinstance(meta, dict) or key not in meta:
                 raise SuiteError("scenario %s: scenario.lua has no %s" % (path.name, key))
@@ -91,6 +95,10 @@ def _warning(phase, outcome):
     return "%s failed: %s — the next scenario may start from a dirty world" % (phase, outcome.error or outcome.status)
 
 
+def _crashed(name, phase, outcome):
+    return Verdict(name, "crashed", "%s during %s" % (outcome.error or "crashed", phase))
+
+
 def run_scenario(driver, judge, s, open_mission):
     if s.mission != open_mission:
         return Verdict(s.name, "skipped", "needs " + s.mission)
@@ -99,7 +107,10 @@ def run_scenario(driver, judge, s, open_mission):
         return driver.run("%s/%s" % (s.name, phase), "%s-%s" % (s.name, phase), code, s.timeout)
 
     def crashed(phase, outcome):
-        return Verdict(s.name, "crashed", "%s during %s" % (outcome.error or "crashed", phase))
+        # the restarted mission may have run a stale setup: cleanup removes what it left (on a clean mission it does nothing)
+        if phase != "cleanup":
+            send("cleanup", _cleanup_code(s.name))
+        return _crashed(s.name, phase, outcome)
 
     setup = send("setup", _phase_code(s.name, "setup"))
     if setup.status == "crashed":
@@ -140,14 +151,20 @@ def rejudge(journal, scenarios, judge):
     verdicts = []
     for s in scenarios:
         outcomes = {}
-        for phase in ("setup", "run"):
+        for phase in PHASES:
             entry = entries.get("%s/%s" % (s.name, phase))
             if entry and entry.get("state") == "ended":
-                outcomes[phase] = Outcome(**entry["outcome"])
+                outcomes[phase] = read_outcome(entry)
         setup, run = outcomes.get("setup"), outcomes.get("run")
+        crash = next((p for p in PHASES if p in outcomes and outcomes[p].status == "crashed"), None)
+        if crash:
+            verdicts.append(_crashed(s.name, crash, outcomes[crash]))
+            continue
         if setup is None or (setup.status == "done" and run is None):
             continue
-        verdicts.append(_verdict(s, setup, run, judge))
+        verdict = _verdict(s, setup, run, judge)
+        verdict.warnings = [_warning(p, outcomes[p]) for p in ("teardown", "cleanup") if p in outcomes and outcomes[p].status != "done"]
+        verdicts.append(verdict)
     return verdicts
 
 

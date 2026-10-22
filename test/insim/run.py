@@ -38,9 +38,9 @@ def _latest(results):
     return folders[-1] if folders else None
 
 
-def _finish(verdicts, folder):
+def _finish(verdicts, folder, report="report.md"):
     print(suite.summary(verdicts))
-    suite.write_report(verdicts, folder / "report.md")
+    suite.write_report(verdicts, folder / report)
     return suite.exit_code(verdicts)
 
 
@@ -64,7 +64,7 @@ def main(argv=None, repo=REPO, now=datetime.now):
                 return 2
             run = json.loads((folder / "run.json").read_text(encoding="utf-8"))
             chosen = suite.select(scenarios, run["tier"], run["names"])
-            return _finish(suite.rejudge(folder / "journal.jsonl", chosen, judge), folder)
+            return _finish(suite.rejudge(folder / "journal.jsonl", chosen, judge), folder, "report-verify.md")
 
         skynet_script.prepare(repo, Path(args.skynet) if args.skynet else None)
         mailbox = Mailbox(insim / "dcs-hotload")
@@ -85,6 +85,9 @@ def main(argv=None, repo=REPO, now=datetime.now):
             folder = results / now().strftime("%Y%m%d-%H%M%S")
             run = {"tier": args.tier, "names": args.names}
         chosen = suite.select(scenarios, run["tier"], run["names"])  # refused before anything is sent
+        for s in chosen:
+            if s.mission not in names:
+                raise suite.SuiteError("scenario %s: mission %r is not one of the missions in test/insim/miz (%s)" % (s.name, s.mission, ", ".join(names)))
         if not args.resume:
             folder.mkdir(parents=True, exist_ok=True)
             (folder / "run.json").write_text(json.dumps(run), encoding="utf-8")
