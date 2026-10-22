@@ -6,6 +6,7 @@ Run from anywhere:
 """
 
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -50,6 +51,19 @@ class JudgeTest(unittest.TestCase):
     def test_verify_that_returns_no_function_is_an_error(self):
         with self.assertRaises(verify.VerifyError):
             verify.judge(LUA, FIXTURES / "not-a-function", {}, self.result_file)
+
+    def test_unloadable_result_file_is_an_error_with_its_message(self):
+        self.result_file.write_text("return {", encoding="utf-8")
+        args = [LUA, str(verify.RUNNER), str(FIXTURES / "sam-one" / "verify.lua"), str(self.result_file)]
+        proc = subprocess.run(args, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("r.lua", proc.stdout)
+
+    def test_runtime_error_on_stderr_alone_is_an_error_not_a_fail(self):
+        done = mock.Mock(returncode=1, stdout="", stderr="lua: boom")
+        with mock.patch("subprocess.run", return_value=done):
+            with self.assertRaisesRegex(verify.VerifyError, "boom"):
+                verify.judge(LUA, FIXTURES / "sam-one", {"sam": 1}, self.result_file)
 
     def test_interpreter_that_cannot_start_is_an_error(self):
         with self.assertRaises(verify.VerifyError):

@@ -44,6 +44,6 @@ def judge(lua, scenario_dir, result, result_file):
     output = proc.stdout.strip()
     if proc.returncode == 0:
         return True, ""
-    if proc.returncode == 1:
+    if proc.returncode == 1 and (output or not proc.stderr.strip()):  # an interpreter error reaches stderr alone
         return False, output
     raise VerifyError("%s: %s" % (verify_file, output or proc.stderr.strip() or "exit %d" % proc.returncode))
