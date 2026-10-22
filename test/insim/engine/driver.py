@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-__all__ = ["Outcome", "Driver", "SILENCE"]
+__all__ = ["Outcome", "Driver", "SILENCE", "read_journal"]
 
 SILENCE = "no answer from the mission: paused, or DCS is down — restart the mission to resume"
 POLL = 2.0  # seconds between two looks at a command's outbox
@@ -29,6 +29,20 @@ class Outcome:
 
 def _unique():
     return format(time.time_ns(), "x")
+
+
+def read_journal(path):
+    """The journal's entries by key, each key's last one; a missing file is an empty journal."""
+    path = Path(path)
+    entries = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue  # a torn last line from a killed driver
+            entries[entry["key"]] = entry
+    return entries
 
 
 class Driver:
@@ -66,7 +80,7 @@ class Driver:
                 said = True
 
     def run(self, key, name_prefix, code, timeout):
-        entry = self._read_journal().get(key)
+        entry = read_journal(self.journal).get(key)
         if entry and entry.get("state") == "ended":
             return Outcome(**entry["outcome"])
         if entry:
@@ -139,17 +153,6 @@ class Driver:
         if record and record.get("status") == "done" and isinstance(record.get("result"), dict):
             return record["result"]
         return None
-
-    def _read_journal(self):
-        entries = {}
-        if self.journal.exists():
-            for line in self.journal.read_text(encoding="utf-8").splitlines():
-                try:
-                    entry = json.loads(line)
-                except ValueError:
-                    continue  # a torn last line from a killed driver
-                entries[entry["key"]] = entry
-        return entries
 
     def _append(self, entry):
         self.journal.parent.mkdir(parents=True, exist_ok=True)
