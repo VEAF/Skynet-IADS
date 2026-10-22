@@ -30,26 +30,32 @@ class Mailbox:
     def outcome(self, name):
         """The outbox as a dict, or None when it is absent or cannot be read yet (hotload may be writing it)."""
         try:
-            text = (self.outbox / (name + ".lua")).read_text(encoding="utf-8")
+            text = (self.outbox / (name + ".lua")).read_text(encoding="utf-8", errors="replace")
             record = luadata.parse(text)
         except (OSError, ValueError):  # LuaDataError is a ValueError, so is a decoding error
             return None
         return record if isinstance(record, dict) else None
 
     def clear(self, name):
-        for folder in (self.inbox, self.outbox):
-            self._remove(folder / (name + ".lua"))
+        """Remove the inbox file, then the outbox: an outbox is never left without its inbox file gone, or hotload would run it again."""
+        if self._remove(self.inbox / (name + ".lua")):
+            self._remove(self.outbox / (name + ".lua"))
 
     def clear_prefixes(self, prefixes):
+        prefixes = tuple(prefixes)
         for folder in (self.inbox, self.outbox):
             if folder.is_dir():
                 for path in folder.iterdir():
-                    if path.name.startswith(tuple(prefixes)):
+                    if path.name.startswith(prefixes) and (folder is self.inbox or not (self.inbox / path.name).exists()):
                         self._remove(path)
 
     @staticmethod
     def _remove(path):
+        """True once `path` is gone; a file something holds open stays, and that is not an error."""
         try:
             path.unlink()
         except FileNotFoundError:
             pass
+        except OSError:
+            return False
+        return True

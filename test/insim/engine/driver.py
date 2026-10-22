@@ -10,7 +10,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-__all__ = ["Outcome", "Driver", "SILENCE", "read_journal"]
+from . import luadata
+
+__all__ = ["Outcome", "Driver", "SILENCE", "read_journal", "read_outcome"]
 
 SILENCE = "no answer from the mission: paused, or DCS is down — restart the mission to resume"
 POLL = 2.0  # seconds between two looks at a command's outbox
@@ -43,6 +45,20 @@ def read_journal(path):
                 continue  # a torn last line from a killed driver
             entries[entry["key"]] = entry
     return entries
+
+
+def _journal_outcome(outcome):
+    """The outcome as the journal keeps it: `result` as Lua data text, since JSON would turn the keys into strings."""
+    entry = dict(outcome.__dict__)
+    entry["result"] = luadata.dump(outcome.result)
+    return entry
+
+
+def read_outcome(entry):
+    """The Outcome an `ended` journal entry holds."""
+    fields = dict(entry["outcome"])
+    fields["result"] = luadata.parse(fields["result"]) if fields.get("result") is not None else None
+    return Outcome(**fields)
 
 
 class Driver:
@@ -82,7 +98,7 @@ class Driver:
     def run(self, key, name_prefix, code, timeout):
         entry = read_journal(self.journal).get(key)
         if entry and entry.get("state") == "ended":
-            return Outcome(**entry["outcome"])
+            return read_outcome(entry)
         if entry:
             name, sent_at = entry["name"], entry["sent_at"]
         else:
@@ -91,7 +107,7 @@ class Driver:
             self._append({"key": key, "name": name, "sent_at": sent_at, "state": "sent"})
             self.mailbox.send(name, code)
         outcome = self._wait(name, sent_at, timeout)
-        self._append({"key": key, "state": "ended", "outcome": outcome.__dict__})
+        self._append({"key": key, "state": "ended", "outcome": _journal_outcome(outcome)})
         self.mailbox.clear(name)
         return outcome
 
@@ -100,6 +116,7 @@ class Driver:
         probe = None  # [name, sent at (real)] of the probe in flight
         stop = None  # name of the stop command, once sent
         now_sim = None  # the latest sim time a probe reported
+        seen_started = False
         last_answer = self.clock()
         silent = False
         try:
@@ -107,12 +124,15 @@ class Driver:
                 record = mailbox.outcome(name)
                 if record and record.get("status") in FINAL:
                     return self._final(record, stop is not None, timeout)
+                seen_started = seen_started or bool(record and record.get("status") == "started")
                 if stop is not None:
                     stopped = mailbox.outcome(stop)
                     if stopped and stopped.get("status") == "done" and stopped.get("result") is False:
                         record = mailbox.outcome(name)
                         if record and record.get("status") in FINAL:
                             return self._final(record, True, timeout)
+                        if not seen_started:
+                            return Outcome("fail", error="never picked up by the mission (no readable outbox after %g s)" % timeout)
                         return Outcome("crashed", error="the run no longer exists: the mission restarted")
                 if probe is not None:
                     answer = self._answer(probe[0])
@@ -132,8 +152,9 @@ class Driver:
                 if not silent and self.clock() - last_answer > 10.0:
                     silent = True
                     self.say(SILENCE)
-                if stop is None and now_sim is not None and record and record.get("status") == "started":
-                    if now_sim - record["started"] > timeout:
+                if stop is None and now_sim is not None and (record is None or record.get("status") == "started"):
+                    since = sent_at if record is None else record["started"]  # no readable record: count from the send
+                    if now_sim - since > timeout:
                         stop = "stop-" + _unique()
                         mailbox.send(stop, 'return Hotload.stop("inbox/%s")' % name)
                 self.sleep(POLL)

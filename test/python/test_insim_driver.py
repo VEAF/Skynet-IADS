@@ -89,6 +89,8 @@ class FakeMission:
 
     def pick(self, name, code):
         label = "inbox/" + name
+        if code == "LOST":
+            return  # the command is never picked up
         if name.startswith("probe-"):
             self.outbox[name] = {"label": label, "status": "done", "result": {"mission": "m", "time": self.sim}}
         elif code.startswith("return Hotload.stop("):
@@ -159,6 +161,23 @@ class DriverTest(unittest.TestCase):
         self.fake.on_hang = lambda: self.fake.restart(sim=1000)
         o = self.d.run("a/run", "a-run", "HANG", 30)
         self.assertEqual(o.status, "crashed")
+
+    def test_command_never_picked_up_fails_instead_of_waiting_forever(self):
+        o = self.d.run("a/run", "a-run", "LOST", 30)
+        self.assertEqual(o.status, "fail")
+        self.assertEqual(o.error, "never picked up by the mission (no readable outbox after 30 s)")
+        self.assertTrue(any('Hotload.stop("inbox/a-run-' in c for c in self.fake.sent_codes))
+
+    def test_journal_keeps_the_result_as_the_live_run_saw_it(self):
+        result = {1: 1, 3: 3, "x": 2}
+        self.fake.pick = lambda name, code: self.fake.outbox.update(
+            {name: {"label": "inbox/" + name, "status": "done", "result": result, "started": 0, "duration": 0}}
+        ) if not name.startswith("probe-") else FakeMission.pick(self.fake, name, code)
+        live = self.d.run("a/run", "a-run", "x", 30)
+        again = self.make().run("a/run", "a-run", "x", 30)
+        self.assertEqual(live.result, result)
+        self.assertEqual(again, live)
+        self.assertEqual(driver.read_outcome(driver.read_journal(self.journal)["a/run"]).result, result)
 
     def test_resume_returns_recorded_outcome_without_sending(self):
         first = self.d.run("a/setup", "a-setup", "return 1", 60)

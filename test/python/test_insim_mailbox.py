@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
@@ -59,6 +60,38 @@ class MailboxTest(unittest.TestCase):
         self.box.clear_prefixes(["probe-", "stop-"])
         self.assertEqual(os.listdir(self.root / "user-inbox"), ["a-3.lua"])
         self.assertEqual(os.listdir(self.root / "user-outbox"), ["a-3.lua"])
+
+    def test_outcome_with_a_non_utf8_byte_is_still_read(self):
+        (self.root / "user-outbox" / "a-1.lua").write_bytes(b'return {["status"] = "done", ["result"] = "a\xffb"}')
+        self.assertEqual(self.box.outcome("a-1")["status"], "done")
+
+    def _locked_inbox(self, name):
+        """Path.unlink refuses the inbox file `name`, as a file another process holds open does."""
+        real = Path.unlink
+
+        def unlink(path, *args, **kwargs):
+            if path.parent.name == "user-inbox" and path.name == name + ".lua":
+                raise PermissionError("locked")
+            return real(path, *args, **kwargs)
+
+        return mock.patch.object(Path, "unlink", unlink)
+
+    def test_clear_with_a_locked_inbox_file_raises_nothing_and_keeps_the_outbox(self):
+        self.box.send("a-1", "x")
+        (self.root / "user-outbox" / "a-1.lua").write_text("return {}")
+        with self._locked_inbox("a-1"):
+            self.box.clear("a-1")
+        self.assertEqual(os.listdir(self.root / "user-inbox"), ["a-1.lua"])
+        self.assertEqual(os.listdir(self.root / "user-outbox"), ["a-1.lua"])
+
+    def test_clear_prefixes_with_a_locked_inbox_file_keeps_its_outbox(self):
+        for name in ("probe-1", "probe-2"):
+            self.box.send(name, "x")
+            (self.root / "user-outbox" / (name + ".lua")).write_text("return {}")
+        with self._locked_inbox("probe-1"):
+            self.box.clear_prefixes(["probe-"])
+        self.assertEqual(os.listdir(self.root / "user-inbox"), ["probe-1.lua"])
+        self.assertEqual(os.listdir(self.root / "user-outbox"), ["probe-1.lua"])
 
 
 if __name__ == "__main__":
