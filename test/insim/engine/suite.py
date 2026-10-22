@@ -98,34 +98,31 @@ def run_scenario(driver, judge, s, open_mission):
     def send(phase, code):
         return driver.run("%s/%s" % (s.name, phase), "%s-%s" % (s.name, phase), code, s.timeout)
 
+    def crashed(phase, outcome):
+        return Verdict(s.name, "crashed", "%s during %s" % (outcome.error or "crashed", phase))
+
     setup = send("setup", _phase_code(s.name, "setup"))
     if setup.status == "crashed":
-        return _failure(s.name, setup)
+        return crashed("setup", setup)
     run = None
     if setup.status == "done":
         run = send("run", _phase_code(s.name, "run"))
         if run.status == "crashed":
-            return _failure(s.name, run)
+            return crashed("run", run)
     warnings = []
     if s.has_teardown:
         teardown = send("teardown", _phase_code(s.name, "teardown"))
         if teardown.status == "crashed":
-            return _crashed_after(s, setup, run, teardown, "teardown")
+            return crashed("teardown", teardown)
         if teardown.status != "done":
             warnings.append(_warning("teardown", teardown))
     cleanup = send("cleanup", _cleanup_code(s.name))
+    if cleanup.status == "crashed":
+        return crashed("cleanup", cleanup)
     if cleanup.status != "done":
         warnings.append(_warning("cleanup", cleanup))
     verdict = _verdict(s, setup, run, judge)
     verdict.warnings = warnings
-    return verdict
-
-
-def _crashed_after(s, setup, run, outcome, phase):
-    verdict = _verdict(s, setup, run, lambda *_: (True, ""))
-    if verdict.verdict == "pass":
-        verdict = Verdict(s.name, "crashed", outcome.error or "crashed")
-    verdict.warnings = [_warning(phase, outcome)]
     return verdict
 
 

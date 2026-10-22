@@ -92,7 +92,35 @@ class ChainTest(unittest.TestCase):
     def test_crash_stops_the_scenario(self):
         v, driver = run_with({"s/run": Outcome("crashed", error="the mission restarted")})
         self.assertEqual(driver.keys, ["s/setup", "s/run"])
-        self.assertEqual((v.verdict, v.message), ("crashed", "the mission restarted"))
+        self.assertEqual((v.verdict, v.message), ("crashed", "the mission restarted during run"))
+
+    def test_setup_crash_stops_at_setup(self):
+        v, driver = run_with({"s/setup": Outcome("crashed", error="DCS went down")})
+        self.assertEqual(driver.keys, ["s/setup"])
+        self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during setup"))
+
+    def test_teardown_crash_stops_at_teardown(self):
+        v, driver = run_with({"s/teardown": Outcome("crashed", error="DCS went down")})
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown"])
+        self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during teardown"))
+
+    def test_cleanup_crash_is_crashed(self):
+        v, driver = run_with({"s/cleanup": Outcome("crashed", error="DCS went down")})
+        self.assertEqual(driver.keys[-1], "s/cleanup")
+        self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during cleanup"))
+
+    def test_judge_is_not_called_after_a_crash_or_a_failed_phase(self):
+        for table in (
+            {"s/setup": Outcome("crashed")},
+            {"s/run": Outcome("crashed")},
+            {"s/teardown": Outcome("crashed")},
+            {"s/cleanup": Outcome("crashed")},
+            {"s/setup": Outcome("fail", error="x")},
+            {"s/run": Outcome("timeout", error="x")},
+        ):
+            called = []
+            run_with(table, judge=lambda s, r: called.append(1) or (True, ""))
+            self.assertEqual(called, [], table)
 
     def test_cleanup_failure_warns(self):
         v, _ = run_with({"s/cleanup": Outcome("fail", error="nope")})
@@ -223,6 +251,17 @@ class RejudgeTest(unittest.TestCase):
             verdicts = suite.rejudge(journal, scenarios, judge)
         self.assertEqual(seen, [("a", {"n": 2})])
         self.assertEqual([(v.name, v.verdict, v.message) for v in verdicts], [("a", "fail", "expected: 1, actual: 2"), ("b", "fail", "boom")])
+
+    def test_rejudge_omits_a_scenario_whose_run_has_not_ended(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = Path(tmp) / "j.jsonl"
+            entries = [
+                {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
+                {"key": "a/run", "state": "sent", "name": "a-run-1", "sent_at": 1},
+                {"key": "b/setup", "state": "ended", "outcome": {"status": "done"}},
+            ]
+            journal.write_text("".join(json.dumps(e) + "\n" for e in entries), encoding="utf-8")
+            self.assertEqual(suite.rejudge(journal, [scenario(name="a"), scenario(name="b")], judge_ok), [])
 
     def test_rejudge_without_a_journal(self):
         self.assertEqual(suite.rejudge(Path("nowhere.jsonl"), [scenario()], judge_ok), [])
