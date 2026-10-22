@@ -32,3 +32,9 @@ __pycache__/
 
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json
+
+# In-sim suite: hotload's mailbox, the working copies of the missions.
+/test/insim/dcs-hotload/user-inbox/
+/test/insim/dcs-hotload/user-outbox/
+/test/insim/miz/*
+!/test/insim/miz/*.template.miz
