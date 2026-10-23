@@ -15,6 +15,7 @@ from .driver import SILENCE, read_journal, read_outcome
 
 __all__ = ["SuiteError", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
 
+LOST_CONTEXT = "no context for %s: setup did not run"
 INVALID = "INSIM-INVALID: "
 REQUIRED = ("scenario", "setup", "run", "verify")
 PHASES = ("setup", "run", "teardown", "cleanup")
@@ -121,6 +122,14 @@ def run_scenario(driver, judge, s, open_mission):
             send("cleanup", _cleanup_code(s.name))
             return Verdict(s.name, "crashed", "DCS went down after " + phase)
 
+    def lost_context(outcome):
+        # setup is done yet the mission has no context for it: the mission restarted since
+        return outcome.status == "fail" and outcome.error == LOST_CONTEXT % s.name
+
+    def restarted():
+        send("cleanup", _cleanup_code(s.name))
+        return Verdict(s.name, "crashed", "the mission restarted since setup")
+
     setup = send("setup", _phase_code(s.name, "setup"))
     if setup.status == "crashed":
         return crashed("setup", setup)
@@ -129,11 +138,15 @@ def run_scenario(driver, judge, s, open_mission):
         run = send("run", _phase_code(s.name, "run"))
         if run.status == "crashed":
             return crashed("run", run)
+        if lost_context(run):
+            return restarted()
     warnings = []
     if s.has_teardown:
         teardown = send("teardown", _phase_code(s.name, "teardown"))
         if teardown.status == "crashed":
             return crashed("teardown", teardown)
+        if setup.status == "done" and lost_context(teardown):
+            return restarted()
         if teardown.status != "done":
             warnings.append(_warning("teardown", teardown))
     cleanup = send("cleanup", _cleanup_code(s.name))

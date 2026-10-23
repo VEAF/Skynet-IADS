@@ -111,7 +111,7 @@ class Driver:
             self._append({"key": key, "name": name, "sent_at": sent_at, "state": "sent"})
             self.mailbox.send(name, code)
         outcome = self._wait(name, sent_at, timeout)
-        self._append({"key": key, "state": "ended", "outcome": _journal_outcome(outcome)})
+        self._append({"key": key, "name": name, "sent_at": sent_at, "state": "ended", "outcome": _journal_outcome(outcome)})
         self.mailbox.clear(name)
         return outcome
 

@@ -17,7 +17,8 @@ from pathlib import Path
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
 from engine import luadata, suite  # noqa: E402
-from engine.driver import Outcome  # noqa: E402
+from engine.driver import Driver, Outcome  # noqa: E402
+from test_insim_driver import FakeMission  # noqa: E402
 
 DONE = Outcome("done")
 
@@ -173,6 +174,60 @@ class ResumeTest(unittest.TestCase):
         journal["s/cleanup"] = {"key": "s/cleanup", "name": "s-cleanup-1", "sent_at": 40.0, "state": "ended"}
         _, driver = run_with({}, journal=journal, mission_time=1)
         self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
+
+
+class PhaseMission(FakeMission):
+    """A FakeMission whose phase and cleanup commands end at once; `lost` makes run answer like a mission without the context."""
+
+    lost = False
+
+    def pick(self, name, code):
+        if name.startswith("probe-") or not code.startswith("return Hotload.load"):
+            return FakeMission.pick(self, name, code)
+        self.outbox[name] = {"label": "inbox/" + name, "status": "done", "result": 1, "started": self.sim, "duration": 0}
+        if self.lost and '"run"' in code:
+            self.outbox[name].update(status="fail", error="no context for s: setup did not run")
+
+
+class RealJournalTest(unittest.TestCase):
+    """The real Driver writes the journal; nothing is hand-written."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.journal = Path(tmp.name) / "journal.jsonl"
+        self.mission = PhaseMission()
+
+    def driver(self):
+        m = self.mission
+        return Driver(m, self.journal, clock=m.clock, sleep=m.sleep, say=lambda text: None)
+
+    def resume(self):
+        self.mission.sent_names.clear()
+        v = suite.run_scenario(self.driver(), judge_ok, scenario(), "m1")
+        return v, [n for n in self.mission.sent_names if not n.startswith("probe-")]
+
+    def test_restart_after_setup_is_crashed_and_only_cleanup_is_sent(self):
+        self.driver().run("s/setup", "s-setup", suite._phase_code("s", "setup"), 30)
+        self.mission.restart()
+        v, sent = self.resume()
+        self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down after setup"))
+        self.assertEqual(len(sent), 1)
+        self.assertTrue(sent[0].startswith("s-cleanup-"))
+
+    def test_script_killed_only_continues_the_chain(self):
+        self.driver().run("s/setup", "s-setup", suite._phase_code("s", "setup"), 30)
+        v, sent = self.resume()
+        self.assertEqual(v.verdict, "pass")
+        self.assertEqual([n.rsplit("-", 1)[0] for n in sent], ["s-run", "s-teardown", "s-cleanup"])
+
+    def test_lost_context_with_setup_done_is_a_restart_even_if_the_clock_cannot_tell(self):
+        self.driver().run("s/setup", "s-setup", suite._phase_code("s", "setup"), 30)
+        self.mission.restart(sim=1000)
+        self.mission.lost = True
+        v, sent = self.resume()
+        self.assertEqual((v.verdict, v.message), ("crashed", "the mission restarted since setup"))
+        self.assertEqual([n.rsplit("-", 1)[0] for n in sent], ["s-run", "s-cleanup"])
 
 
 class FolderTest(unittest.TestCase):
