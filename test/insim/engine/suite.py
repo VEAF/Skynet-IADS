@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import luadata
-from .driver import read_journal, read_outcome
+from .driver import SILENCE, read_journal, read_outcome
 
 __all__ = ["SuiteError", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
 
@@ -111,6 +111,15 @@ def run_scenario(driver, judge, s, open_mission):
         if phase != "cleanup":
             send("cleanup", _cleanup_code(s.name))
         return _crashed(s.name, phase, outcome)
+
+    ended = [(p, driver.entry("%s/%s" % (s.name, p))) for p in PHASES]
+    ended = [(p, e) for p, e in ended if e and e.get("state") == "ended"]
+    if ended and ended[-1][0] != "cleanup":
+        # mission-side state (context, units, IADS) lives only as long as the mission instance that built it
+        phase, last = ended[-1]
+        if driver.wait_for_mission(SILENCE)["time"] < last["sent_at"]:
+            send("cleanup", _cleanup_code(s.name))
+            return Verdict(s.name, "crashed", "DCS went down after " + phase)
 
     setup = send("setup", _phase_code(s.name, "setup"))
     if setup.status == "crashed":

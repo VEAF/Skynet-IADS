@@ -43,6 +43,9 @@ class FakeDriver:
         self.keys = []
         FakeDriver.created.append(self)
 
+    def entry(self, key):
+        return None
+
     def wait_for_mission(self, hint):
         self.hint = hint
         return {"mission": "m1", "time": 1}

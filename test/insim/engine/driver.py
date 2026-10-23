@@ -71,6 +71,10 @@ class Driver:
         self.say = say
         mailbox.clear_prefixes(["probe-", "stop-"])
 
+    def entry(self, key):
+        """The journal's last entry for `key` (`sent_at`, `state`, ...), or None."""
+        return read_journal(self.journal).get(key)
+
     def status(self, patience=10.0):
         """The probe's `{mission, time}`, or None when it has not answered within `patience` real seconds."""
         name = "probe-" + _unique()
@@ -96,7 +100,7 @@ class Driver:
                 said = True
 
     def run(self, key, name_prefix, code, timeout):
-        entry = read_journal(self.journal).get(key)
+        entry = self.entry(key)
         if entry and entry.get("state") == "ended":
             return read_outcome(entry)
         if entry:

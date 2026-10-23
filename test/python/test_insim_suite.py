@@ -23,10 +23,18 @@ DONE = Outcome("done")
 
 
 class FakeDriver:
-    def __init__(self, table):
+    def __init__(self, table, journal=None, mission_time=0.0):
         self.table = table
+        self.journal = journal or {}
+        self.mission_time = mission_time
         self.keys = []
         self.calls = []
+
+    def entry(self, key):
+        return self.journal.get(key)
+
+    def wait_for_mission(self, hint):
+        return {"mission": "m1", "time": self.mission_time}
 
     def run(self, key, name_prefix, code, timeout):
         self.keys.append(key)
@@ -44,8 +52,8 @@ def scenario(**kw):
     return suite.Scenario(**values)
 
 
-def run_with(table, judge=judge_ok, **kw):
-    driver = FakeDriver(table)
+def run_with(table, judge=judge_ok, journal=None, mission_time=0.0, **kw):
+    driver = FakeDriver(table, journal, mission_time)
     return suite.run_scenario(driver, judge, scenario(**kw), "m1"), driver
 
 
@@ -143,6 +151,28 @@ class ChainTest(unittest.TestCase):
     def test_verify_failure_is_a_fail(self):
         v, _ = run_with({"s/run": Outcome("done", result=2)}, judge=lambda s, r: (False, "expected: 1, actual: 2"))
         self.assertEqual((v.verdict, v.message, v.result), ("fail", "expected: 1, actual: 2", 2))
+
+
+class ResumeTest(unittest.TestCase):
+    """A scenario resumed from the journal: mission-side state survives only within one mission instance."""
+
+    JOURNAL = {"s/setup": {"key": "s/setup", "name": "s-setup-1", "sent_at": 38.1, "state": "ended"}}
+
+    def test_mission_restarted_since_the_last_phase_is_crashed(self):
+        v, driver = run_with({}, journal=self.JOURNAL, mission_time=12.1)
+        self.assertEqual(driver.keys, ["s/cleanup"])
+        self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down after setup"))
+
+    def test_mission_not_restarted_continues_the_chain(self):
+        v, driver = run_with({}, journal=self.JOURNAL, mission_time=50)
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
+        self.assertEqual(v.verdict, "pass")
+
+    def test_nothing_journaled_or_cleanup_ended_is_unaffected(self):
+        journal = dict(self.JOURNAL)
+        journal["s/cleanup"] = {"key": "s/cleanup", "name": "s-cleanup-1", "sent_at": 40.0, "state": "ended"}
+        _, driver = run_with({}, journal=journal, mission_time=1)
+        self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
 
 
 class FolderTest(unittest.TestCase):
