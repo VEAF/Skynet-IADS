@@ -13,6 +13,8 @@ Six `.miz` files carry scripts from this repository, and all six are handled her
 The three under `unit-tests/` are developer material; the three under `demo-missions/` are what a
 release attaches. Nothing else distinguishes them here.
 
+The missions under `test/insim/miz/` are not its archives: `test/insim/run.py` handles them.
+
 **The archives in git do not contain the scripts they run.** Each holds a placeholder, and `build`
 puts the real files in to produce the mission DCS opens. That is deliberate. A copy of the code
 committed beside the code it copies goes stale without a sound: the two in-sim archives ran Skynet
