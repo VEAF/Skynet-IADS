@@ -101,8 +101,8 @@ class RunTest(unittest.TestCase):
         self.assertEqual(folder.name, "20260102-030405")
         self.assertEqual(json.loads((folder / "run.json").read_text()), {"tier": "minimal", "names": []})
         self.assertTrue((folder / "report.md").is_file())
-        self.assertIn("alpha: pass", out)
-        self.assertIn("beta: pass", out)
+        self.assertNotIn("alpha: pass", out)  # the summary lists only what did not pass
+        self.assertNotIn("beta: pass", out)
         self.prepare_script.assert_called_once_with(self.repo, None)
 
     def test_run_prints_what_it_prepared_and_the_report_path(self):
@@ -166,7 +166,8 @@ class RunTest(unittest.TestCase):
         verdict = run.suite.Verdict("alpha", "pass")
         with mock.patch.object(run.suite, "rejudge", return_value=[verdict]):
             _, out = self.main("--verify")
-        self.assertIn("alpha: pass", out)
+        self.assertNotIn("alpha: pass", out)
+        self.assertIn("1 pass, 0 fail", out)
         self.assertNotIn("no recorded result", out)
 
     def test_mistyped_mission_is_refused_before_anything_is_sent(self):

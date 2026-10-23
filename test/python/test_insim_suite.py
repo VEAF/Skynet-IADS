@@ -361,11 +361,17 @@ class ReportTest(unittest.TestCase):
         for bad in ("invalid", "crashed"):
             self.assertEqual(suite.exit_code([suite.Verdict("x", bad, "", None, [])]), 1)
 
-    def test_summary(self):
+    def test_summary_lists_only_what_did_not_pass(self):
         text = suite.summary(self.verdicts())
-        self.assertIn("a: pass", text)
+        self.assertNotIn("a: pass", text)
         self.assertIn("b: fail - bad | thing", text)
-        self.assertIn("1 pass, 1 fail, 0 invalid, 0 crashed, 1 skipped", text)
+        self.assertIn("c: skipped - needs m2", text)
+        self.assertIn("  warning: w", text)
+        self.assertEqual(text.splitlines()[-1], "1 pass, 1 fail, 0 invalid, 0 crashed, 1 skipped")
+
+    def test_summary_of_an_all_pass_run_is_the_counts_line_only(self):
+        text = suite.summary([suite.Verdict("a", "pass", "", 1, []), suite.Verdict("b", "pass", "", None, [])])
+        self.assertEqual(text, "2 pass, 0 fail, 0 invalid, 0 crashed, 0 skipped")
 
     def test_write_report(self):
         with tempfile.TemporaryDirectory() as tmp:

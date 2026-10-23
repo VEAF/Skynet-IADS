@@ -264,6 +264,8 @@ def rejudge(journal, scenarios, judge):
 def summary(verdicts):
     lines = []
     for v in verdicts:
+        if v.verdict == "pass":
+            continue
         lines.append("%s: %s%s" % (v.name, v.verdict, " - " + v.message if v.message else ""))
         lines.extend("  warning: " + w for w in v.warnings)
     counts = ", ".join("%d %s" % (sum(1 for v in verdicts if v.verdict == name), name) for name in VERDICTS)
