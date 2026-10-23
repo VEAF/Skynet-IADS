@@ -369,6 +369,10 @@ class ReportTest(unittest.TestCase):
         self.assertIn("  warning: w", text)
         self.assertEqual(text.splitlines()[-1], "1 pass, 1 fail, 0 invalid, 0 crashed, 1 skipped")
 
+    def test_summary_keeps_a_pass_that_left_warnings(self):
+        text = suite.summary([suite.Verdict("a", "pass", "", 1, ["cleanup failed: boom"]), suite.Verdict("b", "pass", "", None, [])])
+        self.assertEqual(text.splitlines(), ["a: pass", "  warning: cleanup failed: boom", "2 pass, 0 fail, 0 invalid, 0 crashed, 0 skipped"])
+
     def test_summary_of_an_all_pass_run_is_the_counts_line_only(self):
         text = suite.summary([suite.Verdict("a", "pass", "", 1, []), suite.Verdict("b", "pass", "", None, [])])
         self.assertEqual(text, "2 pass, 0 fail, 0 invalid, 0 crashed, 0 skipped")
