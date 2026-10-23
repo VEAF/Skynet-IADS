@@ -5,8 +5,8 @@ nor a read of the code can: that DCS calls Skynet, what real radars report, how 
 statics are composed. The logic stays in `test/lua/`; this suite is the check before a pull request
 that touches `skynet-iads-source/`. It is recommended, not required: CI has no DCS.
 
-You open the test mission in DCS (the one manual step), run `python test/insim/run.py`, and read a
-summary: each scenario `pass`, `fail`, `invalid`, `crashed`, or `skipped` (it needs another mission than the one open),
+You run the test mission in DCS (the one manual step), run `python test/insim/run.py`, and read a
+summary: each scenario `pass`, `fail`, `invalid`, `crashed`, or `skipped` (it needs another mission than the one running),
 and an exit code.
 
 ## Setup, once
@@ -37,7 +37,7 @@ The command:
    rebuilds it from `skynet-iads-source/` unless the file is already the build of the current
    sources; `--skynet FILE` copies that file instead, and the next default run rebuilds;
 2. prepares the mission DCS opens (see *The mission*);
-3. waits for the mission to answer. If DCS is not running it, it says which file to open:
+3. waits for the mission to answer. If DCS is not running it, it says which file to run:
    `test/insim/miz/insim01.miz`. **That is the manual step.** Later, if the mission stops answering
    while a command is in flight, it says "paused, or DCS is down" and waits: it never concludes
    anything from silence;
@@ -45,7 +45,8 @@ The command:
    **restart the mission**: the script is loaded once, at mission start, so a change under
    `skynet-iads-source/` needs a build (the command does it) and a mission restart. A change to a
    scenario or to a `user-lib/` library does not;
-5. runs each scenario one at a time and prints a line as it ends;
+5. runs each scenario one at a time, printing each phase (setup, run, teardown, cleanup) as it starts
+   and how it ended, then the scenario's verdict;
 6. prints the summary, writes `report.md` into `build/insim/results/<date-time>/` (git-ignored) and
    exits 1 if any scenario is `fail`, `invalid` or `crashed` (`skipped` does not count). It does not
    stop at the first failure. It exits 2 without running when the run is refused: an unknown
@@ -53,7 +54,7 @@ The command:
 
 A named scenario that does not exist is refused before anything is sent.
 
-**After a DCS crash**, restart DCS, open the mission again and run the same command with `--resume`.
+**After a DCS crash**, restart DCS, run the mission again and run the same command with `--resume`.
 The scenario that was in flight is reported `crashed` and counts as a failure; it is not run again,
 and the ones already done are not either.
 
@@ -174,7 +175,7 @@ would keep any tier from exiting 0.
   when it is missing, when the template has changed, or when the checkout has moved. Do not edit it.
 
 Scenarios name their mission (`mission = "insim01"`); a mission is known by its sortie name. The
-driver runs the scenarios of the mission DCS has open, and lists the others as skipped, naming the
+driver runs the scenarios of the mission DCS is running, and lists the others as skipped, naming the
 mission they need.
 
 At mission start three actions run: the first sets `BASE_HOTLOAD_PATH`, the only absolute path in the

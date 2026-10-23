@@ -38,9 +38,15 @@ def _latest(results):
     return folders[-1] if folders else None
 
 
-def _finish(verdicts, folder, report="report.md"):
+def _finish(verdicts, folder, repo, report="report.md"):
     print(suite.summary(verdicts))
     suite.write_report(verdicts, folder / report)
+    path = folder / report
+    try:
+        path = path.relative_to(repo)
+    except ValueError:
+        pass
+    print("report: " + path.as_posix())
     return suite.exit_code(verdicts)
 
 
@@ -64,15 +70,23 @@ def main(argv=None, repo=REPO, now=datetime.now):
                 return 2
             run = json.loads((folder / "run.json").read_text(encoding="utf-8"))
             chosen = suite.select(scenarios, run["tier"], run["names"])
-            return _finish(suite.rejudge(folder / "journal.jsonl", chosen, judge), folder, "report-verify.md")
+            print("verify: re-judging %s from %s" % (", ".join(s.name for s in chosen) or "nothing", (folder / "journal.jsonl").as_posix()))
+            verdicts = suite.rejudge(folder / "journal.jsonl", chosen, judge)
+            for s in chosen:
+                if s.name not in [v.name for v in verdicts]:
+                    print("verify: %s has no recorded result to re-judge" % s.name)
+            return _finish(verdicts, folder, repo, "report-verify.md")
 
-        skynet_script.prepare(repo, Path(args.skynet) if args.skynet else None)
+        forced = Path(args.skynet) if args.skynet else None
+        _, done = skynet_script.prepare(repo, forced)
+        print("Skynet script: " + {"up to date": "up to date (built from the current sources)", "rebuilt": "rebuilt", "forced": "forced from %s" % forced}[done])
         mailbox = Mailbox(insim / "dcs-hotload")
         mailbox.ensure()
         names = []
         for template in sorted((insim / "miz").glob("*.template.miz")):
             name = template.name[: -len(".template.miz")]
-            mission.prepare(template, template.with_name(name + ".miz"), insim / "dcs-hotload")
+            written = mission.prepare(template, template.with_name(name + ".miz"), insim / "dcs-hotload")
+            print("mission %s: working copy %s" % (name, "written" if written else "up to date"))
             names.append(name)
 
         if args.resume:
@@ -92,9 +106,11 @@ def main(argv=None, repo=REPO, now=datetime.now):
             folder.mkdir(parents=True, exist_ok=True)
             (folder / "run.json").write_text(json.dumps(run), encoding="utf-8")
 
-        driver = Driver(mailbox, folder / "journal.jsonl")
-        hint = "open %s in DCS (missions: %s)" % (" or ".join("test/insim/miz/%s.miz" % n for n in names), ", ".join(names))
+        console = suite.Console(lambda text: (sys.stdout.write(text), sys.stdout.flush()), len(chosen))
+        driver = Driver(mailbox, folder / "journal.jsonl", say=console.say)
+        hint = "run %s in DCS (missions: %s)" % (" or ".join("test/insim/miz/%s.miz" % n for n in names), ", ".join(names))
         open_mission = driver.wait_for_mission(hint)["mission"]
+        print("mission %s is running" % open_mission)
         check = driver.run("check/" + uuid.uuid4().hex, "check", CHECK_CODE, CHECK_TIMEOUT)
         if not (check.status == "done" and check.result is True):
             print(STALE)
@@ -102,10 +118,8 @@ def main(argv=None, repo=REPO, now=datetime.now):
 
         verdicts = []
         for s in chosen:
-            v = suite.run_scenario(driver, judge, s, open_mission)
-            print("%s: %s%s" % (v.name, v.verdict, " - " + v.message if v.message else ""))
-            verdicts.append(v)
-        return _finish(verdicts, folder)
+            verdicts.append(suite.run_scenario(driver, judge, s, open_mission, console))
+        return _finish(verdicts, folder, repo)
     except (suite.SuiteError, verify.VerifyError, mission.MissionError) as e:
         print(e)
         return 2

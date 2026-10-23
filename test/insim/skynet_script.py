@@ -32,6 +32,7 @@ def _sources_sha256(repo):
 
 
 def prepare(repo, forced, build=run_build):
+    """Make the copy; returns (path, what was done): "up to date", "rebuilt" or "forced"."""
     repo = Path(repo)
     target = repo / "build" / "insim" / "skynet-iads-insim.lua"
     state_file = repo / "build" / "insim" / "skynet-script.json"
@@ -40,16 +41,18 @@ def prepare(repo, forced, build=run_build):
     if forced is not None:
         shutil.copyfile(forced, target)
         sources = None
+        done = "forced"
     else:
         sources = _sources_sha256(repo)
         try:
             state = json.loads(state_file.read_text(encoding="utf-8"))
             if state["sources_sha256"] == sources and target.is_file() and _sha256(target) == state["file_sha256"]:
-                return target
+                return target, "up to date"
         except (OSError, ValueError, KeyError):
             pass
         build(repo)
         shutil.copyfile(repo / "demo-missions" / "skynet-iads-compiled.lua", target)
+        done = "rebuilt"
 
     state_file.write_text(json.dumps({"sources_sha256": sources, "file_sha256": _sha256(target)}), encoding="utf-8")
-    return target
+    return target, done

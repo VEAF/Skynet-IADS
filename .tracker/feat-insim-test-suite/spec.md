@@ -17,7 +17,7 @@ The SkynetMunitionTests campaign (`D:\Projects\DcsMissions\SkynetMunitionTests`,
 
 A suite a contributor runs before a pull request that touches `skynet-iads-source/`, as they run `test/lua/`:
 
-1. open the test mission in DCS (the one manual step);
+1. run the test mission in DCS (the one manual step);
 2. run one command;
 3. read a summary: every scenario `pass`, `fail`, `invalid` or `crashed`, and an exit code.
 

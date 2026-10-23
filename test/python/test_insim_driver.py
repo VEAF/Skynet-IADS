@@ -213,8 +213,8 @@ class DriverTest(unittest.TestCase):
 
     def test_wait_for_mission_says_hint_once(self):
         self.fake.pause_for(30)
-        self.assertEqual(self.d.wait_for_mission("open the mission")["mission"], "m")
-        self.assertEqual(self.said, ["open the mission"])
+        self.assertEqual(self.d.wait_for_mission("run the mission")["mission"], "m")
+        self.assertEqual(self.said, ["run the mission"])
 
 
 if __name__ == "__main__":

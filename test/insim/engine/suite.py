@@ -13,7 +13,7 @@ from pathlib import Path
 from . import luadata
 from .driver import SILENCE, read_journal, read_outcome
 
-__all__ = ["SuiteError", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
+__all__ = ["SuiteError", "Console", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
 
 LOST_CONTEXT = "no context for %s: setup did not run"
 INVALID = "INSIM-INVALID: "
@@ -24,6 +24,61 @@ VERDICTS = ("pass", "fail", "invalid", "crashed", "skipped")
 
 class SuiteError(Exception):
     pass
+
+
+class Console:
+    """What a run prints as it goes: one line per scenario, one per phase, then the verdict.
+
+    A phase line is written in two parts, its name before the phase is sent and its outcome when it
+    ends. Whatever else is said in between (the driver's silence message) finishes the line first, and
+    the outcome then comes on a line of its own, named again.
+    """
+
+    INDENT = "      "
+
+    def __init__(self, write, total=0):
+        self.write = write
+        self.total = total
+        self.index = 0
+        self.open = False
+
+    def _label(self, phase):
+        return self.INDENT + (phase + " ").ljust(10, ".") + " "
+
+    def say(self, text):
+        if self.open:
+            self.write("...\n")
+            self.open = False
+        self.write(text + "\n")
+
+    def scenario(self, name):
+        self.index += 1
+        self.write("[%d/%d] %s\n" % (self.index, self.total, name))
+
+    def skipped(self, name, reason):
+        self.index += 1
+        self.write("[%d/%d] %s: skipped (%s)\n" % (self.index, self.total, name, reason))
+
+    def phase_begin(self, phase):
+        self.write(self._label(phase))
+        self.open = True
+
+    def phase_end(self, phase, outcome, replayed):
+        text = outcome.status
+        if replayed:
+            text += " (from the journal)"
+        elif outcome.duration is not None:
+            text += " (%.1f s sim)" % outcome.duration
+        self.write(("" if self.open else self._label(phase)) + text + "\n")
+        self.open = False
+
+    def phase_skipped(self, phase):
+        self.write(self._label(phase) + "skipped\n")
+
+    def verdict(self, v):
+        self.write("%s-> %s%s\n" % (self.INDENT, v.verdict, ": " + v.message if v.message else ""))
+        for w in v.warnings:
+            self.write("%swarning: %s\n" % (self.INDENT, w))
 
 
 @dataclass
@@ -100,12 +155,26 @@ def _crashed(name, phase, outcome):
     return Verdict(name, "crashed", "%s during %s" % (outcome.error or "crashed", phase))
 
 
-def run_scenario(driver, judge, s, open_mission):
+def run_scenario(driver, judge, s, open_mission, console=None):
+    console = console or Console(lambda text: None)
     if s.mission != open_mission:
+        console.skipped(s.name, "needs " + s.mission)
         return Verdict(s.name, "skipped", "needs " + s.mission)
+    console.scenario(s.name)
+    verdict = _run_scenario(driver, judge, s, console)
+    console.verdict(verdict)
+    return verdict
 
+
+def _run_scenario(driver, judge, s, console):
     def send(phase, code):
-        return driver.run("%s/%s" % (s.name, phase), "%s-%s" % (s.name, phase), code, s.timeout)
+        key = "%s/%s" % (s.name, phase)
+        entry = driver.entry(key)
+        replayed = bool(entry and entry.get("state") == "ended")
+        console.phase_begin(phase)
+        outcome = driver.run(key, "%s-%s" % (s.name, phase), code, s.timeout)
+        console.phase_end(phase, outcome, replayed)
+        return outcome
 
     def crashed(phase, outcome):
         # the restarted mission may have run a stale setup: cleanup removes what it left (on a clean mission it does nothing)
@@ -134,7 +203,9 @@ def run_scenario(driver, judge, s, open_mission):
     if setup.status == "crashed":
         return crashed("setup", setup)
     run = None
-    if setup.status == "done":
+    if setup.status != "done":
+        console.phase_skipped("run")
+    else:
         run = send("run", _phase_code(s.name, "run"))
         if run.status == "crashed":
             return crashed("run", run)

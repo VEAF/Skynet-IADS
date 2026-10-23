@@ -230,6 +230,57 @@ class RealJournalTest(unittest.TestCase):
         self.assertEqual([n.rsplit("-", 1)[0] for n in sent], ["s-run", "s-cleanup"])
 
 
+class ConsoleTest(unittest.TestCase):
+    def run_console(self, table=None, journal=None, mission="m1", **kw):
+        out = []
+        console = suite.Console(out.append, 1)
+        driver = FakeDriver(table or {}, journal, 0.0)
+        v = suite.run_scenario(driver, judge_ok, scenario(**kw), mission, console)
+        return v, "".join(out)
+
+    def test_a_phase_is_printed_before_it_is_sent_and_after_it_ends(self):
+        out = []
+        console = suite.Console(out.append, 1)
+
+        class Spy(FakeDriver):
+            def run(self, key, *rest):
+                out.append("<sent %s>" % key)
+                return super().run(key, *rest)
+
+        suite.run_scenario(Spy({"s/run": Outcome("done", duration=24.3)}, None, 0.0), judge_ok, scenario(), "m1", console)
+        text = "".join(out)
+        self.assertIn("[1/1] s\n      setup .... <sent s/setup>done\n", text)
+        self.assertIn("run ...... <sent s/run>done (24.3 s sim)\n", text)
+        self.assertTrue(text.endswith("      -> pass\n"))
+
+    def test_a_replayed_phase_says_so(self):
+        journal = {"s/setup": {"state": "ended", "sent_at": 0.0}}
+        _, text = self.run_console(journal=journal)
+        self.assertIn("setup .... done (from the journal)\n", text)
+        self.assertNotIn("run ...... done (from the journal)", text)
+
+    def test_a_scenario_for_another_mission_is_one_line(self):
+        v, text = self.run_console(mission="other")
+        self.assertEqual(v.verdict, "skipped")
+        self.assertEqual(text, "[1/1] s: skipped (needs m1)\n")
+
+    def test_a_failure_prints_its_outcome_message_and_warnings(self):
+        table = {"s/setup": Outcome("fail", error="boom"), "s/cleanup": Outcome("timeout", error="slow")}
+        v, text = self.run_console(table)
+        self.assertIn("setup .... fail\n", text)
+        self.assertIn("run ...... skipped\n", text)
+        self.assertIn("      -> fail: boom\n", text)
+        self.assertIn("      warning: cleanup failed: slow", text)
+
+    def test_the_silence_message_finishes_the_line_and_the_outcome_is_named_again(self):
+        out = []
+        console = suite.Console(out.append, 1)
+        console.phase_begin("run")
+        console.say("no answer")
+        console.phase_end("run", Outcome("done"), False)
+        self.assertEqual("".join(out), "      run ...... ...\nno answer\n      run ...... done\n")
+
+
 class FolderTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

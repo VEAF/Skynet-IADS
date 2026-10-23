@@ -39,7 +39,8 @@ class FakeDriver:
     created = []
     current = True
 
-    def __init__(self, mailbox, journal):
+    def __init__(self, mailbox, journal, say=print):
+        self.say = say
         self.keys = []
         FakeDriver.created.append(self)
 
@@ -71,8 +72,8 @@ class RunTest(unittest.TestCase):
                 (folder / (part + ".lua")).write_text("", encoding="utf-8")
         (self.repo / "test" / "insim" / "miz").mkdir(parents=True)
         FakeMailbox.created, FakeDriver.created, FakeDriver.current = [], [], True
-        self.prepare_script = mock.Mock()
-        self.prepare_mission = mock.Mock()
+        self.prepare_script = mock.Mock(return_value=(None, "up to date"))
+        self.prepare_mission = mock.Mock(return_value=False)
         for patch in (
             mock.patch.object(run, "Mailbox", FakeMailbox),
             mock.patch.object(run, "Driver", FakeDriver),
@@ -104,6 +105,27 @@ class RunTest(unittest.TestCase):
         self.assertIn("beta: pass", out)
         self.prepare_script.assert_called_once_with(self.repo, None)
 
+    def test_run_prints_what_it_prepared_and_the_report_path(self):
+        _, out = self.main()
+        self.assertIn("Skynet script: up to date (built from the current sources)\n", out)
+        self.assertIn("mission m1: working copy up to date\n", out)
+        self.assertIn("mission m1 is running\n", out)
+        self.assertIn("[1/2] alpha\n", out)
+        self.assertIn("[2/2] beta\n", out)
+        self.assertIn("      -> pass\n", out)
+        self.assertIn("2 pass, 0 fail", out)
+        self.assertIn("report: build/insim/results/20260102-030405/report.md\n", out)
+
+    def test_run_says_what_changed(self):
+        self.prepare_script.return_value = (None, "rebuilt")
+        self.prepare_mission.return_value = True
+        _, out = self.main()
+        self.assertIn("Skynet script: rebuilt\n", out)
+        self.assertIn("mission m1: working copy written\n", out)
+        self.prepare_script.return_value = (None, "forced")
+        _, out = self.main("--skynet", "my.lua", when=datetime(2027, 1, 1))
+        self.assertIn("Skynet script: forced from my.lua\n", out)
+
     def test_run_refuses_a_stale_mission(self):
         FakeDriver.current = False
         code, out = self.main()
@@ -134,6 +156,18 @@ class RunTest(unittest.TestCase):
         self.assertEqual(FakeDriver.created, [])
         self.prepare_script.assert_not_called()
         self.assertEqual([s.name for s in rejudge.call_args[0][1]], ["alpha"])
+
+    def test_verify_prints_what_it_rejudges_and_the_report_path(self):
+        self.main("alpha")
+        _, out = self.main("--verify")
+        self.assertIn("verify: re-judging alpha from ", out)
+        self.assertIn("verify: alpha has no recorded result to re-judge", out)  # the fake driver journals nothing
+        self.assertIn("report: build/insim/results/20260102-030405/report-verify.md", out)
+        verdict = run.suite.Verdict("alpha", "pass")
+        with mock.patch.object(run.suite, "rejudge", return_value=[verdict]):
+            _, out = self.main("--verify")
+        self.assertIn("alpha: pass", out)
+        self.assertNotIn("no recorded result", out)
 
     def test_mistyped_mission_is_refused_before_anything_is_sent(self):
         folder = self.repo / "test" / "insim" / "scenarios" / "gamma"

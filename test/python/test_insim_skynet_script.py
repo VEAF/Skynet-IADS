@@ -39,8 +39,8 @@ class SkynetScriptTest(unittest.TestCase):
         return skynet_script.prepare(self.repo, forced, build=self.build)
 
     def test_default_builds_once(self):
-        self.assertEqual(self.prepare(), self.target)
-        self.prepare()
+        self.assertEqual(self.prepare(), (self.target, "rebuilt"))
+        self.assertEqual(self.prepare(), (self.target, "up to date"))
         self.assertEqual(self.builds, 1)
         self.assertEqual(self.target.read_text(encoding="utf-8"), "built a = 1\n")
 
@@ -54,7 +54,7 @@ class SkynetScriptTest(unittest.TestCase):
         self.prepare()
         forced = self.repo / "forced.lua"
         forced.write_text("forced\n", encoding="utf-8")
-        self.prepare(forced)
+        self.assertEqual(self.prepare(forced), (self.target, "forced"))
         self.assertEqual(self.target.read_text(encoding="utf-8"), "forced\n")
         self.assertEqual(self.builds, 1)
         self.prepare()
