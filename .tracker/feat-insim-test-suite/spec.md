@@ -1,6 +1,6 @@
 # An in-sim anti-regression suite, run through dcs-hotload
 
-Status: in-progress
+Status: done
 
 ## The problem
 
