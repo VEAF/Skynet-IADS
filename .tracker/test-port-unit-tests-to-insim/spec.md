@@ -18,6 +18,17 @@ Status: open
 - The scenarios, with the fixtures they need in `test/insim/miz/`, and the shared helpers in the suite's `user-lib/` libraries as two scenarios come to need them.
 - The removals, and the documentation that pointed at them (`CONTRIBUTING.md`, `CLAUDE.md`, the release steps that fly the smoke gate).
 
+## Carried over from the in-sim suite
+
+Deferred by `feat-insim-test-suite` to the first anti-regression scenarios, which meet them first:
+
+- `insim-skynet.iads(ctx)` registers no cleanup when adding sites or activating fails after the IADS was created: register the deactivation first.
+- A missing fixture, or an `addGroup` returning nil, is reported `fail`; it is a broken precondition, so `invalid`. Match the `INSIM-INVALID: ` mark anywhere in the error, not only at its start (a `ctx.invalid` raised inside a `waitFor` predicate is prefixed by hotload).
+- A setup that finds an old context for its scenario (a run aborted earlier in the same mission session) overwrites it and leaves its IADS running: clean the old one up first, or refuse.
+- Scenario names starting `probe-` or `stop-`, or containing `"`, collide with the driver's own command names or break the command text: refuse them in discovery.
+- `clearWrecks(zoneName)` in a `user-lib/` library, for scenarios that explode things.
+- The driver core's default probe names the test layer (`Hotload.load("insim").status()`): the caller should pass it.
+
 ## Open
 
 - The order relative to `chore-demo-missions-carry-their-script`, which removes `miz-suite.py`, the tool that also handles the legacy missions.
