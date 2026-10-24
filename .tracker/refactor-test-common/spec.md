@@ -1,6 +1,6 @@
 # `test/common/`: the test machinery in one place, Skynet's tests apart from the tooling's
 
-Status: in-progress
+Status: done
 
 ## The problem
 
