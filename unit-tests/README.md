@@ -1,5 +1,9 @@
 # In-sim checks
 
+**Deprecated.** Everything here — the legacy luaunit missions and the dcs-bridge smoke gate — is
+being ported to `test/insim/` or dropped with a stated reason, and this directory goes once that is
+done. Nothing new goes here.
+
 Everything in this directory needs DCS running. The standalone suite is `test/lua/` and runs
 anywhere; what is here is what a stub cannot answer — terrain, real detection geometry, in-game
 events, how a DCS group is composed, and above all *whether the simulator ever calls the code at

@@ -44,7 +44,8 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `demo-missions/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
 | `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
-| `unit-tests/` | what needs DCS running — **see its `README.md`** |
+| `unit-tests/` | **deprecated**: the legacy in-sim suites and the dcs-bridge smoke gate, dropped once `test/insim/` covers them — **see its `README.md`** |
+| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
 | `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
@@ -125,14 +126,15 @@ saves the afternoon you would otherwise spend re-testing by hand after a two-lin
 
 **Do not open a pull request with tests failing.**
 
-There are two suites, and which one you want is decided by whether a stub can answer the question:
+There are three suites, and which one you want is decided by whether a stub can answer the question:
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
 | `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `unit-tests/` | inside DCS | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all | [`unit-tests/README.md`](unit-tests/README.md) |
+| `unit-tests/` | inside DCS. **Deprecated**: dropped once `test/insim/` covers it; nothing new goes here | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all | [`unit-tests/README.md`](unit-tests/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run.py` | scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
 
-Those two files are the reference: how to run each suite, how to add to it, what is covered and what
+Those three files are the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 

@@ -1,6 +1,6 @@
 # An in-sim anti-regression suite, run through dcs-hotload
 
-Status: in-progress
+Status: done
 
 ## The problem
 
@@ -17,7 +17,7 @@ The SkynetMunitionTests campaign (`D:\Projects\DcsMissions\SkynetMunitionTests`,
 
 A suite a contributor runs before a pull request that touches `skynet-iads-source/`, as they run `test/lua/`:
 
-1. open the test mission in DCS (the one manual step);
+1. run the test mission in DCS (the one manual step);
 2. run one command;
 3. read a summary: every scenario `pass`, `fail`, `invalid` or `crashed`, and an exit code.
 
@@ -224,7 +224,7 @@ Plus scenarios that prove the engine's own paths, kept out of the tiers and run 
 
 - `test/insim/README.md` is the suite's door: setup once (`MissionScripting.lua`), how to run, how to add a scenario.
 - `CONTRIBUTING.md`'s table of suites gains a row, recommending a run before a pull request that touches `skynet-iads-source/`.
-- `CLAUDE.md`'s rule "never edit a `.miz` by hand; `miz-suite.py` is what writes into one" gains its exception: the test mission's template is edited in the Mission Editor, and its working copy is written by the driver.
+- `unit-tests/` is marked deprecated, in its README and in `CONTRIBUTING.md`: dropped once `test/insim/` covers it.
 - A note in `miz-suite.py`'s header that the test mission is not one of its archives.
 
 ## Decisions

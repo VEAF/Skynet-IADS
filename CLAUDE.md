@@ -38,6 +38,7 @@ pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
 lua5.1 test/lua/run.lua                              # the standalone suite; a name filters
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
 python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
+python test/insim/run.py                             # the in-sim suite; its mission must be open in DCS
 ```
 
 If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:

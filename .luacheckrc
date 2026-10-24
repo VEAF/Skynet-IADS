@@ -28,6 +28,15 @@ globals = {
 	"inheritsFrom",
 	"samTypesDB",
 	"dcsStub",
+
+	-- dcs-hotload and the in-sim test suite (test/insim/): hotload's own API, and the one global
+	-- insim.lua keeps between mailbox commands, plus the one the Skynet script keeps.
+	"Hotload",
+	"lfs",
+	"InsimState",
+	"InsimSkynetState",
+	"BASE_HOTLOAD_PATH",
+
 	"SkynetIADS",
 	"SkynetIADSUtils",
 	"SkynetIADSLogger",
