@@ -4,7 +4,7 @@ The mission is a FakeMission with a fake clock: no test sleeps for real.
 
 Run from anywhere:
 
-    python -m unittest discover -s test/python -p "test_insim_*.py"
+    python -m unittest discover -s test/insim-tools -p "test_insim_*.py"
 """
 
 import json

@@ -10,7 +10,7 @@
 --- entries: a battery whose covering radar has left the IADS must go autonomous, and a discarded
 --- site must stop being told what to do. VEAF missions reach both on respawn.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

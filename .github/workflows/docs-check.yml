@@ -17,7 +17,7 @@ on:
       - "mkdocs.yml"
       - "build-tools/docs-check.py"
       - "build-tools/docs-requirements.txt"
-      - "test/python/test_docs_check.py"
+      - "test/build-tools/test_docs_check.py"
       - ".github/workflows/docs-check.yml"
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           python-version: "3.x"
 
       # The gate is stdlib-only, so it runs in a couple of seconds with nothing installed. Its own
-      # unit tests run in the Lua tests workflow, with the rest of test/python.
+      # unit tests run in the Lua tests workflow, with the rest of test/build-tools.
       - name: Check links, anchors, translations and nav
         run: python build-tools/docs-check.py
 
@@ -53,7 +53,7 @@ jobs:
       - name: Test the gate, including against the real slugifier
         run: |
           python -c "import pymdownx.slugs"
-          python -m unittest discover -s test/python -p "test_docs_check.py"
+          python test/common/run.py test/build-tools docs_check
 
       # `--strict` turns mkdocs' own warnings into failures: a nav entry with no page, a relative
       # link with no target, and — because `mkdocs.yml` raises `validation.links.anchors` to

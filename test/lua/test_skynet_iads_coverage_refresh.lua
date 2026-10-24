@@ -11,7 +11,7 @@
 --- sweep that blindly re-applies setToCorrectAutonomousState() darkens the whole network
 --- every ten seconds, and a site that relights on the next cycle hides that in play.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

@@ -116,13 +116,13 @@ Append a `Check` to `CHECKS` in `build-tools/run-smoke.py`. Four things it must 
    string — indistinguishable from nil, from a crash, and from success. Tracked upstream as
    [VEAF/VEAF-dcs-bridge#35](https://github.com/VEAF/VEAF-dcs-bridge/issues/35), which proves all
    four cases against a live DCS. VMCT paid for the same lesson twice and CTLD reached the same rule
-   independently. `test/python/test_run_smoke.py` sweeps every
+   independently. `test/build-tools/test_run_smoke.py` sweeps every
    expectation against the empty string and fails the build if one of them would accept it; it
    caught exactly this defect in `artifact-loaded` while that check was being written.
 3. **A `why` worth reading on the day it fails**, because that is the only day it is read.
 4. **A tier.** If it waits on an aircraft, it is `slow`.
 
-Then run `python -m unittest discover -s test/python`, which covers the runner's own logic — never a
+Then run `python test/common/run.py test/build-tools`, which covers the runner's own logic — never a
 real DCS.
 
 ## What does not belong here

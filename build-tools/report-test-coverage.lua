@@ -5,7 +5,7 @@
 ---
 --- It reads the stats the suite merged into luacov.stats.out; it does not run anything. So it
 --- reports whatever that file holds, and the run has to come first, every time:
----   SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+---   SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua
 ---   lua5.1 build-tools/report-test-coverage.lua
 ---
 --- Reporting without re-running measures the previous run. Worse, luacov *adds* to an existing
@@ -79,7 +79,7 @@ local reportFile = config.reportfile
 local stats = io.open(statsFile, "r")
 if not stats then
   fail("no " .. statsFile .. " in " .. (os.getenv("PWD") or "the working directory") .. ".\n"
-    .. "  Run the suite first: SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua")
+    .. "  Run the suite first: SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua")
 end
 stats:close()
 

@@ -2,8 +2,8 @@
 --- dcs-hotload; here hotload, the mission table and the coalition are stubbed, and the scenarios
 --- are the tiny ones in insim-fixtures/.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../lua/dcs-stub.lua")
 
 local fixtures = base .. "/insim-fixtures"
 

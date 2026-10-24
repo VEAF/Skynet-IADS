@@ -10,7 +10,7 @@
 -- and writes a plausible one. These tests are the ones that would catch that.
 
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 
 local figures = dofile(base .. "/dcs-figures.lua")
 

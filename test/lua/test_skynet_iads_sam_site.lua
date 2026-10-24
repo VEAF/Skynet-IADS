@@ -9,7 +9,7 @@
 --- the fixture radar range (dcs-fixtures RADAR_RANGE_M = 120000 m) with the
 --- arithmetic shown in a comment; positions are adjusted, never the assertions.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

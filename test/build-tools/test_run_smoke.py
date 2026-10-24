@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python -m unittest discover -s test/python
+    python -m unittest discover -s test/build-tools
 
 There is no simulator here and there never will be, so what is testable is everything around the
 simulator: how a reply is read, when a check is skipped, how a polled check reaches a verdict, and

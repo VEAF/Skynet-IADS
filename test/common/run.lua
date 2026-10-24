@@ -1,5 +1,6 @@
---- Discover and run every test/lua/test_*.lua as a child process, aggregating
---- exit codes.  Usage:  lua run.lua [filenameSubstring]
+--- Discover and run every test_*.lua of the given folders as a child process, aggregating
+--- exit codes.  Usage:  lua run.lua [folder...] [filenameSubstring]
+--- An argument holding a path separator is a folder; with none, every suite folder runs.
 
 assert(_VERSION == "Lua 5.1", "run.lua: needs Lua 5.1 (DCS runtime); got " .. _VERSION)
 
@@ -7,7 +8,18 @@ local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 local sep = package.config:sub(1, 1) -- "\" on Windows, "/" elsewhere
 local isWindows = (sep == "\\")
 local interp = arg[-1] or "lua"
-local filter = arg[1]
+local folders = {}
+local filter
+for _, a in ipairs(arg) do
+	if a:find("[\\/]") then
+		folders[#folders + 1] = (a:gsub("[\\/]+$", ""))
+	else
+		filter = a
+	end
+end
+if #folders == 0 then
+	folders = { base .. "/../lua", base .. "/../insim-tools" }
+end
 
 -- SKYNET_TEST_COVERAGE=1 makes every child load luacov. Each one merges its counts into
 -- luacov.stats.out in the working directory rather than overwriting it, which is what makes
@@ -28,12 +40,12 @@ if coverage and coverage ~= "" and coverage ~= "0" then
 	os.remove("luacov.report.out")
 end
 
-local function listSuites()
+local function listSuites(folder)
 	local cmd
 	if isWindows then
-		cmd = 'dir /b "' .. base .. '\\test_*.lua"'
+		cmd = 'dir /b "' .. folder .. '\\test_*.lua"'
 	else
-		cmd = 'ls -1 "' .. base .. '"/test_*.lua'
+		cmd = 'ls -1 "' .. folder .. '"/test_*.lua'
 	end
 	local names = {}
 	local p = assert(io.popen(cmd))
@@ -50,21 +62,26 @@ local function listSuites()
 	return names
 end
 
-local suites = listSuites()
+local suites = {}
+for _, folder in ipairs(folders) do
+	for _, name in ipairs(listSuites(folder)) do
+		suites[#suites + 1] = { name = name, target = folder .. sep .. name }
+	end
+end
 if #suites == 0 then
 	if filter then
 		print("run.lua: no suites match '" .. filter .. "'")
 		os.exit(0)
 	end
-	print("run.lua: no suites found in " .. base)
+	print("run.lua: no suites found in " .. table.concat(folders, ", "))
 	os.exit(1)
 end
 
 local failed = {}
-for _, name in ipairs(suites) do
+for _, suite in ipairs(suites) do
+	local name, target = suite.name, suite.target
 	print("\n--- " .. name .. " ---")
 	io.stdout:flush()
-	local target = base .. sep .. name
 	local cmd
 	if isWindows then
 		-- cmd.exe strips one leading+trailing quote pair from the whole string,

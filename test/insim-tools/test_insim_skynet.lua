@@ -1,11 +1,11 @@
 --- insim-skynet.lua: the Skynet layer of the in-sim suite (test/insim/). It runs in DCS under
 --- dcs-hotload; here hotload is stubbed, Skynet is the real source and the groups are stubs.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../lua/dcs-stub.lua")
+local loader = dofile(base .. "/../lua/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../lua/dcs-fixtures.lua")
 
 Hotload = {
 	root = base .. "/no-such-hotload-root",

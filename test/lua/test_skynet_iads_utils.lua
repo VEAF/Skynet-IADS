@@ -2,7 +2,7 @@
 --- replacement for the ~13 helpers Skynet used to borrow from MiST. Replaces
 --- the old test_mist_stub.lua (mist-stub.lua is deleted).
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.load("skynet-iads-utils")

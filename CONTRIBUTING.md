@@ -17,11 +17,11 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 
 - **Lua 5.1.** The deliverable runs inside DCS, which is Lua 5.1 — no `goto`, no `<const>`, no
   `table.move`, no `utf8.*`. The standalone suite refuses to run on anything else. Where `lua5.1` is
-  on `PATH` it is `lua5.1 test/lua/run.lua`; if it is not — common on Windows — install *Lua for
+  on `PATH` it is `lua5.1 test/common/run.lua`; if it is not — common on Windows — install *Lua for
   Windows* and call it by its path, which PowerShell needs the call operator for:
 
   ```powershell
-  & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+  & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
   ```
 
 - **PowerShell**, for the build. `pwsh` (PowerShell 7) works on every platform.
@@ -44,8 +44,11 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `demo-missions/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
 | `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
+| `test/common/` | the machinery the test suites share, whatever their language: today the vendored luaunit and a runner per language, `run.lua` and `run.py` |
 | `unit-tests/` | **deprecated**: the legacy in-sim suites and the dcs-bridge smoke gate, dropped once `test/insim/` covers them — **see its `README.md`** |
 | `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
+| `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
+| `test/build-tools/` | the tests of `build-tools/` |
 | `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
@@ -63,11 +66,11 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `skynet-iads-source/` | kebab-case, `skynet-iads-*.lua` |
 | `build-tools/` | kebab-case |
 | `documentation/` | kebab-case, with an `.en.md` twin |
-| `test/lua/`, `test/python/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
+| `test/lua/`, `test/common/`, `test/insim-tools/`, `test/build-tools/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
 | `.tracker/` | `<type>-<slug>/` for a piece of work, `archive/YYYY-MM-DD-<type>-<slug>/` once archived, lowercase kebab, the types as in *Git flow*; `spec.md` lowercase inside it; `IDEAS.md` uppercase |
 
-The snake_case in the test directories is not an inconsistency: Python cannot import a module whose
-name contains a hyphen, so `test/python/` has no choice, and `test/lua/` mirrors it.
+The snake_case in the test file names is not an inconsistency: Python cannot import a module whose
+name contains a hyphen, so the Python tests have no choice, and the Lua tests mirror them.
 
 Three exceptions:
 
@@ -148,7 +151,7 @@ One rule worth knowing before you get there:
 
 ## Static analysis and formatting
 
-`skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
+`skynet-iads-source/`, `test/lua/`, `test/common/` and `test/insim-tools/` are gated by `luacheck` and `stylua --check`
 (`.github/workflows/lint.yml`). CI runs the same script you do:
 
 ```
@@ -162,7 +165,7 @@ line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.
-`.styluaignore` excludes the vendored `test/lua/luaunit.lua` and the generated
+`.styluaignore` excludes the vendored `test/common/luaunit.lua` and the generated
 `test/lua/dcs-figures.lua`, whose shape belongs to its generator: `stylua --check` run on that path
 directly fails by design.
 
