@@ -11,8 +11,8 @@ suites in `unit-tests/*.miz`.
 
 Where `lua5.1` is on PATH (Linux, macOS, CI):
 
-    lua5.1 test/lua/run.lua                          # all suites
-    lua5.1 test/lua/run.lua contact                  # suites whose filename contains "contact"
+    lua5.1 test/common/run.lua test/lua              # all suites
+    lua5.1 test/common/run.lua test/lua contact      # suites whose filename contains "contact"
     lua5.1 test/lua/test_skynet_iads_contact.lua     # one suite directly
 
 On Windows without `lua5.1` on PATH, use the "Lua for Windows" binary
@@ -21,16 +21,19 @@ On Windows without `lua5.1` on PATH, use the "Lua for Windows" binary
 PowerShell needs the call operator `&` because the command line starts with a
 quoted path:
 
-    & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+    & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua test\lua
 
 cmd.exe takes the quoted path as-is:
 
-    "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+    "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua test\lua
+
+With no folder, `test/common/run.lua` runs these suites and the in-sim tooling's, in
+`test/insim-tools/`.
 
 ## Adding a suite
 
-Create `test/lua/test_<module>.lua`. It pulls in `luaunit.lua` and `dcs-stub.lua`, loads the source
-module through `skynet-loader.lua`, and ends with `os.exit(luaunit.LuaUnit.run())`; `run.lua`
+Create `test/lua/test_<module>.lua`. It pulls in `../common/luaunit.lua` and `dcs-stub.lua`, loads the source
+module through `skynet-loader.lua`, and ends with `os.exit(luaunit.LuaUnit.run())`; `test/common/run.lua`
 discovers it by name and aggregates its exit code. `test_skynet_iads_contact.lua` is the pattern to
 copy.
 
@@ -47,14 +50,14 @@ coverage, and the two never travel alone.
 Run the suite with the hook, then report. Both commands run from the repository
 root, because that is where `.luacov` and the stats file live:
 
-    SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
+    SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua
     lua5.1 build-tools/report-test-coverage.lua
 
 In PowerShell, with the Lua for Windows binary — which already ships `luacov`, so
 there is nothing to install:
 
     $env:SKYNET_TEST_COVERAGE = "1"
-    & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+    & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua test\lua
     & "C:\Program Files (x86)\Lua\5.1\lua.exe" build-tools\report-test-coverage.lua
     Remove-Item Env:\SKYNET_TEST_COVERAGE
 
@@ -360,7 +363,7 @@ A `mission` is Lua, and two tools write it in two different shapes: DCS's own se
 one VEAF's mission editor produces when it re-saves a mission (bare keys, no `-- end of [n]`
 comments, and resource keys that are not `ResKey_Action_NNN`). `skynet-insim-last-line-of-defence.miz`
 is in the second. Every pattern in the tool reads either, and
-`python -m unittest discover -s test/python` covers both — a pattern that matches the wrong block
+`python test/common/run.py test/build-tools` covers both — a pattern that matches the wrong block
 does not raise, it rewrites the wrong trigger and writes the archive.
 
 **CI runs this** (`.github/workflows/lua-tests.yml`, job *Mission archives*): those tests, `check`,
@@ -393,11 +396,9 @@ would only be asking the stub to repeat what the fixture told it:
 
 | File | Purpose |
 |------|---------|
-| `luaunit.lua` | Vendored luaunit 3.4 (upstream, unmodified) |
 | `dcs-stub.lua` | Fake DCS scripting environment + fixture factories; provides `coord`, a controllable `timer.scheduleFunction` for the real `SkynetIADSUtils` scheduler, and recorders for what the code prints — `dcsStub.logs` for `env.*`, `dcsStub.screenText` for `trigger.action.outText` , `dcsStub.radioItems` for `missionCommands` |
 | `dcs-fixtures.lua` | Reusable fixtures — SAM group builders (positioned, coalition-aware, movable), connection nodes, the EW radar builders (a bare unit, or one in a group for prefix discovery) and the AWACS unit builder, hostile aircraft groups, the IADS-contact factory |
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
-| `run.lua` | Discovers and runs every `test_*.lua`, aggregates exit codes |
 | `test_skynet_iads_range_data.lua` | How a battery learns its own range: `setupRangeData` on the search radar and the launcher, and the delegation between them |
 | `test_*.lua` | Test suites — self-contained, self-executing |

@@ -35,7 +35,8 @@ reason to open it. Everything else is there.
 
 ```
 pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
-lua5.1 test/lua/run.lua                              # the standalone suite; a name filters
+lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
+python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
 python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 python test/insim/run.py                             # the in-sim suite; its mission must be open in DCS
@@ -44,7 +45,7 @@ python test/insim/run.py                             # the in-sim suite; its mis
 If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:
 
 ```powershell
-& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
 ```
 
 Run `luacheck` and `stylua` only through `build-tools/lint.sh`: it holds the pinned versions.

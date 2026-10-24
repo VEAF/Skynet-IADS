@@ -202,5 +202,5 @@ What belongs to the suite stays:
 
 ## Tests of the suite itself
 
-The driver is tested without DCS: `python -m unittest discover -s test/python -p "test_insim_*.py"`.
-The mission-side Lua is tested on a stub, in `test/lua/` (`test_insim.lua`, `test_insim_skynet.lua`).
+They are in `test/insim-tools/`, and run without DCS. The driver: `python test/common/run.py test/insim-tools`.
+The mission-side Lua, on a stub: `lua5.1 test/common/run.lua test/insim-tools`.
