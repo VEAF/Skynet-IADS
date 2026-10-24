@@ -21,7 +21,7 @@ jobs:
           sudo apt-get install -y lua5.1
 
       - name: Run the standalone suite
-        run: lua5.1 test/lua/run.lua
+        run: lua5.1 test/common/run.lua
 
       # test/lua/dcs-figures.lua is generated from a pinned commit of the DCS database dump. This
       # regenerates it and fails on any difference, so the committed file cannot claim to come from
@@ -59,7 +59,7 @@ jobs:
       # gate spends its life reporting zero defects, so what proves it still checks anything is a
       # test per defect kind.
       - name: Test the Python tooling
-        run: python3 -m unittest discover -s test/python
+        run: python3 test/common/run.py
 
       - name: Check the wiring, and that git holds no copies
         run: python3 build-tools/miz-suite.py check
@@ -117,7 +117,7 @@ jobs:
       - name: Run the suite under luacov
         env:
           SKYNET_TEST_COVERAGE: 1
-        run: lua5.1 test/lua/run.lua
+        run: lua5.1 test/common/run.lua test/lua
 
       # pipefail matters: without it the pipeline reports tee's status, so a reporter that exits
       # non-zero — below the floor (1), or no measurement at all (2) — would leave the step green.

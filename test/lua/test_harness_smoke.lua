@@ -1,7 +1,7 @@
 --- Smoke test: the vendored luaunit runs, and skynet-loader loads the two
 --- source files the contact pilot needs, populating their globals.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 
 -- Group is the only global the wrapper touches at load time (a sentinel it

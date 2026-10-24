@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python -m unittest discover -s test/python
+    python -m unittest discover -s test/build-tools
 
 A gate that finds nothing is indistinguishable from a gate that checks nothing, and this one spends
 most of its life reporting zero. So each defect kind gets a tree that contains exactly that defect

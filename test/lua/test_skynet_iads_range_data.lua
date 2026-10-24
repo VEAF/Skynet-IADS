@@ -13,7 +13,7 @@
 --- shapes, not missions: a gun with shells and no missiles, a launcher whose two altitude bands
 --- disagree, a radar that sees further low than high. Nothing else would reuse them.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

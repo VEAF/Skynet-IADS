@@ -7,7 +7,7 @@
 --- scenario is the one that was reported — an EW radar covers the site, sees nothing,
 --- and the aircraft is right on top of the battery.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

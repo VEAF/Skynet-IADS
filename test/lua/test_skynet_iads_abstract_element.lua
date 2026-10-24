@@ -7,7 +7,7 @@
 --- tests swap the .miz `trigger.action.explosion(...)` for `<obj>:__destroy()`
 --- and resolve their fixtures via dcs-fixtures.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

@@ -11,7 +11,7 @@
 --- three pass through the same guard in goLive(), and all three are what a player notices.
 --- The state assertions come after, as the narrow unit check.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

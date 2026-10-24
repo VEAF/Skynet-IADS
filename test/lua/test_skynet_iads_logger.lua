@@ -15,7 +15,7 @@
 --- The counters are asserted against a network whose damage is known, and every counter in it
 --- is non-zero on purpose: a printer that always reports zero would pass a presence check.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
 dofile(base .. "/dcs-stub.lua")
 local loader = dofile(base .. "/skynet-loader.lua")
 loader.loadAll()

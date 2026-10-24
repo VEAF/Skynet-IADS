@@ -75,7 +75,8 @@ self = false
 ignore = { "631" }
 
 exclude_files = {
-	"test/lua/luaunit.lua", -- vendored upstream, unmodified
+	"test/common/luaunit.lua", -- vendored upstream, unmodified
+	"test/insim-tools/insim-fixtures/verify/bad-syntax/verify.lua", -- broken on purpose: the judge's test of a syntax error
 }
 
 -- The ratchet: every remaining warning from the first run, pinned to its file and code so a

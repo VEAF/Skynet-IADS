@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python -m unittest discover -s test/python
+    python -m unittest discover -s test/build-tools
 
 The tool edits binary archives, and its whole job is regular expressions over a `mission` that two
 different tools write in two different shapes -- DCS's own serialisation, and the one VEAF's mission

@@ -11,7 +11,7 @@ if not verifyPath or not resultPath then
 end
 
 local here = (arg[0]:gsub("\\", "/")):match("^(.*)/[^/]*$") or "."
-local okUnit, luaunit = pcall(dofile, here .. "/../../lua/luaunit.lua")
+local okUnit, luaunit = pcall(dofile, here .. "/../../common/luaunit.lua")
 if not okUnit then
 	print(luaunit)
 	os.exit(2)
