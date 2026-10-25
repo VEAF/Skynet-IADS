@@ -28,10 +28,12 @@ The demo missions under `demo-missions/` hold a placeholder where the Skynet scr
 |---|---|---|
 | The demos are committed with the script inside | placeholders assembled on demand | a demo opened from a checkout or downloaded from GitHub runs as it is |
 | The script is refreshed on release | on every build | a demo carries the released Skynet, which is what it demonstrates |
+| This lands after `test-port-unit-tests-to-insim` | before it | with the legacy suites gone, `miz-suite.py` handles only the demos |
+
+`test-port-unit-tests-to-insim` drops the smoke gate's checks against the demo mission — `networks-built`, `named-elements-found`, `jammer-alive`, `no-mist` — and leaves them to this work: what the demo builds, carries and depends on. Whether any comes back, and in what form, is decided here.
 
 ## Open
 
-- Whether this lands before or after `test-port-unit-tests-to-insim`: `miz-suite.py` also handles the two in-sim suites under `unit-tests/`. Landing first means `miz-demo-update.py` leaves them alone until that work removes them.
 - What replaces CI's check that a committed demo is not broken.
 
 ## Out of scope
