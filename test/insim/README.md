@@ -38,7 +38,7 @@ The command:
    sources; `--skynet FILE` copies that file instead, and the next default run rebuilds;
 2. prepares the mission DCS opens (see *The mission*);
 3. waits for the mission to answer. If DCS is not running it, it says which file to run:
-   `test/insim/miz/insim01.miz`. **That is the manual step.** Later, if the mission stops answering
+   `test/insim/miz/insim-ca-main.miz`. **That is the manual step.** Later, if the mission stops answering
    while a command is in flight, it says "paused, or DCS is down" and waits: it never concludes
    anything from silence;
 4. checks that the mission runs the Skynet script as it now is on disk. If not, it stops and says to
@@ -82,7 +82,7 @@ scenarios/iads-builds/
 -- scenario.lua
 return {
 	tier = "minimal",   -- "minimal" or "full"; omit it and the scenario runs only by name
-	mission = "insim01",
+	mission = "insim-ca-main",
 	timeout = 120,      -- sim seconds, for each phase command: setup, run, teardown, cleanup
 }
 ```
@@ -169,12 +169,12 @@ would keep any tier from exiting 0.
 
 `test/insim/miz/` holds two files per mission:
 
-- `insim01.template.miz`, committed, is the reference. **It is edited in the Mission Editor**, never
+- `insim-ca-main.template.miz`, committed, is the reference. **It is edited in the Mission Editor**, never
   by hand in the archive. It holds a placeholder where the absolute path of hotload goes.
-- `insim01.miz`, git-ignored, is the working copy DCS opens. `run.py` writes it before every run:
+- `insim-ca-main.miz`, git-ignored, is the working copy DCS opens. `run.py` writes it before every run:
   when it is missing, when the template has changed, or when the checkout has moved. Do not edit it.
 
-Scenarios name their mission (`mission = "insim01"`); a mission is known by its sortie name. The
+Scenarios name their mission (`mission = "insim-ca-main"`); a mission is known by its sortie name. The
 driver runs the scenarios of the mission DCS is running, and lists the others as skipped, naming the
 mission they need.
 

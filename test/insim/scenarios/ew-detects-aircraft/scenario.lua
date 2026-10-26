@@ -1,5 +1,5 @@
 return {
-	mission = "insim01",
+	mission = "insim-ca-main",
 	tier = "minimal",
 	timeout = 180,
 }
