@@ -27,6 +27,15 @@ IADS_BUILDS = {
     "awacs": {"nato": "A-50", "workingRadar": True, "awacs": True},
 }
 
+NETWORK = {name: {"held": True, "autonomous": True} for name in (
+    "samConnectionNode", "ewConnectionNode", "ewPowerSource", "ewDestroyed",
+    "commandCentre", "commandCentrePower", "commandCentreNode")}
+
+MUNITIONS = {
+    "bomb": {"torM2": [False, True, False], "sa10": [False], "sa6": [False]},
+    "missile": {"torM2": [False, True, False], "sa10": [False, True, False], "sa6": [False]},
+}
+
 CASES = {
     "iads-builds": [
         ("as built", IADS_BUILDS, True),
@@ -37,6 +46,54 @@ CASES = {
         ("SA-8 without its launcher", dict(IADS_BUILDS, sa8=dict(IADS_BUILDS["sa8"], launchers=0)), False),
         ("1L13 radar not working", dict(IADS_BUILDS, ew1l13=dict(IADS_BUILDS["ew1l13"], workingRadar=False)), False),
         ("A-50 not read as an AWACS", dict(IADS_BUILDS, awacs=dict(IADS_BUILDS["awacs"], awacs=False)), False),
+    ],
+    "sam-engages": [
+        ("woke, fired, slept", {"active": [False, True, False], "firing": [False, True, False]}, True),
+        ("never woke", {"active": [False], "firing": [False]}, False),
+        ("woke and stayed live", {"active": [False, True], "firing": [False, True]}, False),
+        ("raised and lowered every cycle", {"active": [False, True, False, True, False], "firing": [False, True, False]}, False),
+        ("woke without firing", {"active": [False, True, False], "firing": [False]}, False),
+    ],
+    "sam-loses-power": [
+        ("dark and unusable", {"powerLost": True, "dark": True, "usable": 0}, True),
+        ("the event never arrived", {"powerLost": True, "dark": False, "usable": 0}, False),
+        ("still usable", {"powerLost": True, "dark": True, "usable": 1}, False),
+        ("power still counted", {"powerLost": False, "dark": True, "usable": 0}, False),
+    ],
+    "network-loses-infrastructure": [
+        ("every case held, then autonomous", NETWORK, True),
+        ("a case never held", dict(NETWORK, ewPowerSource={"held": False, "autonomous": True}), False),
+        ("a case never autonomous", dict(NETWORK, commandCentreNode={"held": True, "autonomous": False}), False),
+        ("a case missing", {k: v for k, v in NETWORK.items() if k != "ewDestroyed"}, False),
+    ],
+    "autonomous-site-engages": [
+        ("live and fired", {"liveFirst": True, "active": [True], "firing": [False, True]}, True),
+        ("dark at the start", {"liveFirst": False, "active": [False, True], "firing": [False, True]}, False),
+        ("never fired", {"liveFirst": True, "active": [True], "firing": [False]}, False),
+    ],
+    "harm-defence": [
+        ("silenced and back", {"active": [True, False, True], "harm": [False, True, False]}, True),
+        ("never silenced", {"active": [True], "harm": [False, True]}, False),
+        ("never back", {"active": [True, False], "harm": [False, True]}, False),
+        ("no HARM identified", {"active": [True, False, True], "harm": [False]}, False),
+    ],
+    "harm-point-defence": [
+        ("site live, point defence engaged", {"site": [True], "pointDefence": [False, True, False], "harm": [False, True, False]}, True),
+        ("site silenced", {"site": [True, False, True], "pointDefence": [False, True, False], "harm": [False, True]}, False),
+        ("point defence never woke", {"site": [True], "pointDefence": [False], "harm": [False, True]}, False),
+        ("no HARM identified", {"site": [True], "pointDefence": [False, True, False], "harm": [False]}, False),
+    ],
+    "munitions-wake-sites": [
+        ("each site as it can engage", MUNITIONS, True),
+        ("every site wakes for a bomb", dict(MUNITIONS, bomb={"torM2": [False, True, False], "sa10": [False, True, False], "sa6": [False, True, False]}), False),
+        ("the SA-10 sleeps through a missile", dict(MUNITIONS, missile=dict(MUNITIONS["missile"], sa10=[False])), False),
+        ("the Tor M2 sleeps through a bomb", dict(MUNITIONS, bomb=dict(MUNITIONS["bomb"], torM2=[False])), False),
+        ("the SA-6 wakes for a missile", dict(MUNITIONS, missile=dict(MUNITIONS["missile"], sa6=[False, True, False])), False),
+    ],
+    "coverage-follows-awacs": [
+        ("held, then handed back", {"autonomous": [False, True]}, True),
+        ("never held", {"autonomous": [True]}, False),
+        ("never handed back", {"autonomous": [False]}, False),
     ],
     "ew-detects-aircraft": [
         ("detected", {"detected": True}, True),
