@@ -59,13 +59,39 @@ end
 local Context = {}
 Context.__index = Context
 
-function Context:add(role)
-	local fixtureName = "FIXTURE-" .. self.name .. "-" .. role
+-- Moves a copied group so that its first unit stands on the zone's centre, its route with it.
+local function moveIntoZone(group, zone)
+	local dx = zone.point.x - group.units[1].x
+	local dy = zone.point.z - group.units[1].y
+	for _, unit in ipairs(group.units) do
+		unit.x, unit.y = unit.x + dx, unit.y + dy
+	end
+	for _, point in ipairs(group.route and group.route.points or {}) do
+		point.x, point.y = point.x + dx, point.y + dy
+	end
+end
+
+-- The scenario's own fixture `FIXTURE-<scenario>-<role>` if the mission has one, else the
+-- catalogue's `FIXTURE-<role>`, copied as `<scenario>/<role>`; into `zoneName` when given.
+function Context:add(role, zoneName)
+	local ownName = "FIXTURE-" .. self.name .. "-" .. role
+	local fixtureName = ownName
 	local fixture, countryId, category = findFixture(fixtureName)
 	if not fixture then
-		self.invalid("no fixture " .. fixtureName .. " in the mission")
+		fixtureName = "FIXTURE-" .. role
+		fixture, countryId, category = findFixture(fixtureName)
+	end
+	if not fixture then
+		self.invalid("no fixture " .. ownName .. " or " .. fixtureName .. " in the mission")
 	end
 	local group = deepCopy(fixture)
+	if zoneName then
+		local zone = trigger.misc.getZone(zoneName)
+		if not zone then
+			self.invalid("no zone " .. zoneName .. " in the mission")
+		end
+		moveIntoZone(group, zone)
+	end
 	local scoped = self.name .. "/" .. role
 	group.name = scoped
 	group.lateActivation = false
@@ -85,6 +111,12 @@ function Context:add(role)
 	if object == nil then
 		self.invalid(fixtureName .. " did not spawn")
 	end
+	table.insert(self.added, object)
+	return object
+end
+
+-- Something the scenario spawned itself, for cleanup to destroy with what `add` spawned.
+function Context:track(object)
 	table.insert(self.added, object)
 	return object
 end
