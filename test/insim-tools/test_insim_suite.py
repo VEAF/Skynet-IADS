@@ -82,6 +82,11 @@ class ChainTest(unittest.TestCase):
         v, _ = run_with({"s/setup": Outcome("fail", error="INSIM-INVALID: no SAM")})
         self.assertEqual((v.verdict, v.message), ("invalid", "no SAM"))
 
+    def test_invalid_mark_inside_the_error(self):
+        # hotload prefixes an error raised inside a waitFor predicate
+        v, _ = run_with({"s/setup": Outcome("fail", error='[string "x"]:3: INSIM-INVALID: no zone ZONE-X')})
+        self.assertEqual((v.verdict, v.message), ("invalid", "no zone ZONE-X"))
+
     def test_invalid_mark_from_run(self):
         v, _ = run_with({"s/run": Outcome("fail", error="INSIM-INVALID: no radar")})
         self.assertEqual((v.verdict, v.message), ("invalid", "no radar"))

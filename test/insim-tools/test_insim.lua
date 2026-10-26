@@ -192,8 +192,17 @@ function TestInsim:testAddStaticUsesTheUnitTable()
 	luaunit.assertEquals(s.countryId, 2)
 end
 
-function TestInsim:testMissingFixtureRaises()
-	luaunit.assertErrorMsgContains("no fixture FIXTURE-missing-NOPE in the mission", I.phase, "missing", "setup")
+function TestInsim:testMissingFixtureIsInvalid()
+	local _, err = pcall(I.phase, "missing", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: no fixture FIXTURE-missing-NOPE")
+end
+
+function TestInsim:testSpawnReturningNilIsInvalid()
+	coalition.addGroup = function()
+		return nil
+	end
+	local _, err = pcall(I.phase, "adds", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: FIXTURE-adds-SAM did not spawn")
 end
 
 function TestInsim:testCleanupDestroysThenCallsCleanupsInReverse()

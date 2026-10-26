@@ -63,7 +63,7 @@ function Context:add(role)
 	local fixtureName = "FIXTURE-" .. self.name .. "-" .. role
 	local fixture, countryId, category = findFixture(fixtureName)
 	if not fixture then
-		error("no fixture " .. fixtureName .. " in the mission")
+		self.invalid("no fixture " .. fixtureName .. " in the mission")
 	end
 	local group = deepCopy(fixture)
 	local scoped = self.name .. "/" .. role
@@ -81,6 +81,9 @@ function Context:add(role)
 		object = coalition.addStaticObject(countryId, group.units[1])
 	else
 		object = coalition.addGroup(countryId, Group.Category[GROUP_CATEGORY[category]], group)
+	end
+	if object == nil then
+		self.invalid(fixtureName .. " did not spawn")
 	end
 	table.insert(self.added, object)
 	return object

@@ -142,8 +142,9 @@ def _failure(name, outcome):
     error = outcome.error or outcome.status
     if outcome.status == "crashed":
         return Verdict(name, "crashed", error)
-    if outcome.error and outcome.error.startswith(INVALID):
-        return Verdict(name, "invalid", outcome.error[len(INVALID) :])
+    mark = outcome.error.find(INVALID) if outcome.error else -1
+    if mark >= 0:  # anywhere: hotload prefixes an error raised inside a waitFor predicate
+        return Verdict(name, "invalid", outcome.error[mark + len(INVALID) :])
     return Verdict(name, "fail", error)
 
 
