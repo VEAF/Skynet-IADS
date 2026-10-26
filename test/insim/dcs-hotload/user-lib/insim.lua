@@ -118,6 +118,14 @@ end
 function I.phase(name, phase)
 	local dir = I.scenariosDir() .. "/" .. name
 	if phase == "setup" then
+		-- A context left by a run aborted earlier in this mission session still holds its units
+		-- and its IADS: they go before the new run starts.
+		if InsimState.contexts[name] then
+			local ok, message = pcall(I.cleanup, name)
+			if not ok then
+				error("an older run of " .. name .. " could not be cleaned up: " .. tostring(message), 0)
+			end
+		end
 		local scenario = assert(loadfile(dir .. "/scenario.lua"))()
 		InsimState.contexts[name] = newContext(name, scenario.mission)
 	end

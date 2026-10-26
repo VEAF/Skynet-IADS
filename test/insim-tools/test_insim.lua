@@ -144,11 +144,18 @@ function TestInsim:testTeardownWithoutSetupRaises()
 	luaunit.assertErrorMsgContains("setup did not run", I.phase, "carry", "teardown")
 end
 
-function TestInsim:testSetupReplacesAnOlderContext()
-	I.phase("carry", "setup")
-	local first = InsimState.contexts.carry
-	I.phase("carry", "setup")
-	luaunit.assertNotIs(InsimState.contexts.carry, first)
+function TestInsim:testSetupCleansUpAnOlderContext()
+	I.phase("cleans", "setup")
+	local first = InsimState.contexts.cleans
+	I.phase("cleans", "setup")
+	luaunit.assertNotIs(InsimState.contexts.cleans, first)
+	luaunit.assertEquals(first.state.order, { "B", "A" })
+	luaunit.assertEquals(destroyedNames, { "cleans/SAM", "cleans/DEPOT" })
+end
+
+function TestInsim:testSetupRefusesAnOlderContextItCannotClean()
+	I.phase("cleanfail", "setup")
+	luaunit.assertErrorMsgContains("an older run of cleanfail could not be cleaned up", I.phase, "cleanfail", "setup")
 end
 
 function TestInsim:testInvalidRaisesTheMark()
