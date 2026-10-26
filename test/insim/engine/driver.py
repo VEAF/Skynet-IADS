@@ -62,7 +62,7 @@ def read_outcome(entry):
 
 
 class Driver:
-    def __init__(self, mailbox, journal, probe_code='return Hotload.load("insim").status()', clock=time.monotonic, sleep=time.sleep, say=print):
+    def __init__(self, mailbox, journal, probe_code, clock=time.monotonic, sleep=time.sleep, say=print):
         self.mailbox = mailbox
         self.journal = Path(journal)
         self.probe_code = probe_code

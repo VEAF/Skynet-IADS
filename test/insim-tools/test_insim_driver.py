@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
 from engine import driver, mailbox  # noqa: E402
 
 
+PROBE = 'return Hotload.load("insim").status()'
+
 class FakeMission:
     """The Mailbox interface in memory, plus a sim clock and a few scripted commands."""
 
@@ -126,7 +128,7 @@ class DriverTest(unittest.TestCase):
         self.d = self.make()
 
     def make(self):
-        return driver.Driver(self.fake, self.journal, clock=self.fake.clock, sleep=self.fake.sleep, say=self.said.append)
+        return driver.Driver(self.fake, self.journal, PROBE, clock=self.fake.clock, sleep=self.fake.sleep, say=self.said.append)
 
     def test_done_command(self):
         o = self.d.run("a/setup", "a-setup", "return 1", 60)
@@ -202,9 +204,13 @@ class DriverTest(unittest.TestCase):
         for name in ("probe-1", "stop-2", "a-run-3"):
             box.send(name, "x")
             (root / "user-outbox" / (name + ".lua")).write_text("return {}")
-        driver.Driver(box, self.journal)
+        driver.Driver(box, self.journal, PROBE)
         self.assertEqual(os.listdir(root / "user-inbox"), ["a-run-3.lua"])
         self.assertEqual(os.listdir(root / "user-outbox"), ["a-run-3.lua"])
+
+    def test_the_probe_is_the_callers(self):
+        with self.assertRaises(TypeError):
+            driver.Driver(self.fake, self.journal)
 
     def test_status_none_when_unanswered_and_probe_cleared(self):
         self.fake.pause_for(1000)

@@ -205,7 +205,7 @@ class RealJournalTest(unittest.TestCase):
 
     def driver(self):
         m = self.mission
-        return Driver(m, self.journal, clock=m.clock, sleep=m.sleep, say=lambda text: None)
+        return Driver(m, self.journal, 'return Hotload.load("insim").status()', clock=m.clock, sleep=m.sleep, say=lambda text: None)
 
     def resume(self):
         self.mission.sent_names.clear()
@@ -327,6 +327,22 @@ class FolderTest(unittest.TestCase):
         (self.folder / "a" / "scenario.lua").write_text('--[[\nnote\n]]\nreturn { mission = "m1", timeout = 3 }\n', encoding="utf-8")
         with self.assertRaisesRegex(suite.SuiteError, "a.*scenario.lua"):
             suite.discover(self.folder)
+
+    def test_names_the_driver_uses_are_refused(self):
+        for name in ("probe-x", "stop-x"):
+            with self.subTest(name=name):
+                self.make(name)
+                with self.assertRaisesRegex(suite.SuiteError, name + ": a scenario name may not"):
+                    suite.discover(self.folder)
+                (self.folder / name / "scenario.lua").unlink()
+                for f in ("setup", "run", "verify"):
+                    (self.folder / name / (f + ".lua")).unlink()
+                (self.folder / name).rmdir()
+
+    def test_a_quote_in_a_name_is_refused(self):
+        # no file system on Windows takes the name, so the check is called directly
+        with self.assertRaisesRegex(suite.SuiteError, 'a"b: a scenario name may not'):
+            suite.check_name('a"b')
 
     def test_plain_files_are_ignored(self):
         self.make("a")
