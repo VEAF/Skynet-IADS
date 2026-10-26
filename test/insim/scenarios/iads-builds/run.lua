@@ -19,7 +19,11 @@ local function radar(role)
 	if not e then
 		return "absent"
 	end
-	return { nato = e:getNatoName(), workingRadar = e:hasWorkingRadar(), awacs = getmetatable(e) == SkynetIADSAWACSRadar }
+	return {
+		nato = e:getNatoName(),
+		workingRadar = e:hasWorkingRadar(),
+		awacs = getmetatable(e) == SkynetIADSAWACSRadar,
+	}
 end
 
 local names = {}
