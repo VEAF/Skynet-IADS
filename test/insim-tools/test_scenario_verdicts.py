@@ -16,10 +16,27 @@ from engine import verify  # noqa: E402
 
 SCENARIOS = Path(ROOT) / "test" / "insim" / "scenarios"
 
+IADS_BUILDS = {
+    "sam": 3,
+    "ew": 3,
+    "samNames": ["iads-builds/SAM-SA10", "iads-builds/SAM-SA6", "iads-builds/SAM-SA8"],
+    "sa10": {"nato": "SA-10", "launchers": 2, "searchRadars": 1, "trackingRadars": 1},
+    "sa8": {"nato": "SA-8", "launchers": 1, "searchRadars": 1, "trackingRadars": 0},
+    "sa6": {"nato": "SA-6", "launchers": 2, "searchRadars": 1, "trackingRadars": 0},
+    "ew1l13": {"nato": "Box Spring", "workingRadar": True, "awacs": False},
+    "awacs": {"nato": "A-50", "workingRadar": True, "awacs": True},
+}
+
 CASES = {
     "iads-builds": [
-        ("one site and one radar", {"sam": 1, "ew": 1}, True),
-        ("no site", {"sam": 0, "ew": 1}, False),
+        ("as built", IADS_BUILDS, True),
+        ("the static taken as a site", dict(IADS_BUILDS, samNames=IADS_BUILDS["samNames"] + ["iads-builds/SAM-STATIC"]), False),
+        ("the group of trucks taken as a site", dict(IADS_BUILDS, samNames=["iads-builds/SAM-NOTSAM"] + IADS_BUILDS["samNames"]), False),
+        ("a radar missing", dict(IADS_BUILDS, ew=2), False),
+        ("SA-10 without its tracking radar", dict(IADS_BUILDS, sa10=dict(IADS_BUILDS["sa10"], trackingRadars=0)), False),
+        ("SA-8 without its launcher", dict(IADS_BUILDS, sa8=dict(IADS_BUILDS["sa8"], launchers=0)), False),
+        ("1L13 radar not working", dict(IADS_BUILDS, ew1l13=dict(IADS_BUILDS["ew1l13"], workingRadar=False)), False),
+        ("A-50 not read as an AWACS", dict(IADS_BUILDS, awacs=dict(IADS_BUILDS["awacs"], awacs=False)), False),
     ],
     "ew-detects-aircraft": [
         ("detected", {"detected": True}, True),
