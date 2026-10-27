@@ -95,6 +95,11 @@ CASES = {
         ("never held", {"autonomous": [True]}, False),
         ("never handed back", {"autonomous": [False]}, False),
     ],
+    "last-line-of-defence": [
+        ("lit, then quiet", {"active": [False, True, False], "radius": 12000}, True),
+        ("never lit", {"active": [False], "radius": 12000}, False),
+        ("lit and never quiet", {"active": [False, True], "radius": 12000}, False),
+    ],
     "ew-detects-aircraft": [
         ("detected", {"detected": True}, True),
         ("never detected", {"detected": False}, False),
