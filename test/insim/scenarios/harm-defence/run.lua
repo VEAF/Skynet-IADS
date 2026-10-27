@@ -43,5 +43,8 @@ if not watch:waitFor("active", { true }, 30) then
 end
 local shots = attack()
 watch:waitFor("active", { true, false, true }, 390)
+-- Watched on for a while after the first match: the sequence must still be exactly this once the
+-- site has had time to flap or wake again, which a snapshot at the match could not show.
+Hotload.wait(30)
 firedOrInvalid(shots)
 return watch:report()

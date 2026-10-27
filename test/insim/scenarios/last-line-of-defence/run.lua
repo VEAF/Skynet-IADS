@@ -36,6 +36,9 @@ Wd.spawnAircraft(ctx, {
 	ignoreThreats = true,
 })
 watch:waitFor("active", { false, true, false }, 600)
+-- Watched on for a while after the first match: the sequence must still be exactly this once the
+-- site has had time to flap or wake again, which a snapshot at the match could not show.
+Hotload.wait(30)
 local report = watch:report()
 report.radius = radius
 return report

@@ -76,6 +76,7 @@ CASES = {
         ("never silenced", {"active": [True], "harm": [False, True]}, False),
         ("never back", {"active": [True, False], "harm": [False, True]}, False),
         ("no HARM identified", {"active": [True, False, True], "harm": [False]}, False),
+        ("flapped after coming back", {"active": [True, False, True, False, True], "harm": [False, True, False]}, False),
     ],
     "harm-point-defence": [
         ("site live, point defence engaged", {"site": [True], "pointDefence": [False, True, False], "harm": [False, True, False]}, True),
@@ -99,6 +100,7 @@ CASES = {
         ("lit, then quiet", {"active": [False, True, False], "radius": 12000}, True),
         ("never lit", {"active": [False], "radius": 12000}, False),
         ("lit and never quiet", {"active": [False, True], "radius": 12000}, False),
+        ("lit again after going quiet", {"active": [False, True, False, True], "radius": 12000}, False),
     ],
     "ew-detects-aircraft": [
         ("detected", {"detected": True}, True),
