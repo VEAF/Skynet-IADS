@@ -127,6 +127,16 @@ function TestInsimWorld:testSpawnBuildsAScopedGroupOnTwoWaypoints()
 	luaunit.assertIs(ctx.tracked[1], group)
 end
 
+function TestInsimWorld:testAViaPointCarriesTheTasksJustAfterTheStart()
+	Wd.spawnAircraft(fakeContext("s"), spec({ via = { x = 2000, y = 0 }, waypointTasks = { { id = "AttackGroup" } } }))
+	local points = spawned.group.route.points
+	luaunit.assertEquals(#points, 3)
+	luaunit.assertEquals({ points[2].x, points[2].y }, { 2000, 0 })
+	luaunit.assertEquals(points[2].task.params.tasks, { { id = "AttackGroup" } })
+	luaunit.assertEquals({ points[3].x, points[3].y }, { 40000, 0 })
+	luaunit.assertEquals(points[3].task.params.tasks, {})
+end
+
 function TestInsimWorld:testSpawnHeadsForItsSecondWaypoint()
 	Wd.spawnAircraft(fakeContext("s"), spec({ to = { x = 0, y = 40000 } }))
 	luaunit.assertAlmostEquals(spawned.group.units[1].heading, math.pi / 2, 1e-6)
@@ -163,6 +173,76 @@ function TestInsimWorld:testSpawnWithoutAPayloadIsRefused()
 	local s = spec()
 	s.payload = nil
 	luaunit.assertErrorMsgContains("payload", Wd.spawnAircraft, fakeContext("s"), s)
+end
+
+local function namedObject(name)
+	return {
+		getName = function()
+			return name
+		end,
+		getTypeName = function()
+			return name
+		end,
+	}
+end
+
+function TestInsimWorld:testRecordShotsKeepsWhoFiredWhatUntilCleanup()
+	local handlers = {}
+	world.addEventHandler = function(h)
+		handlers[h] = true
+	end
+	world.removeEventHandler = function(h)
+		handlers[h] = nil
+	end
+	local cleanups = {}
+	local ctx = fakeContext("s")
+	function ctx:onCleanup(fn)
+		table.insert(cleanups, fn)
+	end
+	local shots = Wd.recordShots(ctx)
+	local handler = next(handlers)
+	handler:onEvent({
+		id = world.event.S_EVENT_SHOT,
+		initiator = namedObject("s/ATTACKER-1"),
+		weapon = namedObject("AGM_88"),
+	})
+	handler:onEvent({ id = world.event.S_EVENT_DEAD, initiator = namedObject("x") })
+	luaunit.assertEquals(shots, { { initiator = "s/ATTACKER-1", weapon = "AGM_88" } })
+	cleanups[1]()
+	luaunit.assertNil(next(handlers))
+end
+
+function TestInsimWorld:testAttackTaskTargetsTheGroupWithTheWeapon()
+	Group.getByName = function(name)
+		return name == "s/SAM-SA6" and {
+			getID = function()
+				return 42
+			end,
+		} or nil
+	end
+	local task = Wd.attackTask("s/SAM-SA6", 32768)
+	luaunit.assertEquals(task.id, "AttackGroup")
+	luaunit.assertEquals(task.params.groupId, 42)
+	luaunit.assertEquals(task.params.weaponType, 32768)
+	luaunit.assertEquals(task.params.expend, "All")
+end
+
+function TestInsimWorld:testAttackTaskOnAMissingGroupIsInvalid()
+	Group.getByName = function()
+		return nil
+	end
+	local _, err = pcall(Wd.attackTask, "s/NOPE", 14)
+	luaunit.assertStrContains(err, "INSIM-INVALID: no group s/NOPE to attack")
+end
+
+function TestInsimWorld:testFiredCountsTheShotsOfOneAircraft()
+	local shots = {
+		{ initiator = "s/ATTACKER-1", weapon = "AGM_88" },
+		{ initiator = "s/SAM-SA6-2", weapon = "SA3M9M" },
+		{ initiator = "s/ATTACKER-1", weapon = "AGM_88" },
+	}
+	luaunit.assertEquals(Wd.fired(shots, "s/ATTACKER-1"), 2)
+	luaunit.assertEquals(Wd.fired(shots, "s/OTHER-1"), 0)
 end
 
 function TestInsimWorld:testClearWrecksSweepsTheZoneOnTheGround()
