@@ -175,6 +175,31 @@ function TestInsim:testSetupCleansUpAnOlderContext()
 	luaunit.assertEquals(destroyedNames, { "cleans/SAM", "cleans/DEPOT" })
 end
 
+-- Runs fn as hotload runs a command: in a coroutine, with Hotload.callOnMain a yield the runner
+-- answers. Lua 5.1 cannot yield across pcall, so code that wraps callOnMain in pcall raises here as
+-- it does in DCS.
+local function asHotloadRun(fn, ...)
+	local saved = Hotload.callOnMain
+	Hotload.callOnMain = function(f)
+		return coroutine.yield({ kind = "main", fn = f })
+	end
+	local co = coroutine.create(fn)
+	local results = { coroutine.resume(co, ...) }
+	while coroutine.status(co) ~= "dead" do
+		results = { coroutine.resume(co, pcall(results[2].fn)) }
+	end
+	Hotload.callOnMain = saved
+	return unpack(results)
+end
+
+function TestInsim:testSetupCleansUpAnOlderContextInAHotloadRun()
+	asHotloadRun(I.phase, "cleans", "setup")
+	local first = InsimState.contexts.cleans
+	local ok, err = asHotloadRun(I.phase, "cleans", "setup")
+	luaunit.assertTrue(ok, tostring(err))
+	luaunit.assertEquals(first.state.order, { "B", "A" })
+end
+
 function TestInsim:testSetupRefusesAnOlderContextItCannotClean()
 	I.phase("cleanfail", "setup")
 	luaunit.assertErrorMsgContains("an older run of cleanfail could not be cleaned up", I.phase, "cleanfail", "setup")

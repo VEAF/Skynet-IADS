@@ -148,15 +148,42 @@ function I.scenariosDir()
 	return InsimState.scenariosDir or (Hotload.root .. "/../scenarios")
 end
 
+-- Destroys what the scenario's context added and calls its cleanups, last registered first.
+-- Returns the counts and the failures, as values: callers must not pcall it.
+local function cleanContext(name)
+	local ctx = InsimState.contexts[name]
+	if not ctx then
+		return { destroyed = 0, cleanups = 0 }, {}
+	end
+	InsimState.contexts[name] = nil
+	local destroyed = 0
+	for _, object in ipairs(ctx.added) do
+		if object:isExist() then
+			object:destroy()
+			destroyed = destroyed + 1
+		end
+	end
+	local failures = {}
+	for i = #ctx.cleanups, 1, -1 do
+		local ok, message = Hotload.callOnMain(ctx.cleanups[i])
+		if not ok then
+			table.insert(failures, tostring(message))
+		end
+	end
+	return { destroyed = destroyed, cleanups = #ctx.cleanups }, failures
+end
+
 function I.phase(name, phase)
 	local dir = I.scenariosDir() .. "/" .. name
 	if phase == "setup" then
 		-- A context left by a run aborted earlier in this mission session still holds its units
 		-- and its IADS: they go before the new run starts.
+		-- No pcall around it: a cleanup goes through Hotload.callOnMain, which yields, and Lua 5.1
+		-- cannot yield across pcall.
 		if InsimState.contexts[name] then
-			local ok, message = pcall(I.cleanup, name)
-			if not ok then
-				error("an older run of " .. name .. " could not be cleaned up: " .. tostring(message), 0)
+			local _, failures = cleanContext(name)
+			if #failures > 0 then
+				error("an older run of " .. name .. " could not be cleaned up: " .. table.concat(failures, "; "), 0)
 			end
 		end
 		local scenario = assert(loadfile(dir .. "/scenario.lua"))()
@@ -174,29 +201,11 @@ function I.phase(name, phase)
 end
 
 function I.cleanup(name)
-	local ctx = InsimState.contexts[name]
-	if not ctx then
-		return { destroyed = 0, cleanups = 0 }
-	end
-	InsimState.contexts[name] = nil
-	local destroyed = 0
-	for _, object in ipairs(ctx.added) do
-		if object:isExist() then
-			object:destroy()
-			destroyed = destroyed + 1
-		end
-	end
-	local failures = {}
-	for i = #ctx.cleanups, 1, -1 do
-		local ok, message = Hotload.callOnMain(ctx.cleanups[i])
-		if not ok then
-			table.insert(failures, tostring(message))
-		end
-	end
+	local counts, failures = cleanContext(name)
 	if #failures > 0 then
 		error(table.concat(failures, "; "), 0)
 	end
-	return { destroyed = destroyed, cleanups = #ctx.cleanups }
+	return counts
 end
 
 return I
