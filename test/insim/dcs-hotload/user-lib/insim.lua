@@ -72,8 +72,9 @@ local function moveIntoZone(group, zone)
 end
 
 -- The scenario's own fixture `FIXTURE-<scenario>-<role>` if the mission has one, else the
--- catalogue's `FIXTURE-<role>`, copied as `<scenario>/<role>`; into `zoneName` when given.
-function Context:add(role, zoneName)
+-- catalogue's `FIXTURE-<role>`, copied as `<scenario>/<role>`; into `zoneName` when given, and
+-- as `<scenario>/<copyName>` when given, for several copies of one fixture.
+function Context:add(role, zoneName, copyName)
 	local ownName = "FIXTURE-" .. self.name .. "-" .. role
 	local fixtureName = ownName
 	local fixture, countryId, category = findFixture(fixtureName)
@@ -92,7 +93,7 @@ function Context:add(role, zoneName)
 		end
 		moveIntoZone(group, zone)
 	end
-	local scoped = self.name .. "/" .. role
+	local scoped = self.name .. "/" .. (copyName or role)
 	group.name = scoped
 	group.lateActivation = false
 	group.groupId = nil

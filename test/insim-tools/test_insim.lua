@@ -256,6 +256,14 @@ function TestInsim:testAddIntoAZoneMovesUnitsAndRoute()
 	luaunit.assertEquals({ fixture.units[1].x, fixture.route.points[1].x }, { 100, 100 })
 end
 
+function TestInsim:testAddNamesTheCopyWhenAsked()
+	I.phase("renamed", "setup")
+	local g = addedGroups[1]
+	luaunit.assertEquals(g.name, "renamed/SAM-B")
+	luaunit.assertEquals(g.units[1].name, "renamed/SAM-B-1")
+	luaunit.assertEquals({ g.units[1].x, g.units[1].y }, { 1100, 5200 })
+end
+
 function TestInsim:testAddIntoAMissingZoneIsInvalid()
 	local _, err = pcall(I.phase, "zonemissing", "setup")
 	luaunit.assertStrContains(err, "INSIM-INVALID: no zone ZONE-NOPE in the mission")
