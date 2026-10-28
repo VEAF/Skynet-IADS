@@ -219,6 +219,12 @@ shoot one down has not been flown.
 **Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
 engage them, the change is one more class in that system's entry in the supported-types table.
 
+## The in-sim driver core moves to dcs-hotload
+
+The in-sim engine's driver core (`test/insim/engine/`) goes to dcs-hotload, as `feat-insim-test-suite`
+designed it to; hotload first — its own ideas hold the detail — then this repository vendors that
+release and drops what moved.
+
 ## The release skill repeats `CONTRIBUTING.md`
 
 `.claude/skills/release/SKILL.md` walks through the release steps that `CONTRIBUTING.md` already
