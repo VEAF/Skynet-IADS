@@ -1,6 +1,6 @@
 # Port the legacy in-sim tests to the in-sim suite, then drop them
 
-Status: in-progress
+Status: done
 
 ## The problem
 
