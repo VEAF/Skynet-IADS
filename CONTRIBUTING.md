@@ -45,7 +45,6 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `demo-missions/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
 | `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
 | `test/common/` | the machinery the test suites share, whatever their language: today the vendored luaunit and a runner per language, `run.lua` and `run.py` |
-| `unit-tests/` | **deprecated**: the legacy in-sim suites and the dcs-bridge smoke gate, dropped once `test/insim/` covers them — **see its `README.md`** |
 | `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
 | `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
 | `test/build-tools/` | the tests of `build-tools/` |
@@ -103,8 +102,8 @@ section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
 
 ### The missions are assembled, not committed
 
-No `.miz` in git contains the scripts it runs — not the three under `unit-tests/`, not the three
-under `demo-missions/`. Each holds a placeholder, and the mission DCS opens is built on demand:
+No `.miz` under `demo-missions/` contains the scripts it runs. Each holds a placeholder, and the
+mission DCS opens is built on demand:
 
 ```
 pwsh -File build-tools/build-compiled-script.ps1
@@ -119,8 +118,7 @@ goes stale in silence.
 `build-tools/miz-suite.py` is what keeps them consistent. `test/lua/README.md` has the wiring and the
 rest of the commands.
 
-Only `demo-missions/` archives are attached to a release. Everything under `unit-tests/` is developer
-material and never is.
+Only `demo-missions/` archives are attached to a release.
 
 ## Test first
 
@@ -129,15 +127,14 @@ saves the afternoon you would otherwise spend re-testing by hand after a two-lin
 
 **Do not open a pull request with tests failing.**
 
-There are three suites, and which one you want is decided by whether a stub can answer the question:
+There are two suites, and which one you want is decided by whether a stub can answer the question:
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
 | `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `unit-tests/` | inside DCS. **Deprecated**: dropped once `test/insim/` covers it; nothing new goes here | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all | [`unit-tests/README.md`](unit-tests/README.md) |
-| `test/insim/` | inside DCS, driven by one command, `python test/insim/run.py` | scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
 
-Those three files are the reference: how to run each suite, how to add to it, what is covered and what
+Those two files are the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
@@ -361,9 +358,9 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the in-sim smoke checks in `unit-tests/README.md` run
-where CI cannot, since GitHub runners have no DCS. They are consultative, not a gate — but a release
-that goes out unflown says so.
+Before the first, fly the release candidate: the in-sim suite's minimal tier, `python test/insim/run.py`,
+runs where CI cannot, since GitHub runners have no DCS. It is consultative, not a gate — but a
+release that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in

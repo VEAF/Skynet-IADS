@@ -54,9 +54,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The three demos, and not the other three missions `build` writes: everything under
-          # unit-tests/ is developer material. Which is exactly what the directories now say, so
-          # this list is the demo-missions/ ones and nothing else.
+          # The three demo missions `build` writes.
           gh release create "$GITHUB_REF_NAME" \
             demo-missions/skynet-iads-compiled.lua \
             build/missions/skynet-test-persian-gulf.miz \

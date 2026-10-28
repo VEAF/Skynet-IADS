@@ -29,19 +29,16 @@ meaning. Say it plainly or someone will file it as a bug.
 
 ## Fly it, before the version is bumped
 
-CI cannot: GitHub runners have no DCS. Build the missions and run the in-sim smoke checks against a
-DCS with the release candidate in it:
+CI cannot: GitHub runners have no DCS. Run the in-sim suite's minimal tier against a DCS with the
+release candidate in it — it builds the Skynet script itself:
 
 ```bash
-pwsh -File build-tools/build-compiled-script.ps1
-python build-tools/miz-suite.py build --with-bridge
-python build-tools/run-smoke.py --target demo
-python build-tools/run-smoke.py --target lastline --tier slow
+python test/insim/run.py
 ```
 
-**Consultative, not a gate.** A red check is a conversation, not a stop: report the table and ask.
-No DCS to hand means the runner skips and exits 0; then say the release goes out unflown rather than
-implying it was checked. `unit-tests/README.md` has the checks.
+**Consultative, not a gate.** A red scenario is a conversation, not a stop: report the summary and
+ask. No DCS to hand means the release goes out unflown: say so rather than implying it was checked.
+`test/insim/README.md` has the suite.
 
 ## Then the procedure
 

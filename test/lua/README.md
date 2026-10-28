@@ -4,8 +4,8 @@ Logic tests for the Skynet-IADS source, run on a plain Lua 5.1 interpreter —
 no DCS, no mission editor. This is where new **logic** tests go.
 
 For behaviour that genuinely needs the simulator (terrain elevation, radar
-detection geometry, real in-game events) see the in-sim functional/smoke
-suites in `unit-tests/*.miz`.
+detection geometry, real in-game events) see the in-sim test suite,
+`test/insim/`.
 
 ## Run
 
@@ -138,9 +138,9 @@ the real `addEarlyWarningRadar`/`addSAMSite`/`activate` API) and, since
 what a mistyped group name gets you, the radio menu, and `getCoalitionString`.
 Three of those tests pin behaviour that is probably wrong and say so where they
 do -- they record what the code does today so that changing it is a decision
-somebody takes on purpose. It does not port the rest of
-`unit-tests/test-skynet-iads.lua`; the `.miz` copy stays the in-sim
-functional/smoke suite for the rest of the `iads` class.
+somebody takes on purpose. What of the rest of
+`unit-tests/test-skynet-iads.lua` needs the simulator is in `test/insim/`; the
+rest was dropped.
 
 Five suites have no `unit-tests/` ancestor — they were written with the work
 they cover. Two came with `FEAT-LAST-LINE-OF-DEFENSE`:
@@ -306,15 +306,9 @@ connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
 
 ## Building and editing the `.miz`
 
-Two archives carry an in-sim suite — `unit-tests/skynet-unit-tests.miz` and
-`unit-tests/highdigitsams/highdigitsams-unit-tests.miz` — and everything below applies to both. A
-third sits beside them, `unit-tests/last-line-of-defence/skynet-insim-last-line-of-defence.miz`,
-which is not a luaunit suite: it is driven from outside through VEAF's `dcs-bridge` and carries no
-player task. It applies to the three archives under `demo-missions/` too: those are not tests, but
-they are handled by the same tool and for the same reason, and `miz-suite.py` covers all six.
-
-The split between the two directories is what a release reads: `demo-missions/` archives are
-attached to it, everything under `unit-tests/` is developer material and is not.
+The three archives under `demo-missions/` carry scripts from this repository, and everything below
+applies to them. They are what a release attaches. The in-sim suite's missions, under
+`test/insim/miz/`, are not handled here: `test/insim/run.py` prepares them.
 
 **None of them contains the scripts it runs.** Each holds a placeholder for every script, and the
 mission you open in DCS is assembled on demand:
@@ -351,7 +345,7 @@ mission runs the script while the editor shows an empty trigger, or the reverse.
     python build-tools/miz-suite.py extract <dir>
     python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
 
-Every command works on all six archives; `--miz <path>` narrows it to one. `build`, `stub` and
+Every command works on all three archives; `--miz <path>` narrows it to one. `build`, `stub` and
 `remove` re-check the result and refuse to write if anything is off, so a failed run leaves the
 `.miz` untouched. `check` also reports a loose script that no trigger anywhere loads — which is the
 drift running the other way, and how three tests sat outside the mission for months. That scan is
@@ -375,7 +369,7 @@ caught, and the first two are caught *only* by `check`.
 
 ## Needs the simulator
 
-Behaviour that stays in `unit-tests/*.miz` on purpose, because a standalone test
+Behaviour that is tested in `test/insim/` on purpose, because a standalone test
 would only be asking the stub to repeat what the fixture told it:
 
 - **How a DCS unit is put together.** How many launchers and radars a group has,
