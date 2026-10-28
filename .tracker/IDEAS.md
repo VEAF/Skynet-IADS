@@ -239,6 +239,22 @@ states, and its flight before the version bump runs the smoke gate that
 **Shape if taken**: those two go into the release steps of `CONTRIBUTING.md`, and the skill is
 deleted.
 
+## In-sim suite: three small gaps
+
+Left by `test-port-unit-tests-to-insim`; none has failed a run.
+
+- **Cleanup removes groups, not what they left.** A wreck stays in its zone, and a weapon still in
+  flight when a scenario ends can land on the next scenario's copy in the same zone. Only
+  `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
+  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which the README
+  would say.
+- **Two scenarios can wait past their timeout when everything fails.** `harm-point-defence` waits up
+  to 450 s in a 420 s timeout, `network-loses-infrastructure` about 635 s in 600 s. The driver then
+  stops the run and reports "timed out", and the watch's sequences that say what went wrong are lost.
+  Shape: keep a run's waits 20–30 s under its timeout, as the other scenarios do.
+- **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
+  harmless, stale against the rename to `insim-ca-main`.
+
 ## Dropped
 
 ### A comment saying `setupRangeData` reads a radar's range once
