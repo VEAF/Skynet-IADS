@@ -59,14 +59,41 @@ end
 local Context = {}
 Context.__index = Context
 
-function Context:add(role)
-	local fixtureName = "FIXTURE-" .. self.name .. "-" .. role
+-- Moves a copied group so that its first unit stands on the zone's centre, its route with it.
+local function moveIntoZone(group, zone)
+	local dx = zone.point.x - group.units[1].x
+	local dy = zone.point.z - group.units[1].y
+	for _, unit in ipairs(group.units) do
+		unit.x, unit.y = unit.x + dx, unit.y + dy
+	end
+	for _, point in ipairs(group.route and group.route.points or {}) do
+		point.x, point.y = point.x + dx, point.y + dy
+	end
+end
+
+-- The scenario's own fixture `FIXTURE-<scenario>-<role>` if the mission has one, else the
+-- catalogue's `FIXTURE-<role>`, copied as `<scenario>/<role>`; into `zoneName` when given, and
+-- as `<scenario>/<copyName>` when given, for several copies of one fixture.
+function Context:add(role, zoneName, copyName)
+	local ownName = "FIXTURE-" .. self.name .. "-" .. role
+	local fixtureName = ownName
 	local fixture, countryId, category = findFixture(fixtureName)
 	if not fixture then
-		error("no fixture " .. fixtureName .. " in the mission")
+		fixtureName = "FIXTURE-" .. role
+		fixture, countryId, category = findFixture(fixtureName)
+	end
+	if not fixture then
+		self.invalid("no fixture " .. ownName .. " or " .. fixtureName .. " in the mission")
 	end
 	local group = deepCopy(fixture)
-	local scoped = self.name .. "/" .. role
+	if zoneName then
+		local zone = trigger.misc.getZone(zoneName)
+		if not zone then
+			self.invalid("no zone " .. zoneName .. " in the mission")
+		end
+		moveIntoZone(group, zone)
+	end
+	local scoped = self.name .. "/" .. (copyName or role)
 	group.name = scoped
 	group.lateActivation = false
 	group.groupId = nil
@@ -82,6 +109,15 @@ function Context:add(role)
 	else
 		object = coalition.addGroup(countryId, Group.Category[GROUP_CATEGORY[category]], group)
 	end
+	if object == nil then
+		self.invalid(fixtureName .. " did not spawn")
+	end
+	table.insert(self.added, object)
+	return object
+end
+
+-- Something the scenario spawned itself, for cleanup to destroy with what `add` spawned.
+function Context:track(object)
 	table.insert(self.added, object)
 	return object
 end
@@ -112,27 +148,12 @@ function I.scenariosDir()
 	return InsimState.scenariosDir or (Hotload.root .. "/../scenarios")
 end
 
-function I.phase(name, phase)
-	local dir = I.scenariosDir() .. "/" .. name
-	if phase == "setup" then
-		local scenario = assert(loadfile(dir .. "/scenario.lua"))()
-		InsimState.contexts[name] = newContext(name, scenario.mission)
-	end
+-- Destroys what the scenario's context added and calls its cleanups, last registered first.
+-- Returns the counts and the failures, as values: callers must not pcall it.
+local function cleanContext(name)
 	local ctx = InsimState.contexts[name]
 	if not ctx then
-		error("no context for " .. name .. ": setup did not run", 0)
-	end
-	local path = dir .. "/" .. phase .. ".lua"
-	if phase == "teardown" and not fileExists(path) then
-		return nil
-	end
-	return assert(loadfile(path))(ctx)
-end
-
-function I.cleanup(name)
-	local ctx = InsimState.contexts[name]
-	if not ctx then
-		return { destroyed = 0, cleanups = 0 }
+		return { destroyed = 0, cleanups = 0 }, {}
 	end
 	InsimState.contexts[name] = nil
 	local destroyed = 0
@@ -149,10 +170,42 @@ function I.cleanup(name)
 			table.insert(failures, tostring(message))
 		end
 	end
+	return { destroyed = destroyed, cleanups = #ctx.cleanups }, failures
+end
+
+function I.phase(name, phase)
+	local dir = I.scenariosDir() .. "/" .. name
+	if phase == "setup" then
+		-- A context left by a run aborted earlier in this mission session still holds its units
+		-- and its IADS: they go before the new run starts.
+		-- No pcall around it: a cleanup goes through Hotload.callOnMain, which yields, and Lua 5.1
+		-- cannot yield across pcall.
+		if InsimState.contexts[name] then
+			local _, failures = cleanContext(name)
+			if #failures > 0 then
+				error("an older run of " .. name .. " could not be cleaned up: " .. table.concat(failures, "; "), 0)
+			end
+		end
+		local scenario = assert(loadfile(dir .. "/scenario.lua"))()
+		InsimState.contexts[name] = newContext(name, scenario.mission)
+	end
+	local ctx = InsimState.contexts[name]
+	if not ctx then
+		error("no context for " .. name .. ": setup did not run", 0)
+	end
+	local path = dir .. "/" .. phase .. ".lua"
+	if phase == "teardown" and not fileExists(path) then
+		return nil
+	end
+	return assert(loadfile(path))(ctx)
+end
+
+function I.cleanup(name)
+	local counts, failures = cleanContext(name)
 	if #failures > 0 then
 		error(table.concat(failures, "; "), 0)
 	end
-	return { destroyed = destroyed, cleanups = #ctx.cleanups }
+	return counts
 end
 
 return I

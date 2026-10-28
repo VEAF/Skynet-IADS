@@ -1,11 +1,11 @@
-# In-sim suite
+# In-sim test suite
 
-Scenarios that run inside DCS, driven by one command from a terminal. They answer what neither a stub
-nor a read of the code can: that DCS calls Skynet, what real radars report, how real groups and
-statics are composed. The logic stays in `test/lua/`; this suite is the check before a pull request
-that touches `skynet-iads-source/`. It is recommended, not required: CI has no DCS.
+Scenarios that run Skynet inside DCS, driven from a terminal by one command. They check what only the
+simulator can show: that DCS calls Skynet, what real radars report, how real groups and statics are
+composed, and how a network behaves when it is attacked. Running them before a pull request that
+touches `skynet-iads-source/` is recommended, not required: CI has no DCS.
 
-You run the test mission in DCS (the one manual step), run `python test/insim/run.py`, and read a
+You open a test mission in DCS (the one manual step), run `python test/insim/run.py`, and read a
 summary: each scenario `pass`, `fail`, `invalid`, `crashed`, or `skipped` (it needs another mission than the one running),
 and an exit code.
 
@@ -31,14 +31,16 @@ python test/insim/run.py --verify             # judge the latest run's results a
 python test/insim/run.py --lua PATH           # the Lua 5.1 interpreter
 ```
 
-The command:
+`run.py` is the driver: it sends each step of a scenario to the mission through hotload's mailbox, and
+waits for the answer. It:
 
 1. prepares the Skynet script the mission loads, `build/insim/skynet-iads-insim.lua`. By default it
    rebuilds it from `skynet-iads-source/` unless the file is already the build of the current
    sources; `--skynet FILE` copies that file instead, and the next default run rebuilds;
 2. prepares the mission DCS opens (see *The mission*);
-3. waits for the mission to answer. If DCS is not running it, it says which file to run:
-   `test/insim/miz/insim01.miz`. **That is the manual step.** Later, if the mission stops answering
+3. waits for a mission to answer. If DCS is not running one, it says which files to run:
+   `test/insim/miz/insim-ca-main.miz` or `test/insim/miz/insim-pg-llod.miz`. **That is the manual
+   step.** Later, if the mission stops answering
    while a command is in flight, it says "paused, or DCS is down" and waits: it never concludes
    anything from silence;
 4. checks that the mission runs the Skynet script as it now is on disk. If not, it stops and says to
@@ -82,7 +84,7 @@ scenarios/iads-builds/
 -- scenario.lua
 return {
 	tier = "minimal",   -- "minimal" or "full"; omit it and the scenario runs only by name
-	mission = "insim01",
+	mission = "insim-ca-main",
 	timeout = 120,      -- sim seconds, for each phase command: setup, run, teardown, cleanup
 }
 ```
@@ -127,14 +129,15 @@ dropped by cleanup.
 | `ctx.name`, `ctx.mission` | the folder's name, and `mission` from `scenario.lua` |
 | `ctx.state` | free: whatever `setup` hands to `run` |
 | `ctx.invalid(reason)` | ends the phase as `invalid` |
-| `ctx:add(role)` | adds the mission's fixture `FIXTURE-<scenario>-<role>` as `<scenario>/<role>` and returns the group or static; cleanup destroys it |
+| `ctx:add(role, zone, copyName)` | adds the mission's fixture `FIXTURE-<scenario>-<role>`, else the catalogue's `FIXTURE-<role>`, as `<scenario>/<role>` and returns the group or static; cleanup destroys it. With `zone`, the copy stands on that trigger zone's centre, its route moved with it; with `copyName`, it is `<scenario>/<copyName>`, for several copies of one fixture |
+| `ctx:track(object)` | something the scenario spawned itself, destroyed by cleanup with the rest |
 | `ctx:onCleanup(fn)` | `fn` is called by cleanup, through `Hotload.callOnMain`, last registered first |
 
 The Skynet layer, loaded with `Hotload.load("insim-skynet")`:
 
 | Function | Does |
 |---|---|
-| `iads(ctx)` | creates and activates an IADS from the units `ctx:add` put in whose role starts with `SAM` or `EW`, and registers its deactivation with `ctx:onCleanup` |
+| `iads(ctx, configure)` | creates an IADS, registers its deactivation with `ctx:onCleanup`, adds the units `ctx:add` put in whose role starts with `SAM` or `EW`, calls `configure(iads)` if given, and activates it |
 
 ```lua
 -- setup.lua
@@ -143,6 +146,19 @@ ctx:add("SAM-SA6")
 ctx:add("EW")
 ctx.state.iads = Hotload.load("insim-skynet").iads(ctx)
 ```
+
+Two more libraries, loaded the same way:
+
+| Library | Function | Does |
+|---|---|---|
+| `insim-watch` | `start(ctx, probes, interval)` | samples each probe (`{ name = function() return value end }`) every `interval` seconds and keeps the values it goes through, so a scenario judges a transition rather than an end state. A probe that raises is recorded as `"error: …"`; cleanup stops the watch |
+| | `watch:waitFor(name, values, timeout)` | true once the values of `name` start with `values` |
+| | `watch:sequence(name)`, `watch:report()` | one sequence, or all of them for `run` to return |
+| `insim-world` | `pointFrom(zone, bearing, km)` | a point measured from a zone's centre |
+| | `spawnAircraft(ctx, spec)` | an aircraft on a route, tracked for cleanup, with the flags `immortal`, `invisible`, `holdFire`, `ignoreThreats`. Its tasks go on `via`, a point just after the start: DCS ignores a task on an air-started group's first waypoint and starts one on a later waypoint only when it is reached |
+| | `attackTask(group, weaponType)` | an `AttackGroup` task, `weaponType` from the Mission Editor's `weaponTable` |
+| | `recordShots(ctx)`, `fired(shots, unit)` | every shot fired until cleanup, and how many one unit fired: a scenario whose attacker never fired is `invalid`, not `fail` |
+| | `clearWrecks(zone)` | removes the debris inside a zone |
 
 **Rules for the code of a phase.**
 
@@ -155,50 +171,56 @@ ctx.state.iads = Hotload.load("insim-skynet").iads(ctx)
 - Shared code is a library in `test/insim/dcs-hotload/user-lib/`, loaded where it is used with
   `Hotload.load("name")`. A helper two scenarios need goes there, not copied between them.
 
-**A fixture** is a late-activated group or static in the mission, named
-`FIXTURE-<scenario>-<role>`. It is added under the same name each run, so adding over a live leftover
-replaces it. Place it in the Mission Editor (see below), then use it with `ctx:add(role)`. The IADS
-looks only at the prefix `<scenario>/`.
+**A fixture** is a late-activated group or static in the mission. `FIXTURE-<scenario>-<role>`
+belongs to one scenario and stands where its geometry needs it; `FIXTURE-<role>` is the catalogue's,
+any scenario's, copied into a trigger zone. A copy is added under the same name each run, so adding
+over a live leftover replaces it, and setup cleans up what an aborted run of the same scenario left.
+The IADS looks only at the prefix `<scenario>/`. A static cannot be late-activated: the catalogue's
+stand in the mission from the start, away from every zone.
 
-**The tiers.** `minimal` is what a contributor runs before a pull request; `full` adds the scenarios
-not wanted every time. A scenario with no `tier` runs only when named. The `selftest-*` scenarios
+**The tiers.** `minimal` is the short run, the one worth making before a pull request; `full` adds the
+scenarios not wanted every time. A scenario with no `tier` runs only when named. The `selftest-*` scenarios
 have none: they prove the engine's own paths (a raise, `invalid`, a hang, a failing `verify.lua`) and
 would keep any tier from exiting 0.
 
 ## The mission
 
+| Mission | Map | Holds |
+|---|---|---|
+| `insim-ca-main` | Caucasus | the catalogue and its zones, and every scenario but one |
+| `insim-pg-llod` | Persian Gulf | `last-line-of-defence`, whose geometry rests on that map's terrain |
+
 `test/insim/miz/` holds two files per mission:
 
-- `insim01.template.miz`, committed, is the reference. **It is edited in the Mission Editor**, never
-  by hand in the archive. It holds a placeholder where the absolute path of hotload goes.
-- `insim01.miz`, git-ignored, is the working copy DCS opens. `run.py` writes it before every run:
+- `<mission>.template.miz`, committed, is the reference. It holds a placeholder where the absolute
+  path of hotload goes.
+- `<mission>.miz`, git-ignored, is the working copy DCS opens. `run.py` writes it before every run:
   when it is missing, when the template has changed, or when the checkout has moved. Do not edit it.
 
-Scenarios name their mission (`mission = "insim01"`); a mission is known by its sortie name. The
+Scenarios name their mission (`mission = "insim-ca-main"`); a mission is known by its sortie name. The
 driver runs the scenarios of the mission DCS is running, and lists the others as skipped, naming the
-mission they need.
+mission they need: a full run is one run per mission.
 
 At mission start three actions run: the first sets `BASE_HOTLOAD_PATH`, the only absolute path in the
 mission; the second loads hotload from it; the third loads the Skynet script under test, found
 relative to hotload's folder. Nothing is embedded, so a change to the code never needs the mission
 rebuilt. A later change to the mission starts from the template, never from an empty mission.
 
-`build-tools/miz-suite.py` does not handle these archives.
-
 ## Hotload
 
-`test/insim/dcs-hotload/` is dcs-hotload **2.0.0**, committed as released, so a run needs nothing
+`test/insim/dcs-hotload/` is dcs-hotload, committed as released, so a run needs nothing
 beyond the setup above. Its shipped files (`dcs-hotload.lua`, `README.md`, `LICENSE.md`, `bin/`,
 `examples/`) are never edited here; its own `README.md` is the reference for `Hotload.*`.
 
 What belongs to the suite stays:
 
-- `user-lib/`: `insim.lua`, the engine's side in the mission, and `insim-skynet.lua`, the Skynet
-  layer. Only the second names Skynet;
+- `user-lib/`: `insim.lua`, the engine's side in the mission; `insim-watch.lua` and
+  `insim-world.lua`, the libraries above; and `insim-skynet.lua`, the Skynet layer, the only one
+  that names Skynet;
 - `user-inbox/` and `user-outbox/`, the mailbox, git-ignored.
 
 **To upgrade**, replace the shipped files and folders with those of the new release and leave
-`user-lib/`, `user-inbox/` and `user-outbox/` alone. Then change the version stated above.
+`user-lib/`, `user-inbox/` and `user-outbox/` alone.
 
 ## Tests of the suite itself
 

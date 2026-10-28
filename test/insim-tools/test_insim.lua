@@ -48,6 +48,21 @@ local function missionTable()
 						vehicle = {
 							group = {
 								{
+									name = "FIXTURE-SAM-X",
+									groupId = 15,
+									lateActivation = true,
+									units = {
+										{ name = "FIXTURE-SAM-X-1", unitId = 35, x = 100, y = 200 },
+										{ name = "FIXTURE-SAM-X-2", unitId = 36, x = 160, y = 200 },
+									},
+									route = { points = { { x = 100, y = 200 } } },
+								},
+								{
+									name = "FIXTURE-SAM",
+									groupId = 16,
+									units = { { name = "FIXTURE-SAM-1", unitId = 37 } },
+								},
+								{
 									name = "FIXTURE-adds-SAM",
 									groupId = 12,
 									lateActivation = true,
@@ -106,6 +121,13 @@ function TestInsim:setUp()
 		table.insert(addedGroups, groupTable)
 		return recorded(groupTable.name)
 	end
+	trigger.misc = {
+		getZone = function(name)
+			if name == "ZONE-A" then
+				return { point = { x = 1100, y = 0, z = 5200 }, radius = 300 }
+			end
+		end,
+	}
 	coalition.addStaticObject = function(countryId, staticTable)
 		staticTable.countryId = countryId
 		table.insert(addedStatics, staticTable)
@@ -144,11 +166,43 @@ function TestInsim:testTeardownWithoutSetupRaises()
 	luaunit.assertErrorMsgContains("setup did not run", I.phase, "carry", "teardown")
 end
 
-function TestInsim:testSetupReplacesAnOlderContext()
-	I.phase("carry", "setup")
-	local first = InsimState.contexts.carry
-	I.phase("carry", "setup")
-	luaunit.assertNotIs(InsimState.contexts.carry, first)
+function TestInsim:testSetupCleansUpAnOlderContext()
+	I.phase("cleans", "setup")
+	local first = InsimState.contexts.cleans
+	I.phase("cleans", "setup")
+	luaunit.assertNotIs(InsimState.contexts.cleans, first)
+	luaunit.assertEquals(first.state.order, { "B", "A" })
+	luaunit.assertEquals(destroyedNames, { "cleans/SAM", "cleans/DEPOT" })
+end
+
+-- Runs fn as hotload runs a command: in a coroutine, with Hotload.callOnMain a yield the runner
+-- answers. Lua 5.1 cannot yield across pcall, so code that wraps callOnMain in pcall raises here as
+-- it does in DCS.
+local function asHotloadRun(fn, ...)
+	local saved = Hotload.callOnMain
+	Hotload.callOnMain = function(f)
+		return coroutine.yield({ kind = "main", fn = f })
+	end
+	local co = coroutine.create(fn)
+	local results = { coroutine.resume(co, ...) }
+	while coroutine.status(co) ~= "dead" do
+		results = { coroutine.resume(co, pcall(results[2].fn)) }
+	end
+	Hotload.callOnMain = saved
+	return unpack(results)
+end
+
+function TestInsim:testSetupCleansUpAnOlderContextInAHotloadRun()
+	asHotloadRun(I.phase, "cleans", "setup")
+	local first = InsimState.contexts.cleans
+	local ok, err = asHotloadRun(I.phase, "cleans", "setup")
+	luaunit.assertTrue(ok, tostring(err))
+	luaunit.assertEquals(first.state.order, { "B", "A" })
+end
+
+function TestInsim:testSetupRefusesAnOlderContextItCannotClean()
+	I.phase("cleanfail", "setup")
+	luaunit.assertErrorMsgContains("an older run of cleanfail could not be cleaned up", I.phase, "cleanfail", "setup")
 end
 
 function TestInsim:testInvalidRaisesTheMark()
@@ -171,7 +225,7 @@ end
 
 function TestInsim:testAddLeavesTheMissionTableUntouched()
 	I.phase("adds", "setup")
-	local fixture = env.mission.coalition.red.country[1].vehicle.group[1]
+	local fixture = env.mission.coalition.red.country[1].vehicle.group[3]
 	luaunit.assertEquals(fixture.name, "FIXTURE-adds-SAM")
 	luaunit.assertEquals(fixture.groupId, 12)
 	luaunit.assertEquals(fixture.units[1].unitId, 31)
@@ -192,8 +246,65 @@ function TestInsim:testAddStaticUsesTheUnitTable()
 	luaunit.assertEquals(s.countryId, 2)
 end
 
-function TestInsim:testMissingFixtureRaises()
-	luaunit.assertErrorMsgContains("no fixture FIXTURE-missing-NOPE in the mission", I.phase, "missing", "setup")
+function TestInsim:testMissingFixtureIsInvalid()
+	local _, err = pcall(I.phase, "missing", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: no fixture FIXTURE-missing-NOPE")
+end
+
+function TestInsim:testSpawnReturningNilIsInvalid()
+	coalition.addGroup = function()
+		return nil
+	end
+	local _, err = pcall(I.phase, "adds", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: FIXTURE-adds-SAM did not spawn")
+end
+
+function TestInsim:testAddPrefersTheScenarioFixture()
+	I.phase("adds", "setup")
+	luaunit.assertEquals(addedGroups[1].units[1].type, "S-300PS 64H6E sr")
+end
+
+function TestInsim:testAddFallsBackToTheCatalogue()
+	I.phase("catalogue", "setup")
+	luaunit.assertEquals(addedGroups[1].name, "catalogue/SAM-X")
+	luaunit.assertEquals(addedGroups[1].units[2].name, "catalogue/SAM-X-2")
+	luaunit.assertEquals(addedGroups[1].units[1].x, 100)
+end
+
+function TestInsim:testAddIntoAZoneMovesUnitsAndRoute()
+	I.phase("zoned", "setup")
+	local g = addedGroups[1]
+	luaunit.assertEquals({ g.units[1].x, g.units[1].y }, { 1100, 5200 })
+	luaunit.assertEquals({ g.units[2].x, g.units[2].y }, { 1160, 5200 })
+	luaunit.assertEquals({ g.route.points[1].x, g.route.points[1].y }, { 1100, 5200 })
+	local fixture = env.mission.coalition.red.country[1].vehicle.group[1]
+	luaunit.assertEquals({ fixture.units[1].x, fixture.route.points[1].x }, { 100, 100 })
+end
+
+function TestInsim:testAddNamesTheCopyWhenAsked()
+	I.phase("renamed", "setup")
+	local g = addedGroups[1]
+	luaunit.assertEquals(g.name, "renamed/SAM-B")
+	luaunit.assertEquals(g.units[1].name, "renamed/SAM-B-1")
+	luaunit.assertEquals({ g.units[1].x, g.units[1].y }, { 1100, 5200 })
+end
+
+function TestInsim:testAddIntoAMissingZoneIsInvalid()
+	local _, err = pcall(I.phase, "zonemissing", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: no zone ZONE-NOPE in the mission")
+end
+
+function TestInsim:testMissingInBothPlacesNamesBoth()
+	local _, err = pcall(I.phase, "missing", "setup")
+	luaunit.assertStrContains(err, "INSIM-INVALID: no fixture FIXTURE-missing-NOPE or FIXTURE-NOPE in the mission")
+end
+
+function TestInsim:testTrackedObjectsAreDestroyedOnCleanup()
+	I.phase("tracks", "setup")
+	local state = InsimState.contexts.tracks.state
+	luaunit.assertIs(state.returned, state.object)
+	luaunit.assertEquals(I.cleanup("tracks").destroyed, 1)
+	luaunit.assertFalse(state.object.alive)
 end
 
 function TestInsim:testCleanupDestroysThenCallsCleanupsInReverse()

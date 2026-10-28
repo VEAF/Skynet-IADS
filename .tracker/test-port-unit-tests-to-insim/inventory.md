@@ -23,40 +23,33 @@ ported, into which scenario, and what is dropped and why.
 | `insim-ca-main` | Caucasus | every scenario but the last line of defence |
 | `insim-pg-llod` | Persian Gulf | `last-line-of-defence`, its geometry taken from the legacy mission |
 
-`insim-ca-main` is `insim01` renamed: the template, its sortie name (set in the Mission Editor, since
-a mission is known by it), and the `mission` field of the scenarios and of `test/insim/README.md`.
-The engine already runs the scenarios of whichever mission DCS has open and lists the others as
-skipped, so a full run is one run per mission.
+`insim-ca-main` is `insim01` renamed. A full run is one run per mission: the engine runs the
+scenarios of whichever mission DCS has open and lists the others as skipped.
 
-`insim-ca-main` carries a catalogue of late-activated fixtures — each SAM type a scenario uses, point
-defences, EW radars, AWACS on predefined routes, command centres, power sources and connection
-nodes. Ground fixtures are placed in the Mission Editor on vetted ground; a scenario copies what it
-needs with `ctx:add`, where the fixture stands. Aircraft are placed or routed by the scenario.
-Named trigger zones give vetted slots: where a scenario drops a copy, where attackers start, and what
-`clearWrecks` sweeps.
+`insim-ca-main` carries a catalogue of late-activated fixtures, `FIXTURE-<role>`: each SAM type a
+scenario uses, a point defence, two EW radars (a 1L13, and a 55G6 for munitions), and the statics of
+a power source, a connection node and a command centre. A scenario copies what it needs into a named
+trigger zone with `ctx:add(role, zone)`; aircraft are spawned and routed by the scenario. The zones
+stand north of N45°30, on flat steppe out of the map's detailed area; each passed a placement check
+in DCS. A scenario whose geometry is its own keeps a `FIXTURE-<scenario>-<role>`.
 
-The fixtures and zones are placed with the `building-dcs-missions` tooling, writing into the
-template, then checked and adjusted by eye in the Mission Editor. `test/insim/README.md` says the
-template is edited in the Mission Editor only, never in the archive: that rule changes to allow this.
-
-This needs fixture names that do not belong to one scenario: today `ctx:add(role)` resolves
-`FIXTURE-<scenario>-<role>`.
+The template is built with the `building-dcs-missions` tooling and checked in the Mission Editor.
 
 ## Ported
 
-Tiers are proposals.
+Tiers as built.
 
 ### `iads-builds` — exists; the basic layer goes here
 
 Proves that Skynet reads a real DCS world: `coalition.getGroups`, `isActive`, `getSensors`, `getAmmo`,
 `getDesc().category`. A failure here explains the failures of every behavioural scenario, which is
-why it is checked on its own. Proposed tier: `minimal`.
+why it is checked on its own. Tier: `minimal`.
 
 | Check | From |
 |---|---|
 | A site with search radar, tracking radar and launchers is classified with the right counts and NATO name | `CheckSA10Group…`, `CheckSA6Group…`, and the rest of the red and blue composition tests, reduced to one site |
 | A one-unit site — radar and launcher in the same unit — is both | `SamSiteGroupContainingOfOneUnitOnlySA8` |
-| A group that is no SAM gives `UNKNOWN` and no element | `CreateSamSiteFromInvalidGroup` |
+| A group that is no SAM is not taken as a site | `CreateSamSiteFromInvalidGroup` |
 | A ground EW radar has a working radar | `test1L13EWRBoxSpring` and the other EW composition tests, reduced to one |
 | An AWACS is read as an aircraft and gets the AWACS class | `A50AWACSAsEWRadar`, `KJ2000AWACSAsEWRadar` |
 | Prefix discovery takes the groups, not a unit or a static carrying the same prefix, and not a late-activated group | `CaclulateNumberOfSamSitesAndEWRadars`, `OnlyLoadGroupsWithPrefixForSAMSite…` (×2), `OnlyLoadUnitsWithPrefixForEWSite…` |
@@ -64,7 +57,7 @@ why it is checked on its own. Proposed tier: `minimal`.
 ### `ew-detects-aircraft` — exists
 
 An EW radar sees an aircraft through `getDetectedTargets(Controller.Detection.RADAR)`. No legacy test
-to absorb. Proposed tier: `minimal`.
+to absorb. Tier: `minimal`.
 
 ### `sam-engages`
 
@@ -83,7 +76,7 @@ live while the target is covered, fires, and goes dark again once the target has
 ### `autonomous-site-engages`
 
 A SAM site with no EW radar and the default autonomous behaviour engages an aircraft on its own.
-Proposed tier: `full`.
+Tier: `full`.
 
 | Proves | From |
 |---|---|
@@ -91,16 +84,27 @@ Proposed tier: `full`.
 
 ### `harm-defence`
 
-An aircraft fires an anti-radiation missile at a live site protected by a point defence. The site
-identifies the missile, goes dark, and comes back; the point defence goes live while it is dark.
-Proposed tier: `full` — it needs an attacker with a HARM, and several minutes.
+An aircraft fires an anti-radiation missile at a live SA-6, which cannot engage it. The site
+identifies the missile, goes dark, and comes back. Tier: `full`.
 
 | Proves | From |
 |---|---|
 | A real anti-radiation missile is identified as one, from what DCS reports on the weapon object | `GoDarkDueToHARMTestIfAIisOff`, `HARMDefenceStates`, `SA2WillGoDarkWithTargetsInRangeAndHARMDetected` |
 | Time to impact uses the slant range over real terrain (`land.getIP`) | `SlantRangeCalculationForHARMDefence` |
 | The site comes back once the defence is over | `FinishHARMDefence`, `WillGoLiveWhenAutonomousAndHARMDefenceFinished`, EW `FinishHARMDefence` |
-| A point defence goes live while the site it protects is dark, and stops acting as EW afterwards | `PointDefenceActiveWhenSAMGoesDarkDueToHARMDefence`, `SetPointDefence` |
+
+### `harm-point-defence`
+
+The same, with an SA-15 as the SA-6's point defence and one HARM. A site whose point defences have
+launchers and missiles for every HARM identified stays live (`shallIgnoreHARMShutdown`), and its point
+defence goes live while the HARM flies. Tier: `full`.
+
+It fails today: the site and its point defence go dark and live again at every cycle while the HARM
+is inbound — `fix-point-defence-flapping-under-harm`. It stays red until that fix.
+
+| Proves | From |
+|---|---|
+| A point defence goes live for a HARM aimed at the site it protects, and the site stays live | `PointDefenceActiveWhenSAMGoesDarkDueToHARMDefence`, `SetPointDefence` |
 
 ### `munitions-wake-sites` — new
 
@@ -108,15 +112,16 @@ No legacy test: it covers `feat-munition-aware-wake` (archived 2026-10-17), whos
 what DCS reports on a weapon object — `category`, `missileCategory`, `guidance` — and whose standalone
 tests can only feed it the descriptions they assume.
 
-An invisible attacker (`SetInvisible`, as the feature's own measurements were taken) releases a
-munition toward three dark sites under one EW radar: one that engages bombs and missiles, one that
-engages missiles only, one that engages neither. The attacker being invisible is what makes the
-munition, not the aircraft, the only contact that can wake anything. Proposed tier: `full`.
+An invisible attacker (`SetInvisible`, as the feature's own measurements were taken) attacks the
+SA-6 of three dark sites under a 55G6 2 km away: a Tor M2, which engages bombs and missiles, an SA-10,
+missiles only, and the SA-6, neither. Being invisible keeps the aircraft out of the radars' picture;
+the last line of defence, which wakes a site for any hostile aircraft near it seen or not, is turned
+off. The munition is then the only thing that can wake a site. Tier: `full`.
 
 | Munition | Must wake | Must stay dark |
 |---|---|---|
-| A bomb (Mk-82 or GBU-38) | the bomb-capable site | the missile-only site, the incapable one |
-| An air-to-ground missile (AGM-65 or AGM-154) | the bomb-capable and the missile-only sites | the incapable one |
+| A GBU-38 | the Tor M2 | the SA-10, the SA-6 |
+| An AGM-65D | the Tor M2 and the SA-10 | the SA-6 |
 
 Both halves in each row: a site that wakes for everything passes the first column and nothing else.
 
@@ -124,16 +129,18 @@ Proves that an EW radar reports a real munition, that a real weapon's descriptio
 the classifier expects, and that the wake reads it. The coalition filter is not testable here: DCS
 reports no friendly object today.
 
-### `infrastructure-destroyed`
+### `sam-loses-power` and `network-loses-infrastructure`
 
 A power source, a connection node, a command centre and an EW radar are destroyed with
 `trigger.action.explosion`, and the network reacts to the real `S_EVENT_DEAD`. Every legacy test of
-this faked the event, because it arrived too late for a synchronous test: the in-sim suite can wait
-for it, which is the point. Proposed tier: `minimal` for one of them, `full` for the rest.
+this faked the event, because it arrived too late for a synchronous test: the in-sim suite waits for
+it, which is the point. `sam-loses-power` is the first row, tier `minimal`;
+`network-loses-infrastructure` the rest, seven cases with their own copies and network each, tier
+`full`.
 
 | Proves | From |
 |---|---|
-| A SAM site that loses its power source goes dark and leaves the usable sites, even with a missile in flight | `SAMSiteLoosesPower`, `WillSAMShutDownWhenItLoosesPowerAndAMissileIsInFlight` |
+| A SAM site that loses its power source goes dark and leaves the usable sites | `SAMSiteLoosesPower`, `WillSAMShutDownWhenItLoosesPowerAndAMissileIsInFlight` |
 | A SAM site that loses its connection node goes autonomous | `SAMSiteSA6LostConnectionNodeAutonomusStateDCSAI` |
 | An EW radar that loses its connection node or power source leaves its SAM sites autonomous | `SAMSiteAndEWRadarLoosesConnectionAndPowerSourceThenAddANewOneAgain` (the destruction halves; re-adding a node is logic) |
 | An EW radar destroyed leaves its SAM sites autonomous | `CompleteDestructionOfEarlyWarningRadar` |
@@ -144,7 +151,7 @@ for it, which is the point. Proposed tier: `minimal` for one of them, `full` for
 Run 1 of `unit-tests/last-line-of-defence/`, smoke check `last-line-of-defence`. A dark battery,
 covered on Skynet's 2D geometry by an EW radar that cannot see an aircraft on the deck. An intruder
 flies in low: the battery must light up when it crosses the radius, **and** go quiet once the
-persistence has run out. Proposed tier: `full` — about seven minutes of flight.
+persistence has run out. Tier: `full` — about seven minutes of flight.
 
 Mission `insim-pg-llod`: the geometry depends on the terrain hiding the intruder from the EW radar,
 and the legacy layout is on the Persian Gulf map. It moves as it is.
@@ -154,11 +161,10 @@ and the legacy layout is on the Persian Gulf map. It moves as it is.
 Run 2 of `unit-tests/last-line-of-defence/`, smoke check `coverage-follows-what-moves`. A battery whose
 only parent is an AWACS that flies away: it must be held while covered, **and** handed back once the
 AWACS has left. Also absorbs `AWACSHasMovedAndThereforeRebuildAutonomousStatesOfSAMSites`, whose
-remaining point was the distance between two real units. Proposed tier: `full`.
+remaining point was the distance between two real units. Tier: `full`.
 
 Mission `insim-ca-main`: it needs no terrain, only an AWACS flying away from a battery it covers
-alone. If the layout does not carry over, it goes to `insim-pg-llod` or a Persian Gulf mission of
-its own.
+alone.
 
 ## The smoke checks against the demo mission
 

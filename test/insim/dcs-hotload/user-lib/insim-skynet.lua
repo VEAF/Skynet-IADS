@@ -42,22 +42,32 @@ function S.scriptIsCurrent()
 	return readFile(scriptPath()) == InsimSkynetState.text
 end
 
--- A scenario's fixture roles for Skynet start with SAM or EW.
-function S.iads(ctx)
+-- A scenario's fixture roles for Skynet start with SAM or EW. `configure(iads)`, optional, runs
+-- once they are added and before the IADS is activated. The deactivation is registered as soon as
+-- the IADS exists, so a failure further on still leaves cleanup something to call.
+function S.iads(ctx, configure)
 	local ok, result = Hotload.callOnMain(function()
-		local iads = SkynetIADS:create(ctx.name)
-		iads:addSAMSitesByPrefix(ctx.name .. "/SAM")
-		iads:addEarlyWarningRadarsByPrefix(ctx.name .. "/EW")
-		iads:activate()
-		return iads
+		return SkynetIADS:create(ctx.name)
 	end)
 	if not ok then
 		error(result, 0)
 	end
+	local iads = result
 	ctx:onCleanup(function()
-		result:deactivate()
+		iads:deactivate()
 	end)
-	return result
+	ok, result = Hotload.callOnMain(function()
+		iads:addSAMSitesByPrefix(ctx.name .. "/SAM")
+		iads:addEarlyWarningRadarsByPrefix(ctx.name .. "/EW")
+		if configure then
+			configure(iads)
+		end
+		iads:activate()
+	end)
+	if not ok then
+		error(result, 0)
+	end
+	return iads
 end
 
 return S

@@ -1,4 +1,4 @@
 return {
-	mission = "insim01",
+	mission = "insim-ca-main",
 	timeout = 30,
 }

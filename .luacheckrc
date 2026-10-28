@@ -23,6 +23,7 @@ globals = {
 	"land",
 	"coord",
 	"StaticObject",
+	"country",
 
 	-- This project's own classes and shared state, each a bare global.
 	"inheritsFrom",

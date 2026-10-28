@@ -13,7 +13,7 @@ from pathlib import Path
 from . import luadata
 from .driver import SILENCE, read_journal, read_outcome
 
-__all__ = ["SuiteError", "Console", "Scenario", "Verdict", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
+__all__ = ["SuiteError", "Console", "Scenario", "Verdict", "check_name", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
 
 LOST_CONTEXT = "no context for %s: setup did not run"
 INVALID = "INSIM-INVALID: "
@@ -99,11 +99,19 @@ class Verdict:
     warnings: list = field(default_factory=list)
 
 
+def check_name(name):
+    """A scenario name the driver can send: its own commands are named probe-* and stop-*, and a
+    command's text quotes the name."""
+    if name.startswith(("probe-", "stop-")) or '"' in name:
+        raise SuiteError('%s: a scenario name may not start with probe- or stop-, nor contain "' % name)
+
+
 def discover(folder):
     found = []
     for path in sorted(Path(folder).iterdir()):
         if not path.is_dir():
             continue
+        check_name(path.name)
         for part in REQUIRED:
             if not (path / (part + ".lua")).is_file():
                 raise SuiteError("scenario %s has no %s.lua" % (path.name, part))
@@ -142,8 +150,9 @@ def _failure(name, outcome):
     error = outcome.error or outcome.status
     if outcome.status == "crashed":
         return Verdict(name, "crashed", error)
-    if outcome.error and outcome.error.startswith(INVALID):
-        return Verdict(name, "invalid", outcome.error[len(INVALID) :])
+    mark = outcome.error.find(INVALID) if outcome.error else -1
+    if mark >= 0:  # anywhere: hotload prefixes an error raised inside a waitFor predicate
+        return Verdict(name, "invalid", outcome.error[mark + len(INVALID) :])
     return Verdict(name, "fail", error)
 
 
