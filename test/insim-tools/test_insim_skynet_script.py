@@ -69,6 +69,10 @@ class SkynetScriptTest(unittest.TestCase):
         (self.repo / "build-tools" / "listToMerge.txt").write_text("a.lua\n", encoding="utf-8")
         self.assertEqual(skynet_script.build_text(self.repo), 'env.info("--- SKYNET VERSION: 9.9.9 ---")\na = 1\n')
 
+    def test_a_failed_build_raises_build_error(self):
+        with self.assertRaisesRegex(skynet_script.BuildError, "SkynetIADS.version"):
+            skynet_script.prepare(self.repo, None)
+
 
 if __name__ == "__main__":
     unittest.main()

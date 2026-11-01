@@ -9,17 +9,21 @@ import importlib.util
 import shutil
 from pathlib import Path
 
-__all__ = ["prepare", "build_text"]
+__all__ = ["prepare", "build_text", "BuildError"]
 
-_BUILD_SCRIPT = Path(__file__).resolve().parents[2] / "build-tools" / "build-compiled-script.py"
+_spec = importlib.util.spec_from_file_location(
+    "build_compiled_script", Path(__file__).resolve().parents[2] / "build-tools" / "build-compiled-script.py"
+)
+_build = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_build)
+
+#: What a build that cannot be made raises: a listed source missing, or no version found.
+BuildError = _build.BuildError
 
 
 def build_text(repo):
     """The compiled script built from *repo*'s sources, by this repository's build."""
-    spec = importlib.util.spec_from_file_location("build_compiled_script", _BUILD_SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.build(repo)
+    return _build.build(repo)
 
 
 def prepare(repo, forced, build=build_text):

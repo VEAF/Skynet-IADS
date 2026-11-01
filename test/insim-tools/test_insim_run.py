@@ -131,6 +131,12 @@ class RunTest(unittest.TestCase):
         _, out = self.main("--skynet", "my.lua", when=datetime(2027, 1, 1))
         self.assertIn("Skynet script: forced from my.lua\n", out)
 
+    def test_run_reports_a_failed_build(self):
+        self.prepare_script.side_effect = run.skynet_script.BuildError("Missing source file(s) listed in listToMerge.txt: x.lua")
+        code, out = self.main()
+        self.assertEqual(code, 2)
+        self.assertIn("Missing source file(s) listed in listToMerge.txt: x.lua", out)
+
     def test_run_refuses_a_stale_mission(self):
         FakeDriver.current = False
         code, out = self.main()
