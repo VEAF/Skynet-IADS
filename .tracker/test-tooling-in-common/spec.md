@@ -39,7 +39,8 @@ should not:
 | `test/lua/` | Skynet's tests, and the check of `samTypesDB` against the DCS database |
 | `test/common/` | the runners, `luaunit`, the stub, the fixtures, the loader, the coverage report and its floor, and the tests of the stub and the fixtures |
 | `test/build-tools/` | the tests of `build-tools/` |
-| `test/insim/`, `test/insim-tools/`, `test/demo-missions/` | unchanged |
+| `test/insim/` | unchanged, but for its driver's name |
+| `test/insim-tools/`, `test/demo-missions/` | unchanged |
 
 ## What to build
 
@@ -48,6 +49,8 @@ should not:
 - `run.lua`, with no folder given, runs every folder directly under `test/` that holds a `test_*.lua`.
   `run.py` does the same for `test_*.py`. A folder or a name on the command line narrows the run, as
   today.
+- The in-sim driver, `test/insim/run.py`, becomes `test/insim/run-insim.py`, and its test loads it
+  by path. Every command that names it follows.
 
 ### Into `test/common/`
 
@@ -113,6 +116,7 @@ them at runtime.
 | Decision | Turned down | Why |
 |---|---|---|
 | Folders are discovered by the runners | a list in the runner | the runner would hold knowledge of the layout, and a new suite would silently not run |
+| The in-sim driver is `run-insim.py` | keeping `run.py` beside the runners' `run.py` | two entry points of one name read as one calling the other, and their tests share one process, where Python keeps one module per name; hyphenated like `build-tools/`'s scripts, whose tests load them by path |
 | Folders split by where tests run | by what they test, with `lua-tools/` and `common-tools/` | `insim-tools/` exists because its subject runs in DCS and its tests do not; the shared tooling runs exactly like Skynet's tests |
 | Shared tooling and its tests in `test/common/` | in `test/lua/` | `test/insim-tools/` uses them too, and no suite folder then reads a sibling |
 | The stub and the fixtures keep their tests | dropping them with the loader's | if they imitate DCS wrongly, Skynet's tests pass against a world that does not exist, silently |

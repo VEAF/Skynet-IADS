@@ -1,10 +1,11 @@
-"""Tests for test/insim/run.py -- the one command. Build, Mailbox, Driver and the judge are fakes.
+"""Tests for test/insim/run-insim.py -- the one command. Build, Mailbox, Driver and the judge are fakes.
 
 Run from anywhere:
 
     python -m unittest discover -s test/insim-tools -p "test_insim_*.py"
 """
 
+import importlib.util
 import io
 import json
 import os
@@ -18,7 +19,9 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
-import run  # noqa: E402
+_spec = importlib.util.spec_from_file_location("insim_run", os.path.join(ROOT, "test", "insim", "run-insim.py"))
+run = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(run)
 from engine.driver import Outcome  # noqa: E402
 
 SCENARIO_LUA = 'return { mission = "m1", timeout = 5, tier = "minimal" }'

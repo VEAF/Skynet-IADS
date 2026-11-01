@@ -136,7 +136,7 @@ There are two suites, and which one you want is decided by whether a stub can an
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
 | `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `test/insim/` | inside DCS, driven by one command, `python test/insim/run.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
 
 Those two files are the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
@@ -362,9 +362,9 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the in-sim suite's minimal tier, `python test/insim/run.py`,
-runs where CI cannot, since GitHub runners have no DCS. It is consultative, not a gate — but a
-release that goes out unflown says so.
+Before the first, fly the release candidate: the in-sim suite's minimal tier,
+`python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
+consultative, not a gate — but a release that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in

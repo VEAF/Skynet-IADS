@@ -37,7 +37,7 @@ python build-tools/build-compiled-script.py          # build the deliverable
 lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
 python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
-python test/insim/run.py                             # the in-sim suite; its mission must be open in DCS
+python test/insim/run-insim.py                       # the in-sim suite; its mission must be open in DCS
 ```
 
 If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:
