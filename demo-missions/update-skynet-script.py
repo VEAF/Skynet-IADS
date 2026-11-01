@@ -13,6 +13,10 @@ made in memory, leaves every other member of the archive as it is, and writes
 `demo-missions/skynet-script.sha256` in `sha256sum`'s format. Each hash is of the embedded script,
 not of the archive, so `sha256sum -c` does not apply. It never rewires a mission: a demo without
 that member is refused, and nothing is written.
+
+Every member is compressed again on the way through, with the machine's zlib. Their contents never
+change, but run where the zlib differs from the last run's, every compressed stream does, and git
+stores the whole archive again: about 1 MB, accepted for something done once per release.
 """
 
 import hashlib

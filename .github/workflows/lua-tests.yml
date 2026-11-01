@@ -32,7 +32,7 @@ jobs:
 
   # The demos are committed whole, and a release refreshes their Skynet script. On every
   # push and pull request, each demo's script must match its line in skynet-script.sha256: a
-  # script changed by any other way than `update` goes red here. Towards master the script must
+  # script changed without its hash goes red here. Towards master the script must
   # also be a build of the sources; not before, since between releases a demo carries the last
   # release, which develop cannot rebuild.
   demo-missions:
