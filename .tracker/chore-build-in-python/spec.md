@@ -1,6 +1,6 @@
 # The build is in Python, and builds the same bytes everywhere
 
-Status: in-progress
+Status: done
 
 ## The problem
 
@@ -68,9 +68,10 @@ It is one test, not a suite of them.
 - `.github/workflows/lua-tests.yml`: the `mission-archives` job's build step uses Python.
 - `test/insim/skynet_script.py`: its copy in `build/insim/` is up to date when it equals an in-memory
   build. `skynet-script.json` and the sources hash go; `--skynet FILE` still forces a copy, which the
-  next default run replaces. `test/insim-tools/test_insim_skynet_script.py` follows.
+  next default run replaces. A build that fails is reported by `test/insim/run.py` as its other errors
+  are. `test/insim-tools/test_insim_skynet_script.py` and `test_insim_run.py` follow.
 - `.gitignore`: the `demo-missions/skynet-iads-compiled.lua` entry goes; `/build/` already covers the
-  output.
+  output. `/tmp/` and its comment go too: nothing writes to `tmp/` any more.
 
 ### The guidance and documentation
 
@@ -85,7 +86,8 @@ It is one test, not a suite of them.
 - `.claude/skills/release/SKILL.md`: the compiled script's path.
 - `skynet-iads-source/skynet-iads.lua`: the comment naming the build script.
 - `documentation/index.md` and `index.en.md`: the build command a developer runs from a clone.
-- `CHANGELOG.md`: the banner no longer carries the build time.
+- `CHANGELOG.md`: the banner no longer carries the build time. *A note on version numbers* says only
+  that 3.5.0 is the first version released from this repository.
 
 ## Decided
 
