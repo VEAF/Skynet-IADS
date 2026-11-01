@@ -22,84 +22,16 @@ Its point defences are unaffected: `informOfHARM` wakes them itself, before the 
 `goDark()` applies the HARM branch whatever `aiState` is. Either way `finishHarmDefence` already
 turns it back on. Not measured: whether the multiplayer bug still exists in current DCS.
 
-## The in-sim suite drifts, and nothing says so
+### Adding EW radars by prefix takes late-activated units too
 
-`unit-tests/*.miz` is the legacy suite. Nothing runs it — not the CI, not the default workflow — so
-when a refactor renames something it touches, the test keeps its old spelling and no one finds out.
-The failure is silent in the worst way: a test that writes to a field nobody reads still passes its
-own setup and then measures the wrong thing.
+`addSAMSitesByPrefix` skips a group whose first unit is not active (`isActive()`).
+`addEarlyWarningRadarsByPrefix` has no such check: it adds every unit whose name starts with the
+prefix and that `Unit.getByName` finds. A mission that keeps late-activated radars under the same
+prefix, to activate later, gets them in the IADS from the start, before they exist in the world.
 
-**One confirmed case**, found on 2026-09-19 while closing `FIX-COVERAGE-UPDATE-DARKENS-SITES`.
-`0ebbc01` (PR #17) renamed `lastUpdatePosition` to `lastCoverageUpdatePosition`.
-`unit-tests/test-skynet-iads.lua:163` and `:174` still assigned the old name, so they set a field
-`getDistanceTraveledSinceLastUpdate()` no longer reads — it finds `lastCoverageUpdatePosition` nil,
-adopts the current position and answers 0, where the test asserts 763.
-
-**Proved in DCS and fixed, 2026-09-20.** It was still green in the simulator, because the mission
-carried the December 2023 build where `lastUpdatePosition` was the real name. Refreshing that
-artifact (`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 01) turned it red — `expected: 763, actual:
-0`, exactly as predicted here — and ticket 04 fixed it. A sweep of every field the in-sim suites
-write against what the sources define found no second case, so the lint step proposed below has been
-run once by hand and found one thing; what stands guard now is `miz-suite.py check`, which stops the
-archive from carrying a build old enough to hide a rename.
-
-**How far the drift goes: measured, 2026-09-20.** The suite was run in DCS on Persian Gulf while
-closing `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04. **118 tests, 114 successes, 4 failures**, and
-all four are the second kind of drift — a stale *expectation* whose spelling is still valid, which
-the regex sweep could never have seen. All four are in
-`test-skynet-iads-red-sam-sites-and-ew-radars.lua`, last touched **2023-12-29**, and every one of
-them pins a figure DCS reports about its own units:
-
-| test | asserts | DCS answers today |
-|---|---|---|
-| `testCheckSA11GroupNumberOfLaunchersAndSearchRadarsAndNatoName` | SA-11 launcher range 35000 | 46000 |
-| `testHQ7LauncherAndRadar` | HQ-7 launcher range 12000 | 15000 |
-| `testSA15LaunchersSearchRadarRangeAndHARMDefenceChance` | target height 1930 | 1929 |
-| `testShilkaGroupLaunchersSearchRadarRangesAndHARMDefenceChance` | target height 1909 | 1908 |
-
-Two missile ranges ED has changed since 2023, and two altitudes that moved by a metre. Nothing in
-Skynet is wrong; the tests record what DCS said three years ago.
-
-**So the open question was not "what are the numbers today".** It was whether Skynet's own suite
-should pin ED's data at all — and the four were only what was visible that day. Across every in-sim
-suite, **125 assertions** compared an ED figure to a literal, so the next patch decided which of them
-went red. All 125 are gone, into `test/lua/dcs-figures.lua`.
-
-**Answered, 2026-09-20.** David pointed at
-[VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools), which answers the
-same question **without a simulator**: `veaf_build/dcs_data/` sparse-clones
-[`Quaggles/dcs-lua-datamine`](https://github.com/Quaggles/dcs-lua-datamine) at a pinned commit,
-generates a committed artifact, and a CI guard regenerates against the pin and fails on a diff; a
-weekly workflow bumps the pin and opens a pull request when upstream moves.
-
-The datamine carries exactly the figures these tests pin — checked at that pin (DCS 2.9.29.27278):
-`getRange()` is `_G/rockets/<missile>.Range_max` (SA-11 **46000**, HQ-7 **15000**, SA-15 12000),
-`getMaximumFiringAltitude()` is its `H_max`, and `getMaxRangeFindingTarget()` is
-`_G/db/Sensors/Sensor/<radar>.detection_distance` times `0.2 ^ 0.25` — detection range goes as the
-fourth root of the reference target's radar cross-section, and both radar samples match to the
-eighth decimal. The two figures the DCS log reported are the two the datamine holds.
-
-So ED's data leaves the simulator entirely: it becomes a generated table and a standalone test.
-`FIX-IN-SIM-SUITE-TESTS-A-2023-SKYNET` ticket 03 carries the work.
-
-
-**Worth considering, cheapest first:**
-
-- A lint step that compares the symbols `unit-tests/` uses against those `skynet-iads-source/`
-  defines, and fails on a name that no longer exists. It would have caught this one, it runs in CI,
-  and it needs no simulator. It catches nothing about stale expectations.
-- Fix the two lines and leave the rest, accepting that the suite is a reference to read rather than
-  a gate.
-- Retire `unit-tests/` as the migration to `test/lua/` advances, deleting each file as its behaviour
-  is covered — `test/lua/README.md` already tracks what is ported and what is not. That is the only
-  option that ends the drift rather than measuring it. **Started, 2026-09-20**: six suites are gone
-  from both copies, and `build-tools/miz-suite.py` plus a CI job now keep the `.miz` consistent —
-  the archive itself was, until then, the one file no gate in this repository looked at. What is
-  left in it is what a stub cannot answer for, which is exactly where the four failures above live.
-  So this option ends the *silent* drift; it does not end this one.
-
-Related to *Smoke tests* below: both are about the same suite, from opposite ends — this one asks
-what to do with it as it rots, that one asks what to replace it with.
+**Shape if taken**: the same `isActive()` check in `addEarlyWarningRadarsByPrefix`. Not measured:
+what Skynet does with an inactive radar it holds, and whether `getUnitNames()` lists late-activated
+units at all in DCS.
 
 ## One agent instruction file, read by Claude and Copilot alike
 
@@ -157,54 +89,6 @@ scripts may fit better than `make`.
 thing to install and keep working. A CI workflow that duplicated a command a third time, or a
 contributor asking what the commands are, is the signal that it has stopped being a wash.
 
-## Every unit type in `samTypesDB` checked against the datamine
-
-`samTypesDB` is maintained by hand: it maps DCS unit type names to NATO names, to the role each unit
-plays in a site, and to `harm_detection_chance`. When ED renames a unit, the site that places it is
-classified without that unit, and nothing says so.
-
-Part of this is already guarded. `build-tools/dcs-figures.py` resolves every `searchRadar` and
-`trackingRadar` type of `skynet-iads-supported-types.lua` against `_G/db/Units/` at the pinned
-datamine commit, and fails on one it cannot find — so the weekly bump in `dcs-data-drift.yml` fails
-on a renamed radar too.
-
-**Not guarded:**
-
-- the `launchers` of `samTypesDB`, which no figure reads;
-- the types added by `highdigitsams/skynet-iads-high-digit-sams-suported-types.lua`, which the
-  generator does not read at all.
-
-**Shape if taken**: `dcs-figures.py check` asserts that every unit type either file names, in every
-role, exists under `_G/db/Units/` at the pin. The weekly bump then fails on a rename rather than
-opening no pull request. It catches a type that disappeared; it cannot catch a unit placed in the
-wrong role, nor anything Skynet decides for itself — NATO names and `harm_detection_chance`.
-
-Open question: the high-digit SAMs are a mod, so their types may not be in ED's dump at all. If they
-are not, that file stays unguarded.
-
-## The test READMEs still argue from the backlog
-
-Guidance files state their rules without citing a lot, a ticket, a person or a date, and without
-naming a consumer. `CHORE-REPOSITORY-CONVENTIONS` applied that to the root instruction files, and left the two
-READMEs inside the test directories as they were.
-
-Noticed 2026-09-26, in its third review:
-
-- `test/lua/README.md` justifies retiring six legacy suites by "David's call, 2026-09-19; done by
-  `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04", and its coverage section is largely a record of which
-  lot brought which tests. It also names the repository that vendors the artifact, and calls a
-  decision about the artifact's public surface one for VEAF alone, where the project is maintained
-  jointly.
-- `unit-tests/README.md` justifies the smoke gate being consultative by "David's call, 2026-09-21",
-  and supports it by two sibling projects.
-
-**Why it was not done there**: `test/lua/README.md` is some 350 lines, and separating the reference a
-contributor needs from the history of how the suite got here is a rewrite, not an edit. Each passage
-has to be checked for whether its reason survives without its citation — most do.
-
-The shape to aim for is the one the root files reached: the rule, and its reason in general form.
-The history is already in the archived lot records.
-
 ## ADRs
 
 Whether Architecture Decision Records would serve this repository better than stating lasting
@@ -228,8 +112,7 @@ accepted the version heading as well would let the freeze ride with the release 
 
 Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
 *battery* (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say
-*SAM site*. Fifteen more are in the tooling and guidance: `.github/` — the weekly figures pull
-request among them — `build-tools/`, `CONTRIBUTING.md` and `test/lua/README.md`.
+*SAM site*. More are in the tests and their tooling, under `test/`.
 
 ## Lua 5.1 fetched like the lint tools
 
@@ -286,6 +169,42 @@ shoot one down has not been flown.
 
 **Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
 engage them, the change is one more class in that system's entry in the supported-types table.
+
+## The in-sim driver core moves to dcs-hotload
+
+The in-sim engine's driver core (`test/insim/engine/`) goes to dcs-hotload, as `feat-insim-test-suite`
+designed it to; hotload first — its own ideas hold the detail — then this repository vendors that
+release and drops what moved.
+
+## The release skill repeats `CONTRIBUTING.md`
+
+`.claude/skills/release/SKILL.md` walks through the release steps that `CONTRIBUTING.md` already
+states, and its flight before the version bump runs the smoke gate that
+`test-port-unit-tests-to-insim` removes. Two things in it are not said anywhere else:
+
+- what the release notes must call out: anything that changes behaviour for existing missions, and
+  anything a mission maker has to do differently after upgrading — Skynet changes are felt in
+  flight, not read in a diff, and a new default left unsaid is filed as a bug;
+- bringing `develop` up to date (`git pull --ff-only`) before preparing the release.
+
+**Shape if taken**: those two go into the release steps of `CONTRIBUTING.md`, and the skill is
+deleted.
+
+## In-sim suite: three small gaps
+
+Left by `test-port-unit-tests-to-insim`; none has failed a run.
+
+- **Cleanup removes groups, not what they left.** A wreck stays in its zone, and a weapon still in
+  flight when a scenario ends can land on the next scenario's copy in the same zone. Only
+  `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
+  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
+  would say.
+- **Two scenarios can wait past their timeout when everything fails.** `harm-point-defence` waits up
+  to 450 s in a 420 s timeout, `network-loses-infrastructure` about 635 s in 600 s. The driver then
+  stops the run and reports "timed out", and the watch's sequences that say what went wrong are lost.
+  Shape: keep a run's waits 20–30 s under its timeout, as the other scenarios do.
+- **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
+  harmless, stale against the rename to `insim-ca-main`.
 
 ## Dropped
 

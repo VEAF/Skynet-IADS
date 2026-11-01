@@ -95,6 +95,6 @@ A network where every site reads `ACTIVE: false / AUTONOMOUS: false` for the who
   that SAM site; in an EWR block, 4 NM from that radar. Do not compare them across blocks.
 - **Correlate with the DCS lines, not only the Skynet ones.** `ASYNCNET`, `release unit` and slot
   changes sit in the same file and often explain the millisecond before an error.
-- **Check the version first.** The first line of the compiled script prints its version and build
-  date. A mission may be running a build that predates the fix you are looking for — a vendored copy
-  has run a month behind.
+- **Check the version first.** The first line of the compiled script prints its version. A mission
+  may be running a build that predates the fix you are looking for — a vendored copy has run a month
+  behind.

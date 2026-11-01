@@ -17,15 +17,14 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 
 - **Lua 5.1.** The deliverable runs inside DCS, which is Lua 5.1 — no `goto`, no `<const>`, no
   `table.move`, no `utf8.*`. The standalone suite refuses to run on anything else. Where `lua5.1` is
-  on `PATH` it is `lua5.1 test/lua/run.lua`; if it is not — common on Windows — install *Lua for
+  on `PATH` it is `lua5.1 test/common/run.lua`; if it is not — common on Windows — install *Lua for
   Windows* and call it by its path, which PowerShell needs the call operator for:
 
   ```powershell
-  & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+  & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
   ```
 
-- **PowerShell**, for the build. `pwsh` (PowerShell 7) works on every platform.
-- **Python**, for the documentation gate and the mission tooling.
+- **Python**, for the build, the documentation gate and the mission tooling.
 - **`gh`**, the GitHub CLI, logged in with `gh auth login`, to open pull requests from the command
   line. A browser does the same job.
 - **Nothing to install for the lint gate.** `build-tools/lint.sh` fetches `luacheck` and `stylua` at
@@ -42,10 +41,15 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | | |
 |---|---|
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
-| `demo-missions/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
-| `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
-| `unit-tests/` | what needs DCS running — **see its `README.md`** |
-| `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
+| `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
+| `test/README.md` | how to run each suite and add to it — **read it before adding a test** |
+| `test/lua/` | the standalone Lua 5.1 suite, and the check of `samTypesDB` against the DCS database |
+| `test/common/` | the machinery the test suites share, whatever their language: a runner per language, `run.lua` and `run.py`, the vendored luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures |
+| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload |
+| `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
+| `test/build-tools/` | the tests of `build-tools/` |
+| `test/demo-missions/` | the tests of the demos' updater |
+| `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests. `update-skynet-script.py` refreshes their Skynet script, and `skynet-script.sha256` holds its hash |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
 | `CONTEXT.md` | what Skynet is for, and what in its design looks like a bug and is not |
@@ -61,18 +65,21 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | root markdown | `UPPERCASE.md` |
 | `skynet-iads-source/` | kebab-case, `skynet-iads-*.lua` |
 | `build-tools/` | kebab-case |
+| `demo-missions/` | kebab-case |
 | `documentation/` | kebab-case, with an `.en.md` twin |
-| `test/lua/`, `test/python/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
+| `test/lua/`, `test/common/`, `test/insim-tools/`, `test/build-tools/`, `test/demo-missions/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
 | `.tracker/` | `<type>-<slug>/` for a piece of work, `archive/YYYY-MM-DD-<type>-<slug>/` once archived, lowercase kebab, the types as in *Git flow*; `spec.md` lowercase inside it; `IDEAS.md` uppercase |
 
-The snake_case in the test directories is not an inconsistency: Python cannot import a module whose
-name contains a hyphen, so `test/python/` has no choice, and `test/lua/` mirrors it.
+The snake_case in the test file names is not an inconsistency: Python cannot import a module whose
+name contains a hyphen, so the Python tests have no choice, and the Lua tests mirror them.
 
-Three exceptions:
+Four exceptions:
 
-- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script,
-  `.luacheckrc`, `.luacov` and two test files. Renaming it changes the build and the test harness in
-  exchange for nothing but consistency.
+- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script, the test
+  loader, `.luacheckrc`, `.luacov`, the in-sim tooling and several tests. Renaming it changes the
+  build and the test harness in exchange for nothing but consistency.
+- `demo-missions/moose_a2a_connector/` is inherited snake_case. The documentation and earlier
+  releases point at that path.
 - `.claude/skills/<kebab-name>/SKILL.md` is uppercase inside a kebab-cased directory because Claude
   Code requires that name.
 - Records archived before these conventions keep their uppercase names —
@@ -82,41 +89,41 @@ Three exceptions:
 
 Run from anywhere in the repository — paths resolve from the script's own location:
 
-```powershell
-pwsh -File build-tools/build-compiled-script.ps1
+```
+python build-tools/build-compiled-script.py
 ```
 
-It produces `demo-missions/skynet-iads-compiled.lua`, the concatenation of every source listed in
+It produces `build/skynet-iads-compiled.lua`, or the file `--output` names, the concatenation of every source listed in
 `build-tools/listToMerge.txt`, in the order that file states. **That is where a new source file gets
 added — never to the script.** The version in the artifact's first line comes from
 `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`; there is no argument to pass.
 
+**The build is reproducible**: the same commit gives the same bytes on any machine. The first line
+carries no build time, and the output is UTF-8 with LF line endings. Whether a file is the build of
+the current sources is answered by building again and comparing.
+
 CI runs the same build on every pull request and on pushes to `develop` and `master`
-(`.github/workflows/build.yml`), then loads and executes the artifact against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
+(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
 
-### The missions are assembled, not committed
+### The demo missions are committed whole
 
-No `.miz` in git contains the scripts it runs — not the three under `unit-tests/`, not the three
-under `demo-missions/`. Each holds a placeholder, and the mission DCS opens is built on demand:
+Each `.miz` under `demo-missions/` carries every script it runs, so a demo opened from a checkout
+runs. The Skynet script is the one part a tool refreshes, at each release, with a build:
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1
-python build-tools/miz-suite.py build
+python demo-missions/update-skynet-script.py update
 ```
 
-They land in `build/missions/`, which is git-ignored. Run that **before testing in DCS**, never
-before committing — there is nothing to commit, which is the point. A committed copy of the code
-goes stale in silence.
+That also writes `demo-missions/skynet-script.sha256`, the hash of each demo's Skynet script. CI
+checks the demos against it on every pull request, and against a fresh build on the way to `master`.
 
-**Never edit a `.miz` by hand.** A script is wired into one in four places, and
-`build-tools/miz-suite.py` is what keeps them consistent. `test/lua/README.md` has the wiring and the
-rest of the commands.
+The setup scripts beside the demos are where they are edited, then loaded into the `.miz` in the
+Mission Editor, as for any mission. Nothing checks that the two stay in step.
 
-Only `demo-missions/` archives are attached to a release. Everything under `unit-tests/` is developer
-material and never is.
+Only `demo-missions/` archives are attached to a release.
 
 ## Test first
 
@@ -129,24 +136,16 @@ There are two suites, and which one you want is decided by whether a stub can an
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
-| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `unit-tests/` | inside DCS | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all | [`unit-tests/README.md`](unit-tests/README.md) |
+| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/README.md`](test/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/README.md`](test/README.md) |
 
-Those two files are the reference: how to run each suite, how to add to it, what is covered and what
+That file is the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
-One rule worth knowing before you get there:
-
-- **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
-  ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
-  pinned data dump, and a weekly workflow (`.github/workflows/dcs-data-drift.yml`) opens a pull
-  request when one moves. Asserted inside a
-  mission instead, a changed figure is a red test nobody sees.
-
 ## Static analysis and formatting
 
-`skynet-iads-source/` and `test/lua/` are gated by `luacheck` and `stylua --check`
+`skynet-iads-source/`, `test/lua/`, `test/common/` and `test/insim-tools/` are gated by `luacheck` and `stylua --check`
 (`.github/workflows/lint.yml`). CI runs the same script you do:
 
 ```
@@ -160,9 +159,7 @@ line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.
-`.styluaignore` excludes the vendored `test/lua/luaunit.lua` and the generated
-`test/lua/dcs-figures.lua`, whose shape belongs to its generator: `stylua --check` run on that path
-directly fails by design.
+`.styluaignore` excludes the vendored `test/common/luaunit.lua`.
 
 `.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
@@ -356,13 +353,14 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the in-sim smoke checks in `unit-tests/README.md` run
-where CI cannot, since GitHub runners have no DCS. They are consultative, not a gate — but a release
-that goes out unflown says so.
+Before the first, fly the release candidate: the in-sim suite's minimal tier,
+`python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
+consultative, not a gate — but a release that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in
-   `CHANGELOG.md`. Pull request to `develop`.
+   `CHANGELOG.md`. Then run `python demo-missions/update-skynet-script.py update`, and commit the
+   demos and `demo-missions/skynet-script.sha256` with the bump. Pull request to `develop`.
 2. **Promote**: a pull request from `develop` to `master`, merged with a merge commit.
 3. **Tag** `v<x.y.z>` on `master` and push it. `.github/workflows/release.yml` builds, checks and
    publishes the release, taking its notes from `## [Unreleased]` as it stands. A tag that is not a

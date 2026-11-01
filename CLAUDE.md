@@ -3,7 +3,7 @@
 > Skynet gives DCS World an Integrated Air Defence System: early-warning radars feed contacts to SAM
 > sites, which stay dark until the network tells them to engage. Pure Lua 5.1 sources in
 > `skynet-iads-source/` are concatenated into a single deliverable `skynet-iads-compiled.lua` by a
-> PowerShell build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
+> Python build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
 
 **`CONTRIBUTING.md` is the guide.** This file holds what you can get wrong before you would have any
 reason to open it. Everything else is there.
@@ -19,9 +19,8 @@ reason to open it. Everything else is there.
 
 ## Never
 
-- **Edit `demo-missions/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
+- **Edit `build/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
   `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
-- **Edit a `.miz` by hand.** `build-tools/miz-suite.py` is what writes into one.
 - **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
   `gh pr create` and the web UI's compare banner default to the read-only parent. Always
   `gh pr create --repo VEAF/Skynet-IADS --base develop` — `--base master` only for a release's
@@ -34,16 +33,17 @@ reason to open it. Everything else is there.
 ## Commands
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
-lua5.1 test/lua/run.lua                              # the standalone suite; a name filters
+python build-tools/build-compiled-script.py          # build the deliverable
+lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
+python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
-python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
+python test/insim/run-insim.py                       # the in-sim suite; its mission must be open in DCS
 ```
 
 If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:
 
 ```powershell
-& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\lua\run.lua
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
 ```
 
 Run `luacheck` and `stylua` only through `build-tools/lint.sh`: it holds the pinned versions.
@@ -62,17 +62,14 @@ starting a change, and again after a context compaction: this file is the only o
 - Configuration for agent toolsets is in `.agents/`.
 - Everything written in the repository is in English. What a *user* reads is the exception.
 
-Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
-assembled on demand. That is the step to run before testing in DCS, not before committing.
-
 ## Before you do these, read
 
 | About to… | Read |
 |---|---|
 | change a source file | `CONTRIBUTING.md` — testing first, the build, the lint gate |
-| add or change a test | `CONTRIBUTING.md` for which suite; `test/lua/README.md` for how to run and add one |
+| add or change a test | `CONTRIBUTING.md` for which suite; `test/README.md` for how to run and add one |
 | touch `documentation/` | `CONTRIBUTING.md` — three conventions, all gated |
-| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `unit-tests/README.md` for the in-sim smoke gate |
+| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `test/README.md` for the in-sim suite |
 | open a pull request | `CONTRIBUTING.md` — the steps, git flow and the changelog |
 | open, update or archive a piece of work | `CONTRIBUTING.md` — how work is tracked |
 | edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |

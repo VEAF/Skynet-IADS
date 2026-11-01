@@ -9,11 +9,11 @@
 --- the fixture radar range (dcs-fixtures RADAR_RANGE_M = 120000 m) with the
 --- arithmetic shown in a comment; positions are adjusted, never the assertions.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 -- one-liner from the .miz's skynet-unit-tests.lua
 local function createDeadEvent()
