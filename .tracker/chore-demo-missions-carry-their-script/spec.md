@@ -1,6 +1,6 @@
 # The demo missions carry their Skynet script
 
-Status: in-progress
+Status: done
 
 ## The problem
 
@@ -13,8 +13,8 @@ tool behind all this — wiring, extraction, stubbing, removal — is far heavie
 
 - **The demos are client demos, not tests.** What tests Skynet lives in `test/insim/` or `test/lua/`.
 - **The demos are stable.** They are committed whole, scripts included, and a demo opened from a
-  checkout runs. Only the Skynet script inside them changes, and only for a release, so a demo carries
-  the released Skynet.
+  checkout runs. The Skynet script inside them is the one part a tool refreshes, and only for a release,
+  so a demo carries the released Skynet.
 - **Nothing checks a demo beyond its Skynet script's hash.**
 - The demos are `demo-missions/skynet-test-persian-gulf.miz` and
   `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher.miz`, under their current names.
@@ -86,7 +86,7 @@ default list in `test/common/run.py`. That the list is hardcoded is `test-toolin
 | The setup scripts are embedded once, then kept in step by hand | the updater embedding them on every refresh | the demos are stable; a loose copy is a convenience for reading, not a source |
 | A demo is checked by its Skynet script's hash only | a wiring check; parsing every script; checking in DCS | the updater never rewires; a script equal to a tested build is proven. The demos went stale for years without a complaint |
 | The demos first carry the 3.5.0 release asset | the build of `develop` | `develop` is ahead of `v3.5.0` under the same version number, so its build would be unreleased code labelled 3.5.0. The tag cannot be rebuilt to the same bytes: the release asset carries a build time |
-| `skynet-script.sha256` is in `sha256sum`'s format | a format of our own | `sha256sum -c` reads it as it is |
+| `skynet-script.sha256` is in `sha256sum`'s format | a format of our own | it is the layout everyone already reads. Each hash is of the embedded script, not of the archive, so `sha256sum -c` does not apply |
 | On `develop`, the hash file; towards `master`, a fresh build too | a fresh build everywhere | between releases a demo carries the last release, which `develop` cannot rebuild |
 | The stress-test mission leaves the demos | keeping it | it is a test, not a demo; an in-sim scenario may replace it |
 | The smoke checks the in-sim port left here — `networks-built`, `named-elements-found`, `jammer-alive`, `no-mist` — do not come back | porting them | what they caught in a demo is the demo's; what is Skynet's behaviour belongs in `test/insim/` |

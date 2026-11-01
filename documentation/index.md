@@ -38,15 +38,8 @@ version](https://github.com/VEAF/Skynet-IADS/releases) et voyez Skynet à l'œuv
 golfe Persique. Elle est jointe à la release, à côté de `skynet-iads-compiled.lua`, et embarque
 exactement le Skynet que cette version livre.
 
-Les fichiers `.miz` du dépôt, eux, sont des **gabarits** : ils contiennent un emplacement réservé à
-la place de chaque script, pour qu'une copie du code déposée à côté du code ne puisse pas prendre
-trois ans de retard en silence — ce qui est précisément arrivé, jusqu'au 20/09/2026. Si vous
-travaillez depuis un clone, assemblez vous-même les missions jouables, dans `build/missions/` :
-
-```
-python build-tools/build-compiled-script.py
-python build-tools/miz-suite.py build
-```
+Les démos du dossier `demo-missions/` du dépôt fonctionnent telles quelles, depuis un clone aussi,
+avec le Skynet de la dernière version.
 
 ## Un projet repris, et ses auteurs {#credits}
 

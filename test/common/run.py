@@ -11,7 +11,11 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_FOLDERS = [os.path.join(HERE, "..", "insim-tools"), os.path.join(HERE, "..", "build-tools")]
+DEFAULT_FOLDERS = [
+    os.path.join(HERE, "..", "insim-tools"),
+    os.path.join(HERE, "..", "build-tools"),
+    os.path.join(HERE, "..", "demo-missions"),
+]
 
 
 def main(argv):
