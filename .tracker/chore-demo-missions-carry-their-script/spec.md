@@ -1,6 +1,6 @@
 # The demo missions carry their Skynet script
 
-Status: open
+Status: in-progress
 
 ## The problem
 
@@ -27,20 +27,24 @@ tool behind all this — wiring, extraction, stubbing, removal — is far heavie
 
 - `update`: replaces the embedded `l10n/DEFAULT/skynet-iads-compiled.lua` of each demo with an
   in-memory build (`chore-build-in-python`), leaving every other member of the archive as it is, and
-  writes `demo-missions/skynet-script.sha256`: one line per demo, the hash of its embedded script and
-  the demo's path. It refuses a demo with no such member.
+  writes `demo-missions/skynet-script.sha256`: one line per demo, in `sha256sum`'s format — the
+  SHA-256 of its embedded script, two spaces, the demo's repository-relative path with forward
+  slashes. It refuses a demo with no such member.
 - `check`: each demo's embedded script matches its line in `skynet-script.sha256`.
 - `check --against-build`: the same, and the embedded script equals an in-memory build.
 
 It never rewires a mission: it only replaces the content of a script already wired in. Its tests are in
-`test/demo-missions/`, replacing `test/build-tools/test_miz_suite.py`.
+`test/demo-missions/`, replacing `test/build-tools/test_miz_suite.py`, and that folder joins the
+default list in `test/common/run.py`. That the list is hardcoded is `test-tooling-in-common`'s.
 
 ### The demos
 
-- The placeholders go. Each demo embeds the current build and its setup script as it stands —
-  `demo-missions/skynet-iads-setup-persian-gulf.lua`, and
-  `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher-setup.lua` — and
-  `skynet-script.sha256` is committed with them.
+- The placeholders go, once, before `miz-suite.py` does. Each demo embeds the 3.5.0 release's script
+  — `skynet-iads-compiled.lua` in this folder, the asset attached to `v3.5.0` — and its setup script
+  as it stands: `demo-missions/skynet-iads-setup-persian-gulf.lua`, and
+  `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher-setup.lua`. `skynet-script.sha256`
+  is written from what is embedded and committed with them. This is a one-time step, not a command of
+  the updater: `update` embeds a build, and the next release is the first to run it.
 - The loose setup scripts stay in the repository, for reading and diffing. No tool keeps them in step
   with the embedded copies: a developer who edits one edits the `.miz` too.
 - `demo-missions/skynet-test-persian-gulf-stress-test.miz` moves to `.tracker/test-insim-stress-scenario/`.
@@ -63,7 +67,9 @@ It never rewires a mission: it only replaces the content of a script already wir
 
 - `CONTRIBUTING.md`: *The missions are assembled, not committed* becomes a short passage saying the
   demos are committed whole, a release refreshes their Skynet script, and the loose setup scripts are
-  kept in step by hand. *Layout* names the updater. The "never edit a `.miz` by hand" rule goes.
+  kept in step by hand. *Layout* names the updater and `test/demo-missions/`, and drops
+  `test/build-tools/` if nothing is left in it. *File naming* covers both. The "never edit a `.miz`
+  by hand" rule goes.
 - `CLAUDE.md`: the `miz-suite.py build` command and the rule against editing a `.miz` by hand go, and
   so does the paragraph on placeholders.
 - `.gitignore`: the comment on assembled missions.
@@ -79,6 +85,8 @@ It never rewires a mission: it only replaces the content of a script already wir
 | The Skynet script is refreshed in the release's preparation | on every build; on the tag | a demo carries the released Skynet, which is what it demonstrates. Refreshed on the tag, the demos would land after the tagged commit, and the workflow would have to push to `master` |
 | The setup scripts are embedded once, then kept in step by hand | the updater embedding them on every refresh | the demos are stable; a loose copy is a convenience for reading, not a source |
 | A demo is checked by its Skynet script's hash only | a wiring check; parsing every script; checking in DCS | the updater never rewires; a script equal to a tested build is proven. The demos went stale for years without a complaint |
+| The demos first carry the 3.5.0 release asset | the build of `develop` | `develop` is ahead of `v3.5.0` under the same version number, so its build would be unreleased code labelled 3.5.0. The tag cannot be rebuilt to the same bytes: the release asset carries a build time |
+| `skynet-script.sha256` is in `sha256sum`'s format | a format of our own | `sha256sum -c` reads it as it is |
 | On `develop`, the hash file; towards `master`, a fresh build too | a fresh build everywhere | between releases a demo carries the last release, which `develop` cannot rebuild |
 | The stress-test mission leaves the demos | keeping it | it is a test, not a demo; an in-sim scenario may replace it |
 | The smoke checks the in-sim port left here — `networks-built`, `named-elements-found`, `jammer-alive`, `no-mist` — do not come back | porting them | what they caught in a demo is the demo's; what is Skynet's behaviour belongs in `test/insim/` |
