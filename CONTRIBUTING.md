@@ -42,9 +42,10 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 |---|---|
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
-| `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
-| `test/common/` | the machinery the test suites share, whatever their language: today the vendored luaunit and a runner per language, `run.lua` and `run.py` |
-| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
+| `test/README.md` | how to run each suite and add to it — **read it before adding a test** |
+| `test/lua/` | the standalone Lua 5.1 suite, and the check of `samTypesDB` against the DCS database |
+| `test/common/` | the machinery the test suites share, whatever their language: a runner per language, `run.lua` and `run.py`, the vendored luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures |
+| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload |
 | `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
 | `test/build-tools/` | the tests of `build-tools/` |
 | `test/demo-missions/` | the tests of the demos' updater |
@@ -74,9 +75,9 @@ name contains a hyphen, so the Python tests have no choice, and the Lua tests mi
 
 Four exceptions:
 
-- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script,
-  `.luacheckrc`, `.luacov` and two test files. Renaming it changes the build and the test harness in
-  exchange for nothing but consistency.
+- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script, the test
+  loader, `.luacheckrc`, `.luacov`, the in-sim tooling and several tests. Renaming it changes the
+  build and the test harness in exchange for nothing but consistency.
 - `demo-missions/moose_a2a_connector/` is inherited snake_case. The documentation and earlier
   releases point at that path.
 - `.claude/skills/<kebab-name>/SKILL.md` is uppercase inside a kebab-cased directory because Claude
@@ -102,7 +103,7 @@ carries no build time, and the output is UTF-8 with LF line endings. Whether a f
 the current sources is answered by building again and comparing.
 
 CI runs the same build on every pull request and on pushes to `develop` and `master`
-(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
+(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
@@ -135,20 +136,12 @@ There are two suites, and which one you want is decided by whether a stub can an
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
-| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `test/insim/` | inside DCS, driven by one command, `python test/insim/run.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
+| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/README.md`](test/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/README.md`](test/README.md) |
 
-Those two files are the reference: how to run each suite, how to add to it, what is covered and what
+That file is the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
-
-One rule worth knowing before you get there:
-
-- **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
-  ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
-  pinned data dump, and a weekly workflow (`.github/workflows/dcs-data-drift.yml`) opens a pull
-  request when one moves. Asserted inside a
-  mission instead, a changed figure is a red test nobody sees.
 
 ## Static analysis and formatting
 
@@ -166,9 +159,7 @@ line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.
-`.styluaignore` excludes the vendored `test/common/luaunit.lua` and the generated
-`test/lua/dcs-figures.lua`, whose shape belongs to its generator: `stylua --check` run on that path
-directly fails by design.
+`.styluaignore` excludes the vendored `test/common/luaunit.lua`.
 
 `.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead
@@ -362,9 +353,9 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the in-sim suite's minimal tier, `python test/insim/run.py`,
-runs where CI cannot, since GitHub runners have no DCS. It is consultative, not a gate — but a
-release that goes out unflown says so.
+Before the first, fly the release candidate: the in-sim suite's minimal tier,
+`python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
+consultative, not a gate — but a release that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in

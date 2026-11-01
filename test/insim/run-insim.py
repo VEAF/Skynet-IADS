@@ -1,4 +1,4 @@
-"""The one command: python test/insim/run.py [--tier minimal|full] [--skynet FILE] [--resume] [--verify] [--lua PATH] [NAME ...]"""
+"""The one command: python test/insim/run-insim.py [--tier minimal|full] [--skynet FILE] [--resume] [--verify] [--lua PATH] [NAME ...]"""
 
 import argparse
 import sys
@@ -24,7 +24,7 @@ CHECK_TIMEOUT = 30.0
 
 
 def _parser():
-    p = argparse.ArgumentParser(prog="run.py", description="Run the in-sim test suite.")
+    p = argparse.ArgumentParser(prog="run-insim.py", description="Run the in-sim test suite.")
     p.add_argument("--tier", choices=("minimal", "full"), default="minimal")
     p.add_argument("--skynet", metavar="FILE", help="load this Skynet script instead of the repository's build")
     p.add_argument("--resume", action="store_true", help="continue the latest run")

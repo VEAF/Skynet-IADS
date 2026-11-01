@@ -1,6 +1,7 @@
 --- Discover and run every test_*.lua of the given folders as a child process, aggregating
 --- exit codes.  Usage:  lua run.lua [folder...] [filenameSubstring]
---- An argument holding a path separator is a folder; with none, every suite folder runs.
+--- An argument holding a path separator is a folder; with none, every folder directly under test/
+--- that holds a test_*.lua runs.
 
 assert(_VERSION == "Lua 5.1", "run.lua: needs Lua 5.1 (DCS runtime); got " .. _VERSION)
 
@@ -17,8 +18,20 @@ for _, a in ipairs(arg) do
 		filter = a
 	end
 end
-if #folders == 0 then
-	folders = { base .. "/../lua", base .. "/../insim-tools" }
+
+-- The listing below is silenced, so a mistyped folder would otherwise look like an empty one.
+for _, folder in ipairs(folders) do
+	local cmd
+	if isWindows then
+		cmd = 'if exist "' .. folder:gsub("/", "\\") .. '\\" (exit 0) else (exit 1)'
+	else
+		cmd = 'test -d "' .. folder .. '"'
+	end
+	local ok = os.execute(cmd)
+	if ok ~= 0 and ok ~= true then
+		print("run.lua: no such folder: " .. folder)
+		os.exit(1)
+	end
 end
 
 -- SKYNET_TEST_COVERAGE=1 makes every child load luacov. Each one merges its counts into
@@ -43,9 +56,9 @@ end
 local function listSuites(folder)
 	local cmd
 	if isWindows then
-		cmd = 'dir /b "' .. folder .. '\\test_*.lua"'
+		cmd = 'dir /b "' .. folder .. '\\test_*.lua" 2>nul'
 	else
-		cmd = 'ls -1 "' .. folder .. '"/test_*.lua'
+		cmd = 'ls -1 "' .. folder .. '"/test_*.lua 2>/dev/null'
 	end
 	local names = {}
 	local p = assert(io.popen(cmd))
@@ -60,6 +73,31 @@ local function listSuites(folder)
 	p:close()
 	table.sort(names)
 	return names
+end
+
+-- Every folder directly under test/, sorted; the ones holding no test_*.lua add no suite.
+local function listFolders(root)
+	local cmd
+	if isWindows then
+		cmd = 'dir /b /ad "' .. root .. '"'
+	else
+		cmd = 'ls -1 -d "' .. root .. '"/*/'
+	end
+	local found = {}
+	local p = assert(io.popen(cmd))
+	for line in p:lines() do
+		local name = line:gsub("[\\/]+$", ""):match("([^\\/]+)$")
+		if name then
+			found[#found + 1] = root .. "/" .. name
+		end
+	end
+	p:close()
+	table.sort(found)
+	return found
+end
+
+if #folders == 0 then
+	folders = listFolders(base .. "/..")
 end
 
 local suites = {}

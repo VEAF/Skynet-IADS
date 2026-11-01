@@ -35,5 +35,5 @@
 #
 # What counts as a measured line is in .luacov at the repository root.
 # Check it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua
-#                 lua5.1 build-tools/report-test-coverage.lua
+#                 lua5.1 test/common/report-test-coverage.lua
 94

@@ -5,8 +5,8 @@
 --- All 5 tests exercise the wrapper around a fixture unit: EW-SA-6, a Kub 1S91 str.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
 
 TestSkynetIADSAbstractDCSObjectWrapper = {}

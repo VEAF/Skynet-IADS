@@ -33,12 +33,12 @@ CI cannot: GitHub runners have no DCS. Run the in-sim suite's minimal tier again
 release candidate in it — it builds the Skynet script itself:
 
 ```bash
-python test/insim/run.py
+python test/insim/run-insim.py
 ```
 
 **Consultative, not a gate.** A red scenario is a conversation, not a stop: report the summary and
 ask. No DCS to hand means the release goes out unflown: say so rather than implying it was checked.
-`test/insim/README.md` has the suite.
+`test/README.md` has the suite.
 
 ## Then the procedure
 

@@ -112,8 +112,7 @@ accepted the version heading as well would let the freeze ride with the release 
 
 Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
 *battery* (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say
-*SAM site*. Fifteen more are in the tooling and guidance: `.github/` — the weekly figures pull
-request among them — `build-tools/`, `CONTRIBUTING.md` and `test/lua/README.md`.
+*SAM site*. More are in the tests and their tooling, under `test/`.
 
 ## Lua 5.1 fetched like the lint tools
 
@@ -198,7 +197,7 @@ Left by `test-port-unit-tests-to-insim`; none has failed a run.
 - **Cleanup removes groups, not what they left.** A wreck stays in its zone, and a weapon still in
   flight when a scenario ends can land on the next scenario's copy in the same zone. Only
   `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
-  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which the README
+  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
   would say.
 - **Two scenarios can wait past their timeout when everything fails.** `harm-point-defence` waits up
   to 450 s in a 420 s timeout, `network-loses-infrastructure` about 635 s in 600 s. The driver then
