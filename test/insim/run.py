@@ -121,7 +121,7 @@ def main(argv=None, repo=REPO, now=datetime.now):
         for s in chosen:
             verdicts.append(suite.run_scenario(driver, judge, s, open_mission, console))
         return _finish(verdicts, folder, repo)
-    except (suite.SuiteError, verify.VerifyError, mission.MissionError) as e:
+    except (suite.SuiteError, verify.VerifyError, mission.MissionError, skynet_script.BuildError) as e:
         print(e)
         return 2
 

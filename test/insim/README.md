@@ -11,7 +11,7 @@ and an exit code.
 
 ## Setup, once
 
-- **Python 3**, standard library only. **PowerShell** (`pwsh`), for the Skynet build. **Lua 5.1**
+- **Python 3**, standard library only; it also runs the Skynet build. **Lua 5.1**
   outside DCS, to judge results: `lua5.1` on `PATH`, else *Lua for Windows* at
   `C:\Program Files (x86)\Lua\5.1\lua.exe`, else `--lua PATH`.
 - **Unlock `io` and `lfs` in DCS.** In `<DCS install>\Scripts\MissionScripting.lua`, comment out

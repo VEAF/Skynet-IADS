@@ -44,7 +44,7 @@ trois ans de retard en silence — ce qui est précisément arrivé, jusqu'au 20
 travaillez depuis un clone, assemblez vous-même les missions jouables, dans `build/missions/` :
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1
+python build-tools/build-compiled-script.py
 python build-tools/miz-suite.py build
 ```
 

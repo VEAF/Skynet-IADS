@@ -41,7 +41,7 @@ behind — which is what happened, until 2026-09-20. If you are working from a c
 playable missions yourself, into `build/missions/`:
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1
+python build-tools/build-compiled-script.py
 python build-tools/miz-suite.py build
 ```
 

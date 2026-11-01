@@ -23,32 +23,27 @@ class SkynetScriptTest(unittest.TestCase):
         self.repo = Path(tmp.name)
         (self.repo / "build-tools").mkdir()
         (self.repo / "skynet-iads-source").mkdir()
-        (self.repo / "demo-missions").mkdir()
         (self.repo / "build-tools" / "listToMerge.txt").write_text("# comment\n\na.lua\nb.lua\n", encoding="utf-8")
         (self.repo / "skynet-iads-source" / "a.lua").write_text("a = 1\n", encoding="utf-8")
         (self.repo / "skynet-iads-source" / "b.lua").write_text("b = 2\n", encoding="utf-8")
-        self.builds = 0
         self.target = self.repo / "build" / "insim" / "skynet-iads-insim.lua"
 
     def build(self, repo):
-        self.builds += 1
-        a = (repo / "skynet-iads-source" / "a.lua").read_text(encoding="utf-8")
-        (repo / "demo-missions" / "skynet-iads-compiled.lua").write_text("built " + a, encoding="utf-8")
+        return "built " + (repo / "skynet-iads-source" / "a.lua").read_text(encoding="utf-8")
 
     def prepare(self, forced=None):
         return skynet_script.prepare(self.repo, forced, build=self.build)
 
-    def test_default_builds_once(self):
+    def test_default_writes_then_is_up_to_date(self):
         self.assertEqual(self.prepare(), (self.target, "rebuilt"))
         self.assertEqual(self.prepare(), (self.target, "up to date"))
-        self.assertEqual(self.builds, 1)
         self.assertEqual(self.target.read_text(encoding="utf-8"), "built a = 1\n")
 
     def test_rebuilds_when_a_source_changes(self):
         self.prepare()
-        (self.repo / "skynet-iads-source" / "b.lua").write_text("b = 3\n", encoding="utf-8")
-        self.prepare()
-        self.assertEqual(self.builds, 2)
+        (self.repo / "skynet-iads-source" / "a.lua").write_text("a = 3\n", encoding="utf-8")
+        self.assertEqual(self.prepare(), (self.target, "rebuilt"))
+        self.assertEqual(self.target.read_text(encoding="utf-8"), "built a = 3\n")
 
     def test_forced_then_default_rebuilds(self):
         self.prepare()
@@ -56,17 +51,27 @@ class SkynetScriptTest(unittest.TestCase):
         forced.write_text("forced\n", encoding="utf-8")
         self.assertEqual(self.prepare(forced), (self.target, "forced"))
         self.assertEqual(self.target.read_text(encoding="utf-8"), "forced\n")
-        self.assertEqual(self.builds, 1)
-        self.prepare()
-        self.assertEqual(self.builds, 2)
+        self.assertEqual(self.prepare(), (self.target, "rebuilt"))
         self.assertEqual(self.target.read_text(encoding="utf-8"), "built a = 1\n")
 
     def test_rebuilds_when_the_file_was_replaced(self):
         self.prepare()
         self.target.write_text("something else\n", encoding="utf-8")
-        self.prepare()
-        self.assertEqual(self.builds, 2)
+        self.assertEqual(self.prepare(), (self.target, "rebuilt"))
         self.assertEqual(self.target.read_text(encoding="utf-8"), "built a = 1\n")
+
+    def test_no_state_file(self):
+        self.prepare()
+        self.assertEqual([p.name for p in self.target.parent.iterdir()], [self.target.name])
+
+    def test_default_build_is_the_repository_build(self):
+        (self.repo / "skynet-iads-source" / "skynet-iads.lua").write_text('SkynetIADS.version = "9.9.9"\n', encoding="utf-8")
+        (self.repo / "build-tools" / "listToMerge.txt").write_text("a.lua\n", encoding="utf-8")
+        self.assertEqual(skynet_script.build_text(self.repo), 'env.info("--- SKYNET VERSION: 9.9.9 ---")\na = 1\n')
+
+    def test_a_failed_build_raises_build_error(self):
+        with self.assertRaisesRegex(skynet_script.BuildError, "SkynetIADS.version"):
+            skynet_script.prepare(self.repo, None)
 
 
 if __name__ == "__main__":

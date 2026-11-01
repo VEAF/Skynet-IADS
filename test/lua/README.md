@@ -313,7 +313,7 @@ applies to them. They are what a release attaches. The in-sim suite's missions, 
 **None of them contains the scripts it runs.** Each holds a placeholder for every script, and the
 mission you open in DCS is assembled on demand:
 
-    pwsh -File build-tools/build-compiled-script.ps1     # the deliverable is generated too
+    python build-tools/build-compiled-script.py          # the deliverable is generated too
     python build-tools/miz-suite.py build                # writes build/missions/*.miz
 
 Copy what that writes into your DCS `Missions` folder and open it there. `build/` is git-ignored: it
@@ -395,4 +395,5 @@ would only be asking the stub to repeat what the fixture told it:
 | `skynet-loader.lua` | Loads `skynet-iads-source/*.lua` in dependency order |
 | `test_skynet_iads_utils.lua` | Unit tests for the real `skynet-iads-utils.lua` (math + scheduler) |
 | `test_skynet_iads_range_data.lua` | How a battery learns its own range: `setupRangeData` on the search radar and the launcher, and the delegation between them |
+| `test_compiled_script.lua` | Builds the compiled script into `build/test/` and runs it against the stub as one chunk, which loading the sources one by one cannot check; skips, saying so, when no Python runs |
 | `test_*.lua` | Test suites — self-contained, self-executing |
