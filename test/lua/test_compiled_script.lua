@@ -44,7 +44,7 @@ function TestCompiledScript:testRunsAsAMainChunk()
 
 	-- Unquoted first: cmd.exe strips the quotes of a command line that starts with one.
 	local command = python .. ' "' .. root .. '/build-tools/build-compiled-script.py" --output "' .. output .. '"'
-	if os.execute(command .. quiet) ~= 0 then
+	if os.execute(command) ~= 0 then
 		luaunit.fail("the build failed: " .. command)
 	end
 
