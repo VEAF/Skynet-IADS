@@ -89,54 +89,6 @@ scripts may fit better than `make`.
 thing to install and keep working. A CI workflow that duplicated a command a third time, or a
 contributor asking what the commands are, is the signal that it has stopped being a wash.
 
-## Every unit type in `samTypesDB` checked against the datamine
-
-`samTypesDB` is maintained by hand: it maps DCS unit type names to NATO names, to the role each unit
-plays in a site, and to `harm_detection_chance`. When ED renames a unit, the site that places it is
-classified without that unit, and nothing says so.
-
-Part of this is already guarded. `build-tools/dcs-figures.py` resolves every `searchRadar` and
-`trackingRadar` type of `skynet-iads-supported-types.lua` against `_G/db/Units/` at the pinned
-datamine commit, and fails on one it cannot find — so the weekly bump in `dcs-data-drift.yml` fails
-on a renamed radar too.
-
-**Not guarded:**
-
-- the `launchers` of `samTypesDB`, which no figure reads;
-- the types added by `highdigitsams/skynet-iads-high-digit-sams-suported-types.lua`, which the
-  generator does not read at all.
-
-**Shape if taken**: `dcs-figures.py check` asserts that every unit type either file names, in every
-role, exists under `_G/db/Units/` at the pin. The weekly bump then fails on a rename rather than
-opening no pull request. It catches a type that disappeared; it cannot catch a unit placed in the
-wrong role, nor anything Skynet decides for itself — NATO names and `harm_detection_chance`.
-
-Open question: the high-digit SAMs are a mod, so their types may not be in ED's dump at all. If they
-are not, that file stays unguarded.
-
-## The test READMEs still argue from the backlog
-
-Guidance files state their rules without citing a lot, a ticket, a person or a date, and without
-naming a consumer. `CHORE-REPOSITORY-CONVENTIONS` applied that to the root instruction files, and left the two
-READMEs inside the test directories as they were.
-
-Noticed 2026-09-26, in its third review:
-
-- `test/lua/README.md` justifies retiring six legacy suites by "David's call, 2026-09-19; done by
-  `CHORE-PROFESSIONALIZE-THE-REPO` ticket 04", and its coverage section is largely a record of which
-  lot brought which tests. It also names the repository that vendors the artifact, and calls a
-  decision about the artifact's public surface one for VEAF alone, where the project is maintained
-  jointly.
-- `unit-tests/README.md` justifies the smoke gate being consultative by "David's call, 2026-09-21",
-  and supports it by two sibling projects.
-
-**Why it was not done there**: `test/lua/README.md` is some 350 lines, and separating the reference a
-contributor needs from the history of how the suite got here is a rewrite, not an edit. Each passage
-has to be checked for whether its reason survives without its citation — most do.
-
-The shape to aim for is the one the root files reached: the rule, and its reason in general form.
-The history is already in the archived lot records.
-
 ## ADRs
 
 Whether Architecture Decision Records would serve this repository better than stating lasting
