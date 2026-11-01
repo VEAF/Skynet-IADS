@@ -19,7 +19,8 @@ Group = Group or {}
 
 local root = base .. "/../.."
 local output = root .. "/build/test/skynet-iads-compiled.lua"
-local quiet = package.config:sub(1, 1) == "\\" and " >nul 2>&1" or " >/dev/null 2>&1"
+local null = package.config:sub(1, 1) == "\\" and "nul" or "/dev/null"
+local quiet = " >" .. null .. " 2>&1"
 
 --- The first interpreter that runs. On Windows `python3` can be the Microsoft Store alias, which
 --- exists and fails, so being on PATH is not enough: it has to answer `--version`.
@@ -44,7 +45,8 @@ function TestCompiledScript:testRunsAsAMainChunk()
 
 	-- Unquoted first: cmd.exe strips the quotes of a command line that starts with one.
 	local command = python .. ' "' .. root .. '/build-tools/build-compiled-script.py" --output "' .. output .. '"'
-	if os.execute(command) ~= 0 then
+	-- Its "Built ..." line is dropped; what it says on failure, on stderr, is kept.
+	if os.execute(command .. " >" .. null) ~= 0 then
 		luaunit.fail("the build failed: " .. command)
 	end
 
