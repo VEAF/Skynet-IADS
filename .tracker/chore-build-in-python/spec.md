@@ -53,8 +53,10 @@ equal.
 - it loads that file against the DCS stub and runs it as a main chunk, failing if it raises — which is
   what the per-file source tests cannot see: a top-level `local` shadowing a later file's name, the
   200-locals limit of a single chunk, two files' lines merging;
-- it tries `python3`, then `python`, and **skips with a visible message** when neither is found. It
-  never fails because of what is, or is not, on disk.
+- it tries `python3`, then `python`; an interpreter is found when `--version` succeeds through it, since
+  on Windows `python3` can be the Microsoft Store alias, which exists and fails. It **skips with a
+  visible message**, through `lu.skip`, when neither is found. It never fails because of what is, or is
+  not, on disk; once an interpreter is found, a build that fails is a failure.
 
 It is one test, not a suite of them.
 
@@ -73,8 +75,11 @@ It is one test, not a suite of them.
 ### The guidance and documentation
 
 - `CONTRIBUTING.md`: *What you need* loses PowerShell; *Layout* and *Building* name the new script and
-  `build/skynet-iads-compiled.lua`, and say the build is reproducible.
-- `CLAUDE.md`: the build command.
+  `build/skynet-iads-compiled.lua`, and say the build is reproducible; *The missions are assembled, not
+  committed* names the new build command.
+- `CLAUDE.md`: the build command, and the compiled script's path in the summary and under *Never*.
+- `.claude/skills/skynet-runtime-debug/SKILL.md`: the first line of the compiled script prints its
+  version, no longer a build date.
 - `test/insim/README.md`: its requirements lose `pwsh`. `test/lua/README.md`: the build command, and the
   compiled-script test.
 - `.claude/skills/release/SKILL.md`: the compiled script's path.
@@ -100,4 +105,8 @@ It is one test, not a suite of them.
 - Where the stub, the fixtures and the loader live: `test-tooling-in-common`. Whichever of the two
   lands second follows the other's paths.
 - The demo missions: `chore-demo-missions-carry-their-script`, which builds on this.
+- `build-tools/miz-suite.py` and its tests. It still reads `demo-missions/skynet-iads-compiled.lua` and
+  names the PowerShell build, so `miz-suite.py build` and the `mission-archives` job fail between the
+  two pieces of work. `chore-demo-missions-carry-their-script` replaces it, follows this work at once,
+  and both reach a release together.
 - `docs-check.py` and the documentation build.
