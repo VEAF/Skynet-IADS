@@ -11,6 +11,7 @@ are pinned as hard as the order.
 """
 
 import importlib.util
+import io
 import os
 import tempfile
 import unittest
@@ -96,14 +97,15 @@ class BuildTest(unittest.TestCase):
     def test_cli_writes_lf_utf8(self):
         self.manifest("skynet-iads.lua\n")
         out = self.repo / "out.lua"
-        with mock.patch.object(bcs, "ROOT", self.repo):
+        with mock.patch.object(bcs, "ROOT", self.repo), mock.patch("sys.stdout", new_callable=io.StringIO) as stdout:
             self.assertEqual(bcs.main(["--output", str(out)]), 0)
         self.assertEqual(out.read_bytes(), bcs.build(self.repo).encode("utf-8"))
+        self.assertEqual(stdout.getvalue(), "Built %s (9.9.9)\n" % out)
 
     def test_cli_creates_output_folder(self):
         self.manifest("skynet-iads.lua\n")
         out = self.repo / "a" / "b" / "out.lua"
-        with mock.patch.object(bcs, "ROOT", self.repo):
+        with mock.patch.object(bcs, "ROOT", self.repo), mock.patch("sys.stdout", new_callable=io.StringIO):
             self.assertEqual(bcs.main(["--output", str(out)]), 0)
         self.assertTrue(out.is_file())
 
