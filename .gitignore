@@ -8,9 +8,6 @@ Thumbs.db
 /.vscode/
 /.idea/
 
-# Build output — rebuilt by CI, never hand-edited.
-/tmp/
-
 # MkDocs build output — published to the gh-pages branch by CI, not committed here.
 /site/
 

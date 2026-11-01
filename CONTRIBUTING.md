@@ -24,8 +24,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
   & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
   ```
 
-- **PowerShell**, for the build. `pwsh` (PowerShell 7) works on every platform.
-- **Python**, for the documentation gate and the mission tooling.
+- **Python**, for the build, the documentation gate and the mission tooling.
 - **`gh`**, the GitHub CLI, logged in with `gh auth login`, to open pull requests from the command
   line. A browser does the same job.
 - **Nothing to install for the lint gate.** `build-tools/lint.sh` fetches `luacheck` and `stylua` at
@@ -42,7 +41,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | | |
 |---|---|
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
-| `demo-missions/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
+| `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
 | `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
 | `test/common/` | the machinery the test suites share, whatever their language: today the vendored luaunit and a runner per language, `run.lua` and `run.py` |
 | `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
@@ -85,17 +84,21 @@ Three exceptions:
 
 Run from anywhere in the repository — paths resolve from the script's own location:
 
-```powershell
-pwsh -File build-tools/build-compiled-script.ps1
+```
+python build-tools/build-compiled-script.py
 ```
 
-It produces `demo-missions/skynet-iads-compiled.lua`, the concatenation of every source listed in
+It produces `build/skynet-iads-compiled.lua`, or the file `--output` names, the concatenation of every source listed in
 `build-tools/listToMerge.txt`, in the order that file states. **That is where a new source file gets
 added — never to the script.** The version in the artifact's first line comes from
 `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`; there is no argument to pass.
 
+**The build is reproducible**: the same commit gives the same bytes on any machine. The first line
+carries no build time, and the output is UTF-8 with LF line endings. Whether a file is the build of
+the current sources is answered by building again and comparing.
+
 CI runs the same build on every pull request and on pushes to `develop` and `master`
-(`.github/workflows/build.yml`), then loads and executes the artifact against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
+(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
@@ -106,7 +109,7 @@ No `.miz` under `demo-missions/` contains the scripts it runs. Each holds a plac
 mission DCS opens is built on demand:
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1
+python build-tools/build-compiled-script.py
 python build-tools/miz-suite.py build
 ```
 

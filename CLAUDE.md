@@ -3,7 +3,7 @@
 > Skynet gives DCS World an Integrated Air Defence System: early-warning radars feed contacts to SAM
 > sites, which stay dark until the network tells them to engage. Pure Lua 5.1 sources in
 > `skynet-iads-source/` are concatenated into a single deliverable `skynet-iads-compiled.lua` by a
-> PowerShell build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
+> Python build. Only the deliverable has to be pure Lua 5.1; tooling may be anything.
 
 **`CONTRIBUTING.md` is the guide.** This file holds what you can get wrong before you would have any
 reason to open it. Everything else is there.
@@ -19,7 +19,7 @@ reason to open it. Everything else is there.
 
 ## Never
 
-- **Edit `demo-missions/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
+- **Edit `build/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
   `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
 - **Edit a `.miz` by hand.** `build-tools/miz-suite.py` is what writes into one.
 - **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
@@ -34,7 +34,7 @@ reason to open it. Everything else is there.
 ## Commands
 
 ```
-pwsh -File build-tools/build-compiled-script.ps1     # build the deliverable
+python build-tools/build-compiled-script.py          # build the deliverable
 lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
 python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them

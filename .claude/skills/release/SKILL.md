@@ -58,5 +58,5 @@ Take the user through every step of the release procedure in `CONTRIBUTING.md`, 
   loop;
 - for the last step, say what is waiting on the release, and that it reaches no mission by itself.
 
-Never commit `demo-missions/skynet-iads-compiled.lua`: it is git-ignored and rebuilt by CI. Never
+Never commit `build/skynet-iads-compiled.lua`: it is git-ignored and rebuilt by CI. Never
 publish from a dirty working tree.

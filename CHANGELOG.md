@@ -14,14 +14,7 @@ between two copies.
 
 ## A note on version numbers
 
-The inherited tags stop at `v2.0.1`, from walder's lineage, while the compiled script has long
-identified itself as `3.4.0RP-VEAF`. Settled on 2026-09-19: this project continues the **artifact's**
-lineage, since that is the number anyone reads in a log. The first release under joint maintenance
-is **3.5.0**, tagged `v3.5.0`, and the `RP` suffix is dropped — not because the Regroupement has
-stepped back, but because the number now belongs to both communities and has no reason to carry
-either name.
-
-Until that release is cut, the build date in the artifact's first line remains the real identifier.
+3.5.0 is the first version released from this repository.
 
 ## [Unreleased]
 
@@ -137,6 +130,11 @@ Until that release is cut, the build date in the artifact's first line remains t
   and drove off by itself, outside Skynet's HARM defence, and could stop engaging: in DCS 2.9.30 a
   Tor, which shoots HARMs down, fired nothing. A mission that sets the option on while a radar is
   live keeps it until that radar next goes live. AWACS radars, airborne or naval, are left alone.
+- **The build is in Python, and reproducible.** `build-tools/build-compiled-script.py` replaces the
+  PowerShell script, so building no longer needs `pwsh`, and it writes `build/skynet-iads-compiled.lua`
+  instead of `demo-missions/`; the release asset keeps its name. The first line of the compiled
+  script carries the version alone, `--- SKYNET VERSION: 3.5.0 ---`, and no longer the build time:
+  two builds of the same commit are the same bytes on any machine.
 
 ## [3.5.0] — 2026-09-21
 
