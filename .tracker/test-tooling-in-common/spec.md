@@ -1,6 +1,6 @@
 # The test tooling lives with the tests, and the runners find every suite
 
-Status: in-progress
+Status: done
 
 ## The problem
 
