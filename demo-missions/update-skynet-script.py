@@ -43,7 +43,8 @@ _spec.loader.exec_module(_build)
 
 
 class UpdateError(Exception):
-    """A demo cannot be read or refreshed: most often, it has no Skynet script to replace."""
+    """A demo, or the hash file, cannot be read or written: missing, corrupt, open elsewhere, or a
+    demo with no Skynet script to replace."""
 
 
 def _path(root, relative):
@@ -52,27 +53,36 @@ def _path(root, relative):
 
 def embedded(root, demo):
     """The bytes of the Skynet script *demo* carries."""
-    with zipfile.ZipFile(_path(root, demo)) as z:
-        if MEMBER not in z.namelist():
-            raise UpdateError("%s has no %s to replace" % (demo, MEMBER))
-        return z.read(MEMBER)
+    try:
+        with zipfile.ZipFile(_path(root, demo)) as z:
+            if MEMBER not in z.namelist():
+                raise UpdateError("%s has no %s to replace" % (demo, MEMBER))
+            return z.read(MEMBER)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise UpdateError("%s cannot be read: %s" % (demo, error))
 
 
 def replace_member(root, demo, member, data):
     """Replace the content of *member* in *demo*, leaving every other member exactly as it was."""
     path = _path(root, demo)
-    with zipfile.ZipFile(path) as z:
-        infos = z.infolist()
-        if member not in [i.filename for i in infos]:
-            raise UpdateError("%s has no %s to replace" % (demo, member))
-        contents = [(i, data if i.filename == member else z.read(i.filename)) for i in infos]
-    handle, temporary = tempfile.mkstemp(dir=path.parent, suffix=".miz")
+    try:
+        with zipfile.ZipFile(path) as z:
+            infos = z.infolist()
+            if member not in [i.filename for i in infos]:
+                raise UpdateError("%s has no %s to replace" % (demo, member))
+            contents = [(i, data if i.filename == member else z.read(i.filename)) for i in infos]
+        handle, temporary = tempfile.mkstemp(dir=path.parent, suffix=".miz")
+    except (OSError, zipfile.BadZipFile) as error:
+        raise UpdateError("%s cannot be read: %s" % (demo, error))
     os.close(handle)
     try:
         with zipfile.ZipFile(temporary, "w") as z:
             for info, blob in contents:
                 z.writestr(info, blob)
         os.replace(temporary, path)
+    except OSError as error:
+        os.remove(temporary)
+        raise UpdateError("%s cannot be written, is it open elsewhere? %s" % (demo, error))
     except BaseException:
         os.remove(temporary)
         raise
@@ -84,8 +94,12 @@ def write_hashes(root):
 
 
 def _read_hashes(root):
+    try:
+        text = _path(root, HASH_FILE).read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise UpdateError("%s cannot be read: %s" % (HASH_FILE, error))
     hashes = {}
-    for line in _path(root, HASH_FILE).read_bytes().decode("utf-8").splitlines():
+    for line in text.splitlines():
         if line.strip():
             digest, _, demo = line.strip().partition("  ")
             hashes[demo] = digest
@@ -101,7 +115,11 @@ def update(root=ROOT):
         print("FAIL: %s" % error)
         return 1
     for demo in DEMOS:
-        replace_member(root, demo, MEMBER, script)
+        try:
+            replace_member(root, demo, MEMBER, script)
+        except UpdateError as error:
+            print("FAIL: %s -- the demos before it are updated, the hashes are not: run `update` again" % error)
+            return 1
         print("updated: %s" % demo)
     write_hashes(root)
     print("written: %s" % HASH_FILE)
@@ -112,15 +130,15 @@ def check(root=ROOT, against_build=False):
     try:
         hashes = _read_hashes(root)
         build = _build.build(root).encode("utf-8") if against_build else None
-    except (OSError, _build.BuildError) as error:
+    except (UpdateError, _build.BuildError) as error:
         print("FAIL: %s" % error)
         return 1
     status = 0
     for demo in DEMOS:
         try:
             script = embedded(root, demo)
-        except (OSError, UpdateError) as error:
-            print("FAIL  %s: %s" % (demo, error))
+        except UpdateError as error:
+            print("FAIL  %s" % error)
             status = 1
             continue
         if demo not in hashes:

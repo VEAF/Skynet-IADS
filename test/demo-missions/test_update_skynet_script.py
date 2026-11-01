@@ -18,6 +18,7 @@ import unittest
 import zipfile
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -136,6 +137,38 @@ class UpdaterTest(unittest.TestCase):
         )
         self.assertEqual(self.run_quietly(uss.check, self.root), 0)
         self.assertEqual(self.run_quietly(uss.check, self.root, against_build=True), 1)
+
+    def test_update_refuses_sources_that_do_not_build(self):
+        (self.root / "skynet-iads-source" / "skynet-iads.lua").write_text("SkynetIADS = {}\n", encoding="utf-8")
+        before = {demo: (self.root / demo).read_bytes() for demo in uss.DEMOS}
+        self.assertEqual(self.run_quietly(uss.update, self.root), 1)
+        self.assertEqual({demo: (self.root / demo).read_bytes() for demo in uss.DEMOS}, before)
+        self.assertFalse(self.hash_file().exists())
+
+    def test_update_reports_a_missing_demo(self):
+        (self.root / uss.DEMOS[1]).unlink()
+        self.assertEqual(self.run_quietly(uss.update, self.root), 1)
+
+    def test_update_reports_a_corrupt_demo(self):
+        (self.root / uss.DEMOS[1]).write_bytes(b"not a zip")
+        self.assertEqual(self.run_quietly(uss.update, self.root), 1)
+
+    def test_update_reports_a_demo_it_cannot_replace(self):
+        with mock.patch.object(uss.os, "replace", side_effect=PermissionError("locked")):
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(uss.update(self.root), 1)
+        self.assertIn(uss.DEMOS[0], out.getvalue())
+
+    def test_check_reports_a_corrupt_demo(self):
+        self.run_quietly(uss.update, self.root)
+        (self.root / uss.DEMOS[0]).write_bytes(b"not a zip")
+        self.assertEqual(self.run_quietly(uss.check, self.root), 1)
+
+    def test_check_reports_an_unreadable_hash_file(self):
+        self.run_quietly(uss.update, self.root)
+        self.hash_file().write_bytes(b"\xff\xfe\x00")
+        self.assertEqual(self.run_quietly(uss.check, self.root), 1)
 
     def test_main_rejects_an_unknown_command(self):
         self.assertEqual(self.run_quietly(uss.main, ["stub"]), 2)
