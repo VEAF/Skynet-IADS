@@ -68,7 +68,7 @@ jobs:
       # be. It needs the deliverable, which is generated too.
       - name: Build the deliverable, then assemble the missions
         run: |
-          pwsh -File build-tools/build-compiled-script.ps1
+          python3 build-tools/build-compiled-script.py
           python3 build-tools/miz-suite.py build
 
       # Syntax only: these scripts call into DCS and MOOSE, so they cannot be executed here. What
