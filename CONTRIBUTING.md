@@ -74,9 +74,9 @@ name contains a hyphen, so the Python tests have no choice, and the Lua tests mi
 
 Four exceptions:
 
-- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script,
-  `.luacheckrc`, `.luacov` and two test files. Renaming it changes the build and the test harness in
-  exchange for nothing but consistency.
+- `build-tools/listToMerge.txt` is inherited camelCase, referenced by the build script, the test
+  loader, `.luacheckrc`, `.luacov`, the in-sim tooling and several tests. Renaming it changes the
+  build and the test harness in exchange for nothing but consistency.
 - `demo-missions/moose_a2a_connector/` is inherited snake_case. The documentation and earlier
   releases point at that path.
 - `.claude/skills/<kebab-name>/SKILL.md` is uppercase inside a kebab-cased directory because Claude

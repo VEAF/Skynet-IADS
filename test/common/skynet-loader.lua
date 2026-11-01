@@ -6,34 +6,25 @@
 ---   loader.loadAll()                      -- everything
 
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "./"
-local src = (os.getenv("SKYNET_SRC") or (base .. "/../../skynet-iads-source")) .. "/"
+local src = base .. "/../../skynet-iads-source/"
 
--- Verbatim order from build-tools/listToMerge.txt (highdigitsams entry omitted:
--- it is a separate suite, not part of the core load).
-local ORDER = {
-	"skynet-iads-utils",
-	"skynet-iads-supported-types",
-	"skynet-iads-logger",
-	"skynet-iads",
-	"skynet-mooose-a2a-dispatcher-connector",
-	"skynet-iads-table-delegator",
-	"skynet-iads-abstract-dcs-object-wrapper",
-	"skynet-iads-abstract-element",
-	"skynet-iads-abstract-radar-element",
-	"skynet-iads-awacs-radar",
-	"skynet-iads-command-center",
-	"skynet-iads-contact",
-	"skynet-iads-early-warning-radar",
-	"skynet-iads-jammer",
-	"skynet-iads-sam-search-radar",
-	"skynet-iads-sam-site",
-	"skynet-iads-sam-tracking-radar",
-	"skynet-iads-sam-launcher",
-	"skynet-iads-harm-detection",
-	"skynet-iads-last-line-of-defence",
-}
+-- The order is the build's: build-tools/listToMerge.txt, read once. The highdigitsams/ entry is
+-- left out: it is a separate suite, not part of the core load.
+local ORDER = {}
+local listPath = base .. "/../../build-tools/listToMerge.txt"
+local list = io.open(listPath, "r")
+if not list then
+	error("skynet-loader: cannot read " .. listPath)
+end
+for line in list:lines() do
+	local entry = line:match("^%s*(.-)%s*$")
+	if entry ~= "" and entry:sub(1, 1) ~= "#" and entry:sub(1, #"highdigitsams/") ~= "highdigitsams/" then
+		ORDER[#ORDER + 1] = (entry:gsub("%.lua$", ""))
+	end
+end
+list:close()
 
-local M = { _loaded = {}, ORDER = ORDER }
+local M = { _loaded = {} }
 
 function M.load(name)
 	if M._loaded[name] then
@@ -55,10 +46,6 @@ function M.loadAll()
 	for _, name in ipairs(ORDER) do
 		M.load(name)
 	end
-end
-
-function M.reset()
-	M._loaded = {}
 end
 
 return M
