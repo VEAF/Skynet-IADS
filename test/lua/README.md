@@ -304,69 +304,6 @@ the first entry of each block, which had silently dropped two radars.
 the exporter. So missiles are recorded by missile, unfiltered, and the display name carries the
 connection — the entry that moved is called `9M38M1 Buk-M1 (SA-11 Gadfly)`.
 
-## Building and editing the `.miz`
-
-The three archives under `demo-missions/` carry scripts from this repository, and everything below
-applies to them. They are what a release attaches. The in-sim suite's missions, under
-`test/insim/miz/`, are not handled here: `test/insim/run.py` prepares them.
-
-**None of them contains the scripts it runs.** Each holds a placeholder for every script, and the
-mission you open in DCS is assembled on demand:
-
-    python build-tools/build-compiled-script.py          # the deliverable is generated too
-    python build-tools/miz-suite.py build                # writes build/missions/*.miz
-
-Copy what that writes into your DCS `Missions` folder and open it there. `build/` is git-ignored: it
-is output, like the deliverable.
-
-**Why it works that way.** A copy of the code committed beside the code it copies goes stale without
-a sound. Both of these archives held Skynet 3.3.0 from December 2023 until 2026-09-20 while
-`develop` moved to 3.5.0, so every in-sim run for three years measured code this project had stopped
-shipping — and three tests written into the loose copies during 2026 had never run at all, because
-nobody remembered to bake them in. An assembled mission cannot be out of date, and one opened
-unbuilt prints a message on screen instead of quietly measuring the wrong thing.
-
-The demo missions had the same defect one shelf lower: three of the four held Skynet **3.2** from the
-same December, and a demo is what somebody downloads to learn what Skynet does. Nothing there was a
-test, so nothing could go red. They became templates on 2026-09-20 as well, and the playable copies
-are now attached to a release by `.github/workflows/release.yml`.
-
-### The wiring, and the rest of the commands
-
-A `.miz` is a zip, and a script baked into one is wired in **four** places: the file under
-`l10n/DEFAULT/`, its `ResKey_Action_NNN` line in `l10n/DEFAULT/mapResource`, the
-`a_do_script_file(...)` call in `mission`'s compiled `trig.actions`, and the Mission Editor's own
-structured copy of the same trigger in `mission`'s `trigrules` — an array whose indices have to stay
-contiguous. Forgetting the fourth is the trap: the two copies of the trigger disagree, and the
-mission runs the script while the editor shows an empty trigger, or the reverse.
-
-    python build-tools/miz-suite.py check                # wiring, and that git holds no copies
-    python build-tools/miz-suite.py stub                 # placeholders back in (adding a suite)
-    python build-tools/miz-suite.py extract <dir>
-    python build-tools/miz-suite.py remove test-skynet-iads-jammer.lua
-
-Every command works on all three archives; `--miz <path>` narrows it to one. `build`, `stub` and
-`remove` re-check the result and refuse to write if anything is off, so a failed run leaves the
-`.miz` untouched. `check` also reports a loose script that no trigger anywhere loads — which is the
-drift running the other way, and how three tests sat outside the mission for months. That scan is
-folder-wide and runs once at the end of a full `check`, because three archives share
-`demo-missions/`: asking one of them to account for every Lua file beside it would report the other
-two's scripts as orphans.
-
-A `mission` is Lua, and two tools write it in two different shapes: DCS's own serialisation, and the
-one VEAF's mission editor produces when it re-saves a mission (bare keys, no `-- end of [n]`
-comments, and resource keys that are not `ResKey_Action_NNN`). `skynet-insim-last-line-of-defence.miz`
-is in the second. Every pattern in the tool reads either, and
-`python test/common/run.py test/build-tools` covers both — a pattern that matches the wrong block
-does not raise, it rewrites the wrong trigger and writes the archive.
-
-**CI runs this** (`.github/workflows/lua-tests.yml`, job *Mission archives*): those tests, `check`,
-then a build of the deliverable, then `build`, then a Lua parse of every file in the **assembled**
-missions — including `mission` and `mapResource`, which are Lua too and are the two the tool edits. Parsing
-the placeholders instead would prove nothing. Verified against three deliberate breakages: a
-`trigrules` entry removed by hand, a `mapResource` line removed, and a script truncated. Each is
-caught, and the first two are caught *only* by `check`.
-
 ## Needs the simulator
 
 Behaviour that is tested in `test/insim/` on purpose, because a standalone test
