@@ -13,8 +13,8 @@ tool behind all this — wiring, extraction, stubbing, removal — is far heavie
 
 - **The demos are client demos, not tests.** What tests Skynet lives in `test/insim/` or `test/lua/`.
 - **The demos are stable.** They are committed whole, scripts included, and a demo opened from a
-  checkout runs. Only the Skynet script inside them changes, and only for a release, so a demo carries
-  the released Skynet.
+  checkout runs. The Skynet script inside them is the one part a tool refreshes, and only for a release,
+  so a demo carries the released Skynet.
 - **Nothing checks a demo beyond its Skynet script's hash.**
 - The demos are `demo-missions/skynet-test-persian-gulf.miz` and
   `demo-missions/moose_a2a_connector/skynet-and-moose-a2a-dispatcher.miz`, under their current names.

@@ -47,7 +47,8 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
 | `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
 | `test/build-tools/` | the tests of `build-tools/` |
-| `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests |
+| `test/demo-missions/` | the tests of the demos' updater |
+| `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests. `update-skynet-script.py` refreshes their Skynet script, and `skynet-script.sha256` holds its hash |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
 | `CONTEXT.md` | what Skynet is for, and what in its design looks like a bug and is not |
@@ -63,8 +64,9 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | root markdown | `UPPERCASE.md` |
 | `skynet-iads-source/` | kebab-case, `skynet-iads-*.lua` |
 | `build-tools/` | kebab-case |
+| `demo-missions/` | kebab-case |
 | `documentation/` | kebab-case, with an `.en.md` twin |
-| `test/lua/`, `test/common/`, `test/insim-tools/`, `test/build-tools/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
+| `test/lua/`, `test/common/`, `test/insim-tools/`, `test/build-tools/`, `test/demo-missions/` | kebab-case for infrastructure, `test_<snake_case>` for a test file |
 | `.tracker/` | `<type>-<slug>/` for a piece of work, `archive/YYYY-MM-DD-<type>-<slug>/` once archived, lowercase kebab, the types as in *Git flow*; `spec.md` lowercase inside it; `IDEAS.md` uppercase |
 
 The snake_case in the test file names is not an inconsistency: Python cannot import a module whose
@@ -103,23 +105,20 @@ that the result runs without raising. A tag matching `v*` (`.github/workflows/re
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
 
-### The missions are assembled, not committed
+### The demo missions are committed whole
 
-No `.miz` under `demo-missions/` contains the scripts it runs. Each holds a placeholder, and the
-mission DCS opens is built on demand:
+Each `.miz` under `demo-missions/` carries every script it runs, so a demo opened from a checkout
+runs. The Skynet script is the one part a tool refreshes, at each release, with a build:
 
 ```
-python build-tools/build-compiled-script.py
-python build-tools/miz-suite.py build
+python demo-missions/update-skynet-script.py update
 ```
 
-They land in `build/missions/`, which is git-ignored. Run that **before testing in DCS**, never
-before committing — there is nothing to commit, which is the point. A committed copy of the code
-goes stale in silence.
+That also writes `demo-missions/skynet-script.sha256`, the hash of each demo's Skynet script. CI
+checks the demos against it on every pull request, and against a fresh build on the way to `master`.
 
-**Never edit a `.miz` by hand.** A script is wired into one in four places, and
-`build-tools/miz-suite.py` is what keeps them consistent. `test/lua/README.md` has the wiring and the
-rest of the commands.
+The setup scripts beside the demos are where they are edited, then loaded into the `.miz` in the
+Mission Editor, as for any mission. Nothing checks that the two stay in step.
 
 Only `demo-missions/` archives are attached to a release.
 
@@ -367,7 +366,8 @@ release that goes out unflown says so.
 
 1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
    `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in
-   `CHANGELOG.md`. Pull request to `develop`.
+   `CHANGELOG.md`. Then run `python demo-missions/update-skynet-script.py update`, and commit the
+   demos and `demo-missions/skynet-script.sha256` with the bump. Pull request to `develop`.
 2. **Promote**: a pull request from `develop` to `master`, merged with a merge commit.
 3. **Tag** `v<x.y.z>` on `master` and push it. `.github/workflows/release.yml` builds, checks and
    publishes the release, taking its notes from `## [Unreleased]` as it stands. A tag that is not a

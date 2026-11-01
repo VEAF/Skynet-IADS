@@ -21,7 +21,6 @@ reason to open it. Everything else is there.
 
 - **Edit `build/skynet-iads-compiled.lua`.** It is the deliverable, concatenated from
   `skynet-iads-source/*.lua`. An edit there is lost at the next build, silently.
-- **Edit a `.miz` by hand.** `build-tools/miz-suite.py` is what writes into one.
 - **Open a pull request against an upstream repository.** This repository is a GitHub *fork*, so
   `gh pr create` and the web UI's compare banner default to the read-only parent. Always
   `gh pr create --repo VEAF/Skynet-IADS --base develop` — `--base master` only for a release's
@@ -38,7 +37,6 @@ python build-tools/build-compiled-script.py          # build the deliverable
 lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
 python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
-python build-tools/miz-suite.py build                # assemble the missions, before testing in DCS
 python test/insim/run.py                             # the in-sim suite; its mission must be open in DCS
 ```
 
@@ -63,9 +61,6 @@ starting a change, and again after a context compaction: this file is the only o
   nowhere else in the repository. What is worth keeping becomes a spec in `.tracker/`.
 - Configuration for agent toolsets is in `.agents/`.
 - Everything written in the repository is in English. What a *user* reads is the exception.
-
-Nothing to do about the mission archives: they hold placeholders, and the mission DCS opens is
-assembled on demand. That is the step to run before testing in DCS, not before committing.
 
 ## Before you do these, read
 
