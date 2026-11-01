@@ -8,7 +8,8 @@ name: DCS unit types
 # Weekly, for ED's drift, which is rare and follows a DCS update; a failed weekly run opens an
 # issue, one per run, because GitHub mails a scheduled failure only to whoever last edited the
 # cron line. On a pull request that touches the table, for a type name mistyped there: it is an
-# exact string a reviewer cannot confirm without the dump.
+# exact string a reviewer cannot confirm without the dump. And on one that touches the check or
+# this workflow, so that a broken check does not wait a week to show.
 
 on:
   schedule:
@@ -18,6 +19,8 @@ on:
   pull_request:
     paths:
       - skynet-iads-source/skynet-iads-supported-types.lua
+      - test/lua/check-unit-types.lua
+      - .github/workflows/dcs-unit-types.yml
 
 permissions:
   contents: read
@@ -42,6 +45,8 @@ jobs:
           set -o pipefail
           lua5.1 test/lua/check-unit-types.lua 2>&1 | tee "$RUNNER_TEMP/unit-types.txt"
 
+      # Any failure opens one, an outage of the datamine included: the output says which it was. A
+      # job that failed before the check ran has no output to quote.
       - name: Open an issue
         if: failure() && github.event_name == 'schedule'
         env:
@@ -51,11 +56,11 @@ jobs:
             echo "The weekly check of samTypesDB against the DCS database failed:"
             echo ""
             echo '```'
-            cat "$RUNNER_TEMP/unit-types.txt"
+            cat "$RUNNER_TEMP/unit-types.txt" || echo "(the check did not run)"
             echo '```'
             echo ""
             echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } > "$RUNNER_TEMP/issue.md"
           gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "samTypesDB names unit types the DCS database no longer has" \
+            --title "The weekly DCS unit-type check failed" \
             --body-file "$RUNNER_TEMP/issue.md"

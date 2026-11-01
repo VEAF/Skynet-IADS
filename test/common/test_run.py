@@ -1,10 +1,13 @@
-"""Tests for test/common/run.py: which folders it runs when none is given.
+"""Tests for the runners: which folders run.py runs when none is given, and what run.lua does with a
+folder that does not exist.
 
     python test/common/run.py test/common
 """
 
 import importlib.util
 import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -14,6 +17,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("common_run", os.path.join(HERE, "run.py"))
 run = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(run)
+
+LUA_FOR_WINDOWS = r"C:\Program Files (x86)\Lua\5.1\lua.exe"
+
+
+def find_lua():
+    """lua5.1 on PATH, else Lua for Windows at its default path, else None."""
+    found = shutil.which("lua5.1")
+    if found:
+        return found
+    return LUA_FOR_WINDOWS if os.path.isfile(LUA_FOR_WINDOWS) else None
 
 
 def touch(root, *parts):
@@ -32,6 +45,23 @@ class SuiteFoldersTest(unittest.TestCase):
             touch(root, "test_top.py")
 
             self.assertEqual(run.suite_folders(root), [os.path.join(root, "a"), os.path.join(root, "c")])
+
+
+
+class RunLuaTest(unittest.TestCase):
+    def setUp(self):
+        self.lua = find_lua()
+        if not self.lua:
+            self.skipTest("no Lua 5.1 interpreter")
+
+    def run_lua(self, *args):
+        return subprocess.run([self.lua, os.path.join(HERE, "run.lua"), *args], capture_output=True, text=True)
+
+    def test_a_folder_that_does_not_exist_is_refused(self):
+        missing = os.path.join(HERE, "..", "no-such-folder")
+        result = self.run_lua(missing, "contact")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("run.lua: no such folder: " + missing, result.stdout)
 
 
 if __name__ == "__main__":

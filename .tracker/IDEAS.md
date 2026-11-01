@@ -197,7 +197,7 @@ Left by `test-port-unit-tests-to-insim`; none has failed a run.
 - **Cleanup removes groups, not what they left.** A wreck stays in its zone, and a weapon still in
   flight when a scenario ends can land on the next scenario's copy in the same zone. Only
   `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
-  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which the README
+  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
   would say.
 - **Two scenarios can wait past their timeout when everything fails.** `harm-point-defence` waits up
   to 450 s in a 420 s timeout, `network-loses-infrastructure` about 635 s in 600 s. The driver then

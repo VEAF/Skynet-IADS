@@ -19,6 +19,21 @@ for _, a in ipairs(arg) do
 	end
 end
 
+-- The listing below is silenced, so a mistyped folder would otherwise look like an empty one.
+for _, folder in ipairs(folders) do
+	local cmd
+	if isWindows then
+		cmd = 'if exist "' .. folder:gsub("/", "\\") .. '\\" (exit 0) else (exit 1)'
+	else
+		cmd = 'test -d "' .. folder .. '"'
+	end
+	local ok = os.execute(cmd)
+	if ok ~= 0 and ok ~= true then
+		print("run.lua: no such folder: " .. folder)
+		os.exit(1)
+	end
+end
+
 -- SKYNET_TEST_COVERAGE=1 makes every child load luacov. Each one merges its counts into
 -- luacov.stats.out in the working directory rather than overwriting it, which is what makes
 -- these separate processes add up to a single report; luacov also wraps os.exit, which is how
