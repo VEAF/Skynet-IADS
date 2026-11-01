@@ -1,6 +1,6 @@
 # The demo missions carry their Skynet script
 
-Status: in-progress
+Status: done
 
 ## The problem
 
