@@ -10,8 +10,9 @@ only for a release, so that a demo carries the released Skynet:
 
 `update` replaces the content of `l10n/DEFAULT/skynet-iads-compiled.lua` in each demo with a build
 made in memory, leaves every other member of the archive as it is, and writes
-`demo-missions/skynet-script.sha256` in `sha256sum`'s format, so `sha256sum -c` reads it too. It
-never rewires a mission: a demo without that member is refused, and nothing is written.
+`demo-missions/skynet-script.sha256` in `sha256sum`'s format. Each hash is of the embedded script,
+not of the archive, so `sha256sum -c` does not apply. It never rewires a mission: a demo without
+that member is refused, and nothing is written.
 """
 
 import hashlib
