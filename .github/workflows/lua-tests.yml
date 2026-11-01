@@ -41,6 +41,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+
       # The suite also covers build-tools/docs-check.py, whose own job is in docs-check.yml — the
       # gate spends its life reporting zero defects, so what proves it still checks anything is a
       # test per defect kind.
