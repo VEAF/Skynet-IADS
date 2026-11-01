@@ -6,8 +6,8 @@
 --- and defence states, the two engagement flags and the parent / child radar
 --- bookkeeping. Slice 3 takes ammunition and missiles in flight, and the
 --- engagement zone. Slice 4 takes point defence and the cached-target
---- behaviour, which completes the port; see test/lua/README.md for what stays
---- in the .miz and why.
+--- behaviour, which completes the port; test/README.md lists what needs the
+--- simulator.
 ---
 --- The .miz version reads SAM groups, connection nodes, power sources and a
 --- command centre baked into skynet-unit-tests.miz, and kills them with
@@ -16,9 +16,8 @@
 --- no-op, so destroying the object directly is what stands in for the blast.
 --- Everything else (the mocks, the assertions, their order) is the .miz test,
 --- except where a comment above a test says otherwise. Those departures are
---- deliberate, each one is argued in the comment above the test it affects, and
---- test/lua/README.md lists them in one place — with what did NOT come across
---- and why. Porting a test is not copying it: a .miz test that only ever passed
+--- deliberate, and each one is argued in the comment above the test it affects.
+--- Porting a test is not copying it: a .miz test that only ever passed
 --- because it ran against real DCS objects is not covered by a standalone test
 --- asking the stub the same question.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
@@ -1177,7 +1176,7 @@ end
 -- the .miz versions assert the ranges the real DCS units report -- 53499.2265625 m for the SA-2's
 -- Flat Face, read out of that unit's own sensor table. Those figures belong to DCS, not to Skynet,
 -- and asking the stub the same question would only prove that dcs-fixtures says what dcs-fixtures
--- says. They stay in the .miz, and test/lua/README.md lists them under what needs the simulator.
+-- says. test/README.md states the rule: a test never pins a figure that belongs to DCS.
 --
 -- What is Skynet's own, and is what these test, is the *decision*: which of the search radar, the
 -- tracking radar and the launcher has to reach the contact before the site lights up, and what

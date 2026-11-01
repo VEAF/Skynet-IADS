@@ -112,8 +112,7 @@ accepted the version heading as well would let the freeze ride with the release 
 
 Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
 *battery* (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say
-*SAM site*. Fifteen more are in the tooling and guidance: `.github/` — the weekly figures pull
-request among them — `build-tools/`, `CONTRIBUTING.md` and `test/lua/README.md`.
+*SAM site*. More are in the tests and their tooling, under `test/`.
 
 ## Lua 5.1 fetched like the lint tools
 

@@ -67,9 +67,9 @@ starting a change, and again after a context compaction: this file is the only o
 | About to… | Read |
 |---|---|
 | change a source file | `CONTRIBUTING.md` — testing first, the build, the lint gate |
-| add or change a test | `CONTRIBUTING.md` for which suite; `test/lua/README.md` for how to run and add one |
+| add or change a test | `CONTRIBUTING.md` for which suite; `test/README.md` for how to run and add one |
 | touch `documentation/` | `CONTRIBUTING.md` — three conventions, all gated |
-| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `test/insim/README.md` for the in-sim suite |
+| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `test/README.md` for the in-sim suite |
 | open a pull request | `CONTRIBUTING.md` — the steps, git flow and the changelog |
 | open, update or archive a piece of work | `CONTRIBUTING.md` — how work is tracked |
 | edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |

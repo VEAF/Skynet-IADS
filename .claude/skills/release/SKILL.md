@@ -38,7 +38,7 @@ python test/insim/run-insim.py
 
 **Consultative, not a gate.** A red scenario is a conversation, not a stop: report the summary and
 ask. No DCS to hand means the release goes out unflown: say so rather than implying it was checked.
-`test/insim/README.md` has the suite.
+`test/README.md` has the suite.
 
 ## Then the procedure
 

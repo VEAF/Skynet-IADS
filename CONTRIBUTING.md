@@ -42,9 +42,10 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 |---|---|
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
-| `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
+| `test/README.md` | how to run each suite and add to it — **read it before adding a test** |
+| `test/lua/` | the standalone Lua 5.1 suite, and the check of `samTypesDB` against the DCS database |
 | `test/common/` | the machinery the test suites share, whatever their language: a runner per language, `run.lua` and `run.py`, the vendored luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures |
-| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
+| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload |
 | `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
 | `test/build-tools/` | the tests of `build-tools/` |
 | `test/demo-missions/` | the tests of the demos' updater |
@@ -135,10 +136,10 @@ There are two suites, and which one you want is decided by whether a stub can an
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
-| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/lua/README.md`](test/lua/README.md) |
-| `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/insim/README.md`](test/insim/README.md) |
+| `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/README.md`](test/README.md) |
+| `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/README.md`](test/README.md) |
 
-Those two files are the reference: how to run each suite, how to add to it, what is covered and what
+That file is the reference: how to run each suite, how to add to it, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
