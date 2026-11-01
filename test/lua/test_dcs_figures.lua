@@ -137,7 +137,7 @@ function TestDcsFigures:test_covers_the_radars_skynet_models()
 	-- samTypesDB is the list of what Skynet knows how to read. A radar in there and not here means
 	-- the generator's walk from a Skynet type to its sensor broke for that type, and the figure it
 	-- was meant to watch is unwatched -- which is the one failure this whole file exists to prevent.
-	local loader = dofile(base .. "/skynet-loader.lua")
+	local loader = dofile(base .. "/../common/skynet-loader.lua")
 	loader.load("skynet-iads-supported-types")
 
 	-- Radarless by design: both are infrared, they carry no sensor, and Skynet falls back to a

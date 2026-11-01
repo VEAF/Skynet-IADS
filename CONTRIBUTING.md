@@ -43,7 +43,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
 | `test/lua/` | the standalone Lua 5.1 suite — **see its `README.md`** |
-| `test/common/` | the machinery the test suites share, whatever their language: today the vendored luaunit and a runner per language, `run.lua` and `run.py` |
+| `test/common/` | the machinery the test suites share, whatever their language: a runner per language, `run.lua` and `run.py`, the vendored luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures |
 | `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload — **see its `README.md`** |
 | `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
 | `test/build-tools/` | the tests of `build-tools/` |
@@ -102,7 +102,7 @@ carries no build time, and the output is UTF-8 with LF line endings. Whether a f
 the current sources is answered by building again and comparing.
 
 CI runs the same build on every pull request and on pushes to `develop` and `master`
-(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/lua/dcs-stub.lua` — a build proves the sources concatenate, not
+(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
 verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
 section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.

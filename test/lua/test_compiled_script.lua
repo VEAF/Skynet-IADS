@@ -11,7 +11,7 @@
 --- anyway. It skips, saying so, when no Python runs; once one does, a build that fails is a failure.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
+dofile(base .. "/../common/dcs-stub.lua")
 
 -- Same sentinel skynet-loader.lua sets up: the wrapper only touches Group at load time to tell a
 -- Group from a Unit/Static, so a bare table is enough here.

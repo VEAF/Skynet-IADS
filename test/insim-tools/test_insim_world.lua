@@ -3,7 +3,7 @@
 --- the zones, the spawn and the controller are stubbed.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/../lua/dcs-stub.lua")
+dofile(base .. "/../common/dcs-stub.lua")
 
 Hotload = {
 	load = function(name)

@@ -2,10 +2,10 @@
 --- dcs-hotload; here hotload is stubbed, Skynet is the real source and the groups are stubs.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/../lua/dcs-stub.lua")
-local loader = dofile(base .. "/../lua/skynet-loader.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/../lua/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 Hotload = {
 	root = base .. "/no-such-hotload-root",

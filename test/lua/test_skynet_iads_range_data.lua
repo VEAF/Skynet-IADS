@@ -14,8 +14,8 @@
 --- disagree, a radar that sees further low than high. Nothing else would reuse them.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
 luaunit = dofile(base .. "/../common/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
 
 --- The shape SkynetIADSSAMSearchRadar:setupRangeData walks: data[i] -> subEntries[j].

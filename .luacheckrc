@@ -7,7 +7,7 @@
 std = "lua51"
 
 globals = {
-	-- DCS Scripting Engine, and test/lua/dcs-stub.lua's stand-in for it.
+	-- DCS Scripting Engine, and test/common/dcs-stub.lua's stand-in for it.
 	"env",
 	"timer",
 	"world",
@@ -95,7 +95,7 @@ files["skynet-iads-source/skynet-iads-logger.lua"] = { ignore = { "211", "311", 
 files["skynet-iads-source/skynet-iads-sam-site.lua"] = { ignore = { "213" } }
 files["skynet-iads-source/skynet-iads-table-delegator.lua"] = { ignore = { "432" } }
 files["skynet-iads-source/skynet-iads.lua"] = { ignore = { "212", "213", "311" } }
-files["test/lua/dcs-stub.lua"] = { ignore = { "212" } }
+files["test/common/dcs-stub.lua"] = { ignore = { "212" } }
 files["test/lua/test_skynet_iads_harm_detection.lua"] = { ignore = { "212", "213" } }
 files["test/lua/test_skynet_iads_jammer.lua"] = { ignore = { "212" } }
 files["test/lua/test_skynet_iads_sam_site.lua"] = { ignore = { "212", "213", "431" } }

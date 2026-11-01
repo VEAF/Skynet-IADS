@@ -93,7 +93,7 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          lua5.1 build-tools/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
+          lua5.1 test/common/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
           {
             echo '### Test coverage'
             echo ''
