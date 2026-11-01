@@ -1,0 +1,61 @@
+name: DCS unit types
+
+# samTypesDB is maintained by hand, and names DCS unit types that ED may rename. A renamed unit
+# leaves a site classified without it, and nothing else says so. test/lua/check-unit-types.lua
+# checks every type samTypesDB names against the current head of the Quaggles/dcs-lua-datamine
+# dump, so there is no pin to move: a red run is the news.
+#
+# Weekly, for ED's drift, which is rare and follows a DCS update; a failed weekly run opens an
+# issue, one per run, because GitHub mails a scheduled failure only to whoever last edited the
+# cron line. On a pull request that touches the table, for a type name mistyped there: it is an
+# exact string a reviewer cannot confirm without the dump.
+
+on:
+  schedule:
+    # Mondays, 06:20 UTC. Offset off the hour because GitHub's scheduler queues heavily on it.
+    - cron: "20 6 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - skynet-iads-source/skynet-iads-supported-types.lua
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-unit-types:
+    name: Check samTypesDB against the DCS database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y lua5.1
+
+      # pipefail matters: without it the pipeline reports tee's status, and a failing check would
+      # leave the step green.
+      - name: Check the unit types
+        run: |
+          set -o pipefail
+          lua5.1 test/lua/check-unit-types.lua 2>&1 | tee "$RUNNER_TEMP/unit-types.txt"
+
+      - name: Open an issue
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "The weekly check of samTypesDB against the DCS database failed:"
+            echo ""
+            echo '```'
+            cat "$RUNNER_TEMP/unit-types.txt"
+            echo '```'
+            echo ""
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$RUNNER_TEMP/issue.md"
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "samTypesDB names unit types the DCS database no longer has" \
+            --body-file "$RUNNER_TEMP/issue.md"

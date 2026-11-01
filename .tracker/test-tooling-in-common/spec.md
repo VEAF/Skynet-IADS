@@ -87,8 +87,9 @@ them at runtime.
 
 ### The unit-type check
 
-- `test/lua/check-unit-types.lua` fetches the datamine's current head in one go — a sparse,
-  shallow clone of `_G/db/Units` into `build/`, git-ignored — then loads
+- `test/lua/check-unit-types.lua` fetches the datamine's current head in one go — a shallow fetch
+  of its file list alone, no file content, into `build/dcs-lua-datamine/`, git-ignored, read with
+  `git ls-tree` — then loads
   `skynet-iads-supported-types.lua` with `dofile` and fails on every unit type `samTypesDB` names,
   in `searchRadar`, `trackingRadar`, `launchers` and `misc`, that has no file under `_G/db/Units/`.
   It fails as well when it finds no type or no unit at all, so that a broken check cannot pass.
