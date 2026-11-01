@@ -142,14 +142,6 @@ Those two files are the reference: how to run each suite, how to add to it, what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
-One rule worth knowing before you get there:
-
-- **The figures ED states about a unit are not ours to assert** — a missile's reach, its firing
-  ceiling, a radar's detection distance. They are generated into `test/lua/dcs-figures.lua` from a
-  pinned data dump, and a weekly workflow (`.github/workflows/dcs-data-drift.yml`) opens a pull
-  request when one moves. Asserted inside a
-  mission instead, a changed figure is a red test nobody sees.
-
 ## Static analysis and formatting
 
 `skynet-iads-source/`, `test/lua/`, `test/common/` and `test/insim-tools/` are gated by `luacheck` and `stylua --check`
@@ -166,9 +158,7 @@ line endings alone, and exits non-zero only on a real finding.
 
 `.luacheckrc` lists the DCS Scripting Engine's globals and this project's own — every class is a bare
 global, because DCS has no module system and the sources are concatenated rather than required.
-`.styluaignore` excludes the vendored `test/common/luaunit.lua` and the generated
-`test/lua/dcs-figures.lua`, whose shape belongs to its generator: `stylua --check` run on that path
-directly fails by design.
+`.styluaignore` excludes the vendored `test/common/luaunit.lua`.
 
 `.luacheckrc` also pins a **ratchet**: the warnings the first run already had, scoped to their exact
 file and code, so a *new* warning of the same kind in the same file still fails. Fix new code instead

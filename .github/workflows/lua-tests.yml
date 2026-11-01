@@ -23,13 +23,6 @@ jobs:
       - name: Run the standalone suite
         run: lua5.1 test/common/run.lua
 
-      # test/lua/dcs-figures.lua is generated from a pinned commit of the DCS database dump. This
-      # regenerates it and fails on any difference, so the committed file cannot claim to come from
-      # a pin it no longer matches. It is the pin that moves, in a pull request from the weekly
-      # dcs-data-drift workflow, never the file on its own.
-      - name: Check the DCS figures against their pinned source
-        run: python3 build-tools/dcs-figures.py check
-
   # The demos are committed whole, and a release refreshes their Skynet script. On every
   # push and pull request, each demo's script must match its line in skynet-script.sha256: a
   # script changed without its hash goes red here. Towards master the script must
