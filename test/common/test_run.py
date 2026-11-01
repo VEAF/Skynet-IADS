@@ -63,6 +63,12 @@ class RunLuaTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("run.lua: no such folder: " + missing, result.stdout)
 
+    def test_with_no_folder_it_finds_the_suites_of_every_folder(self):
+        # test_dcs_stub.lua is in test/common/, which no list ever named: only discovery finds it.
+        result = self.run_lua("test_dcs_stub")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("--- test_dcs_stub.lua ---", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
