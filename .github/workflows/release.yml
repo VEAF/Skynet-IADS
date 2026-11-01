@@ -20,6 +20,11 @@ jobs:
       - name: Build
         run: python3 build-tools/build-compiled-script.py
 
+      # The demos are attached as committed, so they must carry what this tag builds: a tag pushed
+      # before master's CI went green would otherwise ship demos with another Skynet.
+      - name: Check the demos carry this build
+        run: python3 demo-missions/update-skynet-script.py check --against-build
+
       - name: Install Lua 5.1
         run: |
           sudo apt-get update -q
