@@ -1,7 +1,7 @@
 -- The mission-side layer of the in-sim test suite. Each mailbox command of the driver calls one
 -- function of it: `phase` runs one phase file of a scenario, `cleanup` removes what the scenario
--- added, `status` answers the driver's probe. The scenario's context (`ctx`) lives in InsimState
--- between commands, which is why that global is guarded: a reload of this file must not wipe it.
+-- added. The scenario's context (`ctx`) lives in InsimState between commands, which is why that
+-- global is guarded: a reload of this file must not wipe it.
 InsimState = InsimState or { contexts = {} }
 
 local I = {}
@@ -138,10 +138,6 @@ local function newContext(name, mission)
 		error(I.INVALID_MARK .. reason, 0)
 	end
 	return ctx
-end
-
-function I.status()
-	return { mission = env.getValueDictByKey(env.mission.sortie), time = timer.getTime() }
 end
 
 function I.scenariosDir()

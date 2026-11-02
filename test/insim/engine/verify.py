@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from . import luadata
+import hotload
 
 __all__ = ["VerifyError", "DEFAULT_LUA", "find_lua", "judge"]
 
@@ -32,7 +32,7 @@ def find_lua(explicit):
 def judge(lua, scenario_dir, result, result_file):
     """Run the scenario's verify.lua against `result`: (True, "") if it passes, (False, message) if it fails."""
     result_file = Path(result_file)
-    result_file.write_text(luadata.dump(result), encoding="utf-8", newline="\n")
+    result_file.write_text(hotload.dump(result), encoding="utf-8", newline="\n")
     verify_file = Path(scenario_dir) / "verify.lua"
     try:
         proc = subprocess.run(

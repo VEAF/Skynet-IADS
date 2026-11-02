@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import luadata
+import hotload
 from .driver import SILENCE, read_journal, read_outcome
 
 __all__ = ["SuiteError", "Console", "Scenario", "Verdict", "check_name", "discover", "select", "run_scenario", "summary", "write_report", "rejudge", "exit_code"]
@@ -100,10 +100,10 @@ class Verdict:
 
 
 def check_name(name):
-    """A scenario name the driver can send: its own commands are named probe-* and stop-*, and a
-    command's text quotes the name."""
-    if name.startswith(("probe-", "stop-")) or '"' in name:
-        raise SuiteError('%s: a scenario name may not start with probe- or stop-, nor contain "' % name)
+    """A scenario name the driver can send: its own commands are named stop-*, and a command's text
+    quotes the name."""
+    if name.startswith("stop-") or '"' in name:
+        raise SuiteError('%s: a scenario name may not start with stop-, nor contain "' % name)
 
 
 def discover(folder):
@@ -116,8 +116,8 @@ def discover(folder):
             if not (path / (part + ".lua")).is_file():
                 raise SuiteError("scenario %s has no %s.lua" % (path.name, part))
         try:
-            meta = luadata.parse((path / "scenario.lua").read_text(encoding="utf-8"))
-        except luadata.LuaDataError as e:
+            meta = hotload.parse((path / "scenario.lua").read_text(encoding="utf-8"))
+        except hotload.LuaDataError as e:
             raise SuiteError("scenario %s: scenario.lua is not a plain `return { ... }` table: %s" % (path.name, e)) from e
         for key in ("mission", "timeout"):
             if not isinstance(meta, dict) or key not in meta:
@@ -148,7 +148,7 @@ def _cleanup_code(name):
 def _failure(name, outcome):
     """The verdict for a setup or run that did not end `done`."""
     error = outcome.error or outcome.status
-    if outcome.status == "crashed":
+    if outcome.status == "lost":
         return Verdict(name, "crashed", error)
     mark = outcome.error.find(INVALID) if outcome.error else -1
     if mark >= 0:  # anywhere: hotload prefixes an error raised inside a waitFor predicate
@@ -196,7 +196,7 @@ def _run_scenario(driver, judge, s, console):
     if ended and ended[-1][0] != "cleanup":
         # mission-side state (context, units, IADS) lives only as long as the mission instance that built it
         phase, last = ended[-1]
-        if driver.wait_for_mission(SILENCE)["time"] < last["sent_at"]:
+        if last.get("sent_at") is not None and driver.wait_for_mission(SILENCE)["time"] < last["sent_at"]:
             send("cleanup", _cleanup_code(s.name))
             return Verdict(s.name, "crashed", "DCS went down after " + phase)
 
@@ -209,28 +209,28 @@ def _run_scenario(driver, judge, s, console):
         return Verdict(s.name, "crashed", "the mission restarted since setup")
 
     setup = send("setup", _phase_code(s.name, "setup"))
-    if setup.status == "crashed":
+    if setup.status == "lost":
         return crashed("setup", setup)
     run = None
     if setup.status != "done":
         console.phase_skipped("run")
     else:
         run = send("run", _phase_code(s.name, "run"))
-        if run.status == "crashed":
+        if run.status == "lost":
             return crashed("run", run)
         if lost_context(run):
             return restarted()
     warnings = []
     if s.has_teardown:
         teardown = send("teardown", _phase_code(s.name, "teardown"))
-        if teardown.status == "crashed":
+        if teardown.status == "lost":
             return crashed("teardown", teardown)
         if setup.status == "done" and lost_context(teardown):
             return restarted()
         if teardown.status != "done":
             warnings.append(_warning("teardown", teardown))
     cleanup = send("cleanup", _cleanup_code(s.name))
-    if cleanup.status == "crashed":
+    if cleanup.status == "lost":
         return crashed("cleanup", cleanup)
     if cleanup.status != "done":
         warnings.append(_warning("cleanup", cleanup))
@@ -258,7 +258,7 @@ def rejudge(journal, scenarios, judge):
             if entry and entry.get("state") == "ended":
                 outcomes[phase] = read_outcome(entry)
         setup, run = outcomes.get("setup"), outcomes.get("run")
-        crash = next((p for p in PHASES if p in outcomes and outcomes[p].status == "crashed"), None)
+        crash = next((p for p in PHASES if p in outcomes and outcomes[p].status == "lost"), None)
         if crash:
             verdicts.append(_crashed(s.name, crash, outcomes[crash]))
             continue

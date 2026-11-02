@@ -1,4 +1,4 @@
-"""Tests for test/insim/engine/driver.py -- sends mailbox commands, waits, resumes, stops a hung one.
+"""Tests for test/insim/engine/driver.py -- dcs-hotload's driver, plus what the test layer reads from it.
 
 The mission is a FakeMission with a fake clock: no test sleeps for real.
 
@@ -16,17 +16,17 @@ from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
-from engine import driver, mailbox  # noqa: E402
+from engine import driver  # noqa: E402
+import hotload  # noqa: E402  (put on sys.path by engine)
 
-
-PROBE = 'return Hotload.load("insim").status()'
 
 class FakeMission:
-    """The Mailbox interface in memory, plus a sim clock and a few scripted commands."""
+    """The Mailbox interface in memory, plus a sim clock, the heartbeat and a few scripted commands."""
 
     def __init__(self):
         self.real = 0.0
         self.sim = 5.0
+        self.beats = 0  # the heartbeat's modification time: it changes only while the mission runs
         self.resume_at = 0.0
         self.pause_on_pick = 0.0
         self.on_hang = None
@@ -37,9 +37,6 @@ class FakeMission:
         self.sent_names = []
 
     # the Mailbox interface
-    def ensure(self):
-        pass
-
     def send(self, name, code):
         self.inbox[name] = code
         self.sent_codes.append(code)
@@ -53,9 +50,9 @@ class FakeMission:
         self.inbox.pop(name, None)
         self.outbox.pop(name, None)
 
-    def clear_prefixes(self, prefixes):
-        for name in [n for n in list(self.inbox) + list(self.outbox) if n.startswith(tuple(prefixes))]:
-            self.clear(name)
+    def heartbeat(self):
+        runs = {"inbox/" + name: self.outbox[name]["started"] for name in self.active}
+        return {"mission": "m", "time": self.sim, "runs": runs}, self.beats
 
     # the fake world
     @property
@@ -76,6 +73,7 @@ class FakeMission:
         self.real += seconds
         if not self.paused:
             self.sim += seconds
+            self.beats += 1
         self.tick()
 
     def tick(self):
@@ -93,9 +91,7 @@ class FakeMission:
         label = "inbox/" + name
         if code == "LOST":
             return  # the command is never picked up
-        if name.startswith("probe-"):
-            self.outbox[name] = {"label": label, "status": "done", "result": {"mission": "m", "time": self.sim}}
-        elif code.startswith("return Hotload.stop("):
+        if code.startswith("return Hotload.stop("):
             target = code.split('"')[1][len("inbox/") :]
             alive = target in self.active
             if alive:
@@ -128,7 +124,7 @@ class DriverTest(unittest.TestCase):
         self.d = self.make()
 
     def make(self):
-        return driver.Driver(self.fake, self.journal, PROBE, clock=self.fake.clock, sleep=self.fake.sleep, say=self.said.append)
+        return driver.Driver(self.fake, self.journal, clock=self.fake.clock, sleep=self.fake.sleep, say=self.said.append)
 
     def test_done_command(self):
         o = self.d.run("a/setup", "a-setup", "return 1", 60)
@@ -154,27 +150,23 @@ class DriverTest(unittest.TestCase):
         self.assertEqual(o.status, "done")
         self.assertEqual(self.said.count(driver.SILENCE), 1)
 
-    def test_mission_restart_is_a_crash(self):
+    def test_mission_restart_is_lost(self):
         self.fake.on_hang = self.fake.restart
         o = self.d.run("a/run", "a-run", "HANG", 30)
-        self.assertEqual(o.status, "crashed")
+        self.assertEqual(o.status, "lost")
 
-    def test_unseen_restart_is_a_crash_at_timeout(self):
+    def test_unseen_restart_is_lost(self):
         self.fake.on_hang = lambda: self.fake.restart(sim=1000)
         o = self.d.run("a/run", "a-run", "HANG", 30)
-        self.assertEqual(o.status, "crashed")
+        self.assertEqual(o.status, "lost")
 
-    def test_command_never_picked_up_fails_instead_of_waiting_forever(self):
+    def test_command_never_picked_up_times_out_instead_of_waiting_forever(self):
         o = self.d.run("a/run", "a-run", "LOST", 30)
-        self.assertEqual(o.status, "fail")
-        self.assertEqual(o.error, "never picked up by the mission (no readable outbox after 30 s)")
-        self.assertTrue(any('Hotload.stop("inbox/a-run-' in c for c in self.fake.sent_codes))
+        self.assertEqual((o.status, o.error), ("timeout", "not picked up after 30 s of sim time"))
 
     def test_journal_keeps_the_result_as_the_live_run_saw_it(self):
         result = {1: 1, 3: 3, "x": 2}
-        self.fake.pick = lambda name, code: self.fake.outbox.update(
-            {name: {"label": "inbox/" + name, "status": "done", "result": result, "started": 0, "duration": 0}}
-        ) if not name.startswith("probe-") else FakeMission.pick(self.fake, name, code)
+        self.fake.pick = lambda name, code: self.fake.outbox.update({name: {"label": "inbox/" + name, "status": "done", "result": result, "started": 0, "duration": 0}})
         live = self.d.run("a/run", "a-run", "x", 30)
         again = self.make().run("a/run", "a-run", "x", 30)
         self.assertEqual(live.result, result)
@@ -195,32 +187,37 @@ class DriverTest(unittest.TestCase):
         self.fake.active["a-run-1"] = 25.0
         o = self.make().run("a/run", "a-run", "TAKES_20_SIM_S", 60)
         self.assertEqual(o.status, "done")
-        self.assertEqual([n for n in self.fake.sent_names if not n.startswith("probe-")], [])
+        self.assertEqual(self.fake.sent_names, [])
 
-    def test_leftover_probe_and_stop_files_are_cleared(self):
-        root = Path(self.tmp.name) / "mb"
-        box = mailbox.Mailbox(root)
-        box.ensure()
-        for name in ("probe-1", "stop-2", "a-run-3"):
-            box.send(name, "x")
-            (root / "user-outbox" / (name + ".lua")).write_text("return {}")
-        driver.Driver(box, self.journal, PROBE)
-        self.assertEqual(os.listdir(root / "user-inbox"), ["a-run-3.lua"])
-        self.assertEqual(os.listdir(root / "user-outbox"), ["a-run-3.lua"])
-
-    def test_the_probe_is_the_callers(self):
-        with self.assertRaises(TypeError):
-            driver.Driver(self.fake, self.journal)
-
-    def test_status_none_when_unanswered_and_probe_cleared(self):
-        self.fake.pause_for(1000)
-        self.assertIsNone(self.d.status(patience=10))
-        self.assertEqual((self.fake.inbox, self.fake.outbox), ({}, {}))
+    def test_an_ended_entry_keeps_the_sim_time_it_was_sent_at(self):
+        self.d.run("a/setup", "a-setup", "return 1", 60)
+        entry = self.d.entry("a/setup")
+        self.assertEqual((entry["state"], entry["sent_at"]), ("ended", 5.0))
+        self.assertIsNone(self.d.entry("a/run"))
 
     def test_wait_for_mission_says_hint_once(self):
         self.fake.pause_for(30)
         self.assertEqual(self.d.wait_for_mission("run the mission")["mission"], "m")
         self.assertEqual(self.said, ["run the mission"])
+        self.assertGreaterEqual(self.fake.real, 30)
+
+    def test_wait_for_mission_returns_at_once_while_it_runs(self):
+        self.assertEqual(self.d.wait_for_mission("run the mission")["time"], 5.5)
+        self.assertEqual(self.said, [])
+
+
+class PrepareMailboxTest(unittest.TestCase):
+    def test_creates_the_folders_and_clears_leftover_stops(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "mb"
+            box = hotload.Mailbox(root)
+            driver.prepare_mailbox(box)
+            for name in ("stop-2", "a-run-3"):
+                box.send(name, "x")
+                (root / "user-outbox" / (name + ".lua")).write_text("return {}")
+            driver.prepare_mailbox(box)
+            self.assertEqual(os.listdir(root / "user-inbox"), ["a-run-3.lua"])
+            self.assertEqual(os.listdir(root / "user-outbox"), ["a-run-3.lua"])
 
 
 if __name__ == "__main__":
