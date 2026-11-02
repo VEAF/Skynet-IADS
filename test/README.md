@@ -216,10 +216,11 @@ mailbox, and waits for the answer. It:
    rebuilds it from `skynet-iads-source/` unless the file is already the build of the current
    sources; `--skynet FILE` copies that file instead, and the next default run rebuilds;
 2. prepares the mission DCS opens (see *The mission*);
-3. waits for a mission to answer. If DCS is not running one, it says which files to run:
-   `test/insim/miz/insim-ca-main.miz` or `test/insim/miz/insim-pg-llod.miz`. **That is the manual
-   step.** Later, if the mission stops answering while a command is in flight, it says "paused, or
-   DCS is down" and waits: it never concludes anything from silence;
+3. waits for a mission to run, which it reads from hotload's heartbeat. If DCS is not running one,
+   it says which files to run: `test/insim/miz/insim-ca-main.miz` or
+   `test/insim/miz/insim-pg-llod.miz`. **That is the manual step.** Later, if the heartbeat stops
+   while a command is in flight, it says "no heartbeat: paused, not started, or DCS is down" and
+   waits: it never concludes anything from silence;
 4. checks that the mission runs the Skynet script as it now is on disk. If not, it stops and says to
    **restart the mission**: the script is loaded once, at mission start, so a change under
    `skynet-iads-source/` needs a build (the command does it) and a mission restart. A change to a
@@ -240,7 +241,7 @@ and the ones already done are not either.
 **After editing a `verify.lua`**, `--verify` judges the latest run's recorded results again. It sends
 nothing and needs no DCS.
 
-A paused mission does not answer: the driver waits. The timeouts below count sim time, so a pause
+A paused mission's heartbeat stands still: the driver waits. The timeouts below count sim time, so a pause
 sets none off.
 
 ### Writing a scenario
@@ -387,7 +388,9 @@ rebuilt. A later change to the mission starts from the template, never from an e
 
 `test/insim/dcs-hotload/` is dcs-hotload, committed as released, so a run needs nothing beyond the
 setup above. Its shipped files (`dcs-hotload.lua`, `README.md`, `LICENSE.md`, `bin/`, `examples/`)
-are never edited here; its own `README.md` is the reference for `Hotload.*`.
+are never edited here; its own `README.md` is the reference for `Hotload.*`. Its client,
+`bin/hotload.py`, is the driver's core: `test/insim/engine/` imports it, and adds only what the
+scenario chain reads from it.
 
 What belongs to the suite stays:
 
