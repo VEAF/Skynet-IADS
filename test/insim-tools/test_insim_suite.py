@@ -16,8 +16,9 @@ from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "test", "insim"))
-from engine import luadata, suite  # noqa: E402
+from engine import suite  # noqa: E402
 from engine.driver import Driver, Outcome  # noqa: E402
+import hotload  # noqa: E402  (put on sys.path by engine)
 from test_insim_driver import FakeMission  # noqa: E402
 
 DONE = Outcome("done")
@@ -104,35 +105,35 @@ class ChainTest(unittest.TestCase):
         self.assertEqual(v.verdict, "fail")
 
     def test_crash_stops_the_scenario(self):
-        v, driver = run_with({"s/run": Outcome("crashed", error="the mission restarted")})
+        v, driver = run_with({"s/run": Outcome("lost", error="the mission restarted")})
         self.assertEqual(driver.keys, ["s/setup", "s/run", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "the mission restarted during run"))
 
     def test_setup_crash_stops_at_setup(self):
-        v, driver = run_with({"s/setup": Outcome("crashed", error="DCS went down")})
+        v, driver = run_with({"s/setup": Outcome("lost", error="DCS went down")})
         self.assertEqual(driver.keys, ["s/setup", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during setup"))
 
     def test_teardown_crash_stops_at_teardown(self):
-        v, driver = run_with({"s/teardown": Outcome("crashed", error="DCS went down")})
+        v, driver = run_with({"s/teardown": Outcome("lost", error="DCS went down")})
         self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during teardown"))
 
     def test_cleanup_crash_is_crashed(self):
-        v, driver = run_with({"s/cleanup": Outcome("crashed", error="DCS went down")})
+        v, driver = run_with({"s/cleanup": Outcome("lost", error="DCS went down")})
         self.assertEqual(driver.keys, ["s/setup", "s/run", "s/teardown", "s/cleanup"])
         self.assertEqual((v.verdict, v.message), ("crashed", "DCS went down during cleanup"))
 
     def test_crash_sends_only_cleanup_afterwards(self):
-        _, driver = run_with({"s/run": Outcome("crashed", error="x")})
+        _, driver = run_with({"s/run": Outcome("lost", error="x")})
         self.assertEqual(driver.calls[-1][2], 'return Hotload.load("insim").cleanup("s")')
 
     def test_judge_is_not_called_after_a_crash_or_a_failed_phase(self):
         for table in (
-            {"s/setup": Outcome("crashed")},
-            {"s/run": Outcome("crashed")},
-            {"s/teardown": Outcome("crashed")},
-            {"s/cleanup": Outcome("crashed")},
+            {"s/setup": Outcome("lost")},
+            {"s/run": Outcome("lost")},
+            {"s/teardown": Outcome("lost")},
+            {"s/cleanup": Outcome("lost")},
             {"s/setup": Outcome("fail", error="x")},
             {"s/run": Outcome("timeout", error="x")},
         ):
@@ -187,7 +188,7 @@ class PhaseMission(FakeMission):
     lost = False
 
     def pick(self, name, code):
-        if name.startswith("probe-") or not code.startswith("return Hotload.load"):
+        if not code.startswith("return Hotload.load"):
             return FakeMission.pick(self, name, code)
         self.outbox[name] = {"label": "inbox/" + name, "status": "done", "result": 1, "started": self.sim, "duration": 0}
         if self.lost and '"run"' in code:
@@ -205,12 +206,12 @@ class RealJournalTest(unittest.TestCase):
 
     def driver(self):
         m = self.mission
-        return Driver(m, self.journal, 'return Hotload.load("insim").status()', clock=m.clock, sleep=m.sleep, say=lambda text: None)
+        return Driver(m, self.journal, clock=m.clock, sleep=m.sleep, say=lambda text: None)
 
     def resume(self):
         self.mission.sent_names.clear()
         v = suite.run_scenario(self.driver(), judge_ok, scenario(), "m1")
-        return v, [n for n in self.mission.sent_names if not n.startswith("probe-")]
+        return v, list(self.mission.sent_names)
 
     def test_restart_after_setup_is_crashed_and_only_cleanup_is_sent(self):
         self.driver().run("s/setup", "s-setup", suite._phase_code("s", "setup"), 30)
@@ -329,7 +330,7 @@ class FolderTest(unittest.TestCase):
             suite.discover(self.folder)
 
     def test_names_the_driver_uses_are_refused(self):
-        for name in ("probe-x", "stop-x"):
+        for name in ("stop-x",):
             with self.subTest(name=name):
                 self.make(name)
                 with self.assertRaisesRegex(suite.SuiteError, name + ": a scenario name may not"):
@@ -413,7 +414,7 @@ class RejudgeTest(unittest.TestCase):
             journal = Path(tmp) / "j.jsonl"
             entries = [
                 {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
-                {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": luadata.dump({"n": 2, 1: 5})}},
+                {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": hotload.dump({"n": 2, 1: 5})}},
                 {"key": "b/setup", "state": "ended", "outcome": {"status": "fail", "error": "boom"}},
                 {"key": "c/setup", "state": "sent", "name": "c-setup-1", "sent_at": 1},
             ]
@@ -439,7 +440,7 @@ class RejudgeTest(unittest.TestCase):
             entries = [
                 {"key": "a/setup", "state": "ended", "outcome": {"status": "done"}},
                 {"key": "a/run", "state": "ended", "outcome": {"status": "done", "result": "return 1\n"}},
-                {"key": "a/" + phase, "state": "ended", "outcome": {"status": "crashed", "error": "gone"}},
+                {"key": "a/" + phase, "state": "ended", "outcome": {"status": "lost", "error": "gone"}},
             ]
             with tempfile.TemporaryDirectory() as tmp:
                 verdicts = suite.rejudge(self.journal_of(tmp, entries), [scenario(name="a")], judge_ok)

@@ -34,16 +34,13 @@ class FakeMailbox:
         self.root = root
         FakeMailbox.created.append(self)
 
-    def ensure(self):
-        pass
 
 
 class FakeDriver:
     created = []
     current = True
 
-    def __init__(self, mailbox, journal, probe_code, say=print):
-        self.probe_code = probe_code
+    def __init__(self, mailbox, journal, say=print):
         self.say = say
         self.keys = []
         FakeDriver.created.append(self)
@@ -81,6 +78,7 @@ class RunTest(unittest.TestCase):
         for patch in (
             mock.patch.object(run, "Mailbox", FakeMailbox),
             mock.patch.object(run, "Driver", FakeDriver),
+            mock.patch.object(run, "prepare_mailbox", lambda mailbox: None),
             mock.patch.object(run.skynet_script, "prepare", self.prepare_script),
             mock.patch.object(run.mission, "prepare", self.prepare_mission),
             mock.patch.object(run.verify, "judge", lambda lua, d, result, f: (True, "")),
@@ -108,10 +106,6 @@ class RunTest(unittest.TestCase):
         self.assertNotIn("alpha: pass", out)  # the summary lists only what did not pass
         self.assertNotIn("beta: pass", out)
         self.prepare_script.assert_called_once_with(self.repo, None)
-
-    def test_run_names_the_probe(self):
-        self.main()
-        self.assertEqual(FakeDriver.created[0].probe_code, 'return Hotload.load("insim").status()')
 
     def test_run_prints_what_it_prepared_and_the_report_path(self):
         _, out = self.main()

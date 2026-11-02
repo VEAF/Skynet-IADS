@@ -1,6 +1,6 @@
 # The in-sim suite runs on dcs-hotload's own driver
 
-Status: in-progress
+Status: done
 
 ## The problem
 

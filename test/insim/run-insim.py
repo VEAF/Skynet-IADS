@@ -13,12 +13,11 @@ import json  # noqa: E402
 
 import skynet_script  # noqa: E402
 from engine import mission, suite, verify  # noqa: E402
-from engine.driver import Driver  # noqa: E402
-from engine.mailbox import Mailbox  # noqa: E402
+from engine.driver import Driver, prepare_mailbox  # noqa: E402
+from hotload import Mailbox  # noqa: E402  (put on sys.path by engine)
 
 REPO = HERE.parent.parent
 STALE = "the mission runs an older Skynet script: restart the mission"
-PROBE_CODE = 'return Hotload.load("insim").status()'
 CHECK_CODE = 'return Hotload.load("insim-skynet").scriptIsCurrent()'
 CHECK_TIMEOUT = 30.0
 
@@ -82,7 +81,7 @@ def main(argv=None, repo=REPO, now=datetime.now):
         _, done = skynet_script.prepare(repo, forced)
         print("Skynet script: " + {"up to date": "up to date (built from the current sources)", "rebuilt": "rebuilt", "forced": "forced from %s" % forced}[done])
         mailbox = Mailbox(insim / "dcs-hotload")
-        mailbox.ensure()
+        prepare_mailbox(mailbox)
         names = []
         for template in sorted((insim / "miz").glob("*.template.miz")):
             name = template.name[: -len(".template.miz")]
@@ -108,7 +107,7 @@ def main(argv=None, repo=REPO, now=datetime.now):
             (folder / "run.json").write_text(json.dumps(run), encoding="utf-8")
 
         console = suite.Console(lambda text: (sys.stdout.write(text), sys.stdout.flush()), len(chosen))
-        driver = Driver(mailbox, folder / "journal.jsonl", PROBE_CODE, say=console.say)
+        driver = Driver(mailbox, folder / "journal.jsonl", say=console.say)
         hint = "run %s in DCS (missions: %s)" % (" or ".join("test/insim/miz/%s.miz" % n for n in names), ", ".join(names))
         open_mission = driver.wait_for_mission(hint)["mission"]
         print("mission %s is running" % open_mission)

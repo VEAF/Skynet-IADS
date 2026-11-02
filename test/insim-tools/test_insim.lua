@@ -338,11 +338,6 @@ function TestInsim:testCleanupWithoutContextIsEmpty()
 	luaunit.assertEquals(I.cleanup("nothing"), { destroyed = 0, cleanups = 0 })
 end
 
-function TestInsim:testStatusNamesTheMission()
-	luaunit.assertEquals(I.status().mission, "insim01")
-	luaunit.assertEquals(I.status().time, 500)
-end
-
 function TestInsim:testScenariosDirDefaultsBesideHotload()
 	InsimState.scenariosDir = nil
 	luaunit.assertEquals(I.scenariosDir(), Hotload.root .. "/../scenarios")
