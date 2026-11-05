@@ -1,35 +1,85 @@
 # A site protected by a point defence flaps under a HARM
 
-Status: open
+Status: in-progress
 
 ## The problem
 
-A SAM site whose point defence can take the inbound HARM is meant to stay live while the point
+A SAM site whose point defence can take the inbound HARM is meant to stay as it was while the point
 defence engages: `shallIgnoreHARMShutdown()` answers true, and `informOfHARM` wakes the point
-defence through `pointDefencesGoLive()`. In DCS, the site and its point defence instead go dark and
-live again at every cycle, about once a second, for the whole time the HARM is in flight.
+defence through `pointDefencesGoLive()`. In DCS, the site instead goes dark for the whole time the
+HARM is in flight, its radar coming on for an instant at each contact cycle; its point defence does
+the opposite, live with a dark instant at each cycle.
 
 Seen in the in-sim scenario `harm-point-defence` (`test/insim/scenarios/`), on `insim-ca-main`: an
 SA-6 acting as an EW radar, an SA-15 as its point defence, both under a 1L13; one AGM-88C fired by an
-invisible, immortal F-16 at the SA-6; HARM detection chance 100 %.
+invisible, immortal F-16 at the SA-6; HARM detection chance 100 %. It is the setup of the documented
+example, an SA-10 acting as EW protected by SA-15s (`documentation/api.en.md`). The scenario fails
+with `site` going `{ true, false, true }`; the SA-15 still fires.
 
-- `shallIgnoreHARMShutdown()` read every second: true throughout (1 HARM identified, the SA-15 with
-  1 launcher and 8 missiles, then 7, then 6).
-- Skynet's debug log, every cycle until impact: `POINT DEFENCES GOING LIVE FOR: …/SAM-SA6 | TTI: 51`,
-  then `GOING DARK` for the SA-15 and for the SA-6, then `GOING LIVE` for both; the same at TTI 48,
-  47, 43, 39, 35…
-- The SA-15 still fired twice.
+## The cause
 
-Nothing in `informOfHARM` silences the site while `shallIgnoreHARMShutdown()` is true, so the dark
-comes from another caller of `goDark()` in the same cycle. Which one is to be found.
+Coverage is geometry: every radar element is a parent of every SAM site inside its detection range,
+whether it acts as EW or not, so the SA-6 and the SA-15, a few hundred metres apart, are each the
+other's parent and child. `addPointDefence()` adds no link of its own. `actAsEW` decides whether a
+parent counts (`hasValidParentRadar()`), and a change of it is sent down the link:
+`setActAsEW()` calls `informChildrenOfStateChange()`, and each child gets
+`setToCorrectAutonomousState()` → `resetAutonomousState()` → `goDark()`, even when its autonomy has
+not changed.
+
+A point defence goes live by acting as EW, so two paths meet:
+
+1. **The HARM is identified.** `informOfHARM` → `pointDefencesGoLive()` → `SA15:setActAsEW(true)` →
+   `informChildrenOfStateChange()` → `goDark()` on the SA-6, a child of the SA-15. The SA-6 acting
+   as EW itself does not spare it: `goDark()` does not look at `actAsEW`, and the SA-6 has no
+   engageable target and no missile in flight.
+2. **Each contact cycle.** `evaluateContacts` calls `goLive()` on every radar acting as EW. The SA-6
+   is dark, so `goLive()` runs and calls `pointDefencesStopActingAsEW()` →
+   `SA15:setActAsEW(false)` → `informChildrenOfStateChange()` → the SA-6 goes dark again, inside its
+   own `goLive()`. Later in the same tick, path 1 wakes the SA-15 again.
+
+A site that is not acting as EW but engaging a target is never sent down path 2, which only the
+radars acting as EW go through. Path 1 still reaches it, and only `goDark()`'s own guard holds it
+up: an engageable target seen by its radar, or a missile in flight. In `harm-engaging-defended`,
+below, the guard holds and the site stays live; it would not in a gap with neither, such as a site
+live on a contact the network reported, with no track of its own yet. The flapping itself is seen
+only on a protected site acting as EW.
+
+## Decisions
+
+**A point defence defending against a HARM is held live by a latch of its own, not by `actAsEW`.**
+`informOfHARM` sets it, `cleanUpOldObjectsIdentifiedAsHARMS()` releases it, and
+`targetCycleUpdateEnd()` leaves a latched site live. The point defence never changes its EW role, so
+nothing is sent down the coverage links, and `goLive()` no longer has point defences to switch off:
+both paths go. What a live point defence detects still reaches the network, as for any live site
+not acting as EW.
+
+Turned down:
+
+- **`informChildrenOfStateChange()` corrects a child only when its autonomy has changed**, as
+  `updateAutonomousStateIfChanged()` does for the coverage sweep. It would stop path 1, but every
+  caller of the notification would change with it, and a point defence would still become a parent
+  radar and a member of the EW list for the length of a HARM.
+- **`goDark()` leaves a site acting as EW alone.** It does not cover a site engaging a target.
+- **A point defence's `setActAsEW()` does not notify its children.** A site acting as EW is a valid
+  parent; hiding that change is hiding a real one.
 
 ## What to build
 
-- The cause, and the fix: the site stays live for the whole engagement, its point defence live
-  while the HARM is inbound, and dark again once it is gone.
-- A standalone test in `test/lua/` that reproduces the cycle.
+- The latch, and point defences moved off `actAsEW`: the protected site stays as it was for the
+  whole engagement, its point defence live while the HARM is inbound and dark again once it is gone.
+- Standalone tests in `test/lua/` for both paths.
 - `harm-point-defence` passes; it asserts the site stays live (`site = { true }`) and is the
   regression test in DCS.
+- Two in-sim scenarios for a site that is not acting as EW and cannot engage a HARM, an SA-2 under
+  EW coverage, engaging a visible, immortal attacker that fires a HARM at it only once the site has
+  fired. Both pass against the script before the fix, and must still pass after it:
+  - `harm-engaging-undefended`, no point defence: the site goes dark under the HARM.
+  - `harm-engaging-defended`, an SA-15 as point defence: the site stays live and keeps firing after
+    the HARM is identified; the point defence goes live, and dark again once the HARM is gone.
+
+  The attacker is immortal, so the site may run out of missiles, and `goDarkIfOutOfAmmo()` sends it
+  dark as a HARM would: a site left without missiles makes the run `invalid`. The attack is a
+  helper in `user-lib/`, shared by both.
 
 ## Out of scope
 
