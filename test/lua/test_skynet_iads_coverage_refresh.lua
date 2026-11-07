@@ -347,6 +347,19 @@ function TestSkynetIADSCoverageRefresh:testSweepIsArmedByActivateAndRemovedByDea
 	self.iads = nil
 end
 
+--the sweep lights an uncovered site: re-armed on a deactivated IADS, it brings radars back on
+function TestSkynetIADSCoverageRefresh:testSettingTheIntervalAfterDeactivateDoesNotRearmTheSweep()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+	iads:activate()
+	iads:deactivate()
+
+	iads:setCoverageRefreshInterval(5)
+	luaunit.assertEquals(iads:getCoverageRefreshInterval(), 5)
+	luaunit.assertNil(iads.coverageRefreshMistTaskID)
+	self.iads = nil
+end
+
 function TestSkynetIADSCoverageRefresh:testSweepIntervalIsSettableAndZeroStopsIt()
 	local iads = SkynetIADS:create()
 	self.iads = iads

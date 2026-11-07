@@ -806,6 +806,7 @@ do
 
 	function SkynetIADS:deactivate()
 		SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
+		self.ewRadarScanMistTaskID = nil
 		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
 		self.coverageRefreshMistTaskID = nil
 		SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)

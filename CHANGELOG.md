@@ -149,6 +149,10 @@ between two copies.
   the HARM without acting as EW, and stands down once the last HARM is gone, no longer as soon as
   the site it protects goes live again — nor, if that site went dark for want of a target, only
   when it next goes live.
+- `deactivate()` now leaves the IADS inactive. It used to stop the contact cycle while the IADS
+  still looked active, so a call made afterwards to `setCoverageRefreshInterval()`,
+  `addSAMSitesByPrefix()` or `addEarlyWarningRadarsByPrefix()` could restart the coverage sweep or
+  rebuild the coverage of a network that had been switched off.
 
 ## [3.5.0] — 2026-09-21
 
