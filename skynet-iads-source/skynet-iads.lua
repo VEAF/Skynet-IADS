@@ -15,8 +15,8 @@ do
 		iads.earlyWarningRadars = {}
 		iads.samSites = {}
 		iads.commandCenters = {}
-		iads.ewRadarScanMistTaskID = nil
-		iads.coverageRefreshMistTaskID = nil
+		iads.ewRadarScanTaskID = nil
+		iads.coverageRefreshTaskID = nil
 		iads.coalition = nil
 		iads.contacts = {}
 		iads.maxTargetAge = 32
@@ -204,7 +204,7 @@ do
 		-- it is not a valid parent, so the answer would be that nothing changed.
 		ewRadar:setActAsEW(true)
 		-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:buildRadarCoverageForEarlyWarningRadar(ewRadar)
 		end
 		ewRadar:setToCorrectAutonomousState()
@@ -272,7 +272,7 @@ do
 	-- guarded exactly as the incremental rebuild is: before activate() there is no coverage to
 	-- rebuild, and activate() will do it once.
 	function SkynetIADS:rebuildRadarCoverageAfterBulkReAdd()
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:buildRadarCoverage()
 		end
 	end
@@ -317,7 +317,7 @@ do
 				self:printOutputToLog("ADDED: " .. samSite:getDescription())
 			end
 			-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
-			if self.ewRadarScanMistTaskID ~= nil then
+			if self.ewRadarScanTaskID ~= nil then
 				self:buildRadarCoverageForSAMSite(samSite)
 				-- and then applied unconditionally, which the rebuild's own guard cannot do: a site
 				-- one statement old has never had its autonomous state applied at all, isAutonomous
@@ -389,7 +389,7 @@ do
 		local comCenter = SkynetIADSCommandCenter:create(commandCenter, self)
 		table.insert(self.commandCenters, comCenter)
 		-- when IADS is active the radars will be added to the new command center. If it not active this will happen when radar coverage is built
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:addRadarsToCommandCenters()
 		end
 		return comCenter
@@ -652,18 +652,13 @@ do
 	end
 
 	-- Coverage refresh ----------------------------------------------------------------------------
-	--
-	-- Which battery sits under which radar is geometry, and geometry changes when something moves.
-	-- Until now it was computed once and treated as if it never changed: buildRadarCoverage() is the
-	-- only thing that clears anything, and the incremental rebuild used for a moving AWACS only ever
-	-- adds. So an AWACS in transit accumulated every battery it had ever flown near and held them
-	-- all non-autonomous from hundreds of kilometres away, and a mobile SAM site — a SA-15, a SA-8,
-	-- a Shilka in a convoy — was refreshed by nothing at all.
-
+	-- Which SAM site sits under which radar is geometry, and geometry changes when something moves.
+	-- An AWACS in transit, a mobile SAM site, a Shilka in a convoy change the geometry and need the
+	-- coverage to be refreshed to match.
 	function SkynetIADS:setCoverageRefreshInterval(interval)
 		if interval and interval >= 0 then
 			self.coverageRefreshInterval = interval
-			if self.ewRadarScanMistTaskID ~= nil then
+			if self.ewRadarScanTaskID ~= nil then
 				self:scheduleCoverageRefresh()
 			end
 		end
@@ -676,10 +671,10 @@ do
 
 	--- (Re)arms the periodic sweep. An interval of 0 stops it.
 	function SkynetIADS:scheduleCoverageRefresh()
-		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
-		self.coverageRefreshMistTaskID = nil
+		SkynetIADSUtils.removeFunction(self.coverageRefreshTaskID)
+		self.coverageRefreshTaskID = nil
 		if self.coverageRefreshInterval > 0 then
-			self.coverageRefreshMistTaskID = SkynetIADSUtils.scheduleFunction(
+			self.coverageRefreshTaskID = SkynetIADSUtils.scheduleFunction(
 				SkynetIADS.refreshRadarCoverage,
 				{ self },
 				1,
@@ -790,8 +785,8 @@ do
 
 	-- will start going through the Early Warning Radars and SAM sites to check what targets they have detected
 	function SkynetIADS.activate(self)
-		SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
-		self.ewRadarScanMistTaskID =
+		SkynetIADSUtils.removeFunction(self.ewRadarScanTaskID)
+		self.ewRadarScanTaskID =
 			SkynetIADSUtils.scheduleFunction(SkynetIADS.evaluateContacts, { self }, 1, self.contactUpdateInterval)
 		self:buildRadarCoverage()
 		self:scheduleCoverageRefresh()
@@ -805,10 +800,10 @@ do
 	end
 
 	function SkynetIADS:deactivate()
-		SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
-		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
-		self.coverageRefreshMistTaskID = nil
-		SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)
+		SkynetIADSUtils.removeFunction(self.ewRadarScanTaskID)
+		self.ewRadarScanTaskID = nil
+		SkynetIADSUtils.removeFunction(self.coverageRefreshTaskID)
+		self.coverageRefreshTaskID = nil
 		self:deativateSAMSites()
 		self:deactivateEarlyWarningRadars()
 		self:deactivateCommandCenters()

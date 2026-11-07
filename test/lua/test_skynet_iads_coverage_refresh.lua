@@ -337,13 +337,26 @@ function TestSkynetIADSCoverageRefresh:testSweepIsArmedByActivateAndRemovedByDea
 	local iads = SkynetIADS:create()
 	self.iads = iads
 	luaunit.assertEquals(iads:getCoverageRefreshInterval(), 10)
-	luaunit.assertNil(iads.coverageRefreshMistTaskID)
+	luaunit.assertNil(iads.coverageRefreshTaskID)
 
 	iads:activate()
-	luaunit.assertNotNil(iads.coverageRefreshMistTaskID)
+	luaunit.assertNotNil(iads.coverageRefreshTaskID)
 
 	iads:deactivate()
-	luaunit.assertNil(iads.coverageRefreshMistTaskID)
+	luaunit.assertNil(iads.coverageRefreshTaskID)
+	self.iads = nil
+end
+
+--the sweep lights an uncovered site: re-armed on a deactivated IADS, it brings radars back on
+function TestSkynetIADSCoverageRefresh:testSettingTheIntervalAfterDeactivateDoesNotRearmTheSweep()
+	local iads = SkynetIADS:create()
+	self.iads = iads
+	iads:activate()
+	iads:deactivate()
+
+	iads:setCoverageRefreshInterval(5)
+	luaunit.assertEquals(iads:getCoverageRefreshInterval(), 5)
+	luaunit.assertNil(iads.coverageRefreshTaskID)
 	self.iads = nil
 end
 
@@ -354,11 +367,11 @@ function TestSkynetIADSCoverageRefresh:testSweepIntervalIsSettableAndZeroStopsIt
 
 	iads:setCoverageRefreshInterval(30)
 	luaunit.assertEquals(iads:getCoverageRefreshInterval(), 30)
-	luaunit.assertNotNil(iads.coverageRefreshMistTaskID)
+	luaunit.assertNotNil(iads.coverageRefreshTaskID)
 
 	iads:setCoverageRefreshInterval(0)
 	luaunit.assertEquals(iads:getCoverageRefreshInterval(), 0)
-	luaunit.assertNil(iads.coverageRefreshMistTaskID)
+	luaunit.assertNil(iads.coverageRefreshTaskID)
 
 	--a negative interval is nonsense and is refused
 	iads:setCoverageRefreshInterval(-5)

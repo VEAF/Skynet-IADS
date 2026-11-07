@@ -101,7 +101,7 @@ function TestInsimSkynet:testConfigureRunsBeforeActivate()
 	local seen
 	self.iads = S.iads(fakeContext("iadsx"), function(iads)
 		-- the IADS has no isActive(): activate() is what arms its scan task
-		seen = { sites = #iads:getSAMSites(), active = iads.ewRadarScanMistTaskID ~= nil }
+		seen = { sites = #iads:getSAMSites(), active = iads.ewRadarScanTaskID ~= nil }
 	end)
 	luaunit.assertEquals(seen, { sites = 1, active = false })
 end
