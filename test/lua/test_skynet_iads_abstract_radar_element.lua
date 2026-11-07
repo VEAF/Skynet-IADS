@@ -1473,7 +1473,25 @@ function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDar
 	luaunit.assertIs(self.samSite:addPointDefence(pointDefence), self.samSite)
 	luaunit.assertEquals(#self.samSite:getPointDefences(), 1)
 
-	self.samSite:goSilentToEvadeHARM()
+	--more HARMs than the point defence can take: the site has to hide
+	function self.samSite:shallIgnoreHARMShutdown()
+		return false
+	end
+	local radarPosition = self.samSite:getRadars()[1]:getPosition().p
+	local harmPosition = { x = radarPosition.x, y = 5000, z = radarPosition.z + 10000 }
+	local harm = {}
+	function harm.getPosition()
+		return { p = harmPosition }
+	end
+	function harm.getMagneticHeading()
+		return SkynetIADSUtils.toDegree(SkynetIADSUtils.getHeadingPoints(harmPosition, radarPosition))
+	end
+	function harm.getGroundSpeedInKnots()
+		return 1200
+	end
+
+	self.samSite:informOfHARM(harm)
+	luaunit.assertEquals(self.samSite:isDefendingHARM(), true)
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	luaunit.assertEquals(pointDefence:isActive(), true)
 	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)

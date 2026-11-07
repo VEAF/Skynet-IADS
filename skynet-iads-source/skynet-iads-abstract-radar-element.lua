@@ -731,15 +731,6 @@ do
 			if self:isDestroyed() == false then
 				self:getDCSRepresentation():enableEmission(false)
 			end
-			-- point defence will only go live if the Radar Emitting site it is protecting goes dark and this is due to a it defending against a HARM
-			if self.harmSilenceID ~= nil then
-				self:pointDefencesGoLive()
-				if self:isDestroyed() == false then
-					--if site goes dark due to HARM we turn off AI, this is due to a bug in DCS multiplayer where the harm will find its way to the radar emitter if just setEmissions is set to false
-					local controller = self:getController()
-					controller:setOnOff(false)
-				end
-			end
 			self.aiState = false
 			self.cachedTargets = {}
 			if self.iads:getDebugSettings().radarWentDark then
@@ -981,8 +972,9 @@ do
 	end
 
 	function SkynetIADSAbstractRadarElement:goSilentToEvadeHARM(timeToImpact)
-		--not finishHarmDefence(): the AI it turns back on would stay on through this silence, since
-		--goDark() leaves a site already dark as it is
+		--not finishHarmDefence(): all a new silence needs from the one under way is that its timer
+		--stops. Finishing it would turn the AI back on, and light an autonomous DCS AI site's radar,
+		--only for both to be undone below
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		if timeToImpact == nil then
 			timeToImpact = 0
@@ -1009,6 +1001,11 @@ do
 			1
 		)
 		self:goDark()
+		--the AI goes off too, whether the site was live or already dark: in DCS multiplayer a HARM
+		--still finds an emitter whose emission alone is off. finishHarmDefence() turns it back on
+		if self:isDestroyed() == false then
+			self:getController():setOnOff(false)
+		end
 	end
 
 	function SkynetIADSAbstractRadarElement:getHARMShutdownTime()

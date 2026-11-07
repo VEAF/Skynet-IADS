@@ -221,4 +221,23 @@ function TestSkynetIADSRearmAfterHarmSilence:testASecondSilenceKeepsTheAIOffUnti
 	luaunit.assertEquals(lastSetOnOff(samSite), true)
 end
 
+--a HARM fired while the site was live often arrives after it went dark for want of a target
+function TestSkynetIADSRearmAfterHarmSilence:testASilenceTurnsTheAIOffForASiteAlreadyDark()
+	local samSite = self:buildSite(true)
+	samSite:goLive()
+	samSite:goDark()
+	luaunit.assertEquals(samSite:isActive(), false)
+	luaunit.assertEquals(lastSetOnOff(samSite), true)
+
+	samSite:goSilentToEvadeHARM(10)
+
+	luaunit.assertEquals(lastSetOnOff(samSite), false)
+	luaunit.assertEquals(samSite:getDCSRepresentation().__emissionEnabled, false)
+
+	endSilence(samSite)
+
+	luaunit.assertEquals(lastSetOnOff(samSite), true)
+	luaunit.assertEquals(samSite:isActive(), false)
+end
+
 os.exit(luaunit.LuaUnit.run())
