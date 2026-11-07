@@ -652,14 +652,9 @@ do
 	end
 
 	-- Coverage refresh ----------------------------------------------------------------------------
-	--
-	-- Which battery sits under which radar is geometry, and geometry changes when something moves.
-	-- Until now it was computed once and treated as if it never changed: buildRadarCoverage() is the
-	-- only thing that clears anything, and the incremental rebuild used for a moving AWACS only ever
-	-- adds. So an AWACS in transit accumulated every battery it had ever flown near and held them
-	-- all non-autonomous from hundreds of kilometres away, and a mobile SAM site — a SA-15, a SA-8,
-	-- a Shilka in a convoy — was refreshed by nothing at all.
-
+	-- Which SAM site sits under which radar is geometry, and geometry changes when something moves.
+	-- An AWACS in transit, a mobile SAM site, a Shilka in a convoy change the geometry and need the
+	-- coverage to be refreshed to match.
 	function SkynetIADS:setCoverageRefreshInterval(interval)
 		if interval and interval >= 0 then
 			self.coverageRefreshInterval = interval
