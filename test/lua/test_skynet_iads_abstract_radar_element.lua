@@ -821,6 +821,9 @@ function TestSkynetIADSAbstractRadarElement:testHARMDefenceStates()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), true, "a live site scans for HARMs")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), false)
 	self.samSite:goSilentToEvadeHARM()
+	-- the scan stops itself at its next tick
+	dcsStub.advanceClock(2)
+	dcsStub.fireDueTimers()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), false, "a dark site has nothing to scan with")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), true)
 	luaunit.assertEquals(self.samSite:isActive(), false)
@@ -1397,10 +1400,10 @@ end
 -- ---- slice 4: point defence ---------------------------------------------------------------
 --
 -- A point defence is a short-range battery a SAM site keeps around itself to shoot at the missiles
--- aimed at its radar. The mechanism is entirely in setActAsEW(): while the site it protects is
--- evading a HARM, its point defences are switched into EW mode, which is what keeps them lit while
--- the site they protect is dark. They are switched back off when the site comes back up, and when
--- the last remembered HARM ages out.
+-- aimed at its radar. When a HARM comes at the site it protects, pointDefencesGoLive() lights it and
+-- latches it with setIsPointDefending(), without making it act as EW, and goDark() leaves it live
+-- while it has missiles. It is released when the last remembered HARM ages out, and the next contact
+-- cycle sends it dark.
 
 --- Builds an SA-15 as a site of the IADS, the way the .miz suite's addSAMSitesByPrefix does, so
 --- the point defence under test is a real SkynetIADSSamSite and not a mock.
@@ -1432,14 +1435,17 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
 
-	local actingAsEW = false
+	local held, lit = false, false
 	local mockPD = {
-		getActAsEW = function()
-			return actingAsEW
+		getIsPointDefending = function()
+			return held
 		end,
 		setIsAPointDefence = function() end,
-		setActAsEW = function(_, state)
-			actingAsEW = state
+		setIsPointDefending = function(_, state)
+			held = state
+		end,
+		goLive = function()
+			lit = true
 		end,
 		-- the protected site's cleanUp() calls this on every point defence it holds
 		cleanUp = function() end,
@@ -1447,13 +1453,15 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 
 	self.samSite:addPointDefence(mockPD)
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), true, "it was dark, so this switched it on")
-	luaunit.assertEquals(actingAsEW, true)
+	luaunit.assertEquals(held, true)
+	luaunit.assertEquals(lit, true)
 
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), false, "already lit: nothing to change")
 end
 
---- The whole point of the mechanism: the site hides from the HARM, its point defence lights up to
---- meet it, and when the site comes back the point defence stands down again.
+--- The site hides from the HARM and its point defence lights up to meet it. The site coming back
+--- does not stand the point defence down: the HARM may still be in the air. Its ageing out does,
+--- in testPointDefencesAreNotActivatedWhenNoHARMSRemoved.
 function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDarkDueToHARMDefence()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
@@ -1468,11 +1476,13 @@ function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDar
 	self.samSite:goSilentToEvadeHARM()
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	luaunit.assertEquals(pointDefence:isActive(), true)
-	luaunit.assertEquals(pointDefence:getActAsEW(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
+	luaunit.assertEquals(pointDefence:getActAsEW(), false)
 
 	self.samSite:finishHarmDefence()
 	self.samSite:goLive()
-	luaunit.assertEquals(pointDefence:getActAsEW(), false)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
 
 	pointDefence:cleanUp()
 end
@@ -1487,7 +1497,7 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesAreNotActivatedWhen
 	self.samSite:addPointDefence(pointDefence)
 
 	local calledStopPointDefence = false
-	function self.samSite:pointDefencesStopActingAsEW()
+	function self.samSite:releasePointDefences()
 		calledStopPointDefence = true
 	end
 
@@ -1514,14 +1524,14 @@ end
 --- :isDestroyed() answers true, and goLive() therefore never set aiState at all -- the assertion
 --- was reading a site that had never been lit, and could not have failed.
 ---
---- With a point defence that really is lit, it stays lit: pointDefencesStopActingAsEW() is called
---- from goLive() and from the last remembered HARM ageing out, and from nowhere else. goDark()
---- does not stand its point defences down.
+--- With a point defence that really is lit, it stays lit: goDark() does not stand its point
+--- defences down, and releasePointDefences(), called when the last remembered HARM ages out,
+--- releases only a point defence held live for a HARM, never one acting as EW.
 ---
---- That is not a hole in the live mechanism -- a point defence is only ever lit by
---- pointDefencesGoLive(), which goDark() runs only during HARM evasion, and both ways back down
---- are covered by the two tests above. It is a hole for a mission that lights one by hand. This
---- pins what the code does today, so that changing it is a decision somebody takes on purpose.
+--- That is not a hole in the live mechanism -- a point defence is only ever held live by
+--- pointDefencesGoLive(), and the way back down is covered by the tests above. It is a hole for a
+--- mission that lights one by hand. This pins what the code does today, so that changing it is a
+--- decision somebody takes on purpose.
 function TestSkynetIADSAbstractRadarElement:testPointDefenceLitByHandIsNotStoodDownWhenItsSAMGoesDark()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()

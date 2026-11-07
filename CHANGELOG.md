@@ -140,6 +140,15 @@ between two copies.
   instead of `demo-missions/`; the release asset keeps its name. The first line of the compiled
   script carries the version alone, `--- SKYNET VERSION: 3.5.0 ---`, and no longer the build time:
   two builds of the same commit are the same bytes on any machine.
+- **A site protected by a point defence no longer goes dark under a HARM its point defence can
+  take.** A point defence went live by acting as EW, and that change was sent to every SAM site
+  in its radar range, the site it protects included, which went dark for it. A site acting as EW,
+  as in the documented SA-10 and SA-15 example, stayed dark for the whole time the HARM was in
+  flight, its radar on for an instant every contact cycle; a site live on a contact the network
+  reported, before its own radar held a track, went dark too. A point defence is now held live for
+  the HARM without acting as EW, and stands down once the last HARM is gone, no longer as soon as
+  the site it protects goes live again — nor, if that site went dark for want of a target, only
+  when it next goes live.
 
 ## [3.5.0] — 2026-09-21
 
