@@ -809,7 +809,6 @@ do
 		self.ewRadarScanMistTaskID = nil
 		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
 		self.coverageRefreshMistTaskID = nil
-		SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)
 		self:deativateSAMSites()
 		self:deactivateEarlyWarningRadars()
 		self:deactivateCommandCenters()
