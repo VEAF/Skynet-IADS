@@ -33,6 +33,19 @@ prefix, to activate later, gets them in the IADS from the start, before they exi
 what Skynet does with an inactive radar it holds, and whether `getUnitNames()` lists late-activated
 units at all in DCS.
 
+### A HARM that has flown past is remembered as long as a radar sees it
+
+A site forgets a HARM `objectsIdentifiedAsHarmsMaxTargetAge` (60 s) after it was last *seen*
+(`cleanUpOldObjectsIdentifiedAsHARMS()`, on the contact's age), not once it stops coming at the site.
+A HARM that misses and flies on past the site, still tracked by the network, keeps the site's memory
+of it fresh: its point defence stays live for as long as any radar holds that HARM. Seen in
+`harm-engaging-defended` (the HARM's age at 0 to the end of a run), before the run was made to wait
+for the HARM's end.
+
+**Shape if taken**: forget a HARM once it no longer points at the site (the `informOfHARM` aspect
+test, failed), as well as by age. Not measured: how long a missed AGM-88 stays in the air and in
+sight in DCS.
+
 ## One agent instruction file, read by Claude and Copilot alike
 
 Raised 2026-09-22 by David, deferred out of `CHORE-REPOSITORY-CONVENTIONS` to keep that lot's diff
@@ -199,6 +212,16 @@ Left by `test-port-unit-tests-to-insim`; none has failed a run.
   Shape: keep a run's waits 20–30 s under its timeout, as the other scenarios do.
 - **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
   harmless, stale against the rename to `insim-ca-main`.
+
+## In-sim driver: two runs at once
+
+Nothing stops two `run-insim.py` running against the same mission. Both send their commands, the
+mission runs them side by side, and two runs of one scenario replace each other's fixtures, since a
+copy is added under the same name each run: two IADS, two attackers, results that mean nothing, and
+no warning. Seen when a driver left from an earlier session restarted beside a new one.
+
+**Shape if taken**: the driver takes a lock in hotload's root (`user-outbox/`) for the length of a
+run, and refuses to start while another holds it; a stale lock is one whose heartbeat stopped.
 
 ## Dropped
 
