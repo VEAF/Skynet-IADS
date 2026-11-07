@@ -120,11 +120,6 @@ do
 		if state == true or state == false then
 			self.isPointDefending = state
 		end
-		if self.isPointDefending == true then
-			self:goLive()
-		else
-			self:goDark()
-		end
 		return self
 	end
 
@@ -746,11 +741,6 @@ do
 				end
 			end
 			self.aiState = false
-			-- the scan is what ages a remembered HARM out and stands the point defences down: it goes
-			-- on until then, and stops itself in cleanUpOldObjectsIdentifiedAsHARMS()
-			if self:getNumberOfObjectsItentifiedAsHARMS() == 0 then
-				self:stopScanningForHARMs()
-			end
 			self.cachedTargets = {}
 			if self.iads:getDebugSettings().radarWentDark then
 				self.iads:printOutputToLog("GOING DARK: " .. self:getDescription())
@@ -765,6 +755,7 @@ do
 			if pointDefence:getIsPointDefending() == false then
 				setActive = true
 				pointDefence:setIsPointDefending(true)
+				pointDefence:goLive()
 			end
 		end
 		return setActive
@@ -1200,11 +1191,11 @@ do
 		-- when setting up the iads (letting pds go to read state)
 		if #newHARMS == 0 and self:getNumberOfObjectsItentifiedAsHARMS() > 0 then
 			self:releasePointDefences()
-			if self.aiState == false then
-				self:stopScanningForHARMs()
-			end
 		end
 		self.objectsIdentifiedAsHarms = newHARMS
+		if #newHARMS == 0 and self.aiState == false then
+			self:stopScanningForHARMs()
+		end
 	end
 
 	function SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self)

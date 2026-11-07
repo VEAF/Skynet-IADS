@@ -114,10 +114,10 @@ function TestSkynetIADSPointDefenceUnderHARM:testSiteActingAsEWStaysLiveWhileIts
 
 	harm.age = site.objectsIdentifiedAsHarmsMaxTargetAge + 1
 	SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(site)
-	luaunit.assertEquals(pointDefence:isActive(), false, "the HARM is gone: the point defence stands down")
-	luaunit.assertEquals(site:isActive(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), false, "the HARM is gone: the point defence is released")
 	SkynetIADS.evaluateContacts(iads)
-	luaunit.assertEquals(pointDefence:isActive(), false)
+	luaunit.assertEquals(pointDefence:isActive(), false, "the next cycle sends the released point defence dark")
+	luaunit.assertEquals(site:isActive(), true)
 end
 
 --- A site live on a contact the network reported, before its own radar holds a track: nothing in
@@ -153,8 +153,10 @@ function TestSkynetIADSPointDefenceUnderHARM:testPointDefenceStandsDownOnceTheHA
 	harm.age = site.objectsIdentifiedAsHarmsMaxTargetAge + 1
 	dcsStub.advanceClock(3)
 	dcsStub.fireDueTimers()
-	luaunit.assertEquals(pointDefence:isActive(), false, "the HARM is gone: the point defence stands down")
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), false, "the HARM is gone: the point defence is released")
 	luaunit.assertEquals(site:isScanningForHARMs(), false, "a dark site with nothing remembered stops scanning")
+	SkynetIADS.evaluateContacts(iads)
+	luaunit.assertEquals(pointDefence:isActive(), false, "the next cycle sends the released point defence dark")
 end
 
 os.exit(luaunit.LuaUnit.run())

@@ -821,6 +821,9 @@ function TestSkynetIADSAbstractRadarElement:testHARMDefenceStates()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), true, "a live site scans for HARMs")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), false)
 	self.samSite:goSilentToEvadeHARM()
+	-- the scan stops itself at its next tick
+	dcsStub.advanceClock(2)
+	dcsStub.fireDueTimers()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), false, "a dark site has nothing to scan with")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), true)
 	luaunit.assertEquals(self.samSite:isActive(), false)
@@ -1397,10 +1400,10 @@ end
 -- ---- slice 4: point defence ---------------------------------------------------------------
 --
 -- A point defence is a short-range battery a SAM site keeps around itself to shoot at the missiles
--- aimed at its radar. The mechanism is in setIsPointDefending(): when a HARM comes at the site it
--- protects, a point defence is held live whatever its own targets, without acting as EW, and
--- goDark() leaves it so while it has missiles. It is released when the last remembered HARM ages
--- out.
+-- aimed at its radar. When a HARM comes at the site it protects, pointDefencesGoLive() lights it and
+-- latches it with setIsPointDefending(), without making it act as EW, and goDark() leaves it live
+-- while it has missiles. It is released when the last remembered HARM ages out, and the next contact
+-- cycle sends it dark.
 
 --- Builds an SA-15 as a site of the IADS, the way the .miz suite's addSAMSitesByPrefix does, so
 --- the point defence under test is a real SkynetIADSSamSite and not a mock.
@@ -1432,7 +1435,7 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
 
-	local held = false
+	local held, lit = false, false
 	local mockPD = {
 		getIsPointDefending = function()
 			return held
@@ -1441,6 +1444,9 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 		setIsPointDefending = function(_, state)
 			held = state
 		end,
+		goLive = function()
+			lit = true
+		end,
 		-- the protected site's cleanUp() calls this on every point defence it holds
 		cleanUp = function() end,
 	}
@@ -1448,6 +1454,7 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 	self.samSite:addPointDefence(mockPD)
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), true, "it was dark, so this switched it on")
 	luaunit.assertEquals(held, true)
+	luaunit.assertEquals(lit, true)
 
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), false, "already lit: nothing to change")
 end
