@@ -1,6 +1,6 @@
 # A site protected by a point defence flaps under a HARM
 
-Status: in-progress
+Status: done
 
 ## The problem
 
