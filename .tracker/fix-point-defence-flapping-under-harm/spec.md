@@ -47,11 +47,17 @@ only on a protected site acting as EW.
 ## Decisions
 
 **A point defence defending against a HARM is held live by a latch of its own, not by `actAsEW`.**
-`informOfHARM` sets it, `cleanUpOldObjectsIdentifiedAsHARMS()` releases it, and
-`targetCycleUpdateEnd()` leaves a latched site live. The point defence never changes its EW role, so
-nothing is sent down the coverage links, and `goLive()` no longer has point defences to switch off:
-both paths go. What a live point defence detects still reaches the network, as for any live site
-not acting as EW.
+`informOfHARM` and HARM silence set it, through `pointDefencesGoLive()`;
+`cleanUpOldObjectsIdentifiedAsHARMS()` releases it once the last HARM is gone. That runs in the
+protected site's HARM scan, so `goDark()` leaves the scan running while a HARM is remembered, and
+the scan stops itself once the last one is gone on a dark site: a site gone dark of its own accord,
+for want of a target, would otherwise hold its point defence live until it next went live.
+`goDark()` leaves a latched point defence live while it has power and missiles: its target cycle is
+one caller, a parent's notification another, and nothing lights it again once dark, as the contact
+cycle did for a point defence acting as EW. The point defence never changes its EW role, so nothing
+is sent down the coverage links, and `goLive()` no longer has point defences to switch off: both
+paths go. What a live point defence detects still reaches the network, as for any live site not
+acting as EW.
 
 Turned down:
 
@@ -73,9 +79,14 @@ Turned down:
 - Two in-sim scenarios for a site that is not acting as EW and cannot engage a HARM, an SA-2 under
   EW coverage, engaging a visible, immortal attacker that fires a HARM at it only once the site has
   fired. Both pass against the script before the fix, and must still pass after it:
-  - `harm-engaging-undefended`, no point defence: the site goes dark under the HARM.
-  - `harm-engaging-defended`, an SA-15 as point defence: the site stays live and keeps firing after
-    the HARM is identified; the point defence goes live, and dark again once the HARM is gone.
+  - `harm-engaging-undefended`, no point defence: the site goes dark under the HARM, and comes back
+    up once its silence is over.
+  - `harm-engaging-defended`, an SA-15 as point defence: the site stays live through the HARM, and
+    never goes silent; the point defence goes live, and dark again once the HARM is gone. Whether
+    the site fires again meanwhile is the DCS AI's choice, measured and not judged.
+
+  The attacker flies straight at the site from the north, so that the HARM's line does not run on
+  to the EW radar west of it, which would take the HARM for one aimed at itself and go silent.
 
   The attacker is immortal, so the site may run out of missiles, and `goDarkIfOutOfAmmo()` sends it
   dark as a HARM would: a site left without missiles makes the run `invalid`. The attack is a

@@ -324,7 +324,7 @@ ctx:add("EW")
 ctx.state.iads = Hotload.load("insim-skynet").iads(ctx)
 ```
 
-Two more libraries, loaded the same way:
+Three more libraries, loaded the same way:
 
 | Library | Function | Does |
 |---|---|---|
@@ -334,8 +334,10 @@ Two more libraries, loaded the same way:
 | `insim-world` | `pointFrom(zone, bearing, km)` | a point measured from a zone's centre |
 | | `spawnAircraft(ctx, spec)` | an aircraft on a route, tracked for cleanup, with the flags `immortal`, `invisible`, `holdFire`, `ignoreThreats`. Its tasks go on `via`, a point just after the start: DCS ignores a task on an air-started group's first waypoint and starts one on a later waypoint only when it is reached |
 | | `attackTask(group, weaponType)` | an `AttackGroup` task, `weaponType` from the Mission Editor's `weaponTable` |
-| | `recordShots(ctx)`, `fired(shots, unit)` | every shot fired until cleanup, and how many one unit fired: a scenario whose attacker never fired is `invalid`, not `fail` |
+| | `recordShots(ctx)`, `fired(shots, unit)` | every shot fired until cleanup, its weapon object included, and how many one unit fired: a scenario whose attacker never fired is `invalid`, not `fail` |
 | | `clearWrecks(zone)` | removes the debris inside a zone |
+| `insim-harm` | `attackOnceEngaged(ctx, siteRole, zone)` | a visible, immortal F-16 flies straight at `<scenario>/<siteRole>` with its weapons held, fires one HARM at it once the site has fired at it, then circles 20 km from it, above an SA-15's reach; returns the shots, the attacker and its HARM. `invalid` if either never fires |
+| | `firedBy(shots, prefix)` | how many shots the units whose name starts with `prefix` fired |
 
 **Rules for the code of a phase.**
 
@@ -394,9 +396,9 @@ scenario chain reads from it.
 
 What belongs to the suite stays:
 
-- `user-lib/`: `insim.lua`, the engine's side in the mission; `insim-watch.lua` and
-  `insim-world.lua`, the libraries above; and `insim-skynet.lua`, the Skynet layer, the only one that
-  names Skynet;
+- `user-lib/`: `insim.lua`, the engine's side in the mission; `insim-watch.lua`, `insim-world.lua`
+  and `insim-harm.lua`, the libraries above; and `insim-skynet.lua`, the Skynet layer, the only one
+  that names Skynet;
 - `user-inbox/` and `user-outbox/`, the mailbox, git-ignored.
 
 **To upgrade**, replace the shipped files and folders with those of the new release and leave

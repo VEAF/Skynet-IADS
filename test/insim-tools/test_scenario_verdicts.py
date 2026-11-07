@@ -84,6 +84,21 @@ CASES = {
         ("point defence never woke", {"site": [True], "pointDefence": [False], "harm": [False, True]}, False),
         ("no HARM identified", {"site": [True], "pointDefence": [False, True, False], "harm": [False]}, False),
     ],
+    "harm-engaging-undefended": [
+        ("live, silenced, back up", {"active": [False, True, False, True], "defending": [False, True, False], "harm": [False, True], "siteShots": 2}, True),
+        ("never silenced", {"active": [False, True], "defending": [False], "harm": [False, True], "siteShots": 2}, False),
+        ("dark, but not to evade the HARM", {"active": [False, True, False, True], "defending": [False], "harm": [False, True], "siteShots": 2}, False),
+        ("never back up", {"active": [False, True, False], "defending": [False, True, False], "harm": [False, True], "siteShots": 2}, False),
+        ("no HARM identified", {"active": [False, True, False, True], "defending": [False, True, False], "harm": [False], "siteShots": 2}, False),
+    ],
+    "harm-engaging-defended": [
+        ("live through the HARM, point defence engaged", {"active": [False, True], "defending": [False], "harm": [False, True], "pointDefence": [False, True, False], "siteShotsAfterHarm": 0, "pointDefenceShots": 2}, True),
+        ("sent dark under the HARM", {"active": [False, True, False], "defending": [False], "harm": [False, True], "pointDefence": [False, True, False], "siteShotsAfterHarm": 0, "pointDefenceShots": 2}, False),
+        ("silenced", {"active": [False, True, False, True], "defending": [False, True, False], "harm": [False, True], "pointDefence": [False, True, False], "siteShotsAfterHarm": 0, "pointDefenceShots": 2}, False),
+        ("point defence never stood down", {"active": [False, True], "defending": [False], "harm": [False, True], "pointDefence": [False, True], "siteShotsAfterHarm": 0, "pointDefenceShots": 2}, False),
+        ("point defence never woke", {"active": [False, True], "defending": [False], "harm": [False, True], "pointDefence": [False], "siteShotsAfterHarm": 0, "pointDefenceShots": 0}, False),
+        ("no HARM identified", {"active": [False, True], "defending": [False], "harm": [False], "pointDefence": [False, True, False], "siteShotsAfterHarm": 0, "pointDefenceShots": 2}, False),
+    ],
     "munitions-wake-sites": [
         ("each site as it can engage", MUNITIONS, True),
         ("every site wakes for a bomb", dict(MUNITIONS, bomb={"torM2": [False, True, False], "sa10": [False, True, False], "sa6": [False, True, False]}), False),

@@ -166,14 +166,19 @@ function Wd.fired(shots, initiator)
 	return count
 end
 
--- Every shot fired from now until cleanup, as `{ initiator = <unit name>, weapon = <type name> }`,
--- in the table returned. What tells "the site did not react" from "nothing was fired at it".
+-- Every shot fired from now until cleanup, as `{ initiator = <unit name>, weapon = <type name>,
+-- object = <the weapon> }`, in the table returned. What tells "the site did not react" from
+-- "nothing was fired at it"; `object:isExist()` tells when a munition has ended.
 function Wd.recordShots(ctx)
 	local shots = {}
 	local handler = {}
 	function handler:onEvent(event)
 		if event.id == world.event.S_EVENT_SHOT and event.initiator and event.weapon then
-			shots[#shots + 1] = { initiator = event.initiator:getName(), weapon = event.weapon:getTypeName() }
+			shots[#shots + 1] = {
+				initiator = event.initiator:getName(),
+				weapon = event.weapon:getTypeName(),
+				object = event.weapon,
+			}
 		end
 	end
 	ctx:onCleanup(function()

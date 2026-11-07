@@ -50,6 +50,7 @@ do
 		instance.goLiveTime = 0
 		instance.engageAirWeapons = false
 		instance.isAPointDefence = false
+		instance.pointDefenceActive = false
 		instance.canEngageHARM = false
 		instance.dataBaseSupportedTypesCanEngageHARM = false
 		instance.canEngageBomb = false
@@ -111,6 +112,25 @@ do
 
 	function SkynetIADSAbstractRadarElement:getIsAPointDefence()
 		return self.isAPointDefence
+	end
+
+	--- Holds a point defence live, whatever its own targets, while the site it protects is under a
+	--- HARM. Not by making it act as EW: a change of that role is sent down the coverage links, and
+	--- the protected site, a child of its point defence, would be sent dark for it.
+	function SkynetIADSAbstractRadarElement:setPointDefenceActive(state)
+		if state == true or state == false then
+			self.pointDefenceActive = state
+		end
+		if self.pointDefenceActive == true then
+			self:goLive()
+		else
+			self:goDark()
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getPointDefenceActive()
+		return self.pointDefenceActive
 	end
 
 	function SkynetIADSAbstractRadarElement:addPointDefence(pointDefence)
@@ -661,7 +681,6 @@ do
 				self.goLiveTime = timer.getTime()
 				self.aiState = true
 			end
-			self:pointDefencesStopActingAsEW()
 			if self.iads:getDebugSettings().radarWentLive then
 				self.iads:printOutputToLog("GOING LIVE: " .. self:getDescription())
 			end
@@ -679,10 +698,12 @@ do
 		end
 	end
 
-	function SkynetIADSAbstractRadarElement:pointDefencesStopActingAsEW()
+	function SkynetIADSAbstractRadarElement:pointDefencesGoDark()
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
-			pointDefence:setActAsEW(false)
+			if pointDefence:getPointDefenceActive() == true then
+				pointDefence:setPointDefenceActive(false)
+			end
 		end
 	end
 
@@ -699,6 +720,10 @@ do
 	end
 
 	function SkynetIADSAbstractRadarElement:goDark()
+		-- a point defence held live for a HARM stays so while it has missiles to fire at it
+		if self.pointDefenceActive == true and self:hasWorkingPowerSource() and self:hasRemainingAmmo() then
+			return
+		end
 		-- only what the element can engage holds it up: read only where the condition below asks
 		local engageableTargets = 0
 		if self.aiState == true and self.harmSilenceID == nil then
@@ -722,7 +747,11 @@ do
 				end
 			end
 			self.aiState = false
-			self:stopScanningForHARMs()
+			-- the scan is what ages a remembered HARM out and stands the point defences down: it goes
+			-- on until then, and stops itself in cleanUpOldObjectsIdentifiedAsHARMS()
+			if self:getNumberOfObjectsItentifiedAsHARMS() == 0 then
+				self:stopScanningForHARMs()
+			end
 			self.cachedTargets = {}
 			if self.iads:getDebugSettings().radarWentDark then
 				self.iads:printOutputToLog("GOING DARK: " .. self:getDescription())
@@ -734,9 +763,9 @@ do
 		local setActive = false
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
-			if pointDefence:getActAsEW() == false then
+			if pointDefence:getPointDefenceActive() == false then
 				setActive = true
-				pointDefence:setActAsEW(true)
+				pointDefence:setPointDefenceActive(true)
 			end
 		end
 		return setActive
@@ -1168,11 +1197,13 @@ do
 				table.insert(newHARMS, harmContact)
 			end
 		end
-		--stop point defences acting as ew (always on), will occur if activated via evaluateIfTargetsContainHARMs()
 		--if in this iteration all harms where cleared we turn of the point defence. But in any other cases we dont turn of point defences, that interferes with other parts of the iads
 		-- when setting up the iads (letting pds go to read state)
 		if #newHARMS == 0 and self:getNumberOfObjectsItentifiedAsHARMS() > 0 then
-			self:pointDefencesStopActingAsEW()
+			self:pointDefencesGoDark()
+			if self.aiState == false then
+				self:stopScanningForHARMs()
+			end
 		end
 		self.objectsIdentifiedAsHarms = newHARMS
 	end

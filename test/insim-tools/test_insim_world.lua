@@ -201,13 +201,17 @@ function TestInsimWorld:testRecordShotsKeepsWhoFiredWhatUntilCleanup()
 	end
 	local shots = Wd.recordShots(ctx)
 	local handler = next(handlers)
+	local harm = namedObject("AGM_88")
 	handler:onEvent({
 		id = world.event.S_EVENT_SHOT,
 		initiator = namedObject("s/ATTACKER-1"),
-		weapon = namedObject("AGM_88"),
+		weapon = harm,
 	})
 	handler:onEvent({ id = world.event.S_EVENT_DEAD, initiator = namedObject("x") })
-	luaunit.assertEquals(shots, { { initiator = "s/ATTACKER-1", weapon = "AGM_88" } })
+	luaunit.assertEquals(#shots, 1)
+	luaunit.assertEquals(shots[1].initiator, "s/ATTACKER-1")
+	luaunit.assertEquals(shots[1].weapon, "AGM_88")
+	luaunit.assertIs(shots[1].object, harm, "the weapon itself, whose end a scenario can wait for")
 	cleanups[1]()
 	luaunit.assertNil(next(handlers))
 end
