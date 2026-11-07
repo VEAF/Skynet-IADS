@@ -153,6 +153,13 @@ between two copies.
   still looked active, so a call made afterwards to `setCoverageRefreshInterval()`,
   `addSAMSitesByPrefix()` or `addEarlyWarningRadarsByPrefix()` could restart the coverage sweep or
   rebuild the coverage of a network that had been switched off.
+- **A site already dark when a HARM silences it now has its AI turned off too.** HARM defence
+  turns a silenced site's AI off, against a DCS multiplayer bug where a HARM still finds an emitter
+  whose emission alone is off, but it did so only for a site that was live. A HARM fired while the
+  site was live and arriving after it went dark for want of a target left it with its AI on for the
+  whole silence. The AI comes back on when the silence ends, as before; a DCS ammo truck does not
+  rearm a unit whose AI is off, so an empty site silenced while waiting for one is now rearmed
+  after the silence, as a live site already was.
 
 ## [3.5.0] — 2026-09-21
 
