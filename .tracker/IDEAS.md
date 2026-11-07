@@ -97,12 +97,6 @@ The in-repository tracker is the starting point. Moving to GitHub issues — wor
 outside the repository, history reached through commit, pull request and issue — remains an option
 once `.tracker/` has been used for a while, with the development records migrated as closed issues.
 
-## The release workflow reads `[Unreleased]` literally
-
-`.github/workflows/release.yml` takes its notes from the `## [Unreleased]` heading as it stands, so
-the changelog can only be frozen after the tag, in a pull request of its own. A workflow that
-accepted the version heading as well would let the freeze ride with the release preparation.
-
 ## *Battery* beside *SAM site*
 
 Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
@@ -164,20 +158,6 @@ shoot one down has not been flown.
 
 **Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
 engage them, the change is one more class in that system's entry in the supported-types table.
-
-## The release skill repeats `CONTRIBUTING.md`
-
-`.claude/skills/release/SKILL.md` walks through the release steps that `CONTRIBUTING.md` already
-states, and its flight before the version bump runs the smoke gate that
-`test-port-unit-tests-to-insim` removes. Two things in it are not said anywhere else:
-
-- what the release notes must call out: anything that changes behaviour for existing missions, and
-  anything a mission maker has to do differently after upgrading — Skynet changes are felt in
-  flight, not read in a diff, and a new default left unsaid is filed as a bug;
-- bringing `develop` up to date (`git pull --ff-only`) before preparing the release.
-
-**Shape if taken**: those two go into the release steps of `CONTRIBUTING.md`, and the skill is
-deleted.
 
 ## In-sim suite: three small gaps
 
