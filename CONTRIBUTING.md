@@ -16,7 +16,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 ## What you need
 
 - **Lua 5.1.** The deliverable runs inside DCS, which is Lua 5.1 — no `goto`, no `<const>`, no
-  `table.move`, no `utf8.*`. The standalone suite refuses to run on anything else. Where `lua5.1` is
+  `table.move`, no `utf8.*`. The standalone tests refuse to run on anything else. Where `lua5.1` is
   on `PATH` it is `lua5.1 test/common/run.lua`; if it is not — common on Windows — install *Lua for
   Windows* and call it by its path, which PowerShell needs the call operator for:
 
@@ -30,11 +30,8 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 - **Nothing to install for the lint gate.** `build-tools/lint.sh` fetches `luacheck` and `stylua` at
   pinned versions on Windows and Linux; it needs `bash`, `curl` and `unzip`, which Git for Windows
   ships. On macOS it takes both from `PATH`.
-- **DCS** is *not* required for most contributions. It used to be: the whole suite lived inside a
-  mission. Logic is now testable on a plain interpreter, and DCS is needed only for what a stub
-  cannot answer.
-- **Any editor that speaks Lua.** With no preference, [VSCode](https://code.visualstudio.com/) and a
-  Lua extension put the suite in the sidebar.
+- **DCS** is *not* required for most contributions: logic is tested on a plain interpreter, and DCS
+  only answers what a stub cannot.
 
 ## Layout
 
@@ -42,13 +39,7 @@ Before spending time on a feature, propose it: open an issue, or bring it to the
 |---|---|
 | `skynet-iads-source/*.lua` | **the sources.** This is what you edit |
 | `build/skynet-iads-compiled.lua` | **a build artifact.** Generated, git-ignored, never edited by hand |
-| `test/README.md` | how to run each suite and add to it — **read it before adding a test** |
-| `test/lua/` | the standalone Lua 5.1 suite, and the check of `samTypesDB` against the DCS database |
-| `test/common/` | the machinery the test suites share, whatever their language: a runner per language, `run.lua` and `run.py`, the vendored luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures |
-| `test/insim/` | the in-sim suite, driven from the command line through dcs-hotload |
-| `test/insim-tools/` | the tests of the in-sim suite's own tooling, Lua and Python, run without DCS |
-| `test/build-tools/` | the tests of `build-tools/` |
-| `test/demo-missions/` | the tests of the demos' updater |
+| `test/` | every test, one folder per place tests run. `test/README.md` maps the folders and says how to run each kind of test and add one — **read it before adding a test** |
 | `demo-missions/*.miz` | what somebody downloads to see Skynet work. Not tests. `update-skynet-script.py` refreshes their Skynet script, and `skynet-script.sha256` holds its hash |
 | `build-tools/` | the build script and its helpers |
 | `documentation/` | the published site |
@@ -132,21 +123,23 @@ saves the afternoon you would otherwise spend re-testing by hand after a two-lin
 
 **Do not open a pull request with tests failing.**
 
-There are two suites, and which one you want is decided by whether a stub can answer the question:
+A Skynet test goes in one of two places, and which one is decided by whether a stub can answer the
+question:
 
 | | Where it runs | What belongs in it | Its door |
 |---|---|---|---|
 | `test/lua/` | plain Lua 5.1, and CI on every pull request and on pushes to `develop` and `master` (`.github/workflows/lua-tests.yml`) | **logic** — state machines, parsing, arithmetic, branching. **New logic tests go here** | [`test/README.md`](test/README.md) |
 | `test/insim/` | inside DCS, driven by one command, `python test/insim/run-insim.py` | what a stub cannot answer — terrain, real detection geometry, in-game events, how a DCS group is composed, and whether the simulator calls the code at all: scenarios that run Skynet in the simulator against the current build. **Recommended before a pull request that touches `skynet-iads-source/`**; not required, since CI has no DCS | [`test/README.md`](test/README.md) |
 
-That file is the reference: how to run each suite, how to add to it, what is covered and what
+That file is the reference: how to run each kind of test, how to add one, what is covered and what
 deliberately is not, and how the coverage floor works. None of it is repeated here, because a summary
 of a procedure is a second copy of it.
 
 ## Static analysis and formatting
 
-`skynet-iads-source/`, `test/lua/`, `test/common/` and `test/insim-tools/` are gated by `luacheck` and `stylua --check`
-(`.github/workflows/lint.yml`). CI runs the same script you do:
+The sources and the Lua of the tests are gated by `luacheck` and `stylua --check`
+(`.github/workflows/lint.yml`); the folders covered are listed in `build-tools/lint.sh`. CI runs the
+same script you do:
 
 ```
 bash build-tools/lint.sh       # or: bash build-tools/lint.sh luacheck
@@ -242,7 +235,7 @@ These steps are mandatory, whatever tools you work with.
    takes up, if any, leaves `IDEAS.md` in the same commit.
 3. **Branch** from an up-to-date `develop`, named as *Git flow* says.
 4. **Test first**, then implement — see *Test first*.
-5. **Run the suite and the lint gate.** When only DCS can show that the change works, say so.
+5. **Run the tests and the lint gate.** When only DCS can show that the change works, say so.
 6. **Add a `CHANGELOG.md` entry** for any change to `skynet-iads-source/` — see *Changelog and
    versioning*.
 7. **Commit** as *Git flow* says.
@@ -353,7 +346,7 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the in-sim suite's minimal tier,
+Before the first, fly the release candidate: the minimal tier of the in-sim tests,
 `python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
 consultative, not a gate — but a release that goes out unflown says so.
 

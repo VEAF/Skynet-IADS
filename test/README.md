@@ -6,28 +6,28 @@ Every test of this repository lives under `test/`, one folder per place tests ru
 |---|---|---|
 | `lua/` | Skynet's tests, and the check of `samTypesDB` against the DCS database | plain Lua 5.1 |
 | `common/` | the runners, luaunit, the DCS stub and its fixtures, the source loader, the test-coverage report and its floor, and the tests of the stub and the fixtures | plain Lua 5.1 and Python |
-| `insim/` | the in-sim suite: scenarios that run Skynet inside DCS | DCS, driven from a terminal |
-| `insim-tools/` | the tests of the in-sim suite's own tooling | plain Lua 5.1 and Python |
+| `insim/` | the in-sim tests: scenarios that run Skynet inside DCS | DCS, driven from a terminal |
+| `insim-tools/` | the tests of the in-sim tooling | plain Lua 5.1 and Python |
 | `build-tools/` | the tests of `build-tools/` | Python |
 | `demo-missions/` | the tests of the demos' updater | Python |
 
-Which suite a new test belongs to is decided in `CONTRIBUTING.md`. This file is how to run each one
-and how to add to it.
+Everything but the in-sim tests runs without DCS: these are the *standalone* tests, run through one
+runner per language. With no folder specified, a runner finds every folder directly under `test/`
+that holds a `test_*` file of its language, so a new test folder runs without being registered
+anywhere. Specifying a folder or a name as a parameter narrows the run.
 
-## The standalone suites
+## The Lua tests
 
-Everything but the in-sim suite runs without DCS, through one runner per language. With no folder,
-a runner finds every folder directly under `test/` that holds a `test_*` file of its language, so a
-new suite folder runs without being registered anywhere. A folder or a name narrows the run.
+### How to run the Lua tests
 
-Where `lua5.1` is on `PATH` (Linux, macOS, CI):
+If `lua5.1` is on `PATH` (Linux, macOS, CI):
 
-    lua5.1 test/common/run.lua                       # every Lua suite
+    lua5.1 test/common/run.lua                       # every Lua test
     lua5.1 test/common/run.lua test/lua              # one folder
-    lua5.1 test/common/run.lua test/lua contact      # the suites whose file name contains "contact"
-    lua5.1 test/lua/test_skynet_iads_contact.lua     # one suite directly
+    lua5.1 test/common/run.lua test/lua contact      # the test modules whose file name contains "contact"
+    lua5.1 test/lua/test_skynet_iads_contact.lua     # one test module directly
 
-On Windows without `lua5.1` on `PATH`, use the *Lua for Windows* binary,
+On Windows without `lua5.1` on `PATH`, use the *Lua for Windows* binary, usually
 `C:\Program Files (x86)\Lua\5.1\lua.exe`. PowerShell needs the call operator `&`, because the command
 line starts with a quoted path:
 
@@ -37,25 +37,31 @@ cmd.exe takes the quoted path as it is:
 
     "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua
 
-The Python suites run the same way, on any platform:
+### Structure of a Lua test module
 
-    python test/common/run.py                        # every Python suite
-    python test/common/run.py test/build-tools       # one folder
+**Example to start from**: `test_skynet_iads_sam_site.lua`
 
-### Adding a Lua suite
+Create `test/lua/test_<module>.lua`. It starts by loading what it needs:
 
-Create `test/lua/test_<module>.lua`. It pulls in `../common/luaunit.lua` and `../common/dcs-stub.lua`,
-loads the source module through `../common/skynet-loader.lua`, and ends with
-`os.exit(luaunit.LuaUnit.run())`; the runner finds it by name and aggregates its exit code.
-`test_skynet_iads_contact.lua` is the pattern to copy.
+```lua
+local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
+luaunit = dofile(base .. "/../common/luaunit.lua") -- the unit testing framework
+dofile(base .. "/../common/dcs-stub.lua") -- mock DCS scripting environment
+local loader = dofile(base .. "/../common/skynet-loader.lua")
+loader.loadAll() -- load Skynet source files
+local F = dofile(base .. "/../common/dcs-fixtures.lua") -- reusable fixture builders
+```
 
-The loader reads the order of `build-tools/listToMerge.txt`, the build's own, so a source added to
-the build is loaded by the suites too.
+And ends with the line below. The runner finds the module by its file name and aggregates its exit
+code:
 
-One warning about the stub: a test that passes only because `dcs-stub.lua` returned something
-convenient proves nothing. When a test needs the stub extended, extend it deliberately and write down
-which real DCS behaviour it stands in for. The stub and the fixtures have tests of their own in
-`test/common/`: if they imitate DCS wrongly, Skynet's tests pass against a world that does not exist.
+```lua
+os.exit(luaunit.LuaUnit.run())
+```
+
+The current Skynet source is loaded through `../common/skynet-loader.lua`, which reads the order of
+`build-tools/listToMerge.txt`, so the code under test is loaded in the same order as the build
+produces it.
 
 ### How a test is written
 
@@ -74,43 +80,35 @@ which real DCS behaviour it stands in for. The stub and the fixtures have tests 
   because ED changes them and Skynet reads them at runtime. What Skynet decides on top of them is
   Skynet's, and is what a test asserts: which of the search radar, the tracking radar and the
   launcher has to reach a contact, and what `setGoLiveRangeInPercent()` does to that.
-
-### Needs the simulator
-
-Tested in the in-sim suite on purpose, because a standalone test would only be asking the stub to
-repeat what its fixture told it:
-
-- **How a DCS unit is put together**: how many launchers and radars a group has, which is a search
-  radar and which a tracking one, the NATO name DCS gives a type.
-- **Terrain**: elevation, line of sight, `land.getIP`. The standalone `land` stub answers "visible,
-  no intersection" and says so.
-- **Real detection geometry**, as opposed to the range arithmetic Skynet does on top of it: what a
-  DCS radar actually holds, and when.
-- **Whether DCS calls the code at all**: events, timers, a group that really dies.
+- **A stub extension names the DCS behaviour it stands in for**, in a comment beside it, so that it
+  can be checked against DCS later. The stub and the fixtures have tests of their own in
+  `test/common/`: if they imitate DCS wrongly, Skynet's tests pass against a world that does not
+  exist.
 
 ## Test coverage
 
-How much of `skynet-iads-source/` the Lua suite actually executes. Beware the word: in Skynet,
+How much of `skynet-iads-source/` the Lua tests actually cover. Beware the word: in Skynet,
 *coverage* is what an early warning radar does to a SAM site — this is **test** coverage, and the two
 never travel alone.
 
-Run the suite with the hook, then report. Both commands run from the repository root, because that
+Run the Lua tests with the hook, then report. Both commands run from the repository root, because that
 is where `.luacov` and the stats file live:
 
     SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua
     lua5.1 test/common/report-test-coverage.lua
 
-In PowerShell, with the *Lua for Windows* binary, which ships `luacov`:
+In PowerShell, with the *Lua for Windows* binary. The report needs `luacov` installed for that
+interpreter; without it, it exits 2 and says how to install it:
 
     $env:SKYNET_TEST_COVERAGE = "1"
     & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\run.lua test\lua
     & "C:\Program Files (x86)\Lua\5.1\lua.exe" test\common\report-test-coverage.lua
     Remove-Item Env:\SKYNET_TEST_COVERAGE
 
-With `SKYNET_TEST_COVERAGE` unset — the normal case — the suite runs with no debug hook installed.
+With `SKYNET_TEST_COVERAGE` unset — the normal case — the tests run with no debug hook installed.
 
 The report prints a per-file summary, worst first, then the total and a verdict. The per-line detail
-lands in `luacov.report.out`, where a `****0` marks a line the suite never ran. What counts and what
+lands in `luacov.report.out`, where a `****0` marks a line the tests never ran. What counts and what
 does not is in `.luacov` at the repository root, with the reasons; the same two commands run in CI on
 every pull request.
 
@@ -121,8 +119,8 @@ it can be raised and to what.
 
 ### What stays uncovered, and why
 
-Measured at **94.63%**. Everything reachable is covered except the four entries below, so nothing is
-left in the report without somebody having looked at it. Re-check this list whenever the figure moves
+Everything reachable is covered except the four entries below, so nothing is left in the report
+without somebody having looked at it. Re-check this list whenever the figure moves
 for a reason you did not expect.
 
 **`skynet-iads-abstract-radar-element.lua` — 89 lines.** Four blocks:
@@ -176,18 +174,41 @@ High Digit SAMs are a mod, whose types are not in ED's dump, and are not checked
 `.github/workflows/dcs-unit-types.yml` runs it weekly, on demand, and on a pull request that touches
 `skynet-iads-supported-types.lua`. A failed weekly run opens an issue.
 
-## The in-sim suite
+## The Python tests
+
+The Python tests run through `test/common/run.py`, the same way as the Lua tests, on any platform:
+
+    python test/common/run.py                        # every Python test
+    python test/common/run.py test/build-tools       # one folder
+
+---
+
+## The in-sim tests
+
+### When the simulator is needed
+
+The in-sim tests cover behaviours that a standalone test cannot, because it would only be asking
+the stub to repeat what its fixture told it. For example:
+
+- **How a DCS unit is put together**: how many launchers and radars a group has, which is a search
+  radar and which a tracking one, the NATO name DCS gives a type.
+- **Terrain**: elevation, line of sight, `land.getIP`. The standalone `land` stub answers "visible,
+  no intersection" and says so.
+- **Real detection geometry**, as opposed to the range arithmetic Skynet does on top of it: what a
+  DCS radar actually holds, and when.
+- **Whether DCS calls the code at all**: events, timers, a group that really dies.
+
+### In-sim scenarios
 
 Scenarios that run Skynet inside DCS, driven from a terminal by one command. They check what only the
 simulator can show: that DCS calls Skynet, what real radars report, how real groups and statics are
-composed, and how a network behaves when it is attacked. Running them before a pull request that
-touches `skynet-iads-source/` is recommended, not required: CI has no DCS.
+composed, and how a network behaves when it is attacked.
 
 You open a test mission in DCS (the one manual step), run `python test/insim/run-insim.py`, and read
 a summary: each scenario `pass`, `fail`, `invalid`, `crashed`, or `skipped` (it needs another mission
 than the one running), and an exit code.
 
-### Setup, once
+### Initial setup
 
 - **Python 3**, standard library only; it also runs the Skynet build. **Lua 5.1** outside DCS, to
   judge results: `lua5.1` on `PATH`, else *Lua for Windows* at
@@ -215,7 +236,7 @@ mailbox, and waits for the answer. It:
 1. prepares the Skynet script the mission loads, `build/insim/skynet-iads-insim.lua`. By default it
    rebuilds it from `skynet-iads-source/` unless the file is already the build of the current
    sources; `--skynet FILE` copies that file instead, and the next default run rebuilds;
-2. prepares the mission DCS opens (see *The mission*);
+2. prepares the mission DCS opens (see *The missions*);
 3. waits for a mission to run, which it reads from hotload's heartbeat. If DCS is not running one,
    it says which files to run: `test/insim/miz/insim-ca-main.miz` or
    `test/insim/miz/insim-pg-llod.miz`. **That is the manual step.** Later, if the heartbeat stops
@@ -241,8 +262,8 @@ and the ones already done are not either.
 **After editing a `verify.lua`**, `--verify` judges the latest run's recorded results again. It sends
 nothing and needs no DCS.
 
-A paused mission's heartbeat stands still: the driver waits. The timeouts below count sim time, so a pause
-sets none off.
+A paused mission's heartbeat stands still: the driver waits. The timeouts below count sim time, so a
+pause sets none off.
 
 ### Writing a scenario
 
@@ -362,20 +383,22 @@ the scenarios not wanted every time. A scenario with no `tier` runs only when na
 scenarios have none: they prove the engine's own paths (a raise, `invalid`, a hang, a failing
 `verify.lua`) and would keep any tier from exiting 0.
 
-### The mission
+### The missions
 
 | Mission | Map | Holds |
 |---|---|---|
 | `insim-ca-main` | Caucasus | the catalogue and its zones, and every scenario but one |
 | `insim-pg-llod` | Persian Gulf | `last-line-of-defence`, whose geometry rests on that map's terrain |
 
-`test/insim/miz/` holds two files per mission:
+`test/insim/miz/` holds three files per mission:
 
 - `<mission>.template.miz`, committed, is the reference. It holds a placeholder where the absolute
   path of hotload goes.
 - `<mission>.miz`, git-ignored, is the working copy DCS opens. `run-insim.py` writes it before every
   run: when it is missing, when the template has changed, or when the checkout has moved. Do not edit
   it.
+- `<mission>.json`, git-ignored, records what the working copy was written from: the template's
+  SHA-256 and the hotload path. It is how `run-insim.py` tells that the copy is out of date.
 
 Scenarios name their mission (`mission = "insim-ca-main"`); a mission is known by its sortie name.
 The driver runs the scenarios of the mission DCS is running, and lists the others as skipped, naming
@@ -394,7 +417,7 @@ are never edited here; its own `README.md` is the reference for `Hotload.*`. Its
 `bin/hotload.py`, is the driver's core: `test/insim/engine/` imports it, and adds only what the
 scenario chain reads from it.
 
-What belongs to the suite stays:
+What belongs to the in-sim tests stays:
 
 - `user-lib/`: `insim.lua`, the engine's side in the mission; `insim-watch.lua`, `insim-world.lua`
   and `insim-harm.lua`, the libraries above; and `insim-skynet.lua`, the Skynet layer, the only one
@@ -404,7 +427,7 @@ What belongs to the suite stays:
 **To upgrade**, replace the shipped files and folders with those of the new release and leave
 `user-lib/`, `user-inbox/` and `user-outbox/` alone.
 
-### Tests of the suite itself
+### Tests of the in-sim tooling
 
 They are in `test/insim-tools/`, and run without DCS: the driver with
 `python test/common/run.py test/insim-tools`, the mission-side Lua, on the stub, with
@@ -422,4 +445,4 @@ They are in `test/insim-tools/`, and run without DCS: the driver with
 | `common/report-test-coverage.lua`, `common/test-coverage-floor.txt` | the test-coverage report and its floor |
 | `lua/test_compiled_script.lua` | builds the compiled script into `build/test/` and runs it against the stub as one chunk, which loading the sources one by one cannot check; skips, saying so, when no Python runs |
 | `lua/check-unit-types.lua` | the check of `samTypesDB` against the DCS database |
-| `*/test_*.lua`, `*/test_*.py` | the suites, each self-contained and self-executing |
+| `*/test_*.lua`, `*/test_*.py` | the test modules, each self-contained and self-executing |

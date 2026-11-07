@@ -34,10 +34,10 @@ reason to open it. Everything else is there.
 
 ```
 python build-tools/build-compiled-script.py          # build the deliverable
-lua5.1 test/common/run.lua                           # the standalone suites; a folder or a name narrows
+lua5.1 test/common/run.lua                           # the Lua tests; a folder or a name narrows
 python test/common/run.py                            # the tooling's Python tests, the same way
 bash build-tools/lint.sh                             # luacheck + stylua, as CI runs them
-python test/insim/run-insim.py                       # the in-sim suite; its mission must be open in DCS
+python test/insim/run-insim.py                       # the in-sim tests; its mission must be open in DCS
 ```
 
 If `lua5.1` is not on `PATH` — common on Windows — call *Lua for Windows* at its default path:
@@ -67,9 +67,9 @@ starting a change, and again after a context compaction: this file is the only o
 | About to… | Read |
 |---|---|
 | change a source file | `CONTRIBUTING.md` — testing first, the build, the lint gate |
-| add or change a test | `CONTRIBUTING.md` for which suite; `test/README.md` for how to run and add one |
+| add or change a test | `CONTRIBUTING.md` for where it goes; `test/README.md` for how to run and add one |
 | touch `documentation/` | `CONTRIBUTING.md` — three conventions, all gated |
-| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `test/README.md` for the in-sim suite |
+| touch a `.miz`, or test in DCS | `CONTRIBUTING.md`; `test/README.md` for the in-sim tests |
 | open a pull request | `CONTRIBUTING.md` — the steps, git flow and the changelog |
 | open, update or archive a piece of work | `CONTRIBUTING.md` — how work is tracked |
 | edit this file or another guidance file | `CONTRIBUTING.md` — how guidance is written |
