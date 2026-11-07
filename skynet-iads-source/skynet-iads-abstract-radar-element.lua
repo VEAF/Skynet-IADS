@@ -114,9 +114,8 @@ do
 		return self.isAPointDefence
 	end
 
-	--- Holds a point defence live, whatever its own targets, while the site it protects is under a
-	--- HARM. Not by making it act as EW: a change of that role is sent down the coverage links, and
-	--- the protected site, a child of its point defence, would be sent dark for it.
+	--- Indicates that a SAM is actively defending against HARM attack.
+	--- Ensures it stays live, whatever its own targets, while the site it protects is under a HARM attack.
 	function SkynetIADSAbstractRadarElement:setIsPointDefending(state)
 		if state == true or state == false then
 			self.isPointDefending = state
@@ -698,7 +697,7 @@ do
 		end
 	end
 
-	function SkynetIADSAbstractRadarElement:pointDefencesGoDark()
+	function SkynetIADSAbstractRadarElement:releasePointDefences()
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
 			if pointDefence:getIsPointDefending() == true then
@@ -1200,7 +1199,7 @@ do
 		--if in this iteration all harms where cleared we turn of the point defence. But in any other cases we dont turn of point defences, that interferes with other parts of the iads
 		-- when setting up the iads (letting pds go to read state)
 		if #newHARMS == 0 and self:getNumberOfObjectsItentifiedAsHARMS() > 0 then
-			self:pointDefencesGoDark()
+			self:releasePointDefences()
 			if self.aiState == false then
 				self:stopScanningForHARMs()
 			end

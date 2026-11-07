@@ -1490,7 +1490,7 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesAreNotActivatedWhen
 	self.samSite:addPointDefence(pointDefence)
 
 	local calledStopPointDefence = false
-	function self.samSite:pointDefencesGoDark()
+	function self.samSite:releasePointDefences()
 		calledStopPointDefence = true
 	end
 
@@ -1518,7 +1518,7 @@ end
 --- was reading a site that had never been lit, and could not have failed.
 ---
 --- With a point defence that really is lit, it stays lit: goDark() does not stand its point
---- defences down, and pointDefencesGoDark(), called when the last remembered HARM ages out,
+--- defences down, and releasePointDefences(), called when the last remembered HARM ages out,
 --- releases only a point defence held live for a HARM, never one acting as EW.
 ---
 --- That is not a hole in the live mechanism -- a point defence is only ever held live by
