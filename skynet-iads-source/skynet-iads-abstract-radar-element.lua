@@ -50,7 +50,7 @@ do
 		instance.goLiveTime = 0
 		instance.engageAirWeapons = false
 		instance.isAPointDefence = false
-		instance.pointDefenceActive = false
+		instance.isPointDefending = false
 		instance.canEngageHARM = false
 		instance.dataBaseSupportedTypesCanEngageHARM = false
 		instance.canEngageBomb = false
@@ -117,11 +117,11 @@ do
 	--- Holds a point defence live, whatever its own targets, while the site it protects is under a
 	--- HARM. Not by making it act as EW: a change of that role is sent down the coverage links, and
 	--- the protected site, a child of its point defence, would be sent dark for it.
-	function SkynetIADSAbstractRadarElement:setPointDefenceActive(state)
+	function SkynetIADSAbstractRadarElement:setIsPointDefending(state)
 		if state == true or state == false then
-			self.pointDefenceActive = state
+			self.isPointDefending = state
 		end
-		if self.pointDefenceActive == true then
+		if self.isPointDefending == true then
 			self:goLive()
 		else
 			self:goDark()
@@ -129,8 +129,8 @@ do
 		return self
 	end
 
-	function SkynetIADSAbstractRadarElement:getPointDefenceActive()
-		return self.pointDefenceActive
+	function SkynetIADSAbstractRadarElement:getIsPointDefending()
+		return self.isPointDefending
 	end
 
 	function SkynetIADSAbstractRadarElement:addPointDefence(pointDefence)
@@ -701,8 +701,8 @@ do
 	function SkynetIADSAbstractRadarElement:pointDefencesGoDark()
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
-			if pointDefence:getPointDefenceActive() == true then
-				pointDefence:setPointDefenceActive(false)
+			if pointDefence:getIsPointDefending() == true then
+				pointDefence:setIsPointDefending(false)
 			end
 		end
 	end
@@ -721,7 +721,7 @@ do
 
 	function SkynetIADSAbstractRadarElement:goDark()
 		-- a point defence held live for a HARM stays so while it has missiles to fire at it
-		if self.pointDefenceActive == true and self:hasWorkingPowerSource() and self:hasRemainingAmmo() then
+		if self.isPointDefending == true and self:hasWorkingPowerSource() and self:hasRemainingAmmo() then
 			return
 		end
 		-- only what the element can engage holds it up: read only where the condition below asks
@@ -763,9 +763,9 @@ do
 		local setActive = false
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
-			if pointDefence:getPointDefenceActive() == false then
+			if pointDefence:getIsPointDefending() == false then
 				setActive = true
-				pointDefence:setPointDefenceActive(true)
+				pointDefence:setIsPointDefending(true)
 			end
 		end
 		return setActive

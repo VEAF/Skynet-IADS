@@ -1397,7 +1397,7 @@ end
 -- ---- slice 4: point defence ---------------------------------------------------------------
 --
 -- A point defence is a short-range battery a SAM site keeps around itself to shoot at the missiles
--- aimed at its radar. The mechanism is in setPointDefenceActive(): when a HARM comes at the site it
+-- aimed at its radar. The mechanism is in setIsPointDefending(): when a HARM comes at the site it
 -- protects, a point defence is held live whatever its own targets, without acting as EW, and
 -- goDark() leaves it so while it has missiles. It is released when the last remembered HARM ages
 -- out.
@@ -1434,11 +1434,11 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 
 	local held = false
 	local mockPD = {
-		getPointDefenceActive = function()
+		getIsPointDefending = function()
 			return held
 		end,
 		setIsAPointDefence = function() end,
-		setPointDefenceActive = function(_, state)
+		setIsPointDefending = function(_, state)
 			held = state
 		end,
 		-- the protected site's cleanUp() calls this on every point defence it holds
@@ -1469,13 +1469,13 @@ function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDar
 	self.samSite:goSilentToEvadeHARM()
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	luaunit.assertEquals(pointDefence:isActive(), true)
-	luaunit.assertEquals(pointDefence:getPointDefenceActive(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
 	luaunit.assertEquals(pointDefence:getActAsEW(), false)
 
 	self.samSite:finishHarmDefence()
 	self.samSite:goLive()
 	luaunit.assertEquals(pointDefence:isActive(), true)
-	luaunit.assertEquals(pointDefence:getPointDefenceActive(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
 
 	pointDefence:cleanUp()
 end
