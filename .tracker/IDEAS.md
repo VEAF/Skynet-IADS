@@ -185,6 +185,34 @@ no warning. Seen when a driver left from an earlier session restarted beside a n
 **Shape if taken**: the driver takes a lock in hotload's root (`user-outbox/`) for the length of a
 run, and refuses to start while another holds it; a stale lock is one whose heartbeat stopped.
 
+## Two jammer tests fail one run in a hundred
+
+`testAJammedSiteIsReleasedTenSecondsAfterTheJammerStops` and
+`testTheReleaseHappensOnceNotOnEveryScan`, in `test/lua/test_skynet_iads_abstract_radar_element.lua`,
+call `jam(100)` as "a probability no roll can beat". `jam()` rolls `math.random(1, 100)` and jams
+only when the probability is strictly greater than the roll, so a roll of 100 sets the site
+`WEAPON_FREE` and the test fails. Each run of the suite has about a 2% chance of going red, the
+release workflow's included; rerunning the failed jobs is safe.
+
+**Shape if taken**: the two tests fix the roll by stubbing `math.random`. Test-only: the shipped
+script does not change.
+
+Behind it, a question for whoever knows how the jammer's probabilities are calibrated: with `>`, a
+probability *p* jams on (*p* − 1)% of rolls, so not even 100 is certain. `>=` would make *p* mean
+*p*%, and would change what every mission with a jammer sees.
+
+## Release pull requests have no convention
+
+*Releasing* in `CONTRIBUTING.md` names the branch, `release/<x.y.z>`, and the general rule covers the
+description, but nothing fixes a release pull request's title or what its description carries.
+
+**Shape if taken**, two lines in steps 1 and 2 of *Releasing*:
+
+| Pull request | Title | Description |
+|---|---|---|
+| Prepare, `release/<x.y.z>` → `develop` | `chore(release): prepare <x.y.z>` | points at the `[x.y.z]` section of `CHANGELOG.md` as the release notes, rather than copying them; says `release.py` packaged cleanly; gives the in-sim result, or "not flown" |
+| Promote, `develop` → `master` | `chore(release): promote <x.y.z>` | links the prepare pull request; says what `develop` received since — nothing, or prepare again |
+
 ## Dropped
 
 ### A comment saying `setupRangeData` reads a radar's range once
