@@ -1,6 +1,6 @@
 # A release is prepared and packaged by one script, and checks its own tag
 
-Status: in-progress
+Status: done
 
 ## The problem
 

@@ -4,6 +4,8 @@ on:
   push:
     branches: [master, develop]
   pull_request:
+  # The release workflow runs these before it publishes.
+  workflow_call:
 
 permissions:
   contents: read
