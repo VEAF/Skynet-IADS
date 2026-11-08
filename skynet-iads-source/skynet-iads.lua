@@ -4,7 +4,7 @@ do
 
 	-- Single source of truth for the shipped artifact's version. Read by
 	-- build-tools/build-compiled-script.py and stamped into the banner it writes.
-	SkynetIADS.version = "3.5.0"
+	SkynetIADS.version = "3.6.0"
 
 	SkynetIADS.database = samTypesDB
 

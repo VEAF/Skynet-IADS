@@ -18,6 +18,18 @@ between two copies.
 
 ## [Unreleased]
 
+## [3.6.0] — 2026-11-08
+
+### Highlights
+
+The network now wakes only for threats it can engage, and HARM defence is harder to fool. Expect
+existing missions to behave differently under bombs, missiles and HARMs; the changes below say
+how. After upgrading, check any site set to `AUTONOMOUS_STATE_DARK` and any mission relying on
+DCS's *Evasion of ARM*, which Skynet now turns off.
+
+For contributors: `python test/insim/run-insim.py` runs an in-sim test suite in DCS against the
+current build — see `test/README.md`.
+
 ### Fixed
 
 - The documentation site never published the version it had just released. `docs.yml` had `master`
