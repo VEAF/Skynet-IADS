@@ -50,8 +50,13 @@ do
 		instance.goLiveTime = 0
 		instance.engageAirWeapons = false
 		instance.isAPointDefence = false
+		instance.isPointDefending = false
 		instance.canEngageHARM = false
 		instance.dataBaseSupportedTypesCanEngageHARM = false
+		instance.canEngageBomb = false
+		instance.dataBaseSupportedTypesCanEngageBomb = false
+		instance.canEngageMissile = false
+		instance.dataBaseSupportedTypesCanEngageMissile = false
 		-- 5 seconds seems to be a good value for the sam site to find the target with its organic radar
 		instance.noCacheActiveForSecondsAfterGoLive = 5
 		return instance
@@ -85,9 +90,13 @@ do
 		-- to autonomy, and to the last line of defense -- with nothing left to clear the field: the
 		-- task that would have is the one just removed. Not finishHarmDefence(), which ends in
 		-- goAutonomous() and would light a DCS-AI site's radar on the way out; teardown forgets the
-		-- HARM defence, it does not finish it.
+		-- HARM defence, it does not finish it. The AI the silence turned off comes back on all the
+		-- same: the DCS group outlives this site, and an ammo truck does not rearm it with its AI off.
 		SkynetIADSUtils.removeFunction(self.harmScanID)
 		self.harmScanID = nil
+		if self.harmSilenceID ~= nil and self:isDestroyed() == false then
+			self:getController():setOnOff(true)
+		end
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		self.harmSilenceID = nil
 		self.harmShutdownTime = 0
@@ -103,6 +112,19 @@ do
 
 	function SkynetIADSAbstractRadarElement:getIsAPointDefence()
 		return self.isAPointDefence
+	end
+
+	--- Indicates that a SAM is actively defending against HARM attack.
+	--- Ensures it stays live, whatever its own targets, while the site it protects is under a HARM attack.
+	function SkynetIADSAbstractRadarElement:setIsPointDefending(state)
+		if state == true or state == false then
+			self.isPointDefending = state
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getIsPointDefending()
+		return self.isPointDefending
 	end
 
 	function SkynetIADSAbstractRadarElement:addPointDefence(pointDefence)
@@ -448,6 +470,10 @@ do
 				self:setHARMDetectionChance(dataType["harm_detection_chance"])
 				self.dataBaseSupportedTypesCanEngageHARM = dataType["can_engage_harm"]
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self.dataBaseSupportedTypesCanEngageBomb = dataType["can_engage_bomb"] == true
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self.dataBaseSupportedTypesCanEngageMissile = dataType["can_engage_missile"] == true
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 				local natoName = dataType["name"]["NATO"]
 				self:buildNatoName(natoName)
 				break
@@ -457,16 +483,61 @@ do
 
 	function SkynetIADSAbstractRadarElement:setCanEngageHARM(canEngage)
 		if canEngage == true or canEngage == false then
-			self.canEngageHARM = canEngage
+			-- air weapons first: turning them on restores this flag from the database
 			if canEngage == true and self:getCanEngageAirWeapons() == false then
 				self:setCanEngageAirWeapons(true)
 			end
+			self.canEngageHARM = canEngage
 		end
 		return self
 	end
 
 	function SkynetIADSAbstractRadarElement:getCanEngageHARM()
 		return self.canEngageHARM
+	end
+
+	function SkynetIADSAbstractRadarElement:setCanEngageBomb(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageBomb = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageBomb()
+		return self.canEngageBomb
+	end
+
+	function SkynetIADSAbstractRadarElement:setCanEngageMissile(canEngage)
+		if canEngage == true or canEngage == false then
+			if canEngage == true and self:getCanEngageAirWeapons() == false then
+				self:setCanEngageAirWeapons(true)
+			end
+			self.canEngageMissile = canEngage
+		end
+		return self
+	end
+
+	function SkynetIADSAbstractRadarElement:getCanEngageMissile()
+		return self.canEngageMissile
+	end
+
+	--- Whether this element can engage the contact's class: an aircraft always, a munition when
+	-- its flag allows it, anything else never.
+	function SkynetIADSAbstractRadarElement:canEngage(contact)
+		local targetClass = contact:getTargetClass()
+		if targetClass == SkynetIADSContact.CLASS_AIRCRAFT then
+			return true
+		elseif targetClass == SkynetIADSContact.CLASS_ARM then
+			return self:getCanEngageHARM() == true
+		elseif targetClass == SkynetIADSContact.CLASS_BOMB then
+			return self:getCanEngageBomb() == true
+		elseif targetClass == SkynetIADSContact.CLASS_MISSILE then
+			return self:getCanEngageMissile() == true
+		end
+		return false
 	end
 
 	function SkynetIADSAbstractRadarElement:setCanEngageAirWeapons(engageAirWeapons)
@@ -478,9 +549,13 @@ do
 				self.engageAirWeapons = true
 				--we set the original value we got when loading info about the SAM site
 				self:setCanEngageHARM(self.dataBaseSupportedTypesCanEngageHARM)
+				self:setCanEngageBomb(self.dataBaseSupportedTypesCanEngageBomb)
+				self:setCanEngageMissile(self.dataBaseSupportedTypesCanEngageMissile)
 			else
 				controller:setOption(AI.Option.Ground.id.ENGAGE_AIR_WEAPONS, false)
 				self:setCanEngageHARM(false)
+				self:setCanEngageBomb(false)
+				self:setCanEngageMissile(false)
 				self.engageAirWeapons = false
 			end
 		end
@@ -595,11 +670,11 @@ do
 				cont:setOnOff(true)
 				cont:setOption(AI.Option.Ground.id.ALARM_STATE, AI.Option.Ground.val.ALARM_STATE.RED)
 				cont:setOption(AI.Option.Air.id.ROE, AI.Option.Air.val.ROE.WEAPON_FREE)
+				self:turnOffDCSEvasionOfARM(cont)
 				self:getDCSRepresentation():enableEmission(true)
 				self.goLiveTime = timer.getTime()
 				self.aiState = true
 			end
-			self:pointDefencesStopActingAsEW()
 			if self.iads:getDebugSettings().radarWentLive then
 				self.iads:printOutputToLog("GOING LIVE: " .. self:getDescription())
 			end
@@ -607,33 +682,56 @@ do
 		end
 	end
 
-	function SkynetIADSAbstractRadarElement:pointDefencesStopActingAsEW()
-		for i = 1, #self.pointDefences do
-			local pointDefence = self.pointDefences[i]
-			pointDefence:setActAsEW(false)
+	--- Turns DCS's own "Evasion of ARM" off: with it on, the unit an ARM is aimed at goes dark and
+	--- drives off by itself, against Skynet's HARM defence. An option holds whatever was set last,
+	--- so goLive() sets it each time, after anything the mission set since. Older DCS builds have no
+	--- such option.
+	function SkynetIADSAbstractRadarElement:turnOffDCSEvasionOfARM(controller)
+		if AI.Option.Ground.id.EVASION_OF_ARM then
+			controller:setOption(AI.Option.Ground.id.EVASION_OF_ARM, false)
 		end
 	end
 
+	function SkynetIADSAbstractRadarElement:releasePointDefences()
+		for i = 1, #self.pointDefences do
+			local pointDefence = self.pointDefences[i]
+			if pointDefence:getIsPointDefending() == true then
+				pointDefence:setIsPointDefending(false)
+			end
+		end
+	end
+
+	--- How many of the contacts this element's radar sees it can engage.
+	function SkynetIADSAbstractRadarElement:getNumberOfEngageableDetectedTargets()
+		local count = 0
+		local targets = self:getDetectedTargets()
+		for i = 1, #targets do
+			if self:canEngage(targets[i]) then
+				count = count + 1
+			end
+		end
+		return count
+	end
+
 	function SkynetIADSAbstractRadarElement:goDark()
+		-- a point defence held live for a HARM stays so while it has missiles to fire at it
+		if self.isPointDefending == true and self:hasWorkingPowerSource() and self:hasRemainingAmmo() then
+			return
+		end
+		-- only what the element can engage holds it up: read only where the condition below asks
+		local engageableTargets = 0
+		if self.aiState == true and self.harmSilenceID == nil then
+			engageableTargets = self:getNumberOfEngageableDetectedTargets()
+		end
 		if
 			(self:hasWorkingPowerSource() == false)
 			or (self.aiState == true)
-				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and #self:getDetectedTargets() == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and #self:getDetectedTargets() > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
+				and (self.harmSilenceID ~= nil or (self.harmSilenceID == nil and engageableTargets == 0 and self:hasMissilesInFlight() == false) or (self.harmSilenceID == nil and engageableTargets > 0 and self:hasMissilesInFlight() == false and self:hasRemainingAmmo() == false))
 		then
 			if self:isDestroyed() == false then
 				self:getDCSRepresentation():enableEmission(false)
 			end
-			-- point defence will only go live if the Radar Emitting site it is protecting goes dark and this is due to a it defending against a HARM
-			if self.harmSilenceID ~= nil then
-				self:pointDefencesGoLive()
-				if self:isDestroyed() == false then
-					--if site goes dark due to HARM we turn off AI, this is due to a bug in DCS multiplayer where the harm will find its way to the radar emitter if just setEmissions is set to false
-					local controller = self:getController()
-					controller:setOnOff(false)
-				end
-			end
 			self.aiState = false
-			self:stopScanningForHARMs()
 			self.cachedTargets = {}
 			if self.iads:getDebugSettings().radarWentDark then
 				self.iads:printOutputToLog("GOING DARK: " .. self:getDescription())
@@ -645,9 +743,10 @@ do
 		local setActive = false
 		for i = 1, #self.pointDefences do
 			local pointDefence = self.pointDefences[i]
-			if pointDefence:getActAsEW() == false then
+			if pointDefence:getIsPointDefending() == false then
 				setActive = true
-				pointDefence:setActAsEW(true)
+				pointDefence:setIsPointDefending(true)
+				pointDefence:goLive()
 			end
 		end
 		return setActive
@@ -873,7 +972,10 @@ do
 	end
 
 	function SkynetIADSAbstractRadarElement:goSilentToEvadeHARM(timeToImpact)
-		self:finishHarmDefence(self)
+		--not finishHarmDefence(): all a new silence needs from the one under way is that its timer
+		--stops. Finishing it would turn the AI back on, and light an autonomous DCS AI site's radar,
+		--only for both to be undone below
+		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		if timeToImpact == nil then
 			timeToImpact = 0
 		end
@@ -899,6 +1001,11 @@ do
 			1
 		)
 		self:goDark()
+		--the AI goes off too, whether the site was live or already dark: in DCS multiplayer a HARM
+		--still finds an emitter whose emission alone is off. finishHarmDefence() turns it back on
+		if self:isDestroyed() == false then
+			self:getController():setOnOff(false)
+		end
 	end
 
 	function SkynetIADSAbstractRadarElement:getHARMShutdownTime()
@@ -914,6 +1021,10 @@ do
 		SkynetIADSUtils.removeFunction(self.harmSilenceID)
 		self.harmSilenceID = nil
 		self.harmShutdownTime = 0
+		--the silence turned the AI off, and a DCS ammo truck does not rearm a unit whose AI is off
+		if self:isDestroyed() == false then
+			self:getController():setOnOff(true)
+		end
 
 		if self:getAutonomousState() == true then
 			self:goAutonomous()
@@ -931,8 +1042,14 @@ do
 				local targets = self:getController():getDetectedTargets(Controller.Detection.RADAR)
 				for i = 1, #targets do
 					local target = targets[i]
-					-- there are cases when a destroyed object is still visible as a target to the radar, don't add it, will cause errors everywhere the dcs object is accessed
-					if target.object then
+					-- skip an object of the IADS's own side, and one that no longer exists: DCS can still
+					-- report it, and every getter on it then raises except isExist(), checked first
+					-- for that reason
+					if
+						target.object
+						and target.object:isExist()
+						and target.object:getCoalition() ~= self.iads:getCoalition()
+					then
 						local iadsTarget = SkynetIADSContact:create(target, self)
 						iadsTarget:refresh()
 						if self:isTargetInRange(iadsTarget) then
@@ -1067,13 +1184,15 @@ do
 				table.insert(newHARMS, harmContact)
 			end
 		end
-		--stop point defences acting as ew (always on), will occur if activated via evaluateIfTargetsContainHARMs()
 		--if in this iteration all harms where cleared we turn of the point defence. But in any other cases we dont turn of point defences, that interferes with other parts of the iads
 		-- when setting up the iads (letting pds go to read state)
 		if #newHARMS == 0 and self:getNumberOfObjectsItentifiedAsHARMS() > 0 then
-			self:pointDefencesStopActingAsEW()
+			self:releasePointDefences()
 		end
 		self.objectsIdentifiedAsHarms = newHARMS
+		if #newHARMS == 0 and self.aiState == false then
+			self:stopScanningForHARMs()
+		end
 	end
 
 	function SkynetIADSAbstractRadarElement.evaluateIfTargetsContainHARMs(self)

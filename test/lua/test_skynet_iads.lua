@@ -28,11 +28,11 @@
 --- FIX-JAMMER-SILENCE-OUTLIVES-THE-JAMMER took the fifth and last of them, on addRadioMenu().
 --- There is no characterisation test left in this file.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 TestSkynetIADS = {}
 
@@ -99,6 +99,48 @@ function TestSkynetIADS:testSAMSiteStaysLiveWhileTargetRemainsUnderEWCoverage()
 	--and a third, to show it is a steady state and not a one-cycle grace period
 	iads:evaluateContacts()
 	luaunit.assertEquals(samSite:isActive(), true)
+
+	iads:deactivate()
+end
+
+--the autonomous behaviour only applies once a site is autonomous. A site that is not autonomous
+--goes dark when the target leaves, whatever its autonomous behaviour is set to.
+function TestSkynetIADS:testNonAutonomousSiteWithDarkBehaviourGoesDarkWhenTargetLeaves()
+	local iads = SkynetIADS:create()
+
+	F.earlyWarningRadarUnit("EW-west23")
+	local ewRadar = iads:addEarlyWarningRadar("EW-west23")
+
+	dcsStub.makeUnit({
+		name = "test-in-firing-range-of-sa-2",
+		type = "F-16C",
+		pos = { x = 10000, y = 2000, z = 0 },
+		desc = { category = Unit.Category.AIRPLANE },
+	})
+
+	local ewContacts = { F.iadsContact("test-in-firing-range-of-sa-2") }
+	function ewRadar:getDetectedTargets()
+		return ewContacts
+	end
+
+	F.samGroup("SA-2", "SAM-SA-2")
+	local samSite = iads:addSAMSite("SAM-SA-2")
+	samSite:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
+
+	function samSite:getDetectedTargets()
+		return {}
+	end
+
+	iads:activate()
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), true)
+
+	--the EW radar no longer detects anything
+	ewContacts = {}
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), false)
 
 	iads:deactivate()
 end
@@ -737,10 +779,10 @@ function TestSkynetIADS:testTheSameAircraftSeenTwiceIsOneContactCarryingBothRada
 	)
 end
 
---- The network wakes a battery for an aircraft, and for a missile, but not for a shell or a
---- rocket in flight -- otherwise every artillery barrage in the mission lights up the air
---- defence.
-function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
+--- The network tells a battery of a contact with a target class only: a missile or a bomb, not an
+--- air-to-air missile, a shell or a rocket in flight -- otherwise every artillery barrage in the
+--- mission lights up the air defence. Whether the battery can engage it is its own call.
+function TestSkynetIADS:testABatteryIsInformedOnlyOfAClassedContact()
 	local iads = self:buildNetwork()
 	local lonely = iads:getSAMSiteByGroupName("RED-SAM-lonely")
 
@@ -749,15 +791,14 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 		informedOf[#informedOf + 1] = contact:getName()
 	end
 
-	-- a weapon in flight: Object.getCategory answers WEAPON, and desc.category tells a missile
-	-- from a shell
-	local function weaponContact(name, weaponCategory)
+	-- a weapon in flight: Object.getCategory answers WEAPON, and its desc gives its class
+	local function weaponContact(name, desc)
 		local unit = dcsStub.makeUnit({
 			name = name,
 			type = name,
 			pos = { x = 400100, y = 2000, z = 0 },
 			category = Object.Category.WEAPON,
-			desc = { category = weaponCategory },
+			desc = desc,
 		})
 		local contact = SkynetIADSContact:create({ object = unit })
 		contact:refresh()
@@ -768,9 +809,19 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 	watcher:setActAsEW(true)
 	function watcher:getDetectedTargets()
 		return {
-			weaponContact("inbound-missile", Weapon.Category.MISSILE),
-			weaponContact("outgoing-shell", Weapon.Category.SHELL),
-			weaponContact("outgoing-rocket", Weapon.Category.ROCKET),
+			weaponContact("inbound-maverick", {
+				category = Weapon.Category.MISSILE,
+				missileCategory = Weapon.MissileCategory.OTHER,
+				guidance = Weapon.GuidanceType.LASER,
+			}),
+			weaponContact("inbound-bomb", { category = Weapon.Category.BOMB }),
+			weaponContact("passing-amraam", {
+				category = Weapon.Category.MISSILE,
+				missileCategory = Weapon.MissileCategory.AAM,
+				guidance = Weapon.GuidanceType.RADAR_ACTIVE,
+			}),
+			weaponContact("outgoing-shell", { category = Weapon.Category.SHELL }),
+			weaponContact("outgoing-rocket", { category = Weapon.Category.ROCKET }),
 		}
 	end
 	-- the cycle asks which covered batteries are *usable*, not which are covered
@@ -779,7 +830,7 @@ function TestSkynetIADS:testABatteryIsNotWokenByAShellOrARocket()
 	end
 
 	iads:evaluateContacts()
-	luaunit.assertEquals(informedOf, { "inbound-missile" })
+	luaunit.assertEquals(informedOf, { "inbound-maverick", "inbound-bomb" })
 end
 
 -- ---- the table delegator ---------------------------------------------------------------------

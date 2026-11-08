@@ -7,7 +7,7 @@
 std = "lua51"
 
 globals = {
-	-- DCS Scripting Engine, and test/lua/dcs-stub.lua's stand-in for it.
+	-- DCS Scripting Engine, and test/common/dcs-stub.lua's stand-in for it.
 	"env",
 	"timer",
 	"world",
@@ -23,17 +23,28 @@ globals = {
 	"land",
 	"coord",
 	"StaticObject",
+	"country",
 
 	-- This project's own classes and shared state, each a bare global.
 	"inheritsFrom",
 	"samTypesDB",
 	"dcsStub",
+
+	-- dcs-hotload and the in-sim test suite (test/insim/): hotload's own API, and the one global
+	-- insim.lua keeps between mailbox commands, plus the one the Skynet script keeps.
+	"Hotload",
+	"lfs",
+	"InsimState",
+	"InsimSkynetState",
+	"BASE_HOTLOAD_PATH",
+
 	"SkynetIADS",
 	"SkynetIADSUtils",
 	"SkynetIADSLogger",
 	"SkynetIADSContact",
 	"SkynetIADSTableDelegator",
 	"SkynetIADSHARMDetection",
+	"SkynetIADSLastLineOfDefence",
 	"SkynetIADSJammer",
 	"SkynetIADSAbstractDCSObjectWrapper",
 	"SkynetIADSAbstractElement",
@@ -65,7 +76,8 @@ self = false
 ignore = { "631" }
 
 exclude_files = {
-	"test/lua/luaunit.lua", -- vendored upstream, unmodified
+	"test/common/luaunit.lua", -- vendored upstream, unmodified
+	"test/insim-tools/insim-fixtures/verify/bad-syntax/verify.lua", -- broken on purpose: the judge's test of a syntax error
 }
 
 -- The ratchet: every remaining warning from the first run, pinned to its file and code so a
@@ -83,7 +95,7 @@ files["skynet-iads-source/skynet-iads-logger.lua"] = { ignore = { "211", "311", 
 files["skynet-iads-source/skynet-iads-sam-site.lua"] = { ignore = { "213" } }
 files["skynet-iads-source/skynet-iads-table-delegator.lua"] = { ignore = { "432" } }
 files["skynet-iads-source/skynet-iads.lua"] = { ignore = { "212", "213", "311" } }
-files["test/lua/dcs-stub.lua"] = { ignore = { "212" } }
+files["test/common/dcs-stub.lua"] = { ignore = { "212" } }
 files["test/lua/test_skynet_iads_harm_detection.lua"] = { ignore = { "212", "213" } }
 files["test/lua/test_skynet_iads_jammer.lua"] = { ignore = { "212" } }
 files["test/lua/test_skynet_iads_sam_site.lua"] = { ignore = { "212", "213", "431" } }

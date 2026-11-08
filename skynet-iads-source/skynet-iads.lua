@@ -3,8 +3,8 @@ do
 	SkynetIADS.__index = SkynetIADS
 
 	-- Single source of truth for the shipped artifact's version. Read by
-	-- build-tools/build-compiled-script.ps1 and stamped into the banner it writes.
-	SkynetIADS.version = "3.5.0"
+	-- build-tools/build-compiled-script.py and stamped into the banner it writes.
+	SkynetIADS.version = "3.6.0"
 
 	SkynetIADS.database = samTypesDB
 
@@ -15,54 +15,40 @@ do
 		iads.earlyWarningRadars = {}
 		iads.samSites = {}
 		iads.commandCenters = {}
-		iads.ewRadarScanMistTaskID = nil
-		iads.coverageRefreshMistTaskID = nil
+		iads.ewRadarScanTaskID = nil
+		iads.coverageRefreshTaskID = nil
 		iads.coalition = nil
 		iads.contacts = {}
 		iads.maxTargetAge = 32
 		iads.name = name
 		iads.harmDetection = SkynetIADSHARMDetection:create(iads)
+		iads.lastLineOfDefence = SkynetIADSLastLineOfDefence:create(iads)
 		iads.logger = SkynetIADSLogger:create(iads)
 		if iads.name == nil then
 			iads.name = ""
 		end
 		iads.contactUpdateInterval = 5
-		iads.lastLineOfDefenceEnabled = true
-		iads.lastLineOfDefenceMinRadius = 10000
-		iads.lastLineOfDefenceMaxRadius = 15000
-		iads.lastLineOfDefencePersistence = 45
 		iads.coverageRefreshInterval = 10
 		world.addEventHandler(iads)
 		return iads
 	end
 
-	-- Last line of defense ------------------------------------------------------------------------
-	--
-	-- A SAM site held dark by the network has its emission switched off, so it is blind: the only
-	-- route back to life is an EW radar that covers it holding the target. Fly under the radar
-	-- horizon and no battery reacts, whatever the distance — proximity to the site is an input
-	-- nowhere in the cycle, because the only sensor that could measure it is the one that was just
-	-- switched off. So a dark site keeps a short virtual detection radius of its own, Skynet's, with
-	-- no DCS radar involved.
-	--
-	-- On by default: off means nobody finds it, and the report comes back in six months.
-
 	function SkynetIADS:setLastLineOfDefence(state)
 		if state == true or state == false then
-			self.lastLineOfDefenceEnabled = state
+			self.lastLineOfDefence.enabled = state
 		end
 		return self
 	end
 
 	function SkynetIADS:getLastLineOfDefence()
-		return self.lastLineOfDefenceEnabled
+		return self.lastLineOfDefence.enabled
 	end
 
 	--- Bounds, in metres, of the radius each site draws once for the whole mission.
 	function SkynetIADS:setLastLineOfDefenceRadius(minRadius, maxRadius)
 		if minRadius and maxRadius and minRadius > 0 and maxRadius >= minRadius then
-			self.lastLineOfDefenceMinRadius = minRadius
-			self.lastLineOfDefenceMaxRadius = maxRadius
+			self.lastLineOfDefence.minRadius = minRadius
+			self.lastLineOfDefence.maxRadius = maxRadius
 			--sites that already drew a radius have to draw again, from the new bounds
 			for i = 1, #self.samSites do
 				self.samSites[i]:clearLastLineOfDefenceRadius()
@@ -73,131 +59,32 @@ do
 
 	--- Answers the minimum and the maximum, in that order.
 	function SkynetIADS:getLastLineOfDefenceRadius()
-		return self.lastLineOfDefenceMinRadius, self.lastLineOfDefenceMaxRadius
+		return self.lastLineOfDefence.minRadius, self.lastLineOfDefence.maxRadius
 	end
 
 	--- How long a site stays lit after the last contact reported to it, in seconds.
 	function SkynetIADS:setLastLineOfDefencePersistence(seconds)
 		if seconds and seconds >= 0 then
-			self.lastLineOfDefencePersistence = seconds
+			self.lastLineOfDefence.persistence = seconds
 		end
 		return self
 	end
 
 	function SkynetIADS:getLastLineOfDefencePersistence()
-		return self.lastLineOfDefencePersistence
+		return self.lastLineOfDefence.persistence
 	end
 
 	--- Wakes a SAM site on a DCS unit, as if something had reported that aircraft to the network.
 	--
-	-- This is a public entry point of Skynet, and the last line of defense below is its first
-	-- caller. It is public because code outside Skynet — VEAF's spotter network — has to be able to
-	-- wake a site, and the alternative is that code writing into targetsInRange and its friends on
-	-- every cycle.
-	--
-	-- Unlike SkynetIADSSamSite:informOfContact() it does not require the target to be inside the
-	-- firing envelope: a site lights up because something told it the aircraft is there, not because
-	-- it can hit it. Requiring the kill zone would mean a Shilka, useful range ~2.5 km, never wakes.
-	-- Everything else still holds — the site's own go-live constraints, and goLive()'s guards, so a
-	-- site silenced to evade a HARM, out of ammunition, without power or destroyed stays dark.
+	-- A public entry point: external code can wake a site directly rather than writing into
+	-- targetsInRange every cycle.
 	--
 	-- Answers whether the site is live after the call.
 	function SkynetIADS:reportContact(dcsUnit, samSite)
 		if dcsUnit == nil or samSite == nil or dcsUnit:isExist() == false then
 			return false
 		end
-		local contact = SkynetIADSContact:create({ object = dcsUnit }, samSite)
-		if samSite:areGoLiveConstraintsSatisfied(contact) == false then
-			return false
-		end
-		samSite:goLive()
-		if samSite:isActive() == false then
-			return false
-		end
-		samSite:markContactReported()
-		return true
-	end
-
-	--- Every hostile aircraft and helicopter currently flying.
-	--
-	-- Enumerated once per cycle and shared by every site: a mission carrying sixty batteries would
-	-- otherwise sweep the coalitions sixty times every five seconds. Neutral is not hostile.
-	function SkynetIADS:getHostileAirUnits()
-		local hostileUnits = {}
-		local categories = { Group.Category.AIRPLANE, Group.Category.HELICOPTER }
-		for _, coalitionID in pairs(coalition.side) do
-			if coalitionID ~= self:getCoalition() and coalitionID ~= coalition.side.NEUTRAL then
-				for i = 1, #categories do
-					local groups = coalition.getGroups(coalitionID, categories[i]) or {}
-					for _, group in pairs(groups) do
-						--coalition.getGroups can hand back a group that no longer exists; asking it for
-						--its units raises, and inside a pairs loop that aborts the whole listing
-						if group and (group.isExist == nil or group:isExist()) then
-							for _, unit in pairs(group:getUnits() or {}) do
-								if unit:isExist() and unit:inAir() then
-									table.insert(hostileUnits, unit)
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-		return hostileUnits
-	end
-
-	--- Is this site one the last line of defense has to look after?
-	--
-	-- The sites that matter are the ones something is holding in the dark: the network, or their own
-	-- autonomous behaviour when it is set to stay dark. A site already triggered by an EW radar this
-	-- cycle, one acting as an EW radar, and one the DCS AI is already running are all left alone.
-	function SkynetIADS:isSiteEligibleForLastLineOfDefence(samSite)
-		if samSite:hasTargetsInRange() or samSite:getActAsEW() then
-			return false
-		end
-		if samSite:getAutonomousState() == false then
-			return true
-		end
-		return samSite:getAutonomousBehaviour() == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
-	end
-
-	--- Wakes every dark site an enemy aircraft is flying over.
-	function SkynetIADS:evaluateLastLineOfDefence(samSites)
-		if self.lastLineOfDefenceEnabled == false then
-			return
-		end
-		local hostileUnits = nil
-		local hostilePositions = nil
-		for i = 1, #samSites do
-			local samSite = samSites[i]
-			if self:isSiteEligibleForLastLineOfDefence(samSite) then
-				--built at most once per cycle, and not at all when every site is already busy. The
-				--positions are read here too: asking each unit again for every site would be one DCS
-				--call per site per aircraft, sixty times over on a mission carrying sixty batteries
-				if hostileUnits == nil then
-					hostileUnits = self:getHostileAirUnits()
-					if #hostileUnits == 0 then
-						--nothing is flying; reading each site's position would be pure waste
-						return
-					end
-					hostilePositions = {}
-					for j = 1, #hostileUnits do
-						hostilePositions[j] = hostileUnits[j]:getPosition().p
-					end
-				end
-				local samSitePosition = samSite:getElementPosition()
-				if samSitePosition ~= nil then
-					local radius = samSite:getLastLineOfDefenceRadius()
-					for j = 1, #hostileUnits do
-						--2D, the way Skynet measures everything else
-						local distance = samSite:getDistanceToUnit(samSitePosition, hostilePositions[j])
-						if distance <= radius and self:reportContact(hostileUnits[j], samSite) then
-							break
-						end
-					end
-				end
-			end
-		end
+		return samSite:informOfReportedContact(SkynetIADSContact:create({ object = dcsUnit }, samSite))
 	end
 
 	-- Skynet acts on no world event of its own: the elements handle the ones that matter to them,
@@ -280,7 +167,7 @@ do
 		self.earlyWarningRadars = {}
 		for unitName in pairs(SkynetIADSUtils.getUnitNames()) do
 			local pos = self:findSubString(unitName, prefix)
-			--the listing can contain StaticObjects, we check to see we only add Units
+			--the listing holds unit names only; this skips a unit gone between the listing and here
 			local unit = Unit.getByName(unitName)
 			if pos and pos == 1 and unit then
 				self:addEarlyWarningRadar(unitName)
@@ -317,7 +204,7 @@ do
 		-- it is not a valid parent, so the answer would be that nothing changed.
 		ewRadar:setActAsEW(true)
 		-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:buildRadarCoverageForEarlyWarningRadar(ewRadar)
 		end
 		ewRadar:setToCorrectAutonomousState()
@@ -359,7 +246,7 @@ do
 		for groupName in pairs(SkynetIADSUtils.getGroupNames()) do
 			local pos = self:findSubString(groupName, prefix)
 			if pos and pos == 1 then
-				--the listing returns groups, units and, StaticObjects
+				--the listing holds group names only; this skips a group gone between the listing and here
 				local dcsObject = Group.getByName(groupName)
 				if dcsObject and dcsObject:getUnits()[1]:isActive() then
 					self:addSAMSite(groupName)
@@ -385,7 +272,7 @@ do
 	-- guarded exactly as the incremental rebuild is: before activate() there is no coverage to
 	-- rebuild, and activate() will do it once.
 	function SkynetIADS:rebuildRadarCoverageAfterBulkReAdd()
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:buildRadarCoverage()
 		end
 	end
@@ -430,7 +317,7 @@ do
 				self:printOutputToLog("ADDED: " .. samSite:getDescription())
 			end
 			-- for performance improvement, if iads is not scanning no update coverage update needs to be done, will be executed once when iads activates
-			if self.ewRadarScanMistTaskID ~= nil then
+			if self.ewRadarScanTaskID ~= nil then
 				self:buildRadarCoverageForSAMSite(samSite)
 				-- and then applied unconditionally, which the rebuild's own guard cannot do: a site
 				-- one statement old has never had its autonomous state applied at all, isAutonomous
@@ -502,7 +389,7 @@ do
 		local comCenter = SkynetIADSCommandCenter:create(commandCenter, self)
 		table.insert(self.commandCenters, comCenter)
 		-- when IADS is active the radars will be added to the new command center. If it not active this will happen when radar coverage is built
-		if self.ewRadarScanMistTaskID ~= nil then
+		if self.ewRadarScanTaskID ~= nil then
 			self:addRadarsToCommandCenters()
 		end
 		return comCenter
@@ -574,55 +461,15 @@ do
 		for samName, samToTrigger in pairs(samSitesToTrigger) do
 			for j = 1, #self.contacts do
 				local contact = self.contacts[j]
-				-- the DCS Radar only returns enemy aircraft, if that should change a coalition check will be required
-				-- currently every type of object in the air is handed of to the SAM site, including missiles
-				--local description = contact:getDesc()
-				--local category = description.category
-				--if category and category ~= Unit.Category.GROUND_UNIT and category ~= Unit.Category.SHIP and category ~= Unit.Category.STRUCTURE then
-				--	samToTrigger:informOfContact(contact)
-				--end
-				--[[
-				Above code will not always work, as it assumes the contact is a unit. But actually a contact can be a unit or a weapon.
-				Categories returned by description.category will not be the same for a unit or a weapon:
-					Unit.Category = { AIRPLANE=0, HELICOPTER=1, GROUND_UNIT=2, SHIP=3, STRUCTURE=4 }
-					Weapon.Category = { SHELL=0, MISSILE=1, ROCKET=2, BOMB=3 }
-
-				So as it is, as we consider only the units categories that are not in [2, 3, 4]:
-					An airplane or a helicopter will be passed to the sites as designed
-					A missile (HARM, JSOW...) will be passed as well but only by chance because its category is equal to AIRPLANE
-					A bomb though will not be passed because its category is equal to SHIP
-
-				This has become an issue since the Phalanx has been introduced, as it is a unit capable of engaging incoming bombs.
-				As it is now, a Phalanx will be kept off when bombs are inbound.
-
-				Proposed correction consist in correctly considering the contact object category, before looking at its description category.
-				I also think it would be better to test for categories to include, rather than categories to exclude, but this is another matter.
-
-				Note 1: we could enhance that by only turning the site on when they can indeed engage the target, like it is done for the HARMs.
-				Note 2: maybe the shells and rockets can be engaged by the CRAMs as it is in real life ?
-
-				Modified code follows...
-			]]
-
-				local bShouldInform = false
-				local objectCategory = contact:getCategory()
-				local category = contact:getDesc().category
-
-				if objectCategory == Object.Category.UNIT then
-					bShouldInform = category ~= Unit.Category.GROUND_UNIT
-						and category ~= Unit.Category.SHIP
-						and category ~= Unit.Category.STRUCTURE
-				elseif objectCategory == Object.Category.WEAPON then
-					bShouldInform = category ~= Weapon.Category.SHELL and category ~= Weapon.Category.ROCKET
-				end
-
-				if category and bShouldInform then
+				-- a contact without a target class -- a shell, a rocket, a ground unit -- wakes no site;
+				-- whether a site can engage the class is its own call, in informOfContact()
+				if contact:getTargetClass() ~= nil then
 					samToTrigger:informOfContact(contact)
 				end
 			end
 		end
 
-		self:evaluateLastLineOfDefence(samSites)
+		self.lastLineOfDefence:evaluate(samSites)
 
 		for i = 1, #samSites do
 			local samSite = samSites[i]
@@ -805,18 +652,13 @@ do
 	end
 
 	-- Coverage refresh ----------------------------------------------------------------------------
-	--
-	-- Which battery sits under which radar is geometry, and geometry changes when something moves.
-	-- Until now it was computed once and treated as if it never changed: buildRadarCoverage() is the
-	-- only thing that clears anything, and the incremental rebuild used for a moving AWACS only ever
-	-- adds. So an AWACS in transit accumulated every battery it had ever flown near and held them
-	-- all non-autonomous from hundreds of kilometres away, and a mobile SAM site — a SA-15, a SA-8,
-	-- a Shilka in a convoy — was refreshed by nothing at all.
-
+	-- Which SAM site sits under which radar is geometry, and geometry changes when something moves.
+	-- An AWACS in transit, a mobile SAM site, a Shilka in a convoy change the geometry and need the
+	-- coverage to be refreshed to match.
 	function SkynetIADS:setCoverageRefreshInterval(interval)
 		if interval and interval >= 0 then
 			self.coverageRefreshInterval = interval
-			if self.ewRadarScanMistTaskID ~= nil then
+			if self.ewRadarScanTaskID ~= nil then
 				self:scheduleCoverageRefresh()
 			end
 		end
@@ -829,10 +671,10 @@ do
 
 	--- (Re)arms the periodic sweep. An interval of 0 stops it.
 	function SkynetIADS:scheduleCoverageRefresh()
-		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
-		self.coverageRefreshMistTaskID = nil
+		SkynetIADSUtils.removeFunction(self.coverageRefreshTaskID)
+		self.coverageRefreshTaskID = nil
 		if self.coverageRefreshInterval > 0 then
-			self.coverageRefreshMistTaskID = SkynetIADSUtils.scheduleFunction(
+			self.coverageRefreshTaskID = SkynetIADSUtils.scheduleFunction(
 				SkynetIADS.refreshRadarCoverage,
 				{ self },
 				1,
@@ -943,8 +785,8 @@ do
 
 	-- will start going through the Early Warning Radars and SAM sites to check what targets they have detected
 	function SkynetIADS.activate(self)
-		SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
-		self.ewRadarScanMistTaskID =
+		SkynetIADSUtils.removeFunction(self.ewRadarScanTaskID)
+		self.ewRadarScanTaskID =
 			SkynetIADSUtils.scheduleFunction(SkynetIADS.evaluateContacts, { self }, 1, self.contactUpdateInterval)
 		self:buildRadarCoverage()
 		self:scheduleCoverageRefresh()
@@ -958,10 +800,10 @@ do
 	end
 
 	function SkynetIADS:deactivate()
-		SkynetIADSUtils.removeFunction(self.ewRadarScanMistTaskID)
-		SkynetIADSUtils.removeFunction(self.coverageRefreshMistTaskID)
-		self.coverageRefreshMistTaskID = nil
-		SkynetIADSUtils.removeFunction(self.samSetupMistTaskID)
+		SkynetIADSUtils.removeFunction(self.ewRadarScanTaskID)
+		self.ewRadarScanTaskID = nil
+		SkynetIADSUtils.removeFunction(self.coverageRefreshTaskID)
+		self.coverageRefreshTaskID = nil
 		self:deativateSAMSites()
 		self:deactivateEarlyWarningRadars()
 		self:deactivateCommandCenters()

@@ -3,8 +3,8 @@
 -- Beware the word: in Skynet, "coverage" is what an early warning radar does to a SAM site
 -- (CONTEXT.md). This file is about *test* coverage, and nothing else.
 --
--- Run it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/lua/run.lua
---               lua5.1 build-tools/report-test-coverage.lua
+-- Run it with:  SKYNET_TEST_COVERAGE=1 lua5.1 test/common/run.lua test/lua
+--               lua5.1 test/common/report-test-coverage.lua
 
 return {
 	-- Only the shipped sources are measured. The suites, luaunit and the DCS stub are the
@@ -21,7 +21,7 @@ return {
 	-- that way in build-tools/listToMerge.txt and renaming it is not this measurement's business.
 	exclude = { "supported%-types$", "suported%-types$" },
 
-	-- The report is produced by build-tools/report-test-coverage.lua, after every suite has run
+	-- The report is produced by test/common/report-test-coverage.lua, after every suite has run
 	-- and merged its counts, never by a child process on its way out.
 	runreport = false,
 	deletestats = false,

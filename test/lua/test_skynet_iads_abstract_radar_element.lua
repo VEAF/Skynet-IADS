@@ -6,8 +6,8 @@
 --- and defence states, the two engagement flags and the parent / child radar
 --- bookkeeping. Slice 3 takes ammunition and missiles in flight, and the
 --- engagement zone. Slice 4 takes point defence and the cached-target
---- behaviour, which completes the port; see test/lua/README.md for what stays
---- in the .miz and why.
+--- behaviour, which completes the port; test/README.md lists what needs the
+--- simulator.
 ---
 --- The .miz version reads SAM groups, connection nodes, power sources and a
 --- command centre baked into skynet-unit-tests.miz, and kills them with
@@ -16,17 +16,16 @@
 --- no-op, so destroying the object directly is what stands in for the blast.
 --- Everything else (the mocks, the assertions, their order) is the .miz test,
 --- except where a comment above a test says otherwise. Those departures are
---- deliberate, each one is argued in the comment above the test it affects, and
---- test/lua/README.md lists them in one place — with what did NOT come across
---- and why. Porting a test is not copying it: a .miz test that only ever passed
+--- deliberate, and each one is argued in the comment above the test it affects.
+--- Porting a test is not copying it: a .miz test that only ever passed
 --- because it ran against real DCS objects is not covered by a standalone test
 --- asking the stub the same question.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 -- one-liner from the .miz's skynet-unit-tests.lua
 local function createDeadEvent()
@@ -547,6 +546,181 @@ function TestSkynetIADSAbstractRadarElement:testCanEngageHARM()
 	luaunit.assertEquals(airWeaponsSetTo, nil)
 end
 
+-- Setting a flag true on a site whose air weapons are off turns them on, which restores every
+-- flag from the database: the flag has to be set after that, or the database value overwrites it.
+-- No mock here: the overwrite happens inside the real setCanEngageAirWeapons().
+function TestSkynetIADSAbstractRadarElement:testEachSetterHoldsTrueWhenAirWeaponsWereOff()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = false
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageHARM(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageMissile(true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+
+	-- the other two come back from the database, which says false for an SA-6
+	self.samSite:setCanEngageAirWeapons(false)
+	self.samSite:setCanEngageBomb(true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testSetCanEngageBombAndMissileAllowAirWeapons()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageBomb(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertIs(self.samSite:setCanEngageMissile(true), self.samSite)
+	luaunit.assertEquals(self.samSite:getCanEngageAirWeapons(), true)
+	luaunit.assertEquals(lastOption(self.samSite, AI.Option.Ground.id.ENGAGE_AIR_WEAPONS), true)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAirWeaponsOffClearsAndOnRestoresFromDatabase()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	self.samSite.dataBaseSupportedTypesCanEngageHARM = true
+	self.samSite.dataBaseSupportedTypesCanEngageBomb = true
+	self.samSite.dataBaseSupportedTypesCanEngageMissile = true
+
+	self.samSite:setCanEngageAirWeapons(false)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), false)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), false)
+
+	self.samSite:setCanEngageAirWeapons(true)
+	luaunit.assertEquals(self.samSite:getCanEngageHARM(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageBomb(), true)
+	luaunit.assertEquals(self.samSite:getCanEngageMissile(), true)
+end
+
+--- A contact double that answers only its class.
+local function classedContact(class)
+	return {
+		getTargetClass = function()
+			return class
+		end,
+	}
+end
+
+function TestSkynetIADSAbstractRadarElement:testCanEngageByClass()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	local site = self.samSite
+
+	for _, state in ipairs({ true, false }) do
+		site:setCanEngageHARM(state)
+		site:setCanEngageBomb(state)
+		site:setCanEngageMissile(state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_AIRCRAFT)), true)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), state)
+		luaunit.assertEquals(site:canEngage(classedContact(nil)), false)
+	end
+
+	-- each class follows its own flag, not its neighbours'
+	site:setCanEngageHARM(false)
+	site:setCanEngageBomb(true)
+	site:setCanEngageMissile(false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_ARM)), false)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_BOMB)), true)
+	luaunit.assertEquals(site:canEngage(classedContact(SkynetIADSContact.CLASS_MISSILE)), false)
+end
+
+-- ---- going dark ------------------------------------------------------------------------------
+--
+-- goDark() counts only what the site's own radar sees and the site can engage: a bomb passing
+-- over a site that cannot shoot at it does not hold the site up.
+
+--- A live SA-6 whose radar sees `contacts`, with its bomb flag off.
+local function liveSiteSeeing(test, contacts)
+	test.samSiteName = "SAM-SA-6-2"
+	test:setUp()
+	test.samSite:setCanEngageBomb(false)
+	function test.samSite:getDetectedTargets()
+		return contacts
+	end
+	luaunit.assertEquals(test.samSite:isActive(), true)
+	return test.samSite
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsGoesDark()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOneEngageableContactStaysLive()
+	local site = liveSiteSeeing(self, {
+		classedContact(SkynetIADSContact.CLASS_BOMB),
+		classedContact(SkynetIADSContact.CLASS_AIRCRAFT),
+	})
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
+-- its own missiles still guide on whatever it fired at: it stays live until they land
+function TestSkynetIADSAbstractRadarElement:testGoDarkWithOnlyUnengageableContactsWaitsForItsMissiles()
+	local site = liveSiteSeeing(self, { classedContact(SkynetIADSContact.CLASS_BOMB) })
+	function site:hasMissilesInFlight()
+		return true
+	end
+	site:goDark()
+	luaunit.assertEquals(site:isActive(), true)
+end
+
+--- Which types the database says engage each class, measured in DCS 2.9.30.
+function TestSkynetIADSAbstractRadarElement:testSupportedTypesCapabilities()
+	local function typesWith(field)
+		local names = {}
+		for name, entry in pairs(samTypesDB) do
+			if entry[field] == true then
+				names[#names + 1] = name
+			end
+		end
+		table.sort(names)
+		return names
+	end
+	luaunit.assertEquals(typesWith("can_engage_bomb"), { "Iris-T SLM", "Pantsir S1", "Phalanx", "Tor M2" })
+	luaunit.assertEquals(typesWith("can_engage_missile"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"Roland ADS",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
+	luaunit.assertEquals(typesWith("can_engage_harm"), {
+		"HQ-7",
+		"Iris-T SLM",
+		"NASAMS",
+		"Pantsir S1",
+		"Patriot",
+		"Phalanx",
+		"S-300",
+		"Tor",
+		"Tor M2",
+	})
+end
+
 -- ---- slice 2: the parent / child radar bookkeeping ----------------------------------------
 --
 -- Departure from the .miz, and the reason the mocks below are told apart by a field: the .miz
@@ -647,6 +821,9 @@ function TestSkynetIADSAbstractRadarElement:testHARMDefenceStates()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), true, "a live site scans for HARMs")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), false)
 	self.samSite:goSilentToEvadeHARM()
+	-- the scan stops itself at its next tick
+	dcsStub.advanceClock(2)
+	dcsStub.fireDueTimers()
 	luaunit.assertEquals(self.samSite:isScanningForHARMs(), false, "a dark site has nothing to scan with")
 	luaunit.assertEquals(self.samSite:isDefendingHARM(), true)
 	luaunit.assertEquals(self.samSite:isActive(), false)
@@ -1002,7 +1179,7 @@ end
 -- the .miz versions assert the ranges the real DCS units report -- 53499.2265625 m for the SA-2's
 -- Flat Face, read out of that unit's own sensor table. Those figures belong to DCS, not to Skynet,
 -- and asking the stub the same question would only prove that dcs-fixtures says what dcs-fixtures
--- says. They stay in the .miz, and test/lua/README.md lists them under what needs the simulator.
+-- says. test/README.md states the rule: a test never pins a figure that belongs to DCS.
 --
 -- What is Skynet's own, and is what these test, is the *decision*: which of the search radar, the
 -- tracking radar and the launcher has to reach the contact before the site lights up, and what
@@ -1026,6 +1203,9 @@ function TestSkynetIADSAbstractRadarElement:testInformOfContactInRangeWhenEarlyW
 	local mockContact = {
 		isIdentifiedAsHARM = function()
 			return false
+		end,
+		getTargetClass = function()
+			return SkynetIADSContact.CLASS_AIRCRAFT
 		end,
 	}
 
@@ -1220,10 +1400,10 @@ end
 -- ---- slice 4: point defence ---------------------------------------------------------------
 --
 -- A point defence is a short-range battery a SAM site keeps around itself to shoot at the missiles
--- aimed at its radar. The mechanism is entirely in setActAsEW(): while the site it protects is
--- evading a HARM, its point defences are switched into EW mode, which is what keeps them lit while
--- the site they protect is dark. They are switched back off when the site comes back up, and when
--- the last remembered HARM ages out.
+-- aimed at its radar. When a HARM comes at the site it protects, pointDefencesGoLive() lights it and
+-- latches it with setIsPointDefending(), without making it act as EW, and goDark() leaves it live
+-- while it has missiles. It is released when the last remembered HARM ages out, and the next contact
+-- cycle sends it dark.
 
 --- Builds an SA-15 as a site of the IADS, the way the .miz suite's addSAMSitesByPrefix does, so
 --- the point defence under test is a real SkynetIADSSamSite and not a mock.
@@ -1255,14 +1435,17 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
 
-	local actingAsEW = false
+	local held, lit = false, false
 	local mockPD = {
-		getActAsEW = function()
-			return actingAsEW
+		getIsPointDefending = function()
+			return held
 		end,
 		setIsAPointDefence = function() end,
-		setActAsEW = function(_, state)
-			actingAsEW = state
+		setIsPointDefending = function(_, state)
+			held = state
+		end,
+		goLive = function()
+			lit = true
 		end,
 		-- the protected site's cleanUp() calls this on every point defence it holds
 		cleanUp = function() end,
@@ -1270,13 +1453,15 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesGoLive()
 
 	self.samSite:addPointDefence(mockPD)
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), true, "it was dark, so this switched it on")
-	luaunit.assertEquals(actingAsEW, true)
+	luaunit.assertEquals(held, true)
+	luaunit.assertEquals(lit, true)
 
 	luaunit.assertEquals(self.samSite:pointDefencesGoLive(), false, "already lit: nothing to change")
 end
 
---- The whole point of the mechanism: the site hides from the HARM, its point defence lights up to
---- meet it, and when the site comes back the point defence stands down again.
+--- The site hides from the HARM and its point defence lights up to meet it. The site coming back
+--- does not stand the point defence down: the HARM may still be in the air. Its ageing out does,
+--- in testPointDefencesAreNotActivatedWhenNoHARMSRemoved.
 function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDarkDueToHARMDefence()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
@@ -1288,14 +1473,34 @@ function TestSkynetIADSAbstractRadarElement:testPointDefenceActiveWhenSAMGoesDar
 	luaunit.assertIs(self.samSite:addPointDefence(pointDefence), self.samSite)
 	luaunit.assertEquals(#self.samSite:getPointDefences(), 1)
 
-	self.samSite:goSilentToEvadeHARM()
+	--more HARMs than the point defence can take: the site has to hide
+	function self.samSite:shallIgnoreHARMShutdown()
+		return false
+	end
+	local radarPosition = self.samSite:getRadars()[1]:getPosition().p
+	local harmPosition = { x = radarPosition.x, y = 5000, z = radarPosition.z + 10000 }
+	local harm = {}
+	function harm.getPosition()
+		return { p = harmPosition }
+	end
+	function harm.getMagneticHeading()
+		return SkynetIADSUtils.toDegree(SkynetIADSUtils.getHeadingPoints(harmPosition, radarPosition))
+	end
+	function harm.getGroundSpeedInKnots()
+		return 1200
+	end
+
+	self.samSite:informOfHARM(harm)
+	luaunit.assertEquals(self.samSite:isDefendingHARM(), true)
 	luaunit.assertEquals(self.samSite:isActive(), false)
 	luaunit.assertEquals(pointDefence:isActive(), true)
-	luaunit.assertEquals(pointDefence:getActAsEW(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
+	luaunit.assertEquals(pointDefence:getActAsEW(), false)
 
 	self.samSite:finishHarmDefence()
 	self.samSite:goLive()
-	luaunit.assertEquals(pointDefence:getActAsEW(), false)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), true)
 
 	pointDefence:cleanUp()
 end
@@ -1310,7 +1515,7 @@ function TestSkynetIADSAbstractRadarElement:testPointDefencesAreNotActivatedWhen
 	self.samSite:addPointDefence(pointDefence)
 
 	local calledStopPointDefence = false
-	function self.samSite:pointDefencesStopActingAsEW()
+	function self.samSite:releasePointDefences()
 		calledStopPointDefence = true
 	end
 
@@ -1337,14 +1542,14 @@ end
 --- :isDestroyed() answers true, and goLive() therefore never set aiState at all -- the assertion
 --- was reading a site that had never been lit, and could not have failed.
 ---
---- With a point defence that really is lit, it stays lit: pointDefencesStopActingAsEW() is called
---- from goLive() and from the last remembered HARM ageing out, and from nowhere else. goDark()
---- does not stand its point defences down.
+--- With a point defence that really is lit, it stays lit: goDark() does not stand its point
+--- defences down, and releasePointDefences(), called when the last remembered HARM ages out,
+--- releases only a point defence held live for a HARM, never one acting as EW.
 ---
---- That is not a hole in the live mechanism -- a point defence is only ever lit by
---- pointDefencesGoLive(), which goDark() runs only during HARM evasion, and both ways back down
---- are covered by the two tests above. It is a hole for a mission that lights one by hand. This
---- pins what the code does today, so that changing it is a decision somebody takes on purpose.
+--- That is not a hole in the live mechanism -- a point defence is only ever held live by
+--- pointDefencesGoLive(), and the way back down is covered by the tests above. It is a hole for a
+--- mission that lights one by hand. This pins what the code does today, so that changing it is a
+--- decision somebody takes on purpose.
 function TestSkynetIADSAbstractRadarElement:testPointDefenceLitByHandIsNotStoodDownWhenItsSAMGoesDark()
 	self.samSiteName = "SAM-SA-10"
 	self:setUp()
@@ -1428,6 +1633,150 @@ function TestSkynetIADSAbstractRadarElement:testCacheInvalidatedFirstfewSecondsA
 
 	dcsStub.advanceClock(6)
 	luaunit.assertIs(samSite:getDetectedTargets(), samSite:getDetectedTargets(), "and the window closes")
+end
+
+-- ---- the coalition filter -------------------------------------------------------------------
+--
+-- getDetectedTargets() drops what belongs to the IADS's own side before it builds a contact, so
+-- nothing downstream -- the wake, HARM detection, the logger -- ever sees a friendly object.
+
+--- What the real getDetectedTargets() answers for a RED network whose radar sees `objects`.
+local function reportedBy(test, objects)
+	test.samSiteName = "SAM-SA-6"
+	test:setUp()
+	test.skynetIADS:setCoalition(dcsStub.makeUnit({ coalition = coalition.side.RED }))
+	local detected = {}
+	for i = 1, #objects do
+		detected[i] = { object = objects[i] }
+	end
+	function test.samSite:getController()
+		return {
+			getDetectedTargets = function()
+				return detected
+			end,
+		}
+	end
+	function test.samSite:isTargetInRange()
+		return true
+	end
+	return SkynetIADSAbstractRadarElement.getDetectedTargets(test.samSite)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAFriendlyAircraftOrWeaponIsNotReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "friendly-jet", coalition = coalition.side.RED }),
+		dcsStub.makeUnit({
+			name = "friendly-bomb",
+			category = Object.Category.WEAPON,
+			desc = { category = Weapon.Category.BOMB },
+			coalition = coalition.side.RED,
+		}),
+	})
+	luaunit.assertEquals(#contacts, 0)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnEnemyOrNeutralObjectIsReported()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "enemy-jet", coalition = coalition.side.BLUE }),
+		dcsStub.makeUnit({ name = "neutral-jet", coalition = coalition.side.NEUTRAL }),
+	})
+	luaunit.assertEquals(#contacts, 2)
+end
+
+--- `object` as DCS 2.9 leaves it once it is gone -- a unit or a static removed, a weapon ended:
+-- isExist() answers false and getName() still answers, while every other getter raises.
+local function gone(object, message)
+	function object:isExist()
+		return false
+	end
+	for _, getter in ipairs({ "getTypeName", "getCoalition", "getCategory", "getPosition", "getDesc" }) do
+		object[getter] = function()
+			error(message)
+		end
+	end
+	return object
+end
+
+function TestSkynetIADSAbstractRadarElement:testAWeaponThatHasEndedIsDropped()
+	local ended =
+		gone(dcsStub.makeUnit({ name = "ended-weapon", category = Object.Category.WEAPON }), "Weapon doesn't exist")
+	luaunit.assertEquals(#reportedBy(self, { ended }), 0)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAStaticThatIsGoneDoesNotCostTheRestOfTheCycle()
+	local contacts = reportedBy(self, {
+		dcsStub.makeUnit({ name = "enemy-jet-1", coalition = coalition.side.BLUE }),
+		gone(dcsStub.makeStatic({ name = "gone-static" }), "Static doesn't exist"),
+		dcsStub.makeUnit({ name = "enemy-jet-2", coalition = coalition.side.BLUE }),
+	})
+	luaunit.assertEquals(#contacts, 2)
+	luaunit.assertEquals(contacts[1]:getName(), "enemy-jet-1")
+	luaunit.assertEquals(contacts[2]:getName(), "enemy-jet-2")
+end
+
+-- a destroyed unit or static stays a wreck that answers every getter, but isExist() is false
+function TestSkynetIADSAbstractRadarElement:testAWreckIsDropped()
+	local wreck = dcsStub.makeStatic({ name = "wreck", coalition = coalition.side.BLUE, exists = false })
+	luaunit.assertEquals(#reportedBy(self, { wreck }), 0)
+end
+
+-- ---- DCS's own "Evasion of ARM" ---------------------------------------------------------------
+--
+-- goLive() turns it off on every go-live, beside ALARM_STATE and ROE: an option holds whatever was
+-- set last, so a mission that sets it on after the element was added loses it at the next go-live.
+
+local function optionCount(element, optionId)
+	local count = 0
+	for _, call in ipairs(element:getDCSRepresentation().__controllerCalls or {}) do
+		if call.id == optionId then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function TestSkynetIADSAbstractRadarElement:testASAMSiteGoingLiveTurnsEvasionOfARMOffEveryTime()
+	F.samGroup("SA-6", "SAM-SA-6")
+	local samSite = self.skynetIADS:addSAMSite("SAM-SA-6")
+	luaunit.assertEquals(lastOption(samSite, AI.Option.Ground.id.EVASION_OF_ARM), false)
+
+	local count = optionCount(samSite, AI.Option.Ground.id.EVASION_OF_ARM)
+	samSite:goDark()
+	samSite:goLive()
+	luaunit.assertEquals(samSite:isActive(), true)
+	luaunit.assertEquals(optionCount(samSite, AI.Option.Ground.id.EVASION_OF_ARM), count + 1)
+	luaunit.assertEquals(lastOption(samSite, AI.Option.Ground.id.EVASION_OF_ARM), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnEWRadarGoingLiveTurnsEvasionOfARMOffOnItsUnit()
+	F.earlyWarningRadarUnit("EW-west2")
+	local ewRadar = self.skynetIADS:addEarlyWarningRadar("EW-west2")
+	luaunit.assertEquals(lastOption(ewRadar, AI.Option.Ground.id.EVASION_OF_ARM), false)
+end
+
+function TestSkynetIADSAbstractRadarElement:testAnAWACSRadarGoingLiveLeavesEvasionOfARMAlone()
+	F.awacsUnit("AWACS-1")
+	local awacs = self.skynetIADS:addEarlyWarningRadar("AWACS-1")
+	luaunit.assertEquals(awacs:isActive(), true)
+	luaunit.assertEquals(optionCount(awacs, AI.Option.Ground.id.EVASION_OF_ARM), 0)
+end
+
+-- a DCS build that predates the option has no such entry in AI.Option.Ground.id
+function TestSkynetIADSAbstractRadarElement:testGoingLiveWithoutTheEvasionOfARMOptionStillWorks()
+	local evasionOfARM = AI.Option.Ground.id.EVASION_OF_ARM
+	AI.Option.Ground.id.EVASION_OF_ARM = nil
+	local ok, err = pcall(function()
+		F.samGroup("SA-6", "SAM-SA-6")
+		local samSite = self.skynetIADS:addSAMSite("SAM-SA-6")
+		samSite:goLive()
+		luaunit.assertEquals(samSite:isActive(), true)
+		F.earlyWarningRadarUnit("EW-west2")
+		luaunit.assertEquals(self.skynetIADS:addEarlyWarningRadar("EW-west2"):isActive(), true)
+	end)
+	AI.Option.Ground.id.EVASION_OF_ARM = evasionOfARM
+	if not ok then
+		error(err, 0)
+	end
 end
 
 os.exit(luaunit.LuaUnit.run())

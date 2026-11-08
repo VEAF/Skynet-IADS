@@ -1,0 +1,223 @@
+# Skynet-IADS — Notes, ideas and future evolutions
+
+## Possible issues detected to check
+
+Neither was requested work and neither is a confirmed bug — they are latent-robustness questions worth a look, especially because this exact failure class (one bad object aborting a whole loop) already bit the project once, in David's `458b64f` "a destroyed group truncated prefix-based discovery".
+
+### Adding EW radars by prefix takes late-activated units too
+
+`addSAMSitesByPrefix` skips a group whose first unit is not active (`isActive()`).
+`addEarlyWarningRadarsByPrefix` has no such check: it adds every unit whose name starts with the
+prefix and that `Unit.getByName` finds. A mission that keeps late-activated radars under the same
+prefix, to activate later, gets them in the IADS from the start, before they exist in the world.
+
+**Shape if taken**: the same `isActive()` check in `addEarlyWarningRadarsByPrefix`. Not measured:
+what Skynet does with an inactive radar it holds, and whether `getUnitNames()` lists late-activated
+units at all in DCS.
+
+### A HARM that has flown past is remembered as long as a radar sees it
+
+A site forgets a HARM `objectsIdentifiedAsHarmsMaxTargetAge` (60 s) after it was last *seen*
+(`cleanUpOldObjectsIdentifiedAsHARMS()`, on the contact's age), not once it stops coming at the site.
+A HARM that misses and flies on past the site, still tracked by the network, keeps the site's memory
+of it fresh: its point defence stays live for as long as any radar holds that HARM. Seen in
+`harm-engaging-defended` (the HARM's age at 0 to the end of a run), before the run was made to wait
+for the HARM's end.
+
+**Shape if taken**: forget a HARM once it no longer points at the site (the `informOfHARM` aspect
+test, failed), as well as by age. Not measured: how long a missed AGM-88 stays in the air and in
+sight in DCS.
+
+## One agent instruction file, read by Claude and Copilot alike
+
+Raised 2026-09-22 by David, deferred out of `CHORE-REPOSITORY-CONVENTIONS` to keep that lot's diff
+readable. The intent: the instructions an agent follows should not be Claude's alone.
+
+**Copilot already reads this repository's `CLAUDE.md`.** GitHub's documented set is `AGENTS.md`
+anywhere in the tree — nearest wins — plus `CLAUDE.md` or `GEMINI.md` at the root as alternatives.
+So the cross-tool story is half true today, by accident and undocumented.
+
+**The trap that makes the obvious move wrong.** Adding an `AGENTS.md` beside the existing
+`CLAUDE.md` makes Claude ignore it: with a `CLAUDE.md` at or above the working directory, Claude
+reads *"Your `CLAUDE.md` files only"*. The result is a file Copilot obeys and Claude never sees,
+which is worse than either file alone and fails silently.
+
+**The only mechanism this repository controls** is a `CLAUDE.md` that `@`-imports `AGENTS.md`;
+Claude then reads the import, and it keeps working on Bedrock and in telemetry-disabled sessions
+where reading `AGENTS.md` directly is unavailable. The settings alternative
+(`claude-md-and-agents-md`) is user-level only — Claude Code ignores that key in project and local
+settings files — so it cannot be shipped to contributors.
+
+**A constraint on how it is written**: `@path` imports are Claude's own feature. Copilot would read
+`@CONTRIBUTING.md` as literal text. So `AGENTS.md` has to *instruct* — "before changing a source
+file, read CONTRIBUTING.md" — rather than import. Pointers as prose work everywhere.
+
+**Shape if taken**: `AGENTS.md` carries the vendor-neutral instructions, `CLAUDE.md` shrinks to the
+import plus what is genuinely Claude-only (skills, `.claude/rules/`).
+
+**The risk to design against**, and the reason it is a lot rather than an afternoon: `AGENTS.md` and
+`CONTRIBUTING.md` become a new pair that can drift — the failure `CHORE-REPOSITORY-CONVENTIONS`
+exists to end. It only holds if `AGENTS.md` stays thin: every rule in it either prevents damage
+before any file is read, or is a pointer.
+
+**Do first**: `CHORE-REPOSITORY-CONVENTIONS`. It establishes `CONTRIBUTING.md` as the single source,
+which is what this entry's `AGENTS.md` would point at. Taken in the other order, there is nothing to
+point to.
+
+## The commands could live in one place instead of two
+
+`CHORE-REPOSITORY-CONVENTIONS` accepted that three command lines — the build, the suite, the lint
+gate — appear in both `CLAUDE.md` and `CONTRIBUTING.md`, on the grounds that a command is an
+identifier and drifting copies fail loudly rather than silently. That reasoning holds, and it is
+still two copies.
+
+The version with none is ordinary practice: the commands are defined once in a task runner and both
+files say `make test`. The command string then exists exactly once, and what the two guidance files
+repeat is a *name*, which cannot be wrong without the runner itself being wrong.
+
+**Why it was not done in that lot**: it changes the build, which that lot's scope excluded, and it
+needs `make` or `just` available on a Windows-first project. `build-tools/lint.sh` is a precedent
+that a shell entry point is acceptable here — CI already calls it — so a `Taskfile` or a small set of
+scripts may fit better than `make`.
+
+**Worth doing only if a third caller appears.** With two files it is a wash; the runner is another
+thing to install and keep working. A CI workflow that duplicated a command a third time, or a
+contributor asking what the commands are, is the signal that it has stopped being a wash.
+
+## ADRs
+
+Whether Architecture Decision Records would serve this repository better than stating lasting
+decisions in `CONTEXT.md` and `CONTRIBUTING.md`. The current choice keeps one current statement of
+each rule and leaves its history to the tracker and the pull requests; an ADR log keeps every past
+decision as its own file. Worth revisiting if the guidance files start to fill with reasoning.
+
+## The tracker on GitHub issues
+
+The in-repository tracker is the starting point. Moving to GitHub issues — work and discussion
+outside the repository, history reached through commit, pull request and issue — remains an option
+once `.tracker/` has been used for a while, with the development records migrated as closed issues.
+
+## *Battery* beside *SAM site*
+
+Eleven lines in `skynet-iads-source/` and twenty-eight in the published documentation still say
+*battery* (*batterie* in French) where the log lines, the classes, `CONTEXT.md` and the skills say
+*SAM site*. More are in the tests and their tooling, under `test/`.
+
+## Lua 5.1 fetched like the lint tools
+
+`build-tools/lint.sh` needs nothing installed: it downloads pinned release binaries of luacheck and
+stylua into `.tools/`, checks each against a SHA-256, and falls back to `PATH` where no binary is
+pinned. The standalone suite still asks a Windows contributor to install *Lua for Windows*, and
+`CLAUDE.md` carries its default path as a fallback.
+
+**Shape if taken**: a `build-tools/test.sh` built the same way. On Windows it fetches a pinned Lua
+5.1.5 into `.tools/lua-5.1.5/`; elsewhere it takes `lua5.1` from `PATH`, as CI already installs it
+with apt. It passes its arguments on to `test/lua/run.lua`. That removes the install step from
+`CONTRIBUTING.md` and the hard-coded path from `CLAUDE.md`.
+
+**What makes it harder than the lint tools:**
+
+- lua.org publishes source only. The usual Windows build is *LuaBinaries* on SourceForge
+  (`lua-5.1.5_Win64_bin.zip`: `lua5.1.exe` and `lua5.1.dll`), whose download URLs redirect and have
+  been less stable than GitHub release assets. The hash check turns a bad download into a failure
+  rather than a wrong interpreter. The asset name and hash are still to be checked.
+- Lua for Windows ships `luacov`; LuaBinaries does not. `luacov` is pure Lua, so a pinned source
+  tarball in `.tools/`, reached through `LUA_PATH`, would serve `SKYNET_TEST_COVERAGE=1`. The plain
+  suite does not need it.
+- On Linux a pin is optional: the lua.org 5.1.5 tarball builds in seconds with `make posix`, which
+  needs only a C compiler.
+
+`run.lua` starts each suite with `arg[-1]`, the interpreter it was launched with, so a fetched
+interpreter is used for every child process with no change to the runner.
+
+## `can_engage_harm` says "wake for it" and "stay live against it"
+
+The flag decides two things: whether a HARM wakes the site, and whether HARM defence lets the site
+stay live to engage it (`shallIgnoreHARMShutdown`, which also counts launchers and missiles left
+against the number of HARMs inbound). The second assumes the site shoots each HARM down. In DCS
+2.9.30, two flagged types do not:
+
+- **Patriot** fires one missile per engagement, at the first of several munitions, and lets the
+  rest through — with or without Skynet. Against four HARMs it stays live on the strength of its
+  launchers and missiles, and fires once.
+- **IRIS-T SLM** engages HARMs, bombs and missiles, but rarely stops them: 26 missiles fired for 2
+  kills in one series; every Maverick and bomb it shot at still hit in another.
+
+**Open for discussion**: a separate capability for "stays live under HARM attack", or a
+per-type cap on how many HARMs a site is trusted to stop.
+
+## Should an air-to-air missile wake a SAM site?
+
+The work on weapon contacts gives each SAM site the classes of munition it can engage, and a weapon
+contact wakes only a site that can engage its class. Air-to-air missiles are excluded from those
+classes: an AMRAAM crossing a Pantsir's envelope at another aircraft wakes nothing.
+
+The reasoning is practical, not measured: an air-to-air missile is usually too fast, too high, or in
+flight too briefly for a SAM site to engage it. Whether DCS lets a Pantsir, a Tor M2 or a C-RAM
+shoot one down has not been flown.
+
+**Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
+engage them, the change is one more class in that system's entry in the supported-types table.
+
+## In-sim suite: three small gaps
+
+Left by `test-port-unit-tests-to-insim`; none has failed a run.
+
+- **Cleanup removes groups, not what they left.** A wreck stays in its zone, and a weapon still in
+  flight when a scenario ends can land on the next scenario's copy in the same zone. Only
+  `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
+  `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
+  would say.
+- **Two scenarios can wait past their timeout when everything fails.** `harm-point-defence` waits up
+  to 450 s in a 420 s timeout, `network-loses-infrastructure` about 635 s in 600 s. The driver then
+  stops the run and reports "timed out", and the watch's sequences that say what went wrong are lost.
+  Shape: keep a run's waits 20–30 s under its timeout, as the other scenarios do.
+- **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
+  harmless, stale against the rename to `insim-ca-main`.
+
+## In-sim driver: two runs at once
+
+Nothing stops two `run-insim.py` running against the same mission. Both send their commands, the
+mission runs them side by side, and two runs of one scenario replace each other's fixtures, since a
+copy is added under the same name each run: two IADS, two attackers, results that mean nothing, and
+no warning. Seen when a driver left from an earlier session restarted beside a new one.
+
+**Shape if taken**: the driver takes a lock in hotload's root (`user-outbox/`) for the length of a
+run, and refuses to start while another holds it; a stale lock is one whose heartbeat stopped.
+
+## Two jammer tests fail one run in a hundred
+
+`testAJammedSiteIsReleasedTenSecondsAfterTheJammerStops` and
+`testTheReleaseHappensOnceNotOnEveryScan`, in `test/lua/test_skynet_iads_abstract_radar_element.lua`,
+call `jam(100)` as "a probability no roll can beat". `jam()` rolls `math.random(1, 100)` and jams
+only when the probability is strictly greater than the roll, so a roll of 100 sets the site
+`WEAPON_FREE` and the test fails. Each run of the suite has about a 2% chance of going red, the
+release workflow's included; rerunning the failed jobs is safe.
+
+**Shape if taken**: the two tests fix the roll by stubbing `math.random`. Test-only: the shipped
+script does not change.
+
+Behind it, a question for whoever knows how the jammer's probabilities are calibrated: with `>`, a
+probability *p* jams on (*p* − 1)% of rolls, so not even 100 is certain. `>=` would make *p* mean
+*p*%, and would change what every mission with a jammer sees.
+
+## Release pull requests have no convention
+
+*Releasing* in `CONTRIBUTING.md` names the branch, `release/<x.y.z>`, and the general rule covers the
+description, but nothing fixes a release pull request's title or what its description carries.
+
+**Shape if taken**, two lines in steps 1 and 2 of *Releasing*:
+
+| Pull request | Title | Description |
+|---|---|---|
+| Prepare, `release/<x.y.z>` → `develop` | `chore(release): prepare <x.y.z>` | points at the `[x.y.z]` section of `CHANGELOG.md` as the release notes, rather than copying them; says `release.py` packaged cleanly; gives the in-sim result, or "not flown" |
+| Promote, `develop` → `master` | `chore(release): promote <x.y.z>` | links the prepare pull request; says what `develop` received since — nothing, or prepare again |
+
+## Dropped
+
+### A comment saying `setupRangeData` reads a radar's range once
+
+Search and tracking radars read `getSensors()` once, when the element is built; launchers re-read
+their ammunition, and their range, on every ammo query. A comment was proposed to say so. Dropped:
+the call sites show it at once, and the failure it would have warned about — DCS answering badly at
+spawn — has never been observed. If a log ever shows it, that is a bug report, not a comment.

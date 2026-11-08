@@ -7,9 +7,9 @@
 --- fixtures are code-defined and every expected value is recomputed from them
 --- (arithmetic shown in comments).
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.load("skynet-iads-utils")
 loader.load("skynet-iads-abstract-dcs-object-wrapper")
 loader.load("skynet-iads-contact")
@@ -64,11 +64,10 @@ function TestSkynetIADSContact:test_getTypeName_is_harm_when_identified()
 end
 
 -- ---- getCategory -----------------------------------------------------
--- docs/evolutions.md "No isExist() / nil guard before Object.getCategory in the
--- contact loop": skynet-iads.lua called Object.getCategory(contact:getDCSRepresentation())
--- bare at the evaluateContacts() call site, unlike this same lookup done for
--- getTypeName() above, which guards it. getCategory() gives contacts the same
--- guarded lookup so callers stop duplicating it unguarded.
+-- skynet-iads.lua called Object.getCategory(contact:getDCSRepresentation()) bare at
+-- the evaluateContacts() call site, unlike this same lookup done for getTypeName()
+-- above, which guards it. getCategory() gives contacts the same guarded lookup so
+-- callers stop duplicating it unguarded.
 
 function TestSkynetIADSContact:test_getCategory_is_unit()
 	luaunit.assertEquals(self.contact:getCategory(), Object.Category.UNIT)
@@ -133,15 +132,6 @@ function TestSkynetIADSContact:test_getNumberOfTimesHitByRadar()
 	luaunit.assertEquals(self.contact:getNumberOfTimesHitByRadar(), 1)
 end
 
-function TestSkynetIADSContact:test_refresh_calls_updateSimpleAltitudeProfile()
-	local called = false
-	function self.contact:updateSimpleAltitudeProfile()
-		called = true
-	end
-	self.contact:refresh()
-	luaunit.assertEquals(called, true)
-end
-
 function TestSkynetIADSContact:test_refresh_computes_ground_speed()
 	self.contact:refresh() -- baseline at clock 1000, position (0,_,0)
 	-- move 185 200 m over 3600 s: 185200 m = 100 NM; 3600 s = 1 h => 100 kt
@@ -155,42 +145,6 @@ function TestSkynetIADSContact:test_getAge()
 	-- clock 1000, lastTimeSeen forced to 0 => age 1000
 	self.contact.lastTimeSeen = dcsStub.now() - 1000
 	luaunit.assertEquals(self.contact:getAge(), 1000)
-end
-
--- ---- altitude profile (ported near-verbatim) --------------------
-
-function TestSkynetIADSContact:test_updateSimpleAltitudeProfile_descend_then_climb()
-	local mock = {}
-	local y = 100
-	function mock:getPosition()
-		return { p = { y = y } }
-	end
-	function self.contact:getDCSRepresentation()
-		return mock
-	end
-
-	self.contact.position.p.y = 200 -- was higher, now 100 => DESCEND
-	self.contact:updateSimpleAltitudeProfile()
-	local profile = self.contact:getSimpleAltitudeProfile()
-	luaunit.assertEquals(profile[1], SkynetIADSContact.DESCEND)
-	luaunit.assertEquals(#profile, 1)
-
-	self.contact.position.p.y = 200
-	y = 200 -- no change => no new entry
-	self.contact:updateSimpleAltitudeProfile()
-	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 1)
-
-	self.contact.position.p.y = 100
-	y = 200 -- was lower, now 200 => CLIMB
-	self.contact:updateSimpleAltitudeProfile()
-	profile = self.contact:getSimpleAltitudeProfile()
-	luaunit.assertEquals(profile[2], SkynetIADSContact.CLIMB)
-	luaunit.assertEquals(#profile, 2)
-
-	self.contact.position.p.y = 100
-	y = 200 -- still climbing (100 < 200), but previousPath == CLIMB => not appended
-	self.contact:updateSimpleAltitudeProfile()
-	luaunit.assertEquals(#self.contact:getSimpleAltitudeProfile(), 2)
 end
 
 -- ---- HARM state (ported verbatim) ------------------------------
@@ -252,6 +206,117 @@ function TestSkynetIADSContact:testADeadContactAnswersNeutrallyInsteadOfThrowing
 	unit:__destroy()
 	luaunit.assertEquals(contact:getHeightInFeetMSL(), 0)
 	luaunit.assertEquals(contact:getDesc(), {})
+end
+
+-- ---- getTargetClass ----------------------------------------------------
+--
+-- What a contact is, for the wake: read once from the DCS object's category and description.
+
+local function classOf(category, desc, exists)
+	local unit = dcsStub.makeUnit({ name = "classed", category = category, desc = desc, exists = exists })
+	return SkynetIADSContact:create({ object = unit }):getTargetClass()
+end
+
+local function weaponClass(desc)
+	return classOf(Object.Category.WEAPON, desc)
+end
+
+function TestSkynetIADSContact:testAnAirplaneOrHelicopterIsAircraft()
+	luaunit.assertEquals(
+		classOf(Object.Category.UNIT, { category = Unit.Category.AIRPLANE }),
+		SkynetIADSContact.CLASS_AIRCRAFT
+	)
+	luaunit.assertEquals(
+		classOf(Object.Category.UNIT, { category = Unit.Category.HELICOPTER }),
+		SkynetIADSContact.CLASS_AIRCRAFT
+	)
+end
+
+function TestSkynetIADSContact:testAGroundUnitShipOrStructureHasNoClass()
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.GROUND_UNIT }))
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.SHIP }))
+	luaunit.assertNil(classOf(Object.Category.UNIT, { category = Unit.Category.STRUCTURE }))
+end
+
+function TestSkynetIADSContact:testABombIsBomb()
+	luaunit.assertEquals(weaponClass({ category = Weapon.Category.BOMB }), SkynetIADSContact.CLASS_BOMB)
+end
+
+function TestSkynetIADSContact:testAPassiveRadarMissileIsArm()
+	luaunit.assertEquals(
+		weaponClass({
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.RADAR_PASSIVE,
+		}),
+		SkynetIADSContact.CLASS_ARM
+	)
+end
+
+function TestSkynetIADSContact:testAnAirToAirOrSurfaceToAirMissileHasNoClass()
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.AAM,
+		guidance = Weapon.GuidanceType.RADAR_ACTIVE,
+	}))
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.SAM,
+		guidance = Weapon.GuidanceType.RADAR_SEMI_ACTIVE,
+	}))
+	-- a passive-radar seeker does not make an air-to-air missile an ARM
+	luaunit.assertNil(weaponClass({
+		category = Weapon.Category.MISSILE,
+		missileCategory = Weapon.MissileCategory.AAM,
+		guidance = Weapon.GuidanceType.RADAR_PASSIVE,
+	}))
+end
+
+function TestSkynetIADSContact:testAnyOtherMissileIsMissile()
+	local missiles = {
+		-- a laser Maverick
+		{
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.LASER,
+		},
+		{ category = Weapon.Category.MISSILE, missileCategory = Weapon.MissileCategory.CRUISE },
+		{ category = Weapon.Category.MISSILE, missileCategory = Weapon.MissileCategory.ANTI_SHIP },
+		-- DCS describes the JSOW as a missile
+		{
+			category = Weapon.Category.MISSILE,
+			missileCategory = Weapon.MissileCategory.OTHER,
+			guidance = Weapon.GuidanceType.INS,
+		},
+		-- no missileCategory to read
+		{ category = Weapon.Category.MISSILE },
+	}
+	for i = 1, #missiles do
+		luaunit.assertEquals(weaponClass(missiles[i]), SkynetIADSContact.CLASS_MISSILE, "missile " .. i)
+	end
+end
+
+function TestSkynetIADSContact:testAShellRocketOrTorpedoHasNoClass()
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.SHELL }))
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.ROCKET }))
+	luaunit.assertNil(weaponClass({ category = Weapon.Category.TORPEDO }))
+end
+
+function TestSkynetIADSContact:testAWeaponGoneBeforeTheContactIsBuiltHasNoClass()
+	luaunit.assertNil(classOf(Object.Category.WEAPON, { category = Weapon.Category.BOMB }, false))
+end
+
+function TestSkynetIADSContact:testTheClassIsReadOnceWhenTheContactIsBuilt()
+	local unit = dcsStub.makeUnit({
+		name = "bomb",
+		category = Object.Category.WEAPON,
+		desc = { category = Weapon.Category.BOMB },
+	})
+	local contact = SkynetIADSContact:create({ object = unit })
+	function unit:getDesc()
+		return { category = Unit.Category.AIRPLANE }
+	end
+	luaunit.assertEquals(contact:getTargetClass(), SkynetIADSContact.CLASS_BOMB)
 end
 
 os.exit(luaunit.LuaUnit.run())

@@ -2,12 +2,15 @@ do
 	SkynetIADSContact = {}
 	SkynetIADSContact = inheritsFrom(SkynetIADSAbstractDCSObjectWrapper)
 
-	SkynetIADSContact.CLIMB = "CLIMB"
-	SkynetIADSContact.DESCEND = "DESCEND"
-
 	SkynetIADSContact.HARM = "HARM"
 	SkynetIADSContact.NOT_HARM = "NOT_HARM"
 	SkynetIADSContact.HARM_UNKNOWN = "HARM_UNKNOWN"
+
+	-- what a contact is, for deciding whether a site wakes for it; see getTargetClass()
+	SkynetIADSContact.CLASS_AIRCRAFT = "aircraft"
+	SkynetIADSContact.CLASS_ARM = "arm"
+	SkynetIADSContact.CLASS_MISSILE = "missile"
+	SkynetIADSContact.CLASS_BOMB = "bomb"
 
 	function SkynetIADSContact:create(dcsRadarTarget, abstractRadarElementDetected)
 		local instance = self:superClass():create(dcsRadarTarget.object)
@@ -22,8 +25,40 @@ do
 		instance.numOfTimesRefreshed = 0
 		instance.speed = 0
 		instance.harmState = SkynetIADSContact.HARM_UNKNOWN
-		instance.simpleAltitudeProfile = {}
+		instance.targetClass = instance:readTargetClass()
 		return instance
+	end
+
+	-- the class depends only on the DCS object's type, so it is read once
+	function SkynetIADSContact:readTargetClass()
+		local objectCategory = self:getCategory()
+		local desc = self:getDesc()
+		if objectCategory == Object.Category.UNIT then
+			if desc.category == Unit.Category.AIRPLANE or desc.category == Unit.Category.HELICOPTER then
+				return SkynetIADSContact.CLASS_AIRCRAFT
+			end
+		elseif objectCategory == Object.Category.WEAPON then
+			if desc.category == Weapon.Category.BOMB then
+				return SkynetIADSContact.CLASS_BOMB
+			elseif desc.category == Weapon.Category.MISSILE then
+				if
+					desc.missileCategory == Weapon.MissileCategory.AAM
+					or desc.missileCategory == Weapon.MissileCategory.SAM
+				then
+					return nil
+				elseif desc.guidance == Weapon.GuidanceType.RADAR_PASSIVE then
+					return SkynetIADSContact.CLASS_ARM
+				end
+				return SkynetIADSContact.CLASS_MISSILE
+			end
+		end
+		return nil
+	end
+
+	--- One of the CLASS_ constants, or nil for a contact no site wakes for: a ground unit, a ship, a
+	-- structure, a shell, a rocket, a torpedo, an air-to-air or a surface-to-air missile.
+	function SkynetIADSContact:getTargetClass()
+		return self.targetClass
 	end
 
 	function SkynetIADSContact:setHARMState(state)
@@ -132,30 +167,10 @@ do
 				)
 				local hours = timeDelta / 3600
 				self.speed = (distance / hours)
-				self:updateSimpleAltitudeProfile()
 				self.position = self:getDCSRepresentation():getPosition()
 			end
 		end
 		self.lastTimeSeen = timer.getAbsTime()
-	end
-
-	function SkynetIADSContact:updateSimpleAltitudeProfile()
-		local currentAltitude = self:getDCSRepresentation():getPosition().p.y
-
-		local previousPath = ""
-		if #self.simpleAltitudeProfile > 0 then
-			previousPath = self.simpleAltitudeProfile[#self.simpleAltitudeProfile]
-		end
-
-		if self.position.p.y > currentAltitude and previousPath ~= SkynetIADSContact.DESCEND then
-			table.insert(self.simpleAltitudeProfile, SkynetIADSContact.DESCEND)
-		elseif self.position.p.y < currentAltitude and previousPath ~= SkynetIADSContact.CLIMB then
-			table.insert(self.simpleAltitudeProfile, SkynetIADSContact.CLIMB)
-		end
-	end
-
-	function SkynetIADSContact:getSimpleAltitudeProfile()
-		return self.simpleAltitudeProfile
 	end
 
 	function SkynetIADSContact:getAge()

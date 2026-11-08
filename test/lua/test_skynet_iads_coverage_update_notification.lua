@@ -12,11 +12,11 @@
 --- rather than on a call count. The call count is the second test, and it is what proves the N^2
 --- noise is gone rather than merely moved.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 local RED = 1 -- coalition.side.RED
 local BLUE = 2 -- coalition.side.BLUE

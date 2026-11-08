@@ -26,6 +26,44 @@ extra:
   version:
     provider: mike
 
+# mkdocs resolves anchors with the real slugifier, in the language being built, following the twin
+# a translated link lands on. Left at its default (`info`) that check is silent; at `warn` it fails
+# a `--strict` build. It is the belt to `build-tools/docs-check.py`'s braces — and the more
+# trustworthy of the two on anchors, since the gate only re-implements the slug rules.
+validation:
+  links:
+    anchors: warn
+
+# The site is bilingual, French by default, on the VEAF-Mission-Creation-Tools model: the
+# unsuffixed `page.md` holds the French text and `page.en.md` its English twin. French serves at
+# the site root and English under `/en/`, with Material's language selector in the header.
+#
+# A page must never ship without its twin — the reader of the missing language silently gets the
+# other one. `build-tools/docs-check.py` is what enforces that, along with the links and anchors
+# that cross between the two.
+plugins:
+  - search:
+      lang:
+        - fr
+        - en
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: fr
+          default: true
+          name: Français
+          build: true
+          nav_translations:
+            Home: Accueil
+            Setting up an IADS: Mettre en place un IADS
+            Tactics: Tactique
+            API reference: Référence de l'API
+        - locale: en
+          name: English
+          build: true
+
+# The paths below stay unsuffixed on purpose: the i18n plugin resolves each entry to the twin of
+# the language being built.
 nav:
   - Home: index.md
   - Setting up an IADS: setting-up.md
@@ -34,5 +72,15 @@ nav:
   - FAQ: faq.md
 
 markdown_extensions:
+  # `case: lower` keeps accents instead of folding them to ASCII, so a French heading gets a French
+  # anchor rather than a mangled one. Same slugifier VMCT uses, for the same reason.
+  - toc:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+      permalink: true
+  # Lets a heading declare its own id — `## Point defence {#point-defence}` — so a deep link
+  # survives both a reword and a translation: the French and English twins carry the same anchor.
+  - attr_list
   - pymdownx.highlight
   - pymdownx.superfences

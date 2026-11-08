@@ -11,11 +11,11 @@
 --- three pass through the same guard in goLive(), and all three are what a player notices.
 --- The state assertions come after, as the narrow unit check.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 local RED = 1 -- coalition.side.RED
 local BLUE = 2 -- coalition.side.BLUE
@@ -102,7 +102,7 @@ function TestSkynetIADSHarmSilenceCleanup:testCleanedUpSiteStillWakesOnTheLastLi
 	luaunit.assertEquals(samSite:isActive(), true)
 end
 
---the public door, the one VEAF's spotter network calls
+--the public door, the one external code calls
 function TestSkynetIADSHarmSilenceCleanup:testCleanedUpSiteStillAnswersReportContact()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
 
+# build-tools/lint.sh fetches the pinned tools itself, so CI runs exactly what a contributor runs.
 jobs:
   luacheck:
     name: luacheck
@@ -15,14 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install luacheck
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
-          sudo luarocks install luacheck
-
       - name: Run luacheck
-        run: luacheck --codes skynet-iads-source test/lua
+        run: bash build-tools/lint.sh luacheck
 
   stylua:
     name: stylua --check
@@ -30,12 +25,5 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install stylua
-        run: |
-          curl -sSL -o stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/download/v2.4.0/stylua-linux-x86_64.zip
-          unzip -o stylua.zip
-          chmod +x stylua
-          sudo mv stylua /usr/local/bin/stylua
-
       - name: Check formatting
-        run: stylua --check skynet-iads-source test/lua
+        run: bash build-tools/lint.sh stylua

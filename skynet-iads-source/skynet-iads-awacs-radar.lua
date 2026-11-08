@@ -21,6 +21,9 @@ do
 	-- AWACs will not scan for HARMS
 	function SkynetIADSAWACSRadar:scanForHarms() end
 
+	-- a ground option: AWACS are aircraft and ships
+	function SkynetIADSAWACSRadar:turnOffDCSEvasionOfARM() end
+
 	-- The movement check used to live here, and being a method of this class is exactly what made it
 	-- apply to AWACS and to nothing else that moves. It is now
 	-- SkynetIADSAbstractRadarElement:hasMovedSinceLastCoverageUpdate(); this name is kept because it

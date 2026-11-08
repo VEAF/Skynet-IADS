@@ -1,0 +1,3 @@
+local ctx = ...
+
+ctx.invalid("invalid on purpose")

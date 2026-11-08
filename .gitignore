@@ -2,14 +2,11 @@
 Thumbs.db
 /demo-missions/spikes/
 /.superpowers/
+/.drafts/
 
 # Editors
 /.vscode/
 /.idea/
-
-# Build output — rebuilt by CI, never hand-edited.
-/tmp/
-/demo-missions/skynet-iads-compiled.lua
 
 # MkDocs build output — published to the gh-pages branch by CI, not committed here.
 /site/
@@ -18,9 +15,11 @@ Thumbs.db
 /luacov.stats.out
 /luacov.report.out
 
-# Playable missions, assembled by build-tools/miz-suite.py build. Output, like the deliverable:
-# the archives in unit-tests/ hold placeholders, and the real scripts are put in on demand.
+# Build output: the deliverable, built by build-tools/build-compiled-script.py.
 /build/
+
+# Lint tools, fetched at pinned versions by build-tools/lint.sh.
+/.tools/
 
 # Python bytecode, from build-tools/*.py
 __pycache__/
@@ -28,3 +27,11 @@ __pycache__/
 
 # Claude Code: per-machine overrides stay local
 .claude/settings.local.json
+
+# In-sim suite: hotload's mailbox, the working copies of the missions.
+/test/insim/dcs-hotload/user-inbox/*
+!/test/insim/dcs-hotload/user-inbox/.gitkeep
+/test/insim/dcs-hotload/user-outbox/*
+!/test/insim/dcs-hotload/user-outbox/.gitkeep
+/test/insim/miz/*
+!/test/insim/miz/*.template.miz

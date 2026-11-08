@@ -7,11 +7,11 @@
 --- scenario is the one that was reported — an EW radar covers the site, sees nothing,
 --- and the aircraft is right on top of the battery.
 local base = debug.getinfo(1, "S").source:match("^@(.+)[\\/]") or "."
-luaunit = dofile(base .. "/luaunit.lua")
-dofile(base .. "/dcs-stub.lua")
-local loader = dofile(base .. "/skynet-loader.lua")
+luaunit = dofile(base .. "/../common/luaunit.lua")
+dofile(base .. "/../common/dcs-stub.lua")
+local loader = dofile(base .. "/../common/skynet-loader.lua")
 loader.loadAll()
-local F = dofile(base .. "/dcs-fixtures.lua")
+local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 local RED = 1 -- coalition.side.RED
 local BLUE = 2 -- coalition.side.BLUE
@@ -196,6 +196,24 @@ function TestSkynetIADSLastLineOfDefence:testSiteStaysLitForThePersistenceThenGo
 	luaunit.assertEquals(samSite:isActive(), false)
 end
 
+--the same, for a site whose autonomous behaviour is AUTONOMOUS_STATE_DARK: it is not autonomous,
+--so that setting does not apply
+function TestSkynetIADSLastLineOfDefence:testNonAutonomousSiteWithDarkBehaviourGoesDarkAfterThePersistence()
+	local iads, samSite = self:buildNetwork()
+	self.iads = iads
+	samSite:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
+	luaunit.assertEquals(samSite:getAutonomousState(), false)
+	local intruder = F.aircraftGroup("intruder", { pos = { x = 8000, y = 500, z = 0 }, coalition = BLUE })
+
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), true)
+
+	intruder:__setPos({ x = 200000, y = 500, z = 0 })
+	dcsStub.setClock(46)
+	iads:evaluateContacts()
+	luaunit.assertEquals(samSite:isActive(), false)
+end
+
 function TestSkynetIADSLastLineOfDefence:testPersistenceIsSettable()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads
@@ -271,8 +289,8 @@ function TestSkynetIADSLastLineOfDefence:testHostileAirUnitsAreEnumeratedOnceFor
 	iads:activate()
 
 	local enumerations = 0
-	local realGetHostileAirUnits = SkynetIADS.getHostileAirUnits
-	function iads:getHostileAirUnits()
+	local realGetHostileAirUnits = SkynetIADSLastLineOfDefence.getHostileAirUnits
+	function iads.lastLineOfDefence:getHostileAirUnits()
 		enumerations = enumerations + 1
 		return realGetHostileAirUnits(self)
 	end
@@ -340,7 +358,7 @@ function TestSkynetIADSLastLineOfDefence:testAutonomousDCSAISiteIsLeftAlone()
 	luaunit.assertEquals(samSite:isActive(), true)
 end
 
---the public door itself, called the way VEAF's spotter network will call it
+--the public door itself, called the way external code calls it
 function TestSkynetIADSLastLineOfDefence:testReportContactIsAPublicEntryPoint()
 	local iads, samSite = self:buildNetwork()
 	self.iads = iads

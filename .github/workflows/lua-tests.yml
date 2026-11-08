@@ -4,6 +4,8 @@ on:
   push:
     branches: [master, develop]
   pull_request:
+  # The release workflow runs these before it publishes.
+  workflow_call:
 
 permissions:
   contents: read
@@ -21,28 +23,15 @@ jobs:
           sudo apt-get install -y lua5.1
 
       - name: Run the standalone suite
-        run: lua5.1 test/lua/run.lua
+        run: lua5.1 test/common/run.lua
 
-      # test/lua/dcs-figures.lua is generated from a pinned commit of the DCS database dump. This
-      # regenerates it and fails on any difference, so the committed file cannot claim to come from
-      # a pin it no longer matches. It is the pin that moves, in a pull request from the weekly
-      # dcs-data-drift workflow, never the file on its own.
-      - name: Check the DCS figures against their pinned source
-        run: python3 build-tools/dcs-figures.py check
-
-  # Six archives: the two in-sim suites, and the four missions under demo-missions/. CI cannot run
-  # them -- they need the simulator -- but it can check that they are not broken, which until now
-  # nothing did. A script is wired into a .miz in four places (see build-tools/miz-suite.py); a hand
-  # edit that misses one leaves a mission that loads a resource key naming nothing, and the only way
-  # to find out was to open DCS.
-  #
-  # It also checks that git is not holding a copy of any script. The archives carry placeholders and
-  # `build` puts the real files in: the in-sim ones held Skynet 3.3.0 from December 2023 to
-  # 2026-09-20, so three years of in-sim runs measured code that had stopped being shipped; three of
-  # the demos held 3.2 from the same December, and those are what a newcomer downloads. Nothing said
-  # so in either case.
-  mission-archives:
-    name: Mission archives
+  # The demos are committed whole, and a release refreshes their Skynet script. On every
+  # push and pull request, each demo's script must match its line in skynet-script.sha256: a
+  # script changed without its hash goes red here. Towards master the script must
+  # also be a build of the sources; not before, since between releases a demo carries the last
+  # release, which develop cannot rebuild.
+  demo-missions:
+    name: Demo missions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -52,44 +41,18 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y lua5.1
 
-      # miz-suite.py reads a `mission` written by either DCS or VEAF's mission editor, which
-      # serialise the same Lua table differently. These cover both shapes: a pattern that matches
-      # the wrong block rewrites the wrong trigger and writes the archive without complaining.
-      - name: Test the archive tool
-        run: python3 -m unittest discover -s test/python
+      # The suite also covers build-tools/docs-check.py, whose own job is in docs-check.yml — the
+      # gate spends its life reporting zero defects, so what proves it still checks anything is a
+      # test per defect kind.
+      - name: Test the Python tooling
+        run: python3 test/common/run.py
 
-      - name: Check the wiring, and that git holds no copies
-        run: python3 build-tools/miz-suite.py check
+      - name: Check the demos' Skynet script against its hashes
+        run: python3 demo-missions/update-skynet-script.py check
 
-      # The mission DCS opens is assembled, not committed, so this is the step that proves it can
-      # be. It needs the deliverable, which is generated too.
-      - name: Build the deliverable, then assemble the missions
-        run: |
-          pwsh -File build-tools/build-compiled-script.ps1
-          python3 build-tools/miz-suite.py build
-
-      # Syntax only: these scripts call into DCS and MOOSE, so they cannot be executed here. What
-      # this catches is a truncated or corrupted file. Run against the ASSEMBLED missions, because
-      # those are what DCS loads -- parsing the placeholders would prove nothing.
-      #
-      # `extract` does the walking, rather than a copy of its rules inlined here: it knows which
-      # members are Lua without carrying the extension (`mission`, `mapResource` and the rest), and
-      # a second copy of that list would stop matching the day someone adds to the first.
-      - name: Parse every Lua file in the assembled missions
-        run: |
-          status=0
-          for m in build/missions/*.miz; do
-            python3 build-tools/miz-suite.py extract "$RUNNER_TEMP/built" --miz "$m"
-          done
-          for f in "$RUNNER_TEMP"/built/*/*.lua; do
-            if lua5.1 -e "assert(loadfile('$f'))" 2>"$RUNNER_TEMP/err"; then
-              echo "ok    $(basename "$f")"
-            else
-              echo "FAIL  $(basename "$f"): $(cat "$RUNNER_TEMP/err")"
-              status=1
-            fi
-          done
-          exit $status
+      - name: Check the demos' Skynet script against a build
+        if: github.base_ref == 'master' || github.ref == 'refs/heads/master'
+        run: python3 demo-missions/update-skynet-script.py check --against-build
 
   test-coverage:
     name: Test coverage
@@ -114,7 +77,7 @@ jobs:
       - name: Run the suite under luacov
         env:
           SKYNET_TEST_COVERAGE: 1
-        run: lua5.1 test/lua/run.lua
+        run: lua5.1 test/common/run.lua test/lua
 
       # pipefail matters: without it the pipeline reports tee's status, so a reporter that exits
       # non-zero — below the floor (1), or no measurement at all (2) — would leave the step green.
@@ -125,7 +88,7 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          lua5.1 build-tools/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
+          lua5.1 test/common/report-test-coverage.lua 2>&1 | tee "$RUNNER_TEMP/test-coverage.txt" || status=$?
           {
             echo '### Test coverage'
             echo ''

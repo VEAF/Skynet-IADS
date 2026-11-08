@@ -8,22 +8,172 @@ All notable changes to this project are documented here. The format follows
 the `[Unreleased]` section. Appending rather than prepending: two pull requests landing the same day
 conflict far less that way.
 
-This matters more here than in most projects. The consumer of this repository is another repository
-— [VEAF-Mission-Creation-Tools](https://github.com/VEAF/VEAF-Mission-Creation-Tools) vendors the
-built artifact — and until now nothing told it what had changed between two copies.
+This matters more here than in most projects. What this repository ships is a script that other
+repositories vendor into the missions they build, and until now nothing told them what had changed
+between two copies.
 
 ## A note on version numbers
 
-The inherited tags stop at `v2.0.1`, from walder's lineage, while the compiled script has long
-identified itself as `3.4.0RP-VEAF`. Settled on 2026-09-19: this project continues the **artifact's**
-lineage, since that is the number anyone reads in a log. The first release under joint maintenance
-is **3.5.0**, tagged `v3.5.0`, and the `RP` suffix is dropped — not because the Regroupement has
-stepped back, but because the number now belongs to both communities and has no reason to carry
-either name.
-
-Until that release is cut, the build date in the artifact's first line remains the real identifier.
+3.5.0 is the first version released from this repository.
 
 ## [Unreleased]
+
+## [3.6.0] — 2026-11-08
+
+### Highlights
+
+The network now wakes only for threats it can engage, and HARM defence is harder to fool. Expect
+existing missions to behave differently under bombs, missiles and HARMs; the changes below say
+how. After upgrading, check any site set to `AUTONOMOUS_STATE_DARK` and any mission relying on
+DCS's *Evasion of ARM*, which Skynet now turns off.
+
+For contributors: `python test/insim/run-insim.py` runs an in-sim test suite in DCS against the
+current build — see `test/README.md`.
+
+### Fixed
+
+- The documentation site never published the version it had just released. `docs.yml` had `master`
+  deploy `latest` and a tag deploy `X.Y.Z` plus the `latest` alias — but `mike deploy latest` makes
+  `latest` a **version**, and a name cannot be a version and an alias at once. The `master` push and
+  the `v3.5.0` tag ran thirty seconds apart, `master` won, and the tag's run died on *alias 'latest'
+  already specified as a version*: `veaf.github.io/Skynet-IADS/latest/` answered 200 with the right
+  content while `/3.5.0/` was a 404, so nothing looked broken and the version selector could never
+  offer the release. `master` now publishes nothing of its own — a tag is always on `master`, so the
+  two steps were publishing the same content, and the `master` step only had a reason to exist while
+  no release did. Deliberate consequence: between two releases, `master` is not on the site.
+- The `README.md` link to the setup page was a 404, and had always been one: `mike` publishes
+  every page under its version, so `/Skynet-IADS/setting-up/` has never resolved. The README no
+  longer names a version at all — it points at `https://veaf.github.io/Skynet-IADS/`, which
+  redirects to whichever version is the default. A link carrying `/latest/` would have been the
+  same trap one release later: `latest` only moves on a tag, so between this merge and the next
+  release it still serves the English-only 3.5.0 site, and `/latest/en/` does not exist yet.
+- The API reference documented a contact's ground speed and then showed `getMagneticHeading()` in
+  the code block beside it — the paragraph above copied and its call left in place. The method is
+  `getGroundSpeedInKnots(decimals)`, `decimals` defaulting to 2. Found by the review of this lot,
+  which had faithfully translated the mistake into a second language.
+- **A SAM site set to `AUTONOMOUS_STATE_DARK` now goes dark once its target is gone.** The autonomous
+  behaviour only applies once a site is autonomous, but the end of each cycle read it on every SAM
+  site: a site that is not autonomous went dark only in `AUTONOMOUS_STATE_DCS_AI`, the default. With
+  `AUTONOMOUS_STATE_DARK`, a site woken by an EW radar or by the last line of defense stayed live
+  until a HARM, an empty magazine or a lost power source switched it off. It changes what a mission
+  sees wherever a SAM site is set to `AUTONOMOUS_STATE_DARK`.
+- **A SAM site that HARM defence silenced after it ran out of missiles is rearmed again by nearby
+  ammo trucks.** The silence turns the site's AI off, against a DCS multiplayer bug, and DCS does
+  not rearm a unit whose AI is off. Only going live turned it back on, which an empty site never
+  does: it stayed off, and empty, for the rest of the mission. A silence now ends with the AI back
+  on and the radar still off, so trucks rearm the site and it goes live for its next contact; a site
+  discarded mid-silence, by re-adding a network's sites, gets its AI back the same way. On the way,
+  a live autonomous site in `AUTONOMOUS_STATE_DARK` now has its AI turned off during the silence
+  too, as every other site already did.
+
+### Added
+
+- **The documentation site is now bilingual, and French is what a visitor gets by default.** Every
+  page exists twice — `page.md` in French, `page.en.md` in English — served by
+  `mkdocs-static-i18n` at the site root and under `/en/`, with a language selector in the header.
+  This is the model VEAF-Mission-Creation-Tools uses, copied down to its conventions: a heading
+  that a cross-page link targets declares its own anchor, identical in both languages, so no link
+  published elsewhere moves. `https://veaf.github.io/Skynet-IADS/latest/setting-up/` and its
+  siblings keep working and switch to French; their English text is at
+  `https://veaf.github.io/Skynet-IADS/latest/en/setting-up/`.
+- A `Docs Check` workflow, running `build-tools/docs-check.py` and a strict MkDocs build on every
+  pull request. It reports broken links, dead anchors, cross-page links relying on a generated
+  anchor, pages with no twin, and nav entries with no page. The one the strict build cannot see is
+  the missing twin: the i18n plugin serves the page in the other language rather than failing, and
+  a page in no menu is an `INFO` to mkdocs. `mkdocs.yml` also raises `validation.links.anchors` to
+  `warn`, so a dead anchor fails the build, checked with the real slugifier in each language.
+- `README.md` now carries both languages in one file, English first then French, with a switcher
+  at the top of each half — the shape VEAF-Mission-Creation-Tools uses.
+
+### Changed
+
+- The documentation workflow can now republish a released version's pages without moving its tag
+  (`gh workflow run docs.yml -f version=3.5.0`). Re-running the tag build rebuilds from the
+  *tagged* commit, so a documentation fix landed afterwards could never reach the published pages
+  — and waiting for the next release freezes it for a delay nobody controls. This is what made
+  3.5.0's pages bilingual without spending a version number on a translation; the artifact,
+  the tag and the version number are untouched, and so is the `latest` alias — mike rebuilds the
+  alias directories a version already owns, so republishing the newest release refreshes
+  `/latest/` without being asked to move it. The mechanism is VMCT's, added there for the same
+  reason.
+- **What 3.5.0 changed is now in the guide, not only in the reference.** The last line of
+  defense, the coverage refresh and the on-screen setup warnings are on by default and change what
+  an existing mission does, and all three were documented only in the API reference — a catalogue
+  of call signatures, read when you already know what you are looking for. *Setting up an IADS*
+  now has a section for each, and the reference keeps the knobs.
+- **The documentation no longer carries the original author's donation button.** The project
+  changed hands; a visitor clicking that link was misled about who they were supporting. The home
+  page now says who created Skynet, who maintains it today, and thanks him — keeping his own
+  acknowledgements to Spearzone, Coranthia and Grimes, which are other people's credit and not
+  ours to drop.
+- The last line of defense moved to its own file, `skynet-iads-last-line-of-defence.lua`, and what a
+  reported contact does to a SAM site moved to the site, `SkynetIADSSamSite:informOfReportedContact`.
+  No change in behaviour: `SkynetIADS:reportContact` and the `setLastLineOfDefence*` settings are
+  unchanged.
+- **A SAM site wakes only for what it can engage.** Until now any bomb or missile woke every site
+  in range, and a site whose radar still saw one stayed live, emitting for nothing. An aircraft
+  still wakes every site; a munition wakes only a site that can shoot at it, and a site whose radar
+  sees only munitions it cannot engage goes dark. Measured in DCS 2.9.30:
+  - bombs: Tor M2, Pantsir S1, Iris-T SLM and Phalanx;
+  - other guided missiles — air-to-ground, anti-ship, cruise: those four, plus S-300, Patriot,
+    NASAMS, Tor, HQ-7 and Roland ADS;
+  - anti-radiation missiles: the same, without the Roland ADS. **The HQ-7 now engages HARMs**,
+    which also lets it stay live under HARM attack when it has the launchers and missiles for it.
+
+  The High Digit SAMs were not measured and keep their database entries: their S-300 variants still
+  wake for HARMs, but no longer for other missiles.
+
+  An anti-radiation missile is now known by its seeker as soon as it is seen, so a HARM no longer
+  wakes a site that cannot engage it while HARM detection is still making up its mind. Air-to-air and
+  surface-to-air missiles, shells and rockets wake nothing. `setCanEngageBomb(state)` and
+  `setCanEngageMissile(state)` override the table per site, as `setCanEngageHARM` does;
+  `setCanEngageAirWeapons(false)` turns all three off. `setCanEngageHARM(true)` on a site whose air
+  weapons were off now holds, instead of being reset from the database. Radars also drop objects
+  of their own coalition before reporting anything: DCS reports none today, so nothing changes in
+  practice.
+- **HARM defence recognises an anti-radiation missile by its seeker.** It used to take any contact
+  faster than 800 kt on a flat flight path for a HARM: a Maverick could shut an early warning radar
+  down for minutes, and the next Mavericks went unseen. Now only a passive-radar-guided missile can
+  be identified, whatever its speed; `harm_detection_chance` still decides whether a radar's crew
+  recognises it. A contact seen only once no longer stops the other contacts from being evaluated
+  that cycle.
+- **Skynet turns DCS's own "Evasion of ARM" off**, each time a SAM site or EW radar goes live,
+  whatever the mission sets. With it on, the unit an anti-radiation missile is aimed at went dark
+  and drove off by itself, outside Skynet's HARM defence, and could stop engaging: in DCS 2.9.30 a
+  Tor, which shoots HARMs down, fired nothing. A mission that sets the option on while a radar is
+  live keeps it until that radar next goes live. AWACS radars, airborne or naval, are left alone.
+- **A radar no longer loses its detection cycle to a static that is gone.** DCS can still report an
+  object a script has removed, and raises `Static doesn't exist` as soon as Skynet reads its type:
+  on one server, every ~14 s for a whole session. The error ended the radar's detection cycle, and
+  every object reported after that one went unseen. A radar now skips any object that no longer
+  exists — a removed unit or static, an ended weapon, a wreck — before reading anything else from it.
+- **The build is in Python, and reproducible.** `build-tools/build-compiled-script.py` replaces the
+  PowerShell script, so building no longer needs `pwsh`, and it writes `build/skynet-iads-compiled.lua`
+  instead of `demo-missions/`; the release asset keeps its name. The first line of the compiled
+  script carries the version alone, `--- SKYNET VERSION: 3.5.0 ---`, and no longer the build time:
+  two builds of the same commit are the same bytes on any machine.
+- **A site protected by a point defence no longer goes dark under a HARM its point defence can
+  take.** A point defence went live by acting as EW, and that change was sent to every SAM site
+  in its radar range, the site it protects included, which went dark for it. A site acting as EW,
+  as in the documented SA-10 and SA-15 example, stayed dark for the whole time the HARM was in
+  flight, its radar on for an instant every contact cycle; a site live on a contact the network
+  reported, before its own radar held a track, went dark too. A point defence is now held live for
+  the HARM without acting as EW, and stands down once the last HARM is gone, no longer as soon as
+  the site it protects goes live again — nor, if that site went dark for want of a target, only
+  when it next goes live.
+- `deactivate()` now leaves the IADS inactive. It used to stop the contact cycle while the IADS
+  still looked active, so a call made afterwards to `setCoverageRefreshInterval()`,
+  `addSAMSitesByPrefix()` or `addEarlyWarningRadarsByPrefix()` could restart the coverage sweep or
+  rebuild the coverage of a network that had been switched off.
+- **A site already dark when a HARM silences it now has its AI turned off too.** HARM defence
+  turns a silenced site's AI off, against a DCS multiplayer bug where a HARM still finds an emitter
+  whose emission alone is off, but it did so only for a site that was live. A HARM fired while the
+  site was live and arriving after it went dark for want of a target left it with its AI on for the
+  whole silence. The AI comes back on when the silence ends, as before; a DCS ammo truck does not
+  rearm a unit whose AI is off, so an empty site silenced while waiting for one is now rearmed
+  after the silence, as a live site already was.
+
+## [3.5.0] — 2026-09-21
 
 **The first release under joint maintenance.** VEAF and the Regroupement de Patrouilles (BFR,
 NAWACS) carry Skynet-IADS on together, in this repository. This release brings a **last line of
