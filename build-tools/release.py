@@ -10,16 +10,30 @@ what a release attaches: the compiled script, the two demos and notes.md. CONTRI
 procedure.
 """
 
+import argparse
+import datetime
 import importlib.util
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-_spec = importlib.util.spec_from_file_location("build_compiled_script", ROOT / "build-tools" / "build-compiled-script.py")
-_build = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_build)
+
+def _load(name, relative):
+    spec = importlib.util.spec_from_file_location(name, ROOT / relative)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_build = _load("build_compiled_script", "build-tools/build-compiled-script.py")
+_demos = _load("update_skynet_script", "demo-missions/update-skynet-script.py")
+
+#: Where Lua for Windows installs its interpreter, which is not on PATH.
+LUA_FOR_WINDOWS = r"C:\Program Files (x86)\Lua\5.1\lua.exe"
 
 
 class ReleaseError(Exception):
@@ -144,3 +158,91 @@ def section_body(text, version):
     while body and not body[-1].strip():
         body.pop()
     return "\n".join(body) if body else None
+
+
+def find_lua():
+    """The command of the first Lua 5.1 interpreter that runs, or None."""
+    for command in (["lua5.1"], ["lua"], [LUA_FOR_WINDOWS]):
+        try:
+            probe = subprocess.run(command + ["-e", "assert(_VERSION == 'Lua 5.1')"], capture_output=True)
+        except OSError:
+            continue
+        if probe.returncode == 0:
+            return command
+    return None
+
+
+def _refuse_or_warn(strict, message):
+    if strict:
+        raise ReleaseError(message)
+    print("warning: %s" % message)
+
+
+def package(root, tag=None):
+    """Fill build/release/ with what the release attaches, checking it on the way. Changes no
+    committed file. With *tag*, as on the release workflow, every warning is a refusal."""
+    root = Path(root)
+    version = code_version(root)
+    if tag is not None:
+        check_tag(tag, version)
+    out = root / "build" / "release"
+    shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True)
+    try:
+        script = _build.build(root)
+    except _build.BuildError as error:
+        raise ReleaseError(str(error))
+    (out / "skynet-iads-compiled.lua").write_bytes(script.encode("utf-8"))
+    # The demos ship as committed, so they must already carry this build: refreshing them here
+    # would publish missions nobody reviewed.
+    if _demos.check(root, against_build=True) != 0:
+        return 1
+    for demo in _demos.DEMOS:
+        shutil.copyfile(root / demo, out / Path(demo).name)
+    notes = section_body((root / "CHANGELOG.md").read_text(encoding="utf-8"), version)
+    if notes is None:
+        _refuse_or_warn(tag is not None, "CHANGELOG.md has no [%s] section" % version)
+    else:
+        (out / "notes.md").write_bytes((notes + "\n").encode("utf-8"))
+    lua = find_lua()
+    if lua is None:
+        _refuse_or_warn(tag is not None, "no Lua 5.1 found, test_compiled_script skipped")
+    elif subprocess.run(lua + ["test/common/run.lua", "test_compiled_script"], cwd=root).returncode != 0:
+        return 1
+    print("release: build/release/ holds %s" % version)
+    return 0
+
+
+def prepare(root, version, today):
+    """Set the version, freeze the changelog and refresh the demos, then package. Every refusal
+    comes before the first write."""
+    root = Path(root)
+    check_new_version(root, version)
+    changelog = root / "CHANGELOG.md"
+    with open(changelog, encoding="utf-8", newline="") as handle:
+        frozen = freeze_changelog(handle.read(), version, today)
+    with open(changelog, "w", encoding="utf-8", newline="") as handle:
+        handle.write(frozen)
+    set_code_version(root, version)
+    if _demos.update(root) != 0:
+        return 1
+    return package(root)
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(description="Prepare a Skynet release, or package it into build/release/.")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("version", nargs="?", help="prepare this version, X.Y.Z, then package it")
+    group.add_argument("--tag", help="package for this tag, vX.Y.Z, refusing anything that does not fit")
+    args = parser.parse_args(argv)
+    try:
+        if args.version is not None:
+            return prepare(ROOT, args.version, datetime.date.today().isoformat())
+        return package(ROOT, args.tag)
+    except ReleaseError as error:
+        print("FAIL: %s" % error)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
