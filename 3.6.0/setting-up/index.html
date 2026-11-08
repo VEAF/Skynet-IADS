@@ -1,0 +1,1216 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="An IADS (Integrated Air Defence System) script for DCS World.">
+      
+      
+      
+        <link rel="canonical" href="https://veaf.github.io/Skynet-IADS/3.6.0/setting-up/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../tactics/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="fr">
+        
+          <link rel="alternate" href="../en/setting-up/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Mettre en place un IADS - Skynet-IADS</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mettre-en-place-un-iads" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href=".." title="Skynet-IADS" class="md-header__button md-logo" aria-label="Skynet-IADS" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Skynet-IADS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Mettre en place un IADS
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Sélectionner la langue">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="fr" class="md-select__link">
+              Français
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../en/setting-up/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/VEAF/Skynet-IADS" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    VEAF/Skynet-IADS
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Skynet-IADS" class="md-nav__button md-logo" aria-label="Skynet-IADS" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Skynet-IADS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/VEAF/Skynet-IADS" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    VEAF/Skynet-IADS
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mettre en place un IADS
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mettre en place un IADS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#les-éléments-dun-skynet-iads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les éléments d'un Skynet IADS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Les éléments d&#39;un Skynet IADS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#liads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L'IADS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-pistes-track-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les pistes (track files)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-centres-de-commandement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les centres de commandement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-sites-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les sites SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-radars-de-veille-lointaine-ew-radars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les radars de veille lointaine (EW radars)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-sources-dénergie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les sources d'énergie
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-nœuds-de-liaison-connection-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les nœuds de liaison (connection nodes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#awacs-airborne-early-warning-and-control-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWACS (Airborne Early Warning and Control System)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-navires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les navires
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ce-que-liads-fait-de-lui-même" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce que l'IADS fait de lui-même
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ce que l&#39;IADS fait de lui-même">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        La dernière ligne de défense
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Le rafraîchissement de la couverture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les avertissements de montage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#utiliser-skynet-dans-léditeur-de-mission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utiliser Skynet dans l'éditeur de mission
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Utiliser Skynet dans l&#39;éditeur de mission">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#placer-les-unités" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Placer les unités
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#préparer-un-site-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Préparer un site SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#préparer-un-ew-radar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Préparer un EW radar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-le-code-de-skynet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ajouter le code de Skynet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-le-skynet-iads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ajouter le Skynet IADS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactique
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Référence de l'API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#les-éléments-dun-skynet-iads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les éléments d'un Skynet IADS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Les éléments d&#39;un Skynet IADS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#liads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L'IADS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-pistes-track-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les pistes (track files)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-centres-de-commandement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les centres de commandement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-sites-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les sites SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-radars-de-veille-lointaine-ew-radars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les radars de veille lointaine (EW radars)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-sources-dénergie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les sources d'énergie
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-nœuds-de-liaison-connection-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les nœuds de liaison (connection nodes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#awacs-airborne-early-warning-and-control-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWACS (Airborne Early Warning and Control System)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#les-navires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les navires
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ce-que-liads-fait-de-lui-même" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ce que l'IADS fait de lui-même
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ce que l&#39;IADS fait de lui-même">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#last-line-of-defense" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        La dernière ligne de défense
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Le rafraîchissement de la couverture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Les avertissements de montage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#utiliser-skynet-dans-léditeur-de-mission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utiliser Skynet dans l'éditeur de mission
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Utiliser Skynet dans l&#39;éditeur de mission">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#placer-les-unités" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Placer les unités
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#préparer-un-site-sam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Préparer un site SAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#préparer-un-ew-radar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Préparer un EW radar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-le-code-de-skynet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ajouter le code de Skynet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-le-skynet-iads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ajouter le Skynet IADS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="mettre-en-place-un-iads">Mettre en place un IADS<a class="headerlink" href="#mettre-en-place-un-iads" title="Permanent link">&para;</a></h1>
+<h2 id="les-éléments-dun-skynet-iads">Les éléments d'un Skynet IADS<a class="headerlink" href="#les-éléments-dun-skynet-iads" title="Permanent link">&para;</a></h2>
+<p><img alt="Vue d'ensemble de Skynet IADS" src="../images/skynet-overview.jpg" /></p>
+<h3 id="liads">L'IADS<a class="headerlink" href="#liads" title="Permanent link">&para;</a></h3>
+<p>Un Skynet IADS est un réseau opérationnel complet. Vous pouvez avoir plusieurs instances de Skynet
+IADS par coalition dans une mission DCS. Un montage simple consiste en un IADS pour le camp bleu et
+un IADS pour le camp rouge.</p>
+<h3 id="les-pistes-track-files">Les pistes (track files)<a class="headerlink" href="#les-pistes-track-files" title="Permanent link">&para;</a></h3>
+<p>Skynet tient un fichier de pistes global rassemblant toutes les cibles détectées. Il interroge
+toutes ses unités dotées d'un radar et dédoublonne les contacts. Par défaut, un contact perdu est
+conservé en mémoire jusqu'à 32 secondes.</p>
+<h3 id="les-centres-de-commandement">Les centres de commandement<a class="headerlink" href="#les-centres-de-commandement" title="Permanent link">&para;</a></h3>
+<p>Vous pouvez ajouter plusieurs centres de commandement à un Skynet IADS. Une fois tous les centres
+de commandement détruits, l'IADS bascule en mode autonome.</p>
+<h3 id="les-sites-sam">Les sites SAM<a class="headerlink" href="#les-sites-sam" title="Permanent link">&para;</a></h3>
+<p>Skynet sait gérer plusieurs sites SAM ; il cherche à réduire les émissions au minimum, et par
+défaut un site SAM ne s'allume donc que si une cible est à portée.
+La distance est analysée individuellement pour chaque lanceur et chaque radar du site.
+Dès qu'au moins un lanceur et un radar sont à portée, le site SAM s'active.
+Cela autorise une implantation dispersée des radars et des lanceurs, comme dans la réalité.</p>
+<p>Un site SAM ou une DCA guidée par radar qui n'a plus de munitions s'éteint. Dans le cas d'un site
+SAM, l'extinction attend que le dernier missile tiré ne soit plus en vol.</p>
+<p>Si un EW radar, ou un site SAM jouant le rôle d'EW radar, est détruit, les sites SAM alentour
+peuvent se retrouver sans couverture radar de veille lointaine. Cela arrive aussi lorsqu'un site
+SAM sort de la couverture d'un AWACS.
+Le site SAM passe alors en mode autonome : il utilise ses radars organiques, ou reste éteint, selon
+la configuration.
+Dès qu'il retrouve la couverture d'un EW radar, l'IADS recommence à l'alimenter.</p>
+<h3 id="les-radars-de-veille-lointaine-ew-radars">Les radars de veille lointaine (EW radars)<a class="headerlink" href="#les-radars-de-veille-lointaine-ew-radars" title="Permanent link">&para;</a></h3>
+<p>Skynet sait gérer de 0 à n EW radars. La détection des cibles s'appuie sur la logique de détection
+radar de DCS.
+Vous pouvez employer dans un rôle de veille lointaine n'importe quel type de radar listé dans
+<a href="https://github.com/VEAF/Skynet-IADS/blob/master/skynet-iads-source/skynet-iads-supported-types.lua">skynet-iads-supported-types.lua</a>.
+Certains radars SAM modernes portent plus loin que d'anciens EW radars : par exemple le 64H6E du
+S-300PS (160 km) face au 55G6 EWR (120 km).</p>
+<p>Vous pouvez aussi désigner des sites SAM pour tenir le rôle d'EW radar ; dans ce cas, le site garde
+son radar allumé en permanence. Les systèmes à longue portée comme le S-300 servent de radars de
+veille dans la réalité.
+Un site SAM à court de munitions reste allumé s'il est configuré pour tenir ce rôle.</p>
+<p>Bon à savoir : le relief autour d'un EW radar crée des angles morts, qui permettent à un avion bas
+et rapide de percer un réseau radar en suivant les vallées.</p>
+<h3 id="les-sources-dénergie">Les sources d'énergie<a class="headerlink" href="#les-sources-dénergie" title="Permanent link">&para;</a></h3>
+<p>Par défaut, un Skynet IADS fonctionne sans qu'il soit nécessaire d'ajouter des sources d'énergie.
+Vous pouvez en ajouter plusieurs aux sites SAM, aux EW radars et aux centres de commandement.
+Dès qu'une source d'énergie est complètement détruite, l'unité Skynet IADS qu'elle alimente cesse
+de fonctionner.</p>
+<p>Bon à savoir : neutraliser la source d'énergie d'un centre de commandement est une tactique bien
+réelle de SEAD (Suppression of Enemy Air Defence).</p>
+<h3 id="les-nœuds-de-liaison-connection-nodes">Les nœuds de liaison (connection nodes)<a class="headerlink" href="#les-nœuds-de-liaison-connection-nodes" title="Permanent link">&para;</a></h3>
+<p>Par défaut, un Skynet IADS fonctionne sans qu'il soit nécessaire d'ajouter des nœuds de liaison.
+Vous pouvez en ajouter plusieurs aux sites SAM, aux EW radars et aux centres de commandement.</p>
+<p>Lorsque tous les nœuds de liaison d'une unité sont détruits, l'EW radar ou le site SAM passe en
+mode autonome. Pour un site SAM, cela veut dire qu'il applique le comportement autonome configuré.
+Un EW radar qui perd son nœud cesse d'alimenter l'IADS en informations, mais l'IADS continue de
+fonctionner par ailleurs. Les centres de commandement, eux, n'ont pas de mode autonome.</p>
+<p>Bon à savoir : un même nœud peut relier un nombre quelconque d'unités Skynet IADS. C'est ainsi que
+vous introduisez un point de défaillance unique dans un IADS.</p>
+<h3 id="awacs-airborne-early-warning-and-control-system">AWACS (Airborne Early Warning and Control System)<a class="headerlink" href="#awacs-airborne-early-warning-and-control-system" title="Permanent link">&para;</a></h3>
+<p>N'importe quel aéronef doté d'un radar air-air peut être ajouté comme AWACS. Les contacts qu'il
+détecte sont versés à l'IADS. L'AWACS détecte également les unités au sol, navires compris. Ces
+contacts-là, en revanche, ne sont pas transmis aux sites SAM.</p>
+<p>Vous pouvez donner un nœud de liaison à l'AWACS — une antenne, par exemple : s'il est détruit,
+l'AWACS ne peut plus alimenter l'IADS en contacts.
+Techniquement, vous pouvez aussi lui donner une source d'énergie. Dans ce contexte, elle représente
+l'alimentation du nœud de liaison, puisqu'un aéronef produit la sienne.</p>
+<h3 id="les-navires">Les navires<a class="headerlink" href="#les-navires" title="Permanent link">&para;</a></h3>
+<p>Un navire alimente l'IADS exactement comme une unité AWACS. Ajoutez-le comme un EW radar ordinaire.</p>
+<h2 id="ce-que-liads-fait-de-lui-même">Ce que l'IADS fait de lui-même<a class="headerlink" href="#ce-que-liads-fait-de-lui-même" title="Permanent link">&para;</a></h2>
+<p>Trois comportements sont <strong>actifs par défaut</strong> : vous n'avez rien à écrire pour en bénéficier, mais
+ils changent ce que fait votre mission. Les réglages de chacun sont dans la <a href="../api/">référence de
+l'API</a>.</p>
+<h3 id="last-line-of-defense">La dernière ligne de défense<a class="headerlink" href="#last-line-of-defense" title="Permanent link">&para;</a></h3>
+<p>Un site SAM tenu éteint par le réseau est aveugle : seul un EW radar qui le couvre et qui tient la
+cible peut le réveiller. Volez sous l'horizon des radars de veille et vous survolez les batteries
+sans qu'aucune réagisse.</p>
+<p>Pour éviter cette absurdité, un site éteint conserve un petit rayon de détection <strong>virtuel</strong> qui
+lui est propre — entre 10 et 15 km, tiré une fois pour toutes par site — et un aéronef
+hostile qui y pénètre l'active, même si aucun radar nulle part ne tient de contact. Un site
+silencieux pour échapper à un missile antiradar, à court de munitions, privé d'énergie ou détruit
+ne se réveille pas pour autant.</p>
+<p>C'est une décision de conception, pas une évidence : une mission qui veut un IADS puriste, où
+percer sous l'horizon radar est une tactique payante, la désactive avec
+<a href="../api/#last-line-of-defense"><code>setLastLineOfDefence(false)</code></a>.</p>
+<h3 id="coverage-refresh">Le rafraîchissement de la couverture<a class="headerlink" href="#coverage-refresh" title="Permanent link">&para;</a></h3>
+<p>Savoir quel EW radar couvre quelle batterie est une affaire de géométrie, et la géométrie bouge dès
+qu'une unité se déplace. L'IADS réévalue donc la couverture de tout élément ayant parcouru plus de
+10 NM <strong>depuis le dernier balayage</strong>, toutes les 10 secondes par défaut.</p>
+<p>Conséquence la plus visible : <strong>un AWACS qui rentre à la base a le même effet que s'il était
+abattu</strong> — les batteries qu'il laisse derrière lui deviennent autonomes. Et les EW radars parents
+d'un site SAM mobile le suivent au fil de ses déplacements. Le réglage est
+<a href="../api/#coverage-refresh"><code>setCoverageRefreshInterval</code></a>.</p>
+<h3 id="setup-warnings">Les avertissements de montage<a class="headerlink" href="#setup-warnings" title="Permanent link">&para;</a></h3>
+<p>Une erreur de montage — un nom de groupe <strong>ou d'unité</strong> absent de la mission, un élément de l'autre
+coalition, un groupe dont Skynet n'a pas les données SAM — s'affiche à l'écran, préfixée
+<code>WARNING:</code>, et part dans <code>dcs.log</code> dans tous les cas.</p>
+<p><strong>Attention, un préfixe qui ne correspond à rien ne dit rien.</strong> <code>addSAMSitesByPrefix</code> et
+<code>addEarlyWarningRadarsByPrefix</code> parcourent les groupes de la mission et retiennent ceux qui
+commencent par le préfixe ; s'il n'y en a aucun, l'IADS démarre avec zéro site et personne ne vous
+prévient. Les avertissements ci-dessus viennent des ajouts nommés un par un, <code>addSAMSite</code> et
+<code>addEarlyWarningRadar</code>. Si votre IADS semble inerte, vérifiez d'abord que le préfixe correspond
+vraiment au <strong>début</strong> du nom de groupe — et activez <code>samSiteStatusEnvOutput</code> pour compter ce qui a
+été ajouté.</p>
+<p>Une mission qui connaît ses propres avertissements et ne veut pas les montrer aux joueurs les
+coupe avec <a href="../api/#setting-debug-information"><code>iadsDebug.warnings = false</code></a> ; le journal, lui,
+continue de les recevoir.</p>
+<h2 id="utiliser-skynet-dans-léditeur-de-mission">Utiliser Skynet dans l'éditeur de mission<a class="headerlink" href="#utiliser-skynet-dans-léditeur-de-mission" title="Permanent link">&para;</a></h2>
+<p>Monter un IADS est assez simple : jetez un œil aux scripts de configuration dans
+<a href="https://github.com/VEAF/Skynet-IADS/tree/master/demo-missions">demo-missions/</a> — et aux missions de
+démonstration elles-mêmes, qui sont <a href="https://github.com/VEAF/Skynet-IADS/releases">jointes à une
+release</a> plutôt que déposées dans le dépôt. Le
+<a href="../#quick-start">démarrage rapide</a> explique pourquoi, et comment en assembler une depuis un
+clone.</p>
+<h3 id="placer-les-unités">Placer les unités<a class="headerlink" href="#placer-les-unités" title="Permanent link">&para;</a></h3>
+<p>Ce tutoriel suppose que vous savez monter un site SAM dans DCS. Si ce n'est pas le cas, je vous
+conseille <a href="https://www.youtube.com/watch?v=YZPh-JNf6Ww">cette vidéo</a> des Grim Reapers.
+Placez sur la carte les éléments de l'IADS que vous voulez ajouter.</p>
+<p><img alt="Montage d'un IADS dans l'éditeur de mission" src="../images/iads-setup.png" /></p>
+<h3 id="préparer-un-site-sam">Préparer un site SAM<a class="headerlink" href="#préparer-un-site-sam" title="Permanent link">&para;</a></h3>
+<p>Il ne doit y avoir <strong>qu'un seul type de site SAM par groupe</strong>. Au-delà, Skynet ne saura pas piloter
+le groupe correctement. Évitez également d'ajouter au groupe SAM des unités dont le système n'a pas
+besoin : camions, chars, fantassins.
+Le niveau de compétence (skill) que vous donnez à un groupe SAM est conservé par Skynet. Veillez à
+nommer le <strong>groupe du site SAM</strong> de façon cohérente, avec un préfixe, par exemple <code>SAM-SA-2</code>.</p>
+<p><img alt="Ajout d'un site SAM dans l'éditeur de mission" src="../images/add-sam-site.png" /></p>
+<h3 id="préparer-un-ew-radar">Préparer un EW radar<a class="headerlink" href="#préparer-un-ew-radar" title="Permanent link">&para;</a></h3>
+<p>N'importe quel type de radar peut servir d'EW radar. Veillez à <strong>nommer l'unité</strong> de façon
+cohérente, avec un préfixe, par exemple <code>EW-center3</code>. Veillez également à n'avoir qu'<strong>un seul EW
+radar par groupe</strong>, sans quoi Skynet ne pourra pas piloter les radars un par un.</p>
+<p><img alt="EW radar dans l'éditeur de mission" src="../images/ew-setup.png" /></p>
+<h3 id="ajouter-le-code-de-skynet">Ajouter le code de Skynet<a class="headerlink" href="#ajouter-le-code-de-skynet" title="Permanent link">&para;</a></h3>
+<p>Chargez le code compilé de Skynet dans une mission. Skynet n'a pas besoin de MIST : le fichier
+<a href="https://github.com/VEAF/Skynet-IADS/releases">skynet-iads-compiled.lua</a> joint à chaque release est
+un script autonome, et les missions de démonstration ne l'embarquent plus non plus. Si votre propre
+mission utilise MIST pour autre chose, les deux cohabitent sans problème ; la version courante est
+<a href="https://github.com/mrSkortch/MissionScriptingTools">ici</a>.</p>
+<p>Je vous conseille de créer un fichier texte, <code>my-iads-setup.lua</code> par exemple, et d'y écrire le code
+nécessaire au démarrage de l'IADS. Lorsque vous modifiez votre configuration, pensez à recharger le
+fichier dans l'éditeur de mission, sans quoi les changements resteront sans effet.
+Vous pouvez aussi saisir le code directement dans l'éditeur de mission, mais le champ est plutôt
+étroit dès que vous écrivez plus de quelques lignes.</p>
+<p><img alt="Chargement des scripts dans l'éditeur de mission" src="../images/load-scripts.png" /></p>
+<h3 id="ajouter-le-skynet-iads">Ajouter le Skynet IADS<a class="headerlink" href="#ajouter-le-skynet-iads" title="Permanent link">&para;</a></h3>
+<p>Quatre lignes de code suffisent à faire fonctionner l'IADS.</p>
+<p>Créez une instance de l'IADS ; la chaîne de caractères qui le nomme est facultative et sera
+affichée dans les sorties d'état :</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">SkynetIADS</span><span class="p">:</span><span class="nf">create</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span>
+</code></pre></div>
+<p>Donnez un préfixe commun, dans l'éditeur de mission, à tous les groupes SAM que vous voulez ajouter
+— par exemple <code>SAM-SA-10 west</code> — puis ajoutez cette ligne :</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addSAMSitesByPrefix</span><span class="p">(</span><span class="s1">'SAM'</span><span class="p">)</span>
+</code></pre></div>
+<p>Même chose pour les EW radars : nommez toutes les unités avec un préfixe commun, par exemple
+<code>EW-radar-south</code> :</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addEarlyWarningRadarsByPrefix</span><span class="p">(</span><span class="s1">'EW'</span><span class="p">)</span>
+</code></pre></div>
+<p>Activez l'IADS :</p>
+<div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">activate</span><span class="p">()</span>
+</code></pre></div>
+<p>Consultez la <a href="../api/">référence de l'API</a> pour tout le reste : centres de commandement, sources
+d'énergie, nœuds de liaison, conditions d'activation, brouilleur, et l'exemple de montage complet.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
