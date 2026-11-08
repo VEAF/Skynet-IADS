@@ -118,7 +118,7 @@ def update(root=ROOT):
         try:
             replace_member(root, demo, MEMBER, script)
         except UpdateError as error:
-            print("FAIL: %s -- the demos before it are updated, the hashes are not: run `update` again" % error)
+            print("FAIL: %s -- the demos before it are updated, the hashes are not: run `python build-tools/release.py <x.y.z>` again" % error)
             return 1
         print("updated: %s" % demo)
     write_hashes(root)
@@ -148,7 +148,7 @@ def check(root=ROOT, against_build=False):
             print("FAIL  %s: its Skynet script does not match %s" % (demo, HASH_FILE))
             status = 1
         elif build is not None and script != build:
-            print("FAIL  %s: its Skynet script is not a build of the current sources -- run `update`" % demo)
+            print("FAIL  %s: its Skynet script is not a build of the current sources -- prepare the release: `python build-tools/release.py <x.y.z>`" % demo)
             status = 1
         else:
             print("ok    %s" % demo)

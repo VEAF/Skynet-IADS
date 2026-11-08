@@ -41,7 +41,8 @@ jobs:
           sudo apt-get install -y lua5.1
 
       - name: Package
-        run: python3 build-tools/release.py --tag "$GITHUB_REF_NAME"
+        # -u: unbuffered, so its lines land in the log before the Lua test's, not after.
+        run: python3 -u build-tools/release.py --tag "$GITHUB_REF_NAME"
 
       - name: Create the GitHub release
         env:

@@ -106,10 +106,13 @@ class VersionTest(unittest.TestCase):
         (self.repo / "skynet-iads-source" / "skynet-iads.lua").write_bytes(data)
 
     def test_parse_refuses_malformed(self):
-        for text in ("v3.6.0", "3.6", "3.6.0-rc1", ""):
+        for text in ("v3.6.0", "3.6", "3.6.0-rc1", "", "3.06.0", "03.6.0"):
             with self.subTest(text=text), self.assertRaises(rel.ReleaseError) as caught:
                 rel.parse_version(text)
             self.assertIn("X.Y.Z", str(caught.exception))
+
+    def test_parse_accepts_zero_parts(self):
+        self.assertEqual(rel.parse_version("0.10.0"), (0, 10, 0))
 
     def test_numeric_comparison(self):
         self.write_source(b'SkynetIADS.version = "3.9.0"\n')
@@ -229,6 +232,14 @@ class PackageTest(RepoTest):
     def test_stale_demos_fail(self):
         self.source('SkynetIADS = {}\nSkynetIADS.version = "3.6.0"\nx = 1\n')
         self.assertEqual(self.quietly(rel.package, self.repo), 1)
+        self.assertIn("release.py", self.output)
+
+    def test_build_release_that_cannot_be_emptied_is_a_refusal(self):
+        self.release_dir().mkdir(parents=True)
+        with mock.patch.object(rel.shutil, "rmtree", side_effect=PermissionError("in use")):
+            with self.assertRaises(rel.ReleaseError) as caught:
+                self.quietly(rel.package, self.repo)
+        self.assertIn("build/release", str(caught.exception))
 
     def test_tag_mismatch_fails_before_writing(self):
         with self.assertRaises(rel.ReleaseError):
@@ -271,9 +282,15 @@ class PrepareTest(RepoTest):
 
     def test_refusal_writes_nothing(self):
         before = self.committed()
-        with self.assertRaises(rel.ReleaseError):
-            self.quietly(rel.prepare, self.repo, "3.4.0", DATE)
+        for version in ("3.4.0", "v3.6.0", "3.6"):
+            with self.subTest(version=version), self.assertRaises(rel.ReleaseError):
+                self.quietly(rel.prepare, self.repo, version, DATE)
         self.assertEqual(self.committed(), before)
+
+    def test_failed_demo_refresh_says_to_run_release_again(self):
+        with mock.patch.object(rel._demos, "replace_member", side_effect=rel._demos.UpdateError("locked")):
+            self.assertEqual(self.quietly(rel.prepare, self.repo, "3.6.0", DATE), 1)
+        self.assertIn("release.py", self.output)
 
 
 class MainTest(RepoTest):

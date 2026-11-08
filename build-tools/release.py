@@ -41,7 +41,8 @@ class ReleaseError(Exception):
 
 
 UNRELEASED = "## [Unreleased]"
-VERSION_FORMAT = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+# Semantic versioning: no leading zero, so 3.06.0 is refused rather than tagged v3.06.0.
+VERSION_FORMAT = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 
 
 def _version_file(root):
@@ -186,7 +187,11 @@ def package(root, tag=None):
     if tag is not None:
         check_tag(tag, version)
     out = root / "build" / "release"
-    shutil.rmtree(out, ignore_errors=True)
+    if out.exists():
+        try:
+            shutil.rmtree(out)
+        except OSError as error:
+            raise ReleaseError("build/release/ cannot be emptied -- is a file in it open? %s" % error)
     out.mkdir(parents=True)
     try:
         script = _build.build(root)
