@@ -95,21 +95,23 @@ the current sources is answered by building again and comparing.
 
 CI runs the same build on every pull request and on pushes to `develop` and `master`
 (`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
-that the result runs without raising. A tag matching `v*` (`.github/workflows/release.yml`) builds,
-verifies and publishes a GitHub release carrying the artifact and the changelog's `[Unreleased]`
-section; a tag that is not a plain `vX.Y.Z` publishes as a pre-release.
+that the result runs without raising. A `vX.Y.Z` tag on `master` (`.github/workflows/release.yml`)
+publishes a GitHub release carrying what `build-tools/release.py` packages into `build/release/`:
+the artifact, the demos and the changelog's section for that version. Any other tag is refused.
 
 ### The demo missions are committed whole
 
 Each `.miz` under `demo-missions/` carries every script it runs, so a demo opened from a checkout
-runs. The Skynet script is the one part a tool refreshes, at each release, with a build:
+runs. The Skynet script is the one part a tool refreshes, with a build, when a release is prepared
+— step 1 of *Releasing*:
 
 ```
-python demo-missions/update-skynet-script.py update
+python build-tools/release.py <x.y.z>
 ```
 
-That also writes `demo-missions/skynet-script.sha256`, the hash of each demo's Skynet script. CI
-checks the demos against it on every pull request, and against a fresh build on the way to `master`.
+It runs `demo-missions/update-skynet-script.py update`, which also writes
+`demo-missions/skynet-script.sha256`, the hash of each demo's Skynet script. CI checks the demos
+against it on every pull request, and against a fresh build on the way to `master`.
 
 The setup scripts beside the demos are where they are edited, then loaded into the `.miz` in the
 Mission Editor, as for any mission. Nothing checks that the two stay in step.
@@ -181,9 +183,8 @@ Run the gate and `mkdocs build --strict` before pushing; both also run on the pu
 (`.github/workflows/docs-check.yml`).
 
 **Which version the site shows.** `develop` publishes as `dev`, the site default while no stable
-release exists. A tag publishes its own version, plus the `latest` alias if it is a plain `vX.Y.Z` —
-a pre-release publishes its own version only, so a release candidate never becomes what a newcomer
-reads by default. `master` publishes nothing of its own: a tag is always on `master`, so between two
+release exists. A tag publishes its own version, plus the `latest` alias. `master` publishes
+nothing of its own: a tag is always on `master`, so between two
 releases `master` is not on the site.
 
 A documentation fix landing between two releases therefore reaches nobody until the next tag.
@@ -311,7 +312,7 @@ links to it, and the pull request closes it.
   and receives them only through *Releasing*.
 - Branch from `develop` as `<type>/<slug>`. `<type>` is one of `feat`, `fix`, `docs`, `chore`,
   `refactor`, `test` — the Conventional Commits types — and `<slug>` is lowercase kebab. A release
-  uses `release/<x.y.z>`, then `release/<x.y.z>-freeze`. Work spanning several pull requests reuses
+  uses `release/<x.y.z>`. Work spanning several pull requests reuses
   its slug, suffixed `-2`, `-3`… after the first.
 - Never commit directly to `develop` or `master`. **One exception, and it is the whole of it**: a
   change confined to `.tracker/` — opening a piece of work, a status change, an idea, archiving —
@@ -350,19 +351,22 @@ Before the first, fly the release candidate: the minimal tier of the in-sim test
 `python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
 consultative, not a gate — but a release that goes out unflown says so.
 
-1. **Prepare**, on a `release/<x.y.z>` branch: bump `SkynetIADS.version` in
-   `skynet-iads-source/skynet-iads.lua`, and write the release notes under `## [Unreleased]` in
-   `CHANGELOG.md`. Then run `python demo-missions/update-skynet-script.py update`, and commit the
-   demos and `demo-missions/skynet-script.sha256` with the bump. Pull request to `develop`.
-2. **Promote**: a pull request from `develop` to `master`, merged with a merge commit.
-3. **Tag** `v<x.y.z>` on `master` and push it. `.github/workflows/release.yml` builds, checks and
-   publishes the release, taking its notes from `## [Unreleased]` as it stands. A tag that is not a
-   plain `vX.Y.Z` publishes as a pre-release.
-4. **Freeze the changelog**, on a `release/<x.y.z>-freeze` branch: rename `[Unreleased]` to
-   `[x.y.z] — YYYY-MM-DD` and open a fresh `[Unreleased]` above it. Pull request to `develop`. This
-   comes after the tag because the workflow reads `[Unreleased]` literally: renamed earlier, the
-   release would ship with empty notes.
-5. **Tell whoever vendors the script** that a release is out. Nothing reaches a mission until a
-   consuming repository takes the new copy.
+1. **Prepare**, on a `release/<x.y.z>` branch from an up-to-date `develop`: run
+   `python build-tools/release.py <x.y.z>`. It sets `SkynetIADS.version`, renames `[Unreleased]` in
+   `CHANGELOG.md` to `[x.y.z] — YYYY-MM-DD` under a fresh `[Unreleased]`, refreshes the demos, and
+   packages the release into `build/release/`. It refuses a version lower than the code's or
+   already tagged. The new section already holds the entries each pull request added: it is the
+   release notes as they stand, and editing it is optional — a summary above the entries, a
+   reordering. `python build-tools/release.py` shows the release again, as it will be published.
+   Commit the version, the changelog, the demos and `demo-missions/skynet-script.sha256`; pull
+   request to `develop`.
+2. **Promote**: a pull request from `develop` to `master`, merged with a merge commit. A source
+   change merged to `develop` after the preparation fails its demo check: prepare again, moving its
+   changelog entry into `[x.y.z]`.
+3. **Tag** `v<x.y.z>` on `master` and push it. `.github/workflows/release.yml` runs the tests, then
+   `build-tools/release.py` on the tag, and publishes. It refuses a tag off `master`, a version that
+   is not the code's, a changelog with no section for it, or demos that do not carry the build. The
+   build is reproducible and the promotion gives `master` the tree of `develop`, so what it
+   publishes is byte for byte what step 1 showed.
 
 A tag is never reused or moved. If a release is wrong, cut the next one.
