@@ -44,9 +44,21 @@ then
 	ctx.invalid("the SA-6 never went live, or the SA-2 or its point defence never went dark")
 end
 local shots = attack()
--- the HARM's flight, then objectsIdentifiedAsHarmsMaxTargetAge (60 s) for the SA-2 to forget it
-watch:waitFor("pointDefence", { false, true, false }, 450)
-if Wd.fired(shots, ctx.name .. "/ATTACKER-1") == 0 then
+if not Hotload.waitFor(function()
+	return Wd.fired(shots, ctx.name .. "/ATTACKER-1") > 0
+end, 120) then
 	ctx.invalid("the attacker never fired")
 end
+-- Gone once its HARM is: at the end of its route, the attacker became a contact the network woke
+-- the SA-2 for, invisible or not, and a site gone live releases its point defence without the fix.
+-- Not before: a HARM goes with the aircraft that fired it.
+Hotload.waitFor(function()
+	return shots[1].object:isExist() == false
+end, 120)
+local attacker = Group.getByName(ctx.name .. "/ATTACKER")
+if attacker then
+	attacker:destroy()
+end
+-- the HARM's flight, then objectsIdentifiedAsHarmsMaxTargetAge (60 s) for the SA-2 to forget it
+watch:waitFor("pointDefence", { false, true, false }, 300)
 return watch:report()
