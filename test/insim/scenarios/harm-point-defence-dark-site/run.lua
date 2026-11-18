@@ -5,7 +5,7 @@ local watch = ctx.state.watch
 local HARM = "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}" -- AGM-88C, F-16C bl.52d stations 3 and 8
 
 -- Invisible, so that only the HARM is ever a contact; immortal, so that its run ends with a shot.
--- From the east, so that the HARM passes over the SA-10 on its way to the SA-6.
+-- From the east, so that the HARM passes over the SA-2 on its way to the SA-6.
 local function attack()
 	local shots = Wd.recordShots(ctx)
 	Wd.spawnAircraft(ctx, {
@@ -19,7 +19,7 @@ local function attack()
 		speed = 250,
 		task = "SEAD",
 		payload = {
-			-- one HARM for the SA-15's one launcher: with more, the SA-10 goes silent too
+			-- one HARM for the SA-15's one launcher: with more, the SA-2 goes silent too
 			pylons = { [3] = { CLSID = HARM } },
 			fuel = 3000,
 			flare = 0,
@@ -41,10 +41,10 @@ if
 		and watch:waitFor("pointDefence", { false }, 30)
 	)
 then
-	ctx.invalid("the SA-6 never went live, or the SA-10 or its point defence never went dark")
+	ctx.invalid("the SA-6 never went live, or the SA-2 or its point defence never went dark")
 end
 local shots = attack()
--- the HARM's flight, then objectsIdentifiedAsHarmsMaxTargetAge (60 s) for the SA-10 to forget it
+-- the HARM's flight, then objectsIdentifiedAsHarmsMaxTargetAge (60 s) for the SA-2 to forget it
 watch:waitFor("pointDefence", { false, true, false }, 450)
 if Wd.fired(shots, ctx.name .. "/ATTACKER-1") == 0 then
 	ctx.invalid("the attacker never fired")
