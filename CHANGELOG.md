@@ -18,6 +18,17 @@ between two copies.
 
 ## [Unreleased]
 
+### Fixed
+
+- A SAM site that was dark when the network told it of a HARM kept its point defences live for good:
+  a gun point defence for the rest of the mission, a missile one until it had nothing left to fire.
+  Only a site that had gone live ran the scan that forgets a HARM once it is gone and stands the
+  point defences down, and nothing started it on a dark site. In a mission, one HARM fired at one
+  site could latch the point defences of every dark site it passed on its way. Being told of a HARM
+  now starts that scan on a dark site too. The same site also never forgot its HARMs, so the count
+  it weighs against its point defences' missiles only grew, and it went silent for a later HARM its
+  point defence could have taken.
+
 ## [3.6.0] — 2026-11-08
 
 ### Highlights

@@ -159,4 +159,47 @@ function TestSkynetIADSPointDefenceUnderHARM:testPointDefenceStandsDownOnceTheHA
 	luaunit.assertEquals(pointDefence:isActive(), false, "the next cycle sends the released point defence dark")
 end
 
+--- A site dark when the network tells it of a HARM has no scan running, since only goLive()
+--- starts one, and the scan is what ages the HARM out and releases the point defence. Without
+--- one, the point defence stays live for the rest of the mission and the HARM is never forgotten.
+function TestSkynetIADSPointDefenceUnderHARM:testPointDefenceStandsDownOnceTheHARMIsGoneWhenTheSiteWasDarkThroughout()
+	local iads, site, pointDefence = self:buildNetwork()
+	self.iads = iads
+	-- the scan left over from start-up stops itself at its first pass on a dark site
+	dcsStub.advanceClock(3)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(site:isActive(), false)
+	luaunit.assertEquals(site:isScanningForHARMs(), false)
+
+	local harm = inboundHARM(site)
+	site:informOfHARM(harm)
+	luaunit.assertEquals(pointDefence:isActive(), true)
+	luaunit.assertEquals(site:isScanningForHARMs(), true, "told of a HARM, the dark site scans to age it out")
+
+	harm.age = site.objectsIdentifiedAsHarmsMaxTargetAge + 1
+	dcsStub.advanceClock(3)
+	dcsStub.fireDueTimers()
+	luaunit.assertEquals(pointDefence:getIsPointDefending(), false, "the HARM is gone: the point defence is released")
+	luaunit.assertEquals(site:getNumberOfObjectsItentifiedAsHARMS(), 0, "the HARM is forgotten")
+	luaunit.assertEquals(site:isScanningForHARMs(), false, "a dark site with nothing remembered stops scanning")
+	SkynetIADS.evaluateContacts(iads)
+	luaunit.assertEquals(pointDefence:isActive(), false, "the next cycle sends the released point defence dark")
+	luaunit.assertEquals(site:isActive(), false)
+end
+
+--- The HARM detection informs a site of the same HARM every cycle. A live site's scan is already
+--- running, and starting it again would push its next pass back each time.
+function TestSkynetIADSPointDefenceUnderHARM:testHARMDoesNotRestartTheScanOfALiveSite()
+	local iads, site = self:buildNetwork()
+	self.iads = iads
+	site:goLive()
+	local scanID = site.harmScanID
+	luaunit.assertNotNil(scanID)
+
+	local harm = inboundHARM(site)
+	site:informOfHARM(harm)
+	site:informOfHARM(harm)
+	luaunit.assertIs(site.harmScanID, scanID, "the running scan was replaced")
+end
+
 os.exit(luaunit.LuaUnit.run())

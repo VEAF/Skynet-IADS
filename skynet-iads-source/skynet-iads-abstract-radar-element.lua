@@ -1134,6 +1134,12 @@ do
 					and distanceNM < SkynetIADSAbstractRadarElement.HARM_LOOKAHEAD_NM
 				then
 					self:addObjectIdentifiedAsHARM(harmContact)
+					-- only goLive() starts the scan, and the scan is what forgets the HARM and releases
+					-- the point defences: a site dark now would hold both for good. Not restarted on a
+					-- live site, which is told of the same HARM every cycle
+					if self:isScanningForHARMs() == false then
+						self:scanForHarms()
+					end
 					if
 						#self:getPointDefences() > 0
 						and self:pointDefencesGoLive() == true
