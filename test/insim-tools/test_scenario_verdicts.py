@@ -84,6 +84,14 @@ CASES = {
         ("point defence never woke", {"site": [True], "pointDefence": [False], "harm": [False, True]}, False),
         ("no HARM identified", {"site": [True], "pointDefence": [False, True, False], "harm": [False]}, False),
     ],
+    "harm-point-defence-dark-site": [
+        ("point defence released once the HARM was forgotten", {"target": [True, False, True], "site": [False], "pointDefence": [False, True, False], "harm": [False, True, False]}, True),
+        ("point defence latched live, the HARM never forgotten", {"target": [True, False, True], "site": [False], "pointDefence": [False, True], "harm": [False, True]}, False),
+        ("HARM forgotten, point defence still live", {"target": [True, False, True], "site": [False], "pointDefence": [False, True], "harm": [False, True, False]}, False),
+        ("the site went live", {"target": [True, False, True], "site": [False, True, False], "pointDefence": [False, True, False], "harm": [False, True, False]}, False),
+        ("point defence never woke", {"target": [True, False, True], "site": [False], "pointDefence": [False], "harm": [False, True, False]}, False),
+        ("no HARM identified", {"target": [True, False, True], "site": [False], "pointDefence": [False, True, False], "harm": [False]}, False),
+    ],
     "harm-engaging-undefended": [
         ("live, silenced, back up", {"active": [False, True, False, True], "defending": [False, True, False], "harm": [False, True], "siteShots": 2}, True),
         ("never silenced", {"active": [False, True], "defending": [False], "harm": [False, True], "siteShots": 2}, False),

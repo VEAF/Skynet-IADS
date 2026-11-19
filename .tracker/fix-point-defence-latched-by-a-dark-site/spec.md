@@ -1,6 +1,6 @@
 # A dark site told of a HARM latches its point defence live for good
 
-Status: in-progress
+Status: done
 
 ## The problem
 
@@ -80,10 +80,18 @@ defence forgets its HARMs too.
   restarted by a HARM.
 - In sim, `harm-point-defence-dark-site`: a dark site cannot be a HARM's target, since it emits
   nothing, so the HARM is fired at a live SA-6 acting as EW and passes over the protected site on
-  its way. The protected site stands 2.5 km east of the SA-6 (`ZONE-SITE-3`), under the HARM's
-  path from the east, not acting as EW, with an SA-15 point defence; the attacker is invisible, so
-  it never has a target. The site stays dark throughout, its point defence goes live then dark
-  again, and its HARM count falls back to 0.
+  its way. The protected site is an SA-2, 2.5 km east of the SA-6 (`ZONE-SITE-2`), under the
+  HARM's path from the east, not acting as EW, with an SA-15 point defence; the attacker is
+  invisible, so it never has a target. The site stays dark throughout, its point defence goes live
+  then dark again, and its HARM count falls back to 0.
+  The protected site must be one that cannot engage a HARM. A first run with an SA-10 failed for
+  that reason alone: the network woke the SA-10 to shoot at the HARM, and a site gone live has its
+  scan running, fix or not. For the same reason the attacker is removed once its HARM is gone:
+  invisible as it is, it became a contact the network woke the SA-2 for once it reached the end of
+  its route, about 280 s after it spawned, which released the point defence of the build without
+  the fix. Removed straight after its shot, it took its HARM with it.
+  Flown on 2026-11-18: without the fix the point defence was still live 6 min after the HARM, and
+  the HARM never forgotten; with it, the point defence stood down once the HARM was forgotten.
 
 ## Out of scope
 
