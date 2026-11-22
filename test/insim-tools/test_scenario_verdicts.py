@@ -79,11 +79,15 @@ CASES = {
         ("no HARM identified", {"activeSite": [True, False, True], "harm": [False]}, False),
         ("HARM never forgotten", {"activeSite": [True, False, True], "harm": [False, True]}, False),
     ],
-    "harm-point-defence": [
-        ("site live, point defence engaged", {"site": [True], "pointDefence": [False, True, False], "harm": [False, True, False]}, True),
-        ("site silenced", {"site": [True, False, True], "pointDefence": [False, True, False], "harm": [False, True]}, False),
-        ("point defence never woke", {"site": [True], "pointDefence": [False], "harm": [False, True]}, False),
-        ("no HARM identified", {"site": [True], "pointDefence": [False, True, False], "harm": [False]}, False),
+    "harm-point-defence-ew": [
+        ("site live, point defence engaged and released", {"activeSite": [True], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, True),
+        ("site silenced", {"activeSite": [True, False, True], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, False),
+        ("point defence never woke", {"activeSite": [True], "activePointDefence": [False], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, False),
+        ("latch never released", {"activeSite": [True], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True], "harm": [False, True, False]}, False),
+        ("point defence flapped", {"activeSite": [True], "activePointDefence": [False, True, False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, False),
+        ("point defence never released", {"activeSite": [True], "activePointDefence": [False, True], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, False),
+        ("no HARM identified", {"activeSite": [True], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False]}, False),
+        ("HARM never forgotten", {"activeSite": [True], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False, True]}, False),
     ],
     "harm-dark-site-point-defence": [
         ("dark throughout, point defence released", {"activeEwr": [True, False, True], "activeSite": [False], "activePointDefence": [False, True, False], "pointDefenceLatched": [False, True, False], "harm": [False, True, False]}, True),

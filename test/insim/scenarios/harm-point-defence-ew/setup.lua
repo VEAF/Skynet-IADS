@@ -14,12 +14,17 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 end)
 local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
 local pointDefence = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA15")
+ctx.state.site = site
+ctx.state.pointDefence = pointDefence
 ctx.state.watch = Hotload.load("insim-watch").start(ctx, {
-	site = function()
+	activeSite = function()
 		return site:isActive()
 	end,
-	pointDefence = function()
+	activePointDefence = function()
 		return pointDefence:isActive()
+	end,
+	pointDefenceLatched = function()
+		return pointDefence:getIsPointDefending()
 	end,
 	harm = function()
 		return site:getNumberOfObjectsItentifiedAsHARMS() > 0
