@@ -8,8 +8,9 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	site:setActAsEW(true)
 end)
 local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
+ctx.state.site = site
 ctx.state.watch = Hotload.load("insim-watch").start(ctx, {
-	active = function()
+	activeSite = function()
 		return site:isActive()
 	end,
 	harm = function()

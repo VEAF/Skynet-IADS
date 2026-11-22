@@ -71,12 +71,13 @@ CASES = {
         ("dark at the start", {"liveFirst": False, "active": [False, True], "firing": [False, True]}, False),
         ("never fired", {"liveFirst": True, "active": [True], "firing": [False]}, False),
     ],
-    "harm-defence": [
-        ("silenced and back", {"active": [True, False, True], "harm": [False, True, False]}, True),
-        ("never silenced", {"active": [True], "harm": [False, True]}, False),
-        ("never back", {"active": [True, False], "harm": [False, True]}, False),
-        ("no HARM identified", {"active": [True, False, True], "harm": [False]}, False),
-        ("flapped after coming back", {"active": [True, False, True, False, True], "harm": [False, True, False]}, False),
+    "harm-silences-site": [
+        ("silenced and back", {"activeSite": [True, False, True], "harm": [False, True, False]}, True),
+        ("never silenced", {"activeSite": [True], "harm": [False, True, False]}, False),
+        ("never back", {"activeSite": [True, False], "harm": [False, True, False]}, False),
+        ("flapped after coming back", {"activeSite": [True, False, True, False, True], "harm": [False, True, False]}, False),
+        ("no HARM identified", {"activeSite": [True, False, True], "harm": [False]}, False),
+        ("HARM never forgotten", {"activeSite": [True, False, True], "harm": [False, True]}, False),
     ],
     "harm-point-defence": [
         ("site live, point defence engaged", {"site": [True], "pointDefence": [False, True, False], "harm": [False, True, False]}, True),
