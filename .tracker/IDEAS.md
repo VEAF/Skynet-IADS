@@ -142,6 +142,11 @@ against the number of HARMs inbound). The second assumes the site shoots each HA
   launchers and missiles, and fires once.
 - **IRIS-T SLM** engages HARMs, bombs and missiles, but rarely stops them: 26 missiles fired for 2
   kills in one series; every Maverick and bomb it shot at still hit in another.
+- **SA-10** (S-300PS) fired nothing at a single AGM-88C, in DCS 2.9 on 2026-11-22
+  (`harm-site-engages-harm`, from `test-insim-harm-scenarios`). It was live on an aircraft circling
+  beyond its missiles, the HARM fired from that aircraft's side, and Skynet kept it live as flagged.
+  With the HARM from another side, the HARM killed its search radar and the site went dark. One
+  run each: whether the AI holds fire because of the track it is already on is not known.
 
 **Open for discussion**: a separate capability for "stays live under HARM attack", or a
 per-type cap on how many HARMs a site is trusted to stop.
