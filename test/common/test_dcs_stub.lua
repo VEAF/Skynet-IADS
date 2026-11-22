@@ -29,6 +29,37 @@ function TestDcsStub:test_reset_clears_state()
 	luaunit.assertEquals(#dcsStub.logs, 0)
 end
 
+function TestDcsStub:test_marks_are_recorded_by_id_with_their_coalition()
+	local p = { x = 1, y = 0, z = 2 }
+	trigger.action.markupToAll(7, 1, 10, p, p, p, { 1, 0, 0, 1 }, { 1, 0, 0, 0.3 }, 1, true)
+	trigger.action.rectToAll(-1, 11, p, p, { 0, 0, 1, 1 }, { 0, 0, 1, 0.3 }, 2, true)
+	trigger.action.lineToAll(2, 12, p, p, { 0, 1, 0, 1 }, 1, true)
+	trigger.action.circleToAll(0, 13, p, 500, { 1, 0, 0, 1 }, { 1, 0, 0, 0 }, 1, true)
+	trigger.action.textToAll(-1, 14, p, { 1, 1, 1, 1 }, { 1, 1, 1, 0 }, 10, true, "label")
+	luaunit.assertEquals(dcsStub.markCount(), 5)
+	luaunit.assertEquals(dcsStub.marks[10].kind, "markup")
+	luaunit.assertEquals(dcsStub.marks[10].coalition, 1)
+	luaunit.assertEquals(dcsStub.marks[10].args[1], 7, "the shape id leads the arguments")
+	luaunit.assertEquals(dcsStub.marks[12].coalition, 2)
+	luaunit.assertEquals(dcsStub.marks[13].args[2], 500)
+	luaunit.assertEquals(dcsStub.marks[14].args[6], "label")
+	trigger.action.removeMark(12)
+	luaunit.assertNil(dcsStub.marks[12])
+	luaunit.assertEquals(dcsStub.markCount(), 4)
+end
+
+function TestDcsStub:test_a_mark_id_already_on_the_map_raises()
+	local p = { x = 0, y = 0, z = 0 }
+	trigger.action.lineToAll(-1, 20, p, p, { 0, 0, 0, 1 }, 1, true)
+	luaunit.assertError(trigger.action.circleToAll, -1, 20, p, 1, { 0, 0, 0, 1 }, { 0, 0, 0, 0 }, 1, true)
+end
+
+function TestDcsStub:test_reset_clears_marks()
+	trigger.action.lineToAll(-1, 30, { x = 0, y = 0, z = 0 }, { x = 1, y = 0, z = 1 }, { 0, 0, 0, 1 }, 1, true)
+	dcsStub.reset()
+	luaunit.assertEquals(dcsStub.markCount(), 0)
+end
+
 function TestDcsStub:test_object_getCategory()
 	luaunit.assertNil(Object.getCategory(nil))
 	luaunit.assertEquals(Object.getCategory({}), Object.Category.UNIT)
