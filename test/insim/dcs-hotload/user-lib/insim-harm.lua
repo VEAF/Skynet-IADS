@@ -102,10 +102,18 @@ end
 -- any silence, and `settle` seconds more have passed for a late flip to show. A check made before
 -- then cannot see a site that holds for a while and flaps afterwards. Each wait is bounded; one that
 -- times out is a measurement, and the report says what went on.
-function H.untilOver(watch, harm, sites, settle)
+--
+-- The shooter goes once its HARM has: at the end of its route it becomes a contact the network wakes
+-- sites for, invisible or not, which would show as a flip the HARM did not cause. Not before: a HARM
+-- goes with the aircraft that fired it.
+function H.untilOver(ctx, watch, harm, sites, settle)
 	Hotload.waitFor(function()
 		return harm:isExist() == false
 	end, 180)
+	local shooter = Group.getByName(ctx.name .. "/SHOOTER")
+	if shooter then
+		shooter:destroy()
+	end
 	Hotload.waitFor(function()
 		for _, site in ipairs(sites) do
 			if site:getNumberOfObjectsItentifiedAsHARMS() > 0 or site:isDefendingHARM() then

@@ -6,4 +6,4 @@ if not watch:waitFor("activeSite", { true }, 30) then
 	ctx.invalid("the SA-6 never went live")
 end
 local harm = H.shoot(ctx, "SAM-SA6", "ZONE-SITE-1", 90)
-return H.untilOver(watch, harm, { ctx.state.site }, 10)
+return H.untilOver(ctx, watch, harm, { ctx.state.site }, 10)
