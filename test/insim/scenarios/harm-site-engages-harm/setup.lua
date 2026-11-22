@@ -7,9 +7,8 @@ ctx:add("EW-1L13", "ZONE-EW-1")
 local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA10")
 	-- live once the waker is in its search radar's range, stretched past its missiles: live on a real
-	-- track, with no missile spent before the HARM. Skynet reads a search radar's range from
-	-- getSensors(), and DCS answers 80,249 m for every ground radar (seen in DCS 2.9, 2026-11-22),
-	-- short of the SA-10's 120 km: 200 % makes it 160 km
+	-- track, with no missile spent before the HARM. Skynet reads the SA-10's search range as 80.2 km
+	-- (measured in the mission, DCS 2.9), short of the 120 km its missiles reach: 200 % makes it 160 km
 	site:setEngagementZone(SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE)
 	site:setGoLiveRangeInPercent(200)
 	site:setHARMDetectionChance(100)

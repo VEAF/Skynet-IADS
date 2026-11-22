@@ -147,10 +147,10 @@ the suite does.
   judges Skynet's reaction, not whether the DCS AI stops the HARM. An SA-10 left mortal had its
   search radar killed by the HARM and went dark, which failed the scenario for a reason that is not
   Skynet's. It fired nothing at the HARM from either side (DCS 2.9; recorded in `.tracker/IDEAS.md`).
-- **Skynet reads every ground radar's search range as 80,249 m**: that is what DCS's `getSensors()`
-  answers for each of them (measured in the mission, DCS 2.9). The SA-10's waker, beyond its
-  120 km missiles, therefore needs `setGoLiveRangeInPercent(200)`. A 1L13 at `ZONE-EW-1` detects an
-  F-16 at 122 km (measured).
+- **Skynet's search range falls short of the missiles' reach**: it reads the SA-2's as 53.5 km and
+  the SA-10's as 80.2 km, against `ThreatRange`s of 43 and 120 km (measured from a Skynet instance in
+  the mission, DCS 2.9). Both sites get `setGoLiveRangeInPercent(200)`, and the waker circles at 75
+  and 140 km. A 1L13 at `ZONE-EW-1` detects an F-16 at 122 km (measured).
 - **The shooter comes from the waker's side** in `harm-site-engages-harm`: the SA-10's tracking
   radar is turned to the waker.
 
