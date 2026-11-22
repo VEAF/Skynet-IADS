@@ -1,6 +1,6 @@
 # In-sim HARM scenarios: a smoke suite
 
-Status: in-progress
+Status: done
 
 Answers GitHub issue #75 (https://github.com/VEAF/Skynet-IADS/issues/75).
 
@@ -154,20 +154,22 @@ the suite does.
 - **The shooter comes from the waker's side** in `harm-site-engages-harm`: the SA-10's tracking
   radar is turned to the waker.
 
-## Left to the build
+## Settled during the build
 
-- **One HARM in `harm-silences-site`**, where `harm-defence` fires two. A second HARM extending the
+- **One HARM in `harm-silences-site`**, where `harm-defence` fired two. A second HARM extending the
   silence is an edge case for the Lua tests.
-- **The settling time** in the stop rule: about one contact cycle plus margin, set from what a run
-  shows.
-- **The waker's type and orbit.** It must be inside the SA-10's and SA-2's search radar range and
-  the 1L13's detection range, and outside their missile range. The ranges come from the datamine and
-  Skynet's range data, not from memory, and the first run checks them.
-- **Where the SA-10 stands**: a catalogue zone the shooter can reach with the HARM's line clear of
-  any other site. It is alone in its scenario, so `ZONE-SITE-2` will do unless a run says otherwise.
-- **The verdict cases** in `test/insim-tools/test_scenario_verdicts.py` are rewritten for the five
-  scenarios. Each gets a pass case and a fail case for every assertion, a late flip among them.
-- `test/README.md`'s `insim-harm` table is rewritten to match the library.
+- **The settling time** in the stop rule is 10 s; no run needed more.
+- **The waker** is an F-16C bl.52d at 8,000 m, holding fire, circling 75 km north-west of the SA-2
+  and 140 km north-west of the SA-10, over the steppe and away from the mountains. Neither site fired
+  at it.
+- **The SA-10 stands on `ZONE-SITE-2`**, alone in its scenario.
+- **The verdict cases** in `test/insim-tools/test_scenario_verdicts.py` give each scenario a pass
+  case and a fail case for every assertion, a late flip and a HARM never forgotten among them.
+- **Shared code** went further than first planned: `insim-harm.watch` starts the probes and
+  `insim-harm.wake` checks that the site woke and held fire, both used by every scenario that needs
+  them. `test/README.md`'s `insim-harm` table matches the library.
+- **Timeouts** follow the margin rule over `untilOver`'s bounded waits: 600 s, 660 s, 900 s, 630 s and
+  900 s. A run takes 4 to 5 minutes.
 
 ## Constraints
 
