@@ -170,6 +170,8 @@ the suite does.
   them. `test/README.md`'s `insim-harm` table matches the library.
 - **Timeouts** follow the margin rule over `untilOver`'s bounded waits: 600 s, 660 s, 900 s, 630 s and
   900 s. A run takes 4 to 5 minutes.
+- **`network-loses-infrastructure`'s timeout** goes from 600 to 660 s, the other half of the same
+  gap in `.tracker/IDEAS.md`: its worst case waits 635 s. The entry leaves `IDEAS.md`.
 
 ## Constraints
 
