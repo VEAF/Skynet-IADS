@@ -221,9 +221,10 @@ than the one running), and an exit code.
 ### Running it
 
 ```
-python test/insim/run-insim.py                      # the minimal tier
-python test/insim/run-insim.py --tier full          # minimal and full
-python test/insim/run-insim.py iads-builds          # by name; a named scenario ignores the tier
+python test/insim/run-insim.py                      # the scenarios tagged tier-minimal
+python test/insim/run-insim.py --tag tier-full      # the scenarios tagged tier-full
+python test/insim/run-insim.py --tag harm           # any tag, one per run
+python test/insim/run-insim.py iads-builds          # by name; a named scenario ignores the tag
 python test/insim/run-insim.py --skynet FILE        # test this Skynet script instead of the repository's build
 python test/insim/run-insim.py --resume             # continue the latest run after a crash
 python test/insim/run-insim.py --verify             # judge the latest run's results again, without DCS
@@ -251,7 +252,8 @@ mailbox, and waits for the answer. It:
 6. prints the summary, writes `report.md` into `build/insim/results/<date-time>/` (git-ignored) and
    exits 1 if any scenario is `fail`, `invalid` or `crashed` (`skipped` does not count). It does not
    stop at the first failure. It exits 2 without running when the run is refused: an unknown
-   scenario, a scenario folder missing a file, a stale Skynet script, no results to resume or verify.
+   scenario, a tag no scenario has, a scenario folder missing a file or with malformed `tags`, a
+   stale Skynet script, no results to resume or verify, or results recorded before tags existed.
 
 A named scenario that does not exist is refused before anything is sent.
 
@@ -282,7 +284,7 @@ scenarios/iads-builds/
 ```lua
 -- scenario.lua
 return {
-	tier = "minimal",   -- "minimal" or "full"; omit it and the scenario runs only by name
+	tags = { "tier-minimal", "tier-full" },  -- any strings; omit it and the scenario runs only by name
 	mission = "insim-ca-main",
 	timeout = 120,      -- sim seconds, for each phase command: setup, run, teardown, cleanup
 }
@@ -381,10 +383,19 @@ over a live leftover replaces it, and setup cleans up what an aborted run of the
 The IADS looks only at the prefix `<scenario>/`. A static cannot be late-activated: the catalogue's
 stand in the mission from the start, away from every zone.
 
-**The tiers.** `minimal` is the short run, the one worth making before a pull request; `full` adds
-the scenarios not wanted every time. A scenario with no `tier` runs only when named. The `selftest-*`
-scenarios have none: they prove the engine's own paths (a raise, `invalid`, a hang, a failing
-`verify.lua`) and would keep any tier from exiting 0.
+**The tags.** A run takes one tag, `--tag`, `tier-minimal` by default, and runs every scenario
+carrying it. A tag is a plain label: any string, with no hierarchy between tags, and nothing checks
+its spelling. A scenario with no `tags` runs only when named.
+
+| Tag | Carried by |
+|---|---|
+| `tier-minimal` | the short run, the one worth making before a pull request |
+| `tier-full` | the long run: every scenario but the self-tests, so a `tier-minimal` scenario carries both |
+| `harm` | the HARM scenarios |
+| `self-test` | the `selftest-*` scenarios. They prove the engine's own paths (a raise, `invalid`, a hang, a failing `verify.lua`), so a run of this tag exits 1 by design; no other tag holds them |
+
+A tag may span missions: the scenarios of the other mission are skipped, and `--resume` with that
+mission open runs them.
 
 ### The missions
 

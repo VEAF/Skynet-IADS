@@ -347,7 +347,7 @@ were reconciled, and is the only place that story is told.
 A release follows these steps. Every one that writes to `develop` or `master` goes through a pull
 request.
 
-Before the first, fly the release candidate: the minimal tier of the in-sim tests,
+Before the first, fly the release candidate: the `tier-minimal` tag of the in-sim tests,
 `python test/insim/run-insim.py`, runs where CI cannot, since GitHub runners have no DCS. It is
 consultative, not a gate — but a release that goes out unflown says so.
 

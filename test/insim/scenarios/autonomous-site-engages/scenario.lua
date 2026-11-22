@@ -1,5 +1,5 @@
 return {
 	mission = "insim-ca-main",
-	tier = "full",
+	tags = { "tier-full" },
 	timeout = 300,
 }
