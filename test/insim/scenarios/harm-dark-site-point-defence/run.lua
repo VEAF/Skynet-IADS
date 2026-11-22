@@ -12,4 +12,4 @@ then
 	ctx.invalid("the Dog Ear never went live, or the SA-2 or its point defence never went dark")
 end
 local harm = H.shoot(ctx, "EW-DOGEAR", "ZONE-SITE-1", 90)
-return H.untilOver(ctx, watch, harm, { ctx.state.site }, 10)
+return H.untilOver(ctx, watch, harm, { ctx.state.site, ctx.state.pointDefence }, 10)

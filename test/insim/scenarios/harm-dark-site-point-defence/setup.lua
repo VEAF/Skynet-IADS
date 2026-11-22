@@ -19,8 +19,8 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 end)
 local ewr = iads:getEarlyWarningRadarByUnitName(ctx.name .. "/EW-DOGEAR-1")
 ctx.state.site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA2")
-local pointDefence = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA15")
-ctx.state.watch = Hotload.load("insim-harm").watch(ctx, ctx.state.site, pointDefence, {
+ctx.state.pointDefence = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA15")
+ctx.state.watch = Hotload.load("insim-harm").watch(ctx, ctx.state.site, ctx.state.pointDefence, {
 	activeEwr = function()
 		return ewr:isActive()
 	end,

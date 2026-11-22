@@ -60,7 +60,11 @@ end
 -- the site dark for a reason that is not Skynet's (seen with an SA-10, DCS 2.9, 2026-11-22).
 function H.shoot(ctx, targetRole, zone, bearing)
 	local target = ctx.name .. "/" .. targetRole
-	Group.getByName(target):getController():setCommand({ id = "SetImmortal", params = { value = true } })
+	local group = Group.getByName(target)
+	if not group then
+		ctx.invalid("no group " .. target .. " to shoot at")
+	end
+	group:getController():setCommand({ id = "SetImmortal", params = { value = true } })
 	local shots = Wd.recordShots(ctx)
 	Wd.spawnAircraft(ctx, {
 		name = "SHOOTER",
@@ -147,7 +151,8 @@ end
 
 -- Watches on until the engagement is over, and returns the watch's report: the HARM has ended
 -- (shot down, on the ground, or flown past), every one of `sites` has forgotten it and is out of
--- any silence, and `settle` seconds more have passed for a late flip to show. A check made before
+-- any silence, every point defence among them has gone dark again once released, and `settle`
+-- seconds more have passed for a late flip to show. A check made before
 -- then cannot see a site that holds for a while and flaps afterwards. Each wait is bounded; one that
 -- times out is a measurement, and the report says what went on.
 --
@@ -165,6 +170,10 @@ function H.untilOver(ctx, watch, harm, sites, settle)
 	Hotload.waitFor(function()
 		for _, site in ipairs(sites) do
 			if site:getNumberOfObjectsItentifiedAsHARMS() > 0 or site:isDefendingHARM() then
+				return false
+			end
+			-- released with the last HARM, it goes dark on the network's next cycle
+			if site:getIsAPointDefence() and site:isActive() then
 				return false
 			end
 		end
