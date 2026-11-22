@@ -2,7 +2,11 @@ local ctx = ...
 
 -- An SA-10 can engage a HARM: with launchers and missiles for it, it stays live under one
 -- (shallIgnoreHARMShutdown). Alone, so that nothing else takes the HARM down.
-ctx:add("SAM-SA10", "ZONE-SITE-2")
+local sa10 = ctx:add("SAM-SA10", "ZONE-SITE-2")
+-- Immortal: what is judged is Skynet keeping the site live under the HARM, not whether the DCS AI
+-- shoots the HARM down. It often does not, and a HARM that kills the search radar sends the site
+-- dark for a reason that has nothing to do with Skynet (seen in DCS 2.9, 2026-11-22).
+sa10:getController():setCommand({ id = "SetImmortal", params = { value = true } })
 ctx:add("EW-1L13", "ZONE-EW-1")
 local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA10")
