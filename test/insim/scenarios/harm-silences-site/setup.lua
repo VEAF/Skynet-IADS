@@ -7,13 +7,5 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	-- emitting, so the HARM has something to guide on; an SA-6 cannot engage a HARM, so it goes dark
 	site:setActAsEW(true)
 end)
-local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
-ctx.state.site = site
-ctx.state.watch = Hotload.load("insim-watch").start(ctx, {
-	activeSite = function()
-		return site:isActive()
-	end,
-	harm = function()
-		return site:getNumberOfObjectsItentifiedAsHARMS() > 0
-	end,
-}, 1)
+ctx.state.site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
+ctx.state.watch = Hotload.load("insim-harm").watch(ctx, ctx.state.site)

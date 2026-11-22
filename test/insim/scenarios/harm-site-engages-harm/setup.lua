@@ -2,11 +2,7 @@ local ctx = ...
 
 -- An SA-10 can engage a HARM: with launchers and missiles for it, it stays live under one
 -- (shallIgnoreHARMShutdown). Alone, so that nothing else takes the HARM down.
-local sa10 = ctx:add("SAM-SA10", "ZONE-SITE-2")
--- Immortal: what is judged is Skynet keeping the site live under the HARM, not whether the DCS AI
--- shoots the HARM down. It often does not, and a HARM that kills the search radar sends the site
--- dark for a reason that has nothing to do with Skynet (seen in DCS 2.9, 2026-11-22).
-sa10:getController():setCommand({ id = "SetImmortal", params = { value = true } })
+ctx:add("SAM-SA10", "ZONE-SITE-2")
 ctx:add("EW-1L13", "ZONE-EW-1")
 local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA10")
@@ -20,16 +16,5 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	-- the chances of every radar that sees the HARM combine, the EW radar's among them
 	iads:getEarlyWarningRadarByUnitName(ctx.name .. "/EW-1L13-1"):setHARMDetectionChance(100)
 end)
-local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA10")
-ctx.state.site = site
-ctx.state.watch = Hotload.load("insim-watch").start(ctx, {
-	activeSite = function()
-		return site:isActive()
-	end,
-	defending = function()
-		return site:isDefendingHARM()
-	end,
-	harm = function()
-		return site:getNumberOfObjectsItentifiedAsHARMS() > 0
-	end,
-}, 1)
+ctx.state.site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA10")
+ctx.state.watch = Hotload.load("insim-harm").watch(ctx, ctx.state.site)

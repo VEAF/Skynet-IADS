@@ -1,5 +1,6 @@
--- What the harm-* scenarios share: the shooter that fires the HARM, the waker that gives the network
--- a target to wake a site for, and the rule for when a scenario has watched long enough.
+-- What the harm-* scenarios share: the probes they watch, the shooter that fires the HARM, the waker
+-- that gives the network a target to wake a site for, and the rule for when a scenario has watched
+-- long enough.
 local Wd = Hotload.load("insim-world")
 
 local H = {}
@@ -20,11 +21,46 @@ function H.firedBy(shots, prefix)
 	return count
 end
 
+-- Starts the watch every harm-* scenario reads (`activeSite`, `defending`, `harm` on the judged site;
+-- `activePointDefence` and `pointDefenceLatched` when `pointDefence` is given), sampled every second,
+-- plus the probes in `more`, a table as insim-watch takes it. Returns the watch.
+function H.watch(ctx, site, pointDefence, more)
+	local probes = {
+		activeSite = function()
+			return site:isActive()
+		end,
+		defending = function()
+			return site:isDefendingHARM()
+		end,
+		harm = function()
+			return site:getNumberOfObjectsItentifiedAsHARMS() > 0
+		end,
+	}
+	if pointDefence then
+		probes.activePointDefence = function()
+			return pointDefence:isActive()
+		end
+		probes.pointDefenceLatched = function()
+			return pointDefence:getIsPointDefending()
+		end
+	end
+	for name, probe in pairs(more or {}) do
+		probes[name] = probe
+	end
+	return Hotload.load("insim-watch").start(ctx, probes, 1)
+end
+
 -- Fires one HARM at the group `<scenario>/<targetRole>`, standing on `zone`, from `bearing` (degrees,
 -- 0 north): an F-16 spawned 80 km out flies in and fires on the way. Invisible, so that only its HARM
 -- is ever a contact; immortal, so that its run ends with a shot. Returns the HARM, a weapon object
 -- whose `isExist()` tells when it has ended. The phase ends as `invalid` if it never fires.
+--
+-- The target is made immortal first. What a scenario judges is Skynet's reaction to the HARM, not
+-- whether the DCS AI shoots it down: it often does not, and a HARM that kills a search radar sends
+-- the site dark for a reason that is not Skynet's (seen with an SA-10, DCS 2.9, 2026-11-22).
 function H.shoot(ctx, targetRole, zone, bearing)
+	local target = ctx.name .. "/" .. targetRole
+	Group.getByName(target):getController():setCommand({ id = "SetImmortal", params = { value = true } })
 	local shots = Wd.recordShots(ctx)
 	Wd.spawnAircraft(ctx, {
 		name = "SHOOTER",
@@ -47,7 +83,7 @@ function H.shoot(ctx, targetRole, zone, bearing)
 		immortal = true,
 		invisible = true,
 		ignoreThreats = true,
-		waypointTasks = { Wd.attackTask(ctx.name .. "/" .. targetRole, 32768) }, -- anti-radiation
+		waypointTasks = { Wd.attackTask(target, 32768) }, -- anti-radiation
 	})
 	local shooter = ctx.name .. "/SHOOTER-1"
 	if not Hotload.waitFor(function()
@@ -62,11 +98,15 @@ function H.shoot(ctx, targetRole, zone, bearing)
 	end
 end
 
--- Gives the network a target to wake a site for: a visible, immortal F-16 with nothing to fire,
--- which flies in on `bearing` from `zone` and circles `km` from the zone's centre. Spawned farther
--- out, so that it never comes closer than its orbit. A site set to go live in its search range, with
--- the orbit beyond its missiles' reach, is then live on a real track without firing a missile.
-function H.wake(ctx, zone, bearing, km)
+-- Gives the network a target to wake the site `<scenario>/<siteRole>` for: a visible, immortal F-16
+-- with nothing to fire, which flies in on `bearing` from `zone` and circles `km` from the zone's
+-- centre. Spawned farther out, so that it never comes closer than its orbit. A site set to go live in
+-- its search range, with the orbit beyond its missiles' reach, is then live on a real track without
+-- firing a missile. Waits for `watch`'s `activeSite` to go `{false, true}`, then 20 s more, and ends
+-- the phase as `invalid` if the site never woke or fired: a site that fired at the waker may have
+-- no missile left for the HARM. Returns every shot fired from the waker's spawn on.
+function H.wake(ctx, watch, siteRole, zone, bearing, km)
+	local shots = Wd.recordShots(ctx)
 	local orbit = Wd.pointFrom(zone, bearing, km)
 	local waker = Wd.spawnAircraft(ctx, {
 		name = "WAKER",
@@ -95,6 +135,14 @@ function H.wake(ctx, zone, bearing, km)
 	if not ok then
 		error(message, 0)
 	end
+	if not watch:waitFor("activeSite", { false, true }, 300) then
+		ctx.invalid("the network never woke " .. siteRole .. " for the waker")
+	end
+	Hotload.wait(20)
+	if H.firedBy(shots, ctx.name .. "/" .. siteRole .. "-") > 0 then
+		ctx.invalid(siteRole .. " fired at the waker")
+	end
+	return shots
 end
 
 -- Watches on until the engagement is over, and returns the watch's report: the HARM has ended
