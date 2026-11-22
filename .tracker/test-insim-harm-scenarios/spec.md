@@ -59,15 +59,31 @@ The only aircraft used are these two, from `insim-harm`:
 
 | Scenario | Tier | Sites | The HARM aimed at | Asserted, exactly |
 |---|---|---|---|---|
-| `harm-silences-site` | minimal | SA-6, unprotected, acting as EW | the SA-6 | `active = {true, false, true}`, `harm = {false, true, false}` |
-| `harm-dark-site-point-defence` | minimal | Dog Ear EW radar, SA-2 dark under it, SA-15 as the SA-2's point defence | the Dog Ear, its line passing over the SA-2 | `site = {false}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
-| `harm-site-engages-harm` | full | SA-10, unprotected, under a 1L13; the waker | the SA-10 | `active = {false, true}`, `defending = {false}`, `harm = {false, true, false}` |
-| `harm-point-defence-ew` | full | SA-6 acting as EW, SA-15 as its point defence, 1L13 | the SA-6 | `site = {true}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
-| `harm-point-defence-engaging` | full | SA-2 under a 1L13, SA-15 as its point defence; the waker | the SA-2 | `active = {false, true}`, `defending = {false}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-silences-site` | minimal | SA-6, unprotected, acting as EW | the SA-6 | `activeSite = {true, false, true}`, `harm = {false, true, false}` |
+| `harm-dark-site-point-defence` | minimal | Dog Ear EW radar, SA-2 dark under it, SA-15 as the SA-2's point defence | the Dog Ear, its line passing over the SA-2 | `activeSite = {false}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-site-engages-harm` | full | SA-10, unprotected, under a 1L13; the waker | the SA-10 | `activeSite = {false, true}`, `defending = {false}`, `harm = {false, true, false}` |
+| `harm-point-defence-ew` | full | SA-6 acting as EW, SA-15 as its point defence, 1L13 | the SA-6 | `activeSite = {true}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-point-defence-engaging` | full | SA-2 under a 1L13, SA-15 as its point defence; the waker | the SA-2 | `activeSite = {false, true}`, `defending = {false}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
 
-`harm` reads the judged site's `getNumberOfObjectsItentifiedAsHARMS() > 0`, and `defending` its
-`isDefendingHARM()`. In `harm-dark-site-point-defence` the Dog Ear is only the HARM's target and the
-network's EW radar: it is watched and reported, not judged.
+### The probes
+
+A scenario watches its elements through `insim-watch` probes, each sampled once a second. A probe is
+named after what it reads, the same way in every scenario:
+
+| Probe | Reads | Meaning |
+|---|---|---|
+| `activeSite` | the judged site's `isActive()` | Skynet has set the site live |
+| `activePointDefence` | the point defence's `isActive()` | Skynet has set the point defence live |
+| `activeEwr` | the EW radar's `isActive()` | Skynet has set the EW radar live. Reported, not judged |
+| `pointDefenceLatched` | the point defence's `getIsPointDefending()` | the latch holds the point defence live for a HARM. It is set by `pointDefencesGoLive()` and released by `cleanUpOldObjectsIdentifiedAsHARMS()` once the last HARM is gone |
+| `harm` | the judged site's `getNumberOfObjectsItentifiedAsHARMS() > 0` | the site remembers at least one HARM aimed at it |
+| `defending` | the judged site's `isDefendingHARM()`, that is `harmSilenceID ~= nil` | a HARM silence timer is running. `goSilentToEvadeHARM()` turns the DCS AI off when it starts one, and `finishHarmDefence()` turns it back on |
+
+"Live" in the `active*` probes is Skynet's own `aiState` flag. `goLive()` sets it when it calls
+`enableEmission(true)` and `setOnOff(true)`; `goDark()` clears it with `enableEmission(false)`. The
+probe records what Skynet ordered, not what DCS reports of the radar. In
+`harm-dark-site-point-defence` the Dog Ear is only the HARM's target and the network's EW radar, so
+`activeEwr` is reported, not judged.
 
 ### Where they come from
 
@@ -88,7 +104,7 @@ needs it.
 One function in `insim-harm`, used by every scenario. It waits, each wait bounded, until:
 
 1. the HARM object no longer exists: shot down, on the ground, or flown past;
-2. every judged site has forgotten it, meaning `harm` back to false (up to
+2. every judged site has forgotten it, meaning `harm` is back to false (up to
    `objectsIdentifiedAsHarmsMaxTargetAge`, 60 s, after it was last seen) and any silence is over
    (`isDefendingHARM()` false);
 3. a short settling time has passed, long enough for a late flip to show.
