@@ -2,9 +2,10 @@ local ctx = ...
 local H = Hotload.load("insim-harm")
 local watch = ctx.state.watch
 
--- 140 km: inside the SA-10's go-live range (160 km, see setup) and the 1L13's detection (300 km),
--- beyond its missiles (S-300PS 5P85C ln, ThreatRange 120 km, _G/db/Units/Cars/Car/ in the DCS unit
--- database).
+-- 140 km: inside the SA-10's go-live range (160 km, see setup), beyond its missiles (S-300PS 5P85C
+-- ln, ThreatRange 120 km, _G/db/Units/Cars/Car/ in the DCS unit database). The orbit's centre is
+-- about 116 km from the 1L13, which detected an F-16 at 122 km in the mission (DCS 2.9); how much
+-- farther it sees was not measured, so the far side of the orbit may be at its edge.
 -- North-west, over the steppe towards the Sea of Azov, away from the mountains.
 local shots = H.wake(ctx, watch, "SAM-SA10", "ZONE-SITE-2", 315, 140)
 -- From the waker's side, as a SEAD flight comes in with the aircraft a site tracks, where the SA-10's
