@@ -174,9 +174,8 @@ Left by `test-port-unit-tests-to-insim`; none has failed a run.
   `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
   would say.
 - **A scenario can wait past its timeout when everything fails.** `network-loses-infrastructure`
-  waits about 635 s in 600 s (`harm-point-defence`'s case goes with `test-insim-harm-scenarios`).
-  The driver then stops the run and reports "timed out", and the watch's sequences that say what went
-  wrong are lost.
+  waits about 635 s in 600 s. The driver then stops the run and reports "timed out", and the watch's
+  sequences that say what went wrong are lost.
   Shape: keep a run's waits 20–30 s under its timeout, as the other scenarios do.
 - **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
   harmless, stale against the rename to `insim-ca-main`.
