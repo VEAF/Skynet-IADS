@@ -84,7 +84,7 @@ class Console:
 @dataclass
 class Scenario:
     name: str
-    tier: str  # "minimal", "full" or None
+    tags: tuple  # () when the scenario runs only by name
     mission: str
     timeout: float
     has_teardown: bool
@@ -122,19 +122,26 @@ def discover(folder):
         for key in ("mission", "timeout"):
             if not isinstance(meta, dict) or key not in meta:
                 raise SuiteError("scenario %s: scenario.lua has no %s" % (path.name, key))
-        found.append(Scenario(path.name, meta.get("tier"), meta["mission"], meta["timeout"], (path / "teardown.lua").is_file()))
+        tags = meta.get("tags", ())
+        if tags == {}:  # an empty Lua table
+            tags = ()
+        if not (isinstance(tags, (list, tuple)) and all(isinstance(t, str) for t in tags)):
+            raise SuiteError('scenario %s: tags must be a list of strings, as tags = { "tier-minimal" }' % path.name)
+        found.append(Scenario(path.name, tuple(tags), meta["mission"], meta["timeout"], (path / "teardown.lua").is_file()))
     return found
 
 
-def select(scenarios, tier, names):
+def select(scenarios, tag, names):
     if names:
         by_name = {s.name: s for s in scenarios}
         unknown = [n for n in names if n not in by_name]
         if unknown:
             raise SuiteError("unknown scenario: %s" % ", ".join(unknown))
         return [by_name[n] for n in names]
-    wanted = {"minimal": ("minimal",), "full": ("minimal", "full")}[tier]
-    return [s for s in scenarios if s.tier in wanted]
+    chosen = [s for s in scenarios if tag in s.tags]
+    if not chosen:
+        raise SuiteError("no scenario has tag %s" % tag)
+    return chosen
 
 
 def _phase_code(name, phase):

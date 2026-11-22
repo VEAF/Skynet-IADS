@@ -49,7 +49,7 @@ def judge_ok(scenario, result):
 
 
 def scenario(**kw):
-    values = dict(name="s", tier="minimal", mission="m1", timeout=30, has_teardown=True)
+    values = dict(name="s", tags=("tier-minimal",), mission="m1", timeout=30, has_teardown=True)
     values.update(kw)
     return suite.Scenario(**values)
 
@@ -293,7 +293,7 @@ class FolderTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.folder = Path(self.tmp.name)
 
-    def make(self, name, meta='tier = "minimal", mission = "m1", timeout = 30', files=("setup", "run", "verify")):
+    def make(self, name, meta='tags = { "tier-minimal" }, mission = "m1", timeout = 30', files=("setup", "run", "verify")):
         d = self.folder / name
         d.mkdir()
         (d / "scenario.lua").write_text("return { %s }\n" % meta, encoding="utf-8")
@@ -305,8 +305,26 @@ class FolderTest(unittest.TestCase):
         self.make("a", meta='mission = "m2", timeout = 5')
         found = suite.discover(self.folder)
         self.assertEqual([s.name for s in found], ["a", "b"])
-        self.assertEqual(found[0], suite.Scenario("a", None, "m2", 5, False))
-        self.assertEqual(found[1], suite.Scenario("b", "minimal", "m1", 30, True))
+        self.assertEqual(found[0], suite.Scenario("a", (), "m2", 5, False))
+        self.assertEqual(found[1], suite.Scenario("b", ("tier-minimal",), "m1", 30, True))
+
+    def test_empty_tags_means_no_tags(self):
+        self.make("a", meta='tags = {}, mission = "m1", timeout = 3')
+        self.assertEqual(suite.discover(self.folder)[0].tags, ())
+
+    def test_several_tags_keep_their_order(self):
+        self.make("a", meta='tags = { "harm", "tier-full" }, mission = "m1", timeout = 3')
+        self.assertEqual(suite.discover(self.folder)[0].tags, ("harm", "tier-full"))
+
+    def test_tags_not_a_list_of_strings_is_refused(self):
+        for tags in ('"harm"', "{ 1 }", '{ a = "x" }'):
+            with self.subTest(tags=tags):
+                self.make("a", meta='tags = %s, mission = "m1", timeout = 3' % tags)
+                with self.assertRaisesRegex(suite.SuiteError, "a.*tags"):
+                    suite.discover(self.folder)
+                for f in ("scenario", "setup", "run", "verify"):
+                    (self.folder / "a" / (f + ".lua")).unlink()
+                (self.folder / "a").rmdir()
 
     def test_folder_without_run_is_refused(self):
         self.make("a", files=("setup", "verify"))
@@ -353,19 +371,29 @@ class FolderTest(unittest.TestCase):
 
 class SelectTest(unittest.TestCase):
     def setUp(self):
-        self.all = [scenario(name="a", tier="minimal"), scenario(name="b", tier="full"), scenario(name="c", tier=None)]
+        self.all = [
+            scenario(name="a", tags=("tier-minimal", "tier-full")),
+            scenario(name="b", tags=("tier-full", "harm")),
+            scenario(name="c", tags=()),
+        ]
 
-    def names(self, tier, names):
-        return [s.name for s in suite.select(self.all, tier, names)]
+    def names(self, tag, names):
+        return [s.name for s in suite.select(self.all, tag, names)]
 
-    def test_select_by_tier_and_name(self):
-        self.assertEqual(self.names("minimal", []), ["a"])
-        self.assertEqual(self.names("full", []), ["a", "b"])
-        self.assertEqual(self.names("minimal", ["c", "b"]), ["c", "b"])
+    def test_select_by_tag_and_name(self):
+        self.assertEqual(self.names("tier-minimal", []), ["a"])
+        self.assertEqual(self.names("tier-full", []), ["a", "b"])
+        self.assertEqual(self.names("harm", []), ["b"])
+        self.assertEqual(self.names("tier-minimal", ["c", "b"]), ["c", "b"])
+        self.assertEqual(self.names("nothing-has-it", ["c"]), ["c"])
+
+    def test_a_tag_no_scenario_has_is_refused(self):
+        with self.assertRaisesRegex(suite.SuiteError, "no scenario has tag tier-minmal"):
+            self.names("tier-minmal", [])
 
     def test_unknown_name_is_refused(self):
         with self.assertRaisesRegex(suite.SuiteError, "nope"):
-            self.names("minimal", ["a", "nope"])
+            self.names("tier-minimal", ["a", "nope"])
 
 
 class ReportTest(unittest.TestCase):
