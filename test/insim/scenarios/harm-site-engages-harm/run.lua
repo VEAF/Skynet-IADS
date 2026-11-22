@@ -4,8 +4,9 @@ local Wd = Hotload.load("insim-world")
 local watch = ctx.state.watch
 
 local shots = Wd.recordShots(ctx)
--- 140 km: inside the SA-10's search radar (S-300PS 64H6E sr, 160 km) and the 1L13 (300 km), beyond
--- its missiles (S-300PS 5P85C ln, ThreatRange 120 km). DCS unit database, _G/db/Units/Cars/Car/.
+-- 140 km: inside the SA-10's go-live range (160 km, see setup) and the 1L13's detection (300 km),
+-- beyond its missiles (S-300PS 5P85C ln, ThreatRange 120 km, _G/db/Units/Cars/Car/ in the DCS unit
+-- database).
 -- North-west, over the steppe towards the Sea of Azov: away from the mountains, and from the
 -- shooter's line from the east.
 H.wake(ctx, "ZONE-SITE-2", 315, 140)
