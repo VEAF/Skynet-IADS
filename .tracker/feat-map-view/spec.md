@@ -1,6 +1,6 @@
 # A map view of the network on the F10 map
 
-Status: in-progress
+Status: done
 
 ## The problem
 
