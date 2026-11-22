@@ -164,7 +164,7 @@ shoot one down has not been flown.
 **Open for discussion**: is the exclusion right, and is it worth a measurement? If a system does
 engage them, the change is one more class in that system's entry in the supported-types table.
 
-## In-sim suite: two small gaps
+## In-sim suite: one small gap
 
 Left by `test-port-unit-tests-to-insim`; none has failed a run.
 
@@ -173,8 +173,6 @@ Left by `test-port-unit-tests-to-insim`; none has failed a run.
   `network-loses-infrastructure` clears wrecks, and only between its own cases. Shape: cleanup sweeps
   `ZONE-AREA` with `clearWrecks`; a weapon in flight is out of a script's reach, which `test/README.md`
   would say.
-- **The tooling's test fixtures still name `insim01`** (`test/insim-tools/insim-fixtures/`): test data,
-  harmless, stale against the rename to `insim-ca-main`.
 
 ## In-sim driver: two runs at once
 
@@ -222,3 +220,10 @@ Search and tracking radars read `getSensors()` once, when the element is built; 
 their ammunition, and their range, on every ammo query. A comment was proposed to say so. Dropped:
 the call sites show it at once, and the failure it would have warned about — DCS answering badly at
 spawn — has never been observed. If a log ever shows it, that is a bug report, not a comment.
+
+### The tooling's test fixtures renamed from `insim01`
+
+The fixtures in `test/insim-tools/insim-fixtures/` name their mission `insim01`, the in-sim
+mission's name before its rename to `insim-ca-main`. Dropped: the name is test data, not a
+reference. `test_insim.lua` stubs the mission name to `insim01` and asserts it back; nothing
+compares it with a real `.miz`, and the tooling serves any number of missions.
