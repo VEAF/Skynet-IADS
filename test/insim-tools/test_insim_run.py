@@ -24,7 +24,7 @@ run = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(run)
 from engine.driver import Outcome  # noqa: E402
 
-SCENARIO_LUA = 'return { mission = "m1", timeout = 5, tier = "minimal" }'
+SCENARIO_LUA = 'return { mission = "m1", timeout = 5, tags = { "tier-minimal" } }'
 
 
 class FakeMailbox:
@@ -101,7 +101,7 @@ class RunTest(unittest.TestCase):
         self.assertEqual(code, 0)
         folder = self.results()[0]
         self.assertEqual(folder.name, "20260102-030405")
-        self.assertEqual(json.loads((folder / "run.json").read_text()), {"tier": "minimal", "names": []})
+        self.assertEqual(json.loads((folder / "run.json").read_text()), {"tag": "tier-minimal", "names": []})
         self.assertTrue((folder / "report.md").is_file())
         self.assertNotIn("alpha: pass", out)  # the summary lists only what did not pass
         self.assertNotIn("beta: pass", out)
@@ -145,13 +145,29 @@ class RunTest(unittest.TestCase):
 
     def test_run_resume_reuses_selection(self):
         self.main("alpha")
-        code, out = self.main("--resume", "--tier", "full", "beta", when=datetime(2027, 1, 1))
+        code, out = self.main("--resume", "--tag", "tier-full", "beta", when=datetime(2027, 1, 1))
         self.assertEqual(code, 0)
         self.assertEqual(len(self.results()), 1)
         keys = FakeDriver.created[1].keys
         self.assertTrue(all(k.startswith("check/") or k.startswith("alpha/") for k in keys), keys)
         self.assertNotEqual(FakeDriver.created[0].keys[0], keys[0])  # a resumed run asks again
         self.assertNotIn("beta", out)
+
+    def test_run_with_a_tag_no_scenario_has_exits_2(self):
+        code, out = self.main("--tag", "nope")
+        self.assertEqual(code, 2)
+        self.assertIn("no scenario has tag nope", out)
+        self.assertFalse((self.repo / "build" / "insim" / "results").exists())
+
+    def test_resume_and_verify_refuse_a_run_recorded_with_a_tier(self):
+        folder = self.repo / "build" / "insim" / "results" / "20250101-000000"
+        folder.mkdir(parents=True)
+        (folder / "run.json").write_text(json.dumps({"tier": "minimal", "names": []}), encoding="utf-8")
+        for flag in ("--resume", "--verify"):
+            with self.subTest(flag=flag):
+                code, out = self.main(flag)
+                self.assertEqual(code, 2)
+                self.assertIn("recorded before tags", out)
 
     def test_run_verify_sends_nothing(self):
         self.main("alpha")
