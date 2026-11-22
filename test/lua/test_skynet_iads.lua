@@ -462,7 +462,8 @@ end
 
 -- ---- the radio menu --------------------------------------------------------------------
 
---- What a player finds under F10: one submenu named after the network, and four commands.
+--- What a player finds under F10: one submenu named after the network, and five commands, each
+--- switching its setting at every click under a label that does not change.
 function TestSkynetIADS:testAddRadioMenuBuildsTheMenuAPlayerSees()
 	local iads = self:buildNetwork()
 	dcsStub.radioItems = {}
@@ -474,21 +475,23 @@ function TestSkynetIADS:testAddRadioMenuBuildsTheMenuAPlayerSees()
 	end
 	luaunit.assertEquals(names, {
 		"SKYNET IADS COALITION: RED | NAME: Ruby",
-		"show IADS Status",
-		"hide IADS Status",
-		"show contacts",
-		"hide contacts",
+		"IADS Status - Show/hide",
+		"Contacts - Show/hide",
+		"Map - Show/hide",
+		"Map - Show/hide coverage lines (EW -> SAM)",
+		"Map - Show/hide range circles",
 	})
-	-- the four commands sit under the submenu, not beside it
-	for i = 2, 5 do
+	-- the commands sit under the submenu, not beside it
+	for i = 2, #names do
 		luaunit.assertEquals(dcsStub.radioItems[i].path[1], names[1])
 		luaunit.assertEquals(#dcsStub.radioItems[i].path, 2)
 	end
 end
 
 --- Clicking a command is the only way those two debug settings are reachable in a running
---- mission, so the handler and its arguments are what matter, not the label.
-function TestSkynetIADS:testTheRadioCommandsDriveTheDebugSettings()
+--- mission, so the handler and its arguments are what matter, not the label. One command per
+--- setting: each click switches it.
+function TestSkynetIADS:testTheRadioCommandsSwitchTheDebugSettings()
 	local iads = self:buildNetwork()
 	dcsStub.radioItems = {}
 	iads:addRadioMenu()
@@ -500,23 +503,42 @@ function TestSkynetIADS:testTheRadioCommandsDriveTheDebugSettings()
 	end
 
 	luaunit.assertEquals(iads:getDebugSettings().IADSStatus, false)
-	click("show IADS Status")
+	click("IADS Status - Show/hide")
 	luaunit.assertEquals(iads:getDebugSettings().IADSStatus, true)
-	click("hide IADS Status")
+	click("IADS Status - Show/hide")
 	luaunit.assertEquals(iads:getDebugSettings().IADSStatus, false)
 
 	luaunit.assertEquals(iads:getDebugSettings().contacts, false)
-	click("show contacts")
+	click("Contacts - Show/hide")
 	luaunit.assertEquals(iads:getDebugSettings().contacts, true)
-	click("hide contacts")
+	luaunit.assertEquals(iads:getDebugSettings().IADSStatus, false, "a command switches its own setting only")
+	click("Contacts - Show/hide")
 	luaunit.assertEquals(iads:getDebugSettings().contacts, false)
+end
+
+--- A deactivated network leaves nothing behind, its radio menu included.
+function TestSkynetIADS:testDeactivateRemovesTheRadioMenu()
+	local iads = self:buildNetwork()
+	dcsStub.radioItems = {}
+	iads:addRadioMenu()
+	iads:deactivate()
+	luaunit.assertEquals(#dcsStub.radioItems, 0)
+	luaunit.assertNil(iads.radioMenu, "so addRadioMenu() can issue it again")
+end
+
+--- missionCommands.removeItem(nil) is not verified in DCS: a network that never had a menu must not
+--- call it. The stub raises on it.
+function TestSkynetIADS:testDeactivateWithoutARadioMenuRemovesNothing()
+	local iads = self:buildNetwork()
+	iads:deactivate()
+	luaunit.assertNil(iads.radioMenu)
 end
 
 function TestSkynetIADS:testRemoveRadioMenuTakesTheSubmenuAndItsCommandsAway()
 	local iads = self:buildNetwork()
 	dcsStub.radioItems = {}
 	iads:addRadioMenu()
-	luaunit.assertEquals(#dcsStub.radioItems, 5)
+	luaunit.assertEquals(#dcsStub.radioItems, 6)
 	iads:removeRadioMenu()
 	luaunit.assertEquals(#dcsStub.radioItems, 0, "removing a submenu removes what is under it")
 end
@@ -533,12 +555,12 @@ function TestSkynetIADS:testASecondAddRadioMenuIssuesNothing()
 	local iads = self:buildNetwork()
 	dcsStub.radioItems = {}
 	iads:addRadioMenu()
-	luaunit.assertEquals(#dcsStub.radioItems, 5)
+	luaunit.assertEquals(#dcsStub.radioItems, 6)
 	local firstMenuPath = iads.radioMenu
 
 	iads:addRadioMenu()
 
-	luaunit.assertEquals(#dcsStub.radioItems, 5, "the second call issues nothing")
+	luaunit.assertEquals(#dcsStub.radioItems, 6, "the second call issues nothing")
 	luaunit.assertIs(iads.radioMenu, firstMenuPath, "and the IADS still points at the first menu")
 end
 
@@ -552,12 +574,12 @@ function TestSkynetIADS:testTheMenuCanBeRemovedAndAddedAgain()
 
 	iads:addRadioMenu()
 
-	luaunit.assertEquals(#dcsStub.radioItems, 5, "the menu comes back")
+	luaunit.assertEquals(#dcsStub.radioItems, 6, "the menu comes back")
 end
 
 function TestSkynetIADS:testUpdateDisplayIgnoresASettingItDoesNotKnow()
 	local iads = self:buildNetwork()
-	SkynetIADS.updateDisplay({ self = iads, value = true, option = "notASetting" })
+	SkynetIADS.updateDisplay({ self = iads, option = "notASetting" })
 	luaunit.assertNil(iads:getDebugSettings().notASetting, "an unknown option must not invent a setting")
 end
 

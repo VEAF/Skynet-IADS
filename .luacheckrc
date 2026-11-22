@@ -45,6 +45,7 @@ globals = {
 	"SkynetIADSTableDelegator",
 	"SkynetIADSHARMDetection",
 	"SkynetIADSLastLineOfDefence",
+	"SkynetIADSMapView",
 	"SkynetIADSJammer",
 	"SkynetIADSAbstractDCSObjectWrapper",
 	"SkynetIADSAbstractElement",

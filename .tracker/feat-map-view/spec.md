@@ -45,7 +45,9 @@ What the prototype already does, and what is worth keeping:
   event handler, and each Skynet element is one. On one network a full redraw (607 marks out, 607 in) cost
   121,400 Skynet handler calls and froze the game for about a second.
 - **A failure in one drawing step is logged and the rest goes on.**
-- **Destroyed elements stay drawn**, dashed, at their last known position.
+- **Destroyed elements stay drawn**, dashed, at their last known position. With no timer while the map
+  is hidden, a position is known from the ticks of a displayed map only: an element first drawn after
+  it was destroyed is not drawn.
 
 ## Decided
 

@@ -7,10 +7,11 @@ unités qui n'existent pas, un message s'affiche au chargement de la mission.
 Les exemples qui suivent utilisent des objets statiques pour les centres de commandement, les nœuds
 de liaison et les sources d'énergie ; vous pouvez tout aussi bien employer des unités.
 
-## Configuration de l'IADS
+## Configuration de l'IADS {#iads-configuration}
 
 Appelez cette méthode pour ajouter ou retirer une entrée du menu radio permettant d'afficher ou de
-masquer l'état de l'IADS. Par défaut, cette entrée n'est pas visible :
+masquer l'état de l'IADS, les contacts et la [vue carte](map-view.md). Chaque commande bascule à
+chaque clic. Par défaut, cette entrée n'est pas visible :
 
 ```lua
 redIADS:addRadioMenu()
@@ -21,7 +22,8 @@ redIADS:removeRadioMenu()
 ```
 
 Si vous déréférencez l'IADS, pensez à appeler `deactivate()`, sans quoi ses tâches de fond
-continueront de tourner et produiront des comportements inattendus :
+continueront de tourner et produiront des comportements inattendus. Il retire aussi le menu radio et
+efface la vue carte :
 
 ```lua
 redIADS:deactivate()
@@ -289,7 +291,7 @@ longue portée comme le S-300 :
 samSite:setActAsEW(true)
 ```
 
-### Zone d'engagement
+### Zone d'engagement {#engagement-zone}
 
 Définit la distance à laquelle un site SAM allume son radar :
 
