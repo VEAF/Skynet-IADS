@@ -62,6 +62,14 @@ function S.iads(ctx, configure)
 		if configure then
 			configure(iads)
 		end
+		-- so a run can be watched: the network on the F10 map, its radio menu, and what it decides
+		-- in dcs.log. Its deactivation at cleanup takes the map and the menu away.
+		local debugSettings = iads:getDebugSettings()
+		debugSettings.radarWentLive = true
+		debugSettings.radarWentDark = true
+		debugSettings.harmDefence = true
+		iads:addRadioMenu()
+		iads:displayMap(true)
 		iads:activate()
 	end)
 	if not ok then
