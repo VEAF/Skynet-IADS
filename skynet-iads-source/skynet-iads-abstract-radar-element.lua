@@ -217,19 +217,27 @@ do
 	function SkynetIADSAbstractRadarElement:hasValidParentRadar()
 		local parents = self:getParentRadars()
 		for i = 1, #parents do
-			local parent = parents[i]
 			--of one parent exists that still is connected to the IADS, the SAM site does not have to go autonomous
-			--instead of isDestroyed() write method, hasWorkingSearchRadars()
-			if
-				self:hasActiveConnectionNode()
-				and self.iads:isCommandCenterUsable()
-				and parent:hasWorkingPowerSource()
-				and parent:hasActiveConnectionNode()
-				and parent:getActAsEW() == true
-				and parent:isDestroyed() == false
-			then
+			if self:isCoveredBy(parents[i]) then
 				return true
 			end
+		end
+		return false
+	end
+
+	-- Whether this one parent covers the element: the parent list is geometry only, and holds a
+	-- parent that does not act as EW, or is dead. The map view draws a coverage line from it.
+	function SkynetIADSAbstractRadarElement:isCoveredBy(parent)
+		--instead of isDestroyed() write method, hasWorkingSearchRadars()
+		if
+			self:hasActiveConnectionNode()
+			and self.iads:isCommandCenterUsable()
+			and parent:hasWorkingPowerSource()
+			and parent:hasActiveConnectionNode()
+			and parent:getActAsEW() == true
+			and parent:isDestroyed() == false
+		then
+			return true
 		end
 		return false
 	end
