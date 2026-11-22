@@ -1,6 +1,6 @@
 # In-sim HARM scenarios: a smoke suite
 
-Status: in-progress
+Status: done
 
 Answers GitHub issue #75 (https://github.com/VEAF/Skynet-IADS/issues/75).
 
@@ -59,15 +59,31 @@ The only aircraft used are these two, from `insim-harm`:
 
 | Scenario | Tier | Sites | The HARM aimed at | Asserted, exactly |
 |---|---|---|---|---|
-| `harm-silences-site` | minimal | SA-6, unprotected, acting as EW | the SA-6 | `active = {true, false, true}`, `harm = {false, true, false}` |
-| `harm-dark-site-point-defence` | minimal | Dog Ear EW radar, SA-2 dark under it, SA-15 as the SA-2's point defence | the Dog Ear, its line passing over the SA-2 | `site = {false}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
-| `harm-site-engages-harm` | full | SA-10, unprotected, under a 1L13; the waker | the SA-10 | `active = {false, true}`, `defending = {false}`, `harm = {false, true, false}` |
-| `harm-point-defence-ew` | full | SA-6 acting as EW, SA-15 as its point defence, 1L13 | the SA-6 | `site = {true}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
-| `harm-point-defence-engaging` | full | SA-2 under a 1L13, SA-15 as its point defence; the waker | the SA-2 | `active = {false, true}`, `defending = {false}`, `pointDefence = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-silences-site` | minimal | SA-6, unprotected, acting as EW | the SA-6 | `activeSite = {true, false, true}`, `harm = {false, true, false}` |
+| `harm-dark-site-point-defence` | minimal | Dog Ear EW radar, SA-2 dark under it, SA-15 as the SA-2's point defence | the Dog Ear, its line passing over the SA-2 | `activeSite = {false}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-site-engages-harm` | full | SA-10, unprotected, under a 1L13; the waker | the SA-10 | `activeSite = {false, true}`, `defending = {false}`, `harm = {false, true, false}` |
+| `harm-point-defence-ew` | full | SA-6 acting as EW, SA-15 as its point defence, 1L13 | the SA-6 | `activeSite = {true}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
+| `harm-point-defence-engaging` | full | SA-2 under a 1L13, SA-15 as its point defence; the waker | the SA-2 | `activeSite = {false, true}`, `defending = {false}`, `activePointDefence = {false, true, false}`, `pointDefenceLatched = {false, true, false}`, `harm = {false, true, false}` |
 
-`harm` reads the judged site's `getNumberOfObjectsItentifiedAsHARMS() > 0`, and `defending` its
-`isDefendingHARM()`. In `harm-dark-site-point-defence` the Dog Ear is only the HARM's target and the
-network's EW radar: it is watched and reported, not judged.
+### The probes
+
+A scenario watches its elements through `insim-watch` probes, each sampled once a second. A probe is
+named after what it reads, the same way in every scenario:
+
+| Probe | Reads | Meaning |
+|---|---|---|
+| `activeSite` | the judged site's `isActive()` | Skynet has set the site live |
+| `activePointDefence` | the point defence's `isActive()` | Skynet has set the point defence live |
+| `activeEwr` | the EW radar's `isActive()` | Skynet has set the EW radar live. Reported, not judged |
+| `pointDefenceLatched` | the point defence's `getIsPointDefending()` | the latch holds the point defence live for a HARM. It is set by `pointDefencesGoLive()` and released by `cleanUpOldObjectsIdentifiedAsHARMS()` once the last HARM is gone |
+| `harm` | the judged site's `getNumberOfObjectsItentifiedAsHARMS() > 0` | the site remembers at least one HARM aimed at it |
+| `defending` | the judged site's `isDefendingHARM()`, that is `harmSilenceID ~= nil` | a HARM silence timer is running. `goSilentToEvadeHARM()` turns the DCS AI off when it starts one, and `finishHarmDefence()` turns it back on |
+
+"Live" in the `active*` probes is Skynet's own `aiState` flag. `goLive()` sets it when it calls
+`enableEmission(true)` and `setOnOff(true)`; `goDark()` clears it with `enableEmission(false)`. The
+probe records what Skynet ordered, not what DCS reports of the radar. In
+`harm-dark-site-point-defence` the Dog Ear is only the HARM's target and the network's EW radar, so
+`activeEwr` is reported, not judged.
 
 ### Where they come from
 
@@ -88,7 +104,7 @@ needs it.
 One function in `insim-harm`, used by every scenario. It waits, each wait bounded, until:
 
 1. the HARM object no longer exists: shot down, on the ground, or flown past;
-2. every judged site has forgotten it, meaning `harm` back to false (up to
+2. every judged site has forgotten it, meaning `harm` is back to false (up to
    `objectsIdentifiedAsHarmsMaxTargetAge`, 60 s, after it was last seen) and any silence is over
    (`isDefendingHARM()` false);
 3. a short settling time has passed, long enough for a late flip to show.
@@ -127,21 +143,35 @@ the suite does.
   inference that a run in DCS confirms.
 - Tiers: `harm-silences-site` and `harm-dark-site-point-defence` are `minimal`, the other three
   `full`.
+- **The HARM's target is immortal** in every scenario, made so by `insim-harm.shoot`. A scenario
+  judges Skynet's reaction, not whether the DCS AI stops the HARM. An SA-10 left mortal had its
+  search radar killed by the HARM and went dark, which failed the scenario for a reason that is not
+  Skynet's. It fired nothing at the HARM from either side (DCS 2.9; recorded in `.tracker/IDEAS.md`).
+- **Skynet's search range falls short of the missiles' reach**: it reads the SA-2's as 53.5 km and
+  the SA-10's as 80.2 km, against `ThreatRange`s of 43 and 120 km (measured from a Skynet instance in
+  the mission, DCS 2.9). Both sites get `setGoLiveRangeInPercent(200)`, and the waker circles at 75
+  and 140 km. A 1L13 at `ZONE-EW-1` detects an F-16 at 122 km (measured).
+- **The shooter comes from the waker's side** in `harm-site-engages-harm`: the SA-10's tracking
+  radar is turned to the waker.
 
-## Left to the build
+## Settled during the build
 
-- **One HARM in `harm-silences-site`**, where `harm-defence` fires two. A second HARM extending the
+- **One HARM in `harm-silences-site`**, where `harm-defence` fired two. A second HARM extending the
   silence is an edge case for the Lua tests.
-- **The settling time** in the stop rule: about one contact cycle plus margin, set from what a run
-  shows.
-- **The waker's type and orbit.** It must be inside the SA-10's and SA-2's search radar range and
-  the 1L13's detection range, and outside their missile range. The ranges come from the datamine and
-  Skynet's range data, not from memory, and the first run checks them.
-- **Where the SA-10 stands**: a catalogue zone the shooter can reach with the HARM's line clear of
-  any other site. It is alone in its scenario, so `ZONE-SITE-2` will do unless a run says otherwise.
-- **The verdict cases** in `test/insim-tools/test_scenario_verdicts.py` are rewritten for the five
-  scenarios. Each gets a pass case and a fail case for every assertion, a late flip among them.
-- `test/README.md`'s `insim-harm` table is rewritten to match the library.
+- **The settling time** in the stop rule is 10 s; no run needed more.
+- **The waker** is an F-16C bl.52d at 8,000 m, holding fire, circling 75 km north-west of the SA-2
+  and 140 km north-west of the SA-10, over the steppe and away from the mountains. Neither site fired
+  at it.
+- **The SA-10 stands on `ZONE-SITE-2`**, alone in its scenario.
+- **The verdict cases** in `test/insim-tools/test_scenario_verdicts.py` give each scenario a pass
+  case and a fail case for every assertion, a late flip and a HARM never forgotten among them.
+- **Shared code** went further than first planned: `insim-harm.watch` starts the probes and
+  `insim-harm.wake` checks that the site woke and held fire, both used by every scenario that needs
+  them. `test/README.md`'s `insim-harm` table matches the library.
+- **Timeouts** follow the margin rule over `untilOver`'s bounded waits: 600 s, 660 s, 900 s, 630 s and
+  900 s. A run takes 4 to 5 minutes.
+- **`network-loses-infrastructure`'s timeout** goes from 600 to 660 s, the other half of the same
+  gap in `.tracker/IDEAS.md`: its worst case waits 635 s. The entry leaves `IDEAS.md`.
 
 ## Constraints
 

@@ -12,16 +12,6 @@ local iads = Hotload.load("insim-skynet").iads(ctx, function(iads)
 	pointDefence:setHARMDetectionChance(100)
 	site:setActAsEW(true)
 end)
-local site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
-local pointDefence = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA15")
-ctx.state.watch = Hotload.load("insim-watch").start(ctx, {
-	site = function()
-		return site:isActive()
-	end,
-	pointDefence = function()
-		return pointDefence:isActive()
-	end,
-	harm = function()
-		return site:getNumberOfObjectsItentifiedAsHARMS() > 0
-	end,
-}, 1)
+ctx.state.site = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA6")
+ctx.state.pointDefence = iads:getSAMSiteByGroupName(ctx.name .. "/SAM-SA15")
+ctx.state.watch = Hotload.load("insim-harm").watch(ctx, ctx.state.site, ctx.state.pointDefence)
