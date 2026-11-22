@@ -1,6 +1,6 @@
 # A map view of the network on the F10 map
 
-Status: open
+Status: in-progress
 
 ## The problem
 
@@ -10,9 +10,26 @@ power. The debug settings print messages, which do not show how the network is l
 
 ## What to build
 
-`iads:setMapView(true)` draws a network on the F10 map and keeps the drawing current;
-`iads:setMapView(false)` erases it. `iads:setMapViewOption(name, enabled)` leaves part of it out:
-`coverage`, `pointDefence`, `rangeCircles`, `labels`, all on by default.
+- **`iads:displayMap(true)`** draws the network on the F10 map and starts the network's timer that keeps
+  the drawing current; **`iads:displayMap(false)`** stops it and erases the drawing. It is the only way
+  to show or hide the map, so a timer never runs for a map that is hidden. `iads:isMapDisplayed()`
+  answers which.
+- **`iads:getDisplayMapSettings()`** answers the network's map settings, a table read on each tick, so a
+  change made while the map is shown appears within a tick:
+  - `layers`: the parts to draw, values defined in the map-view file: `elements`, `coverage`,
+    `pointDefence`, `rangeCircles`, `labels`; all of them by default.
+  - `coalition`: the coalition that sees the drawing, or `nil` for every coalition (the default). One
+    value, because each DCS mark goes to one coalition or to all; two coalitions would draw every mark
+    twice. A change redraws everything.
+- **The radio menu.** `iads:addRadioMenu()` adds three commands, each switching its state at every call,
+  under a label that does not change:
+  - `Map - Show/hide`: `displayMap()`.
+  - `Map - Show/hide coverage lines (EW -> SAM)`: `coverage` in `layers`.
+  - `Map - Show/hide range circles`: `rangeCircles` in `layers`.
+
+  The existing pairs, `show IADS Status` / `hide IADS Status` and `show contacts` / `hide contacts`,
+  become one switching command each, the same way. A change players see in the menu: changelog and
+  documentation follow.
 
 A working prototype is beside this spec, in `prototype.lua`. It runs as a mission script loaded after
 Skynet, and has been used in a mission. Its header holds the legend: a shape per kind of element, a colour
@@ -30,32 +47,54 @@ What the prototype already does, and what is worth keeping:
 - **A failure in one drawing step is logged and the rest goes on.**
 - **Destroyed elements stay drawn**, dashed, at their last known position.
 
-## To decide
+## Decided
 
-1. **Change detection.** The prototype wraps about fifteen Skynet functions to mark the network dirty. In
-   the source, each becomes a direct `markMapViewDirty()` call. A wrap on an inherited method misses an
-   override silently: `SkynetIADSEWRadar.setToCorrectAutonomousState` had to be wrapped apart.
-2. **The coverage rule is duplicated.** `coversSite` and `canBeCovered` restate
-   `SkynetIADSAbstractRadarElement:hasValidParentRadar()`, because Skynet's parent list is geometry only.
-   In the source, that function should expose its per-parent half, and the map view should call it, so
-   the two cannot drift apart.
-3. **The cost of mark events.** Every element receiving every mark event is a Skynet cost of its own,
-   beyond this view. Whether elements drop those events early, and whether that is this work or a fix of
-   its own.
-4. **Who sees the drawing.** The prototype draws for every coalition (`-1`). Whether one coalition only
-   should be an option, and whether the view belongs with `getDebugSettings()` or stands apart.
-5. **Mark ids.** The prototype starts at a fixed `7300000`, which another script's marks could collide
-   with. Configurable, or allocated otherwise.
-6. **What is mission tooling.** The prototype survives being reloaded in a running mission
-   (`SkynetIADSMapView = SkynetIADSMapView or {}`, originals kept so a reload never wraps a wrap). That
-   serves hotload, and may not belong in the deliverable.
-7. **Its place in the build.** A source file of its own in `build-tools/listToMerge.txt`, or part of an
-   existing one.
+1. **The view is a source file of its own, merged into the deliverable**, as
+   `skynet-iads-last-line-of-defence.lua` is, and leaves the files that run the network as untouched
+   as it can. Turned down: the ~15 change hooks below spread through the network logic; and a script
+   shipped beside Skynet, which a mission has to load apart.
+2. **Change detection is polling, not hooks.** On each tick the view compares every shown network's
+   item state with what it drew, and redraws only what differs, as the prototype already does once a
+   network is dirty. Turned down: the prototype's wraps of ~15 Skynet functions, which make internal
+   method names an API and miss an override silently (`SkynetIADSEWRadar.setToCorrectAutonomousState`
+   had to be wrapped apart); and direct `markMapViewDirty()` calls in the source, which spread the view
+   through the core. Reading state each second is cheap; the only cost measured in IADS-Caucasus-Mk2,
+   where the prototype runs, was drawing and the mark events it fires. A change shows up to one tick
+   late, which a debug view can afford.
+3. **The coverage rule lives in the core, once.** `SkynetIADSAbstractRadarElement:hasValidParentRadar()`
+   exposes its per-parent half as a method of its own, and loops over it; the view calls that method
+   instead of restating it (`coversSite`, `canBeCovered`). A refactor without change of behaviour; with
+   the radio menu, the only change this work makes to the files that run the network.
+4. **The cost of mark events is left as it is.** Every element is an event handler
+   (`world.addEventHandler` in `SkynetIADSAbstractElement`), so any mark reaches all of them. The view
+   draws no more marks than the prototype, since polling changes when the comparison runs, not what is
+   redrawn. Marks from other scripts cost Skynet the same and are out of its control, so dispatching
+   events once per network is not pursued.
+5. **Menu labels.** `IADS Status - Show/hide` and `Contacts - Show/hide`, the existing pairs once they
+   switch, worded as the map's commands are.
+6. **Mark ids are counted from a fixed first id, `7300000` by default, which a mission can change.** DCS
+   allocates no mark ids: every script picks its own, so a collision cannot be ruled out, only moved
+   away from. One counter serves every network, so two networks never draw over each other's ids; the
+   first id is therefore one value for all, `SkynetIADSMapView.firstMarkId`, not a per-network setting.
+7. **No reload guard.** The map-view file defines its tables plainly, as the logger does its debug
+   settings; the prototype's `SkynetIADSMapView = SkynetIADSMapView or {}` served reloading it in a
+   running mission, which the deliverable does not do.
 8. **Verification.** Lua tests for the decisions (styles from state, coverage, item state, what is
-   redrawn), with `trigger.action.*ToAll` and `removeMark` stubbed; an in-sim check that the drawing
-   follows the network; a documentation page with the legend; a changelog entry.
+   redrawn, the switching menu commands), with `trigger.action.*ToAll` and `removeMark` stubbed. No
+   in-sim check of the drawing: the in-sim tests display the map of every network they build
+   (`S.iads` in `test/insim/dcs-hotload/user-lib/insim-skynet.lua`), add its radio menu, and turn on
+   the debug settings `radarWentLive`, `radarWentDark` and `harmDefence`, so a run can be watched. A
+   documentation page with the legend; a changelog entry.
+9. **`iads:deactivate()` stops the map's timer and erases the drawing**, as `displayMap(false)` does. A
+   deactivated network keeps no drawing of a state that no longer runs. One line in
+   `SkynetIADS:deactivate()`.
+10. **`iads:deactivate()` removes the radio menu too**, for the same reason: a deactivated network
+    leaves nothing behind, and each in-sim scenario's network would otherwise leave its submenu. Only
+    when a menu exists: what `missionCommands.removeItem(nil)` does is not verified. A change a
+    mission can see: changelog.
 
 ## Out of scope
 
 - Drawing contacts, or anything Skynet does not hold about its own network.
-- An F10 radio menu to toggle the view: a mission can add one with the API.
+- Menu commands for `pointDefence`, `labels` or the coalition: a mission sets them through
+  `getDisplayMapSettings()`.
