@@ -1,4 +1,4 @@
-"""The one command: python test/insim/run-insim.py [--tier minimal|full] [--skynet FILE] [--resume] [--verify] [--lua PATH] [NAME ...]"""
+"""The one command: python test/insim/run-insim.py [--tag TAG] [--skynet FILE] [--resume] [--verify] [--lua PATH] [NAME ...]"""
 
 import argparse
 import sys
@@ -24,7 +24,7 @@ CHECK_TIMEOUT = 30.0
 
 def _parser():
     p = argparse.ArgumentParser(prog="run-insim.py", description="Run the in-sim test suite.")
-    p.add_argument("--tier", choices=("minimal", "full"), default="minimal")
+    p.add_argument("--tag", default="tier-minimal", help="run the scenarios carrying this tag (default: tier-minimal)")
     p.add_argument("--skynet", metavar="FILE", help="load this Skynet script instead of the repository's build")
     p.add_argument("--resume", action="store_true", help="continue the latest run")
     p.add_argument("--verify", action="store_true", help="judge the latest run's recorded results again, send nothing")
@@ -36,6 +36,13 @@ def _parser():
 def _latest(results):
     folders = sorted(p for p in results.iterdir() if p.is_dir()) if results.is_dir() else []
     return folders[-1] if folders else None
+
+
+def _recorded_run(folder):
+    run = json.loads((folder / "run.json").read_text(encoding="utf-8"))
+    if "tag" not in run:
+        raise suite.SuiteError("%s was recorded before tags: start a new run" % folder.as_posix())
+    return run
 
 
 def _finish(verdicts, folder, repo, report="report.md"):
@@ -68,8 +75,8 @@ def main(argv=None, repo=REPO, now=datetime.now):
             if folder is None:
                 print("no results folder to verify in " + str(results))
                 return 2
-            run = json.loads((folder / "run.json").read_text(encoding="utf-8"))
-            chosen = suite.select(scenarios, run["tier"], run["names"])
+            run = _recorded_run(folder)
+            chosen = suite.select(scenarios, run["tag"], run["names"])
             print("verify: re-judging %s from %s" % (", ".join(s.name for s in chosen) or "nothing", (folder / "journal.jsonl").as_posix()))
             verdicts = suite.rejudge(folder / "journal.jsonl", chosen, judge)
             for s in chosen:
@@ -94,11 +101,11 @@ def main(argv=None, repo=REPO, now=datetime.now):
             if folder is None:
                 print("no run to resume in " + str(results))
                 return 2
-            run = json.loads((folder / "run.json").read_text(encoding="utf-8"))
+            run = _recorded_run(folder)
         else:
             folder = results / now().strftime("%Y%m%d-%H%M%S")
-            run = {"tier": args.tier, "names": args.names}
-        chosen = suite.select(scenarios, run["tier"], run["names"])  # refused before anything is sent
+            run = {"tag": args.tag, "names": args.names}
+        chosen = suite.select(scenarios, run["tag"], run["names"])  # refused before anything is sent
         for s in chosen:
             if s.mission not in names:
                 raise suite.SuiteError("scenario %s: mission %r is not one of the missions in test/insim/miz (%s)" % (s.name, s.mission, ", ".join(names)))

@@ -17,4 +17,4 @@ instead of its scripts; its setup script was `demo-missions/skynet-iads-setup-pe
 ## Open
 
 - What the scenario measures, and what counts as passing.
-- Whether it runs in the `full` tier, or on demand only.
+- Whether it carries the `tier-full` tag, or runs on demand only.

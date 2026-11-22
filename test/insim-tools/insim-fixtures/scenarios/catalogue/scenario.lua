@@ -1,1 +1,1 @@
-return { tier = "minimal", mission = "insim01", timeout = 10 }
+return { tags = { "tier-minimal" }, mission = "insim01", timeout = 10 }

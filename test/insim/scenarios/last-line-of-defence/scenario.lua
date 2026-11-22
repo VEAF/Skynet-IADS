@@ -1,5 +1,5 @@
 return {
 	mission = "insim-pg-llod",
-	tier = "full",
+	tags = { "tier-full" },
 	timeout = 720,
 }
