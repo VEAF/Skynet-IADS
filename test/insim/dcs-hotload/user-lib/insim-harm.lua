@@ -1,6 +1,5 @@
--- The HARM attack of the harm-engaging-* scenarios: a visible, immortal F-16 flies straight at a
--- site with its weapons held, fires its HARM only once the site has fired at it, so that the HARM
--- arrives on a site that is engaging, and then circles where it is.
+-- What the harm-* scenarios share: the shooter that fires the HARM, the waker that gives the network
+-- a target to wake a site for, and the rule for when a scenario has watched long enough.
 local Wd = Hotload.load("insim-world")
 
 local H = {}
@@ -19,6 +18,104 @@ function H.firedBy(shots, prefix)
 		end
 	end
 	return count
+end
+
+-- Fires one HARM at the group `<scenario>/<targetRole>`, standing on `zone`, from `bearing` (degrees,
+-- 0 north): an F-16 spawned 80 km out flies in and fires on the way. Invisible, so that only its HARM
+-- is ever a contact; immortal, so that its run ends with a shot. Returns the HARM, a weapon object
+-- whose `isExist()` tells when it has ended. The phase ends as `invalid` if it never fires.
+function H.shoot(ctx, targetRole, zone, bearing)
+	local shots = Wd.recordShots(ctx)
+	Wd.spawnAircraft(ctx, {
+		name = "SHOOTER",
+		type = "F-16C bl.52d",
+		country = country.id.USA,
+		from = Wd.pointFrom(zone, bearing, 80),
+		via = Wd.pointFrom(zone, bearing, 77),
+		to = Wd.pointFrom(zone, bearing, 10),
+		alt = 6000,
+		speed = SPEED,
+		task = "SEAD",
+		payload = {
+			-- one HARM: one is what a point defence's one launcher can take (shallIgnoreHARMShutdown)
+			pylons = { [3] = { CLSID = HARM } },
+			fuel = 3000,
+			flare = 0,
+			chaff = 0,
+			gun = 100,
+		},
+		immortal = true,
+		invisible = true,
+		ignoreThreats = true,
+		waypointTasks = { Wd.attackTask(ctx.name .. "/" .. targetRole, 32768) }, -- anti-radiation
+	})
+	local shooter = ctx.name .. "/SHOOTER-1"
+	if not Hotload.waitFor(function()
+		return Wd.fired(shots, shooter) > 0
+	end, 180) then
+		ctx.invalid("the shooter never fired")
+	end
+	for _, shot in ipairs(shots) do
+		if shot.initiator == shooter then
+			return shot.object
+		end
+	end
+end
+
+-- Gives the network a target to wake a site for: a visible, immortal F-16 with nothing to fire,
+-- which flies in on `bearing` from `zone` and circles `km` from the zone's centre. Spawned farther
+-- out, so that it never comes closer than its orbit. A site set to go live in its search range, with
+-- the orbit beyond its missiles' reach, is then live on a real track without firing a missile.
+function H.wake(ctx, zone, bearing, km)
+	local orbit = Wd.pointFrom(zone, bearing, km)
+	local waker = Wd.spawnAircraft(ctx, {
+		name = "WAKER",
+		type = "F-16C bl.52d",
+		country = country.id.USA,
+		from = Wd.pointFrom(zone, bearing, km + 15),
+		to = orbit,
+		alt = ALTITUDE,
+		speed = SPEED,
+		payload = { pylons = {}, fuel = 3000, flare = 0, chaff = 0, gun = 0 },
+		immortal = true,
+		holdFire = true,
+		ignoreThreats = true,
+	})
+	local ok, message = Hotload.callOnMain(function()
+		waker:getController():setTask({
+			id = "Orbit",
+			params = {
+				pattern = "Circle",
+				point = { x = orbit.x, y = orbit.y },
+				speed = SPEED,
+				altitude = ALTITUDE,
+			},
+		})
+	end)
+	if not ok then
+		error(message, 0)
+	end
+end
+
+-- Watches on until the engagement is over, and returns the watch's report: the HARM has ended
+-- (shot down, on the ground, or flown past), every one of `sites` has forgotten it and is out of
+-- any silence, and `settle` seconds more have passed for a late flip to show. A check made before
+-- then cannot see a site that holds for a while and flaps afterwards. Each wait is bounded; one that
+-- times out is a measurement, and the report says what went on.
+function H.untilOver(watch, harm, sites, settle)
+	Hotload.waitFor(function()
+		return harm:isExist() == false
+	end, 180)
+	Hotload.waitFor(function()
+		for _, site in ipairs(sites) do
+			if site:getNumberOfObjectsItentifiedAsHARMS() > 0 or site:isDefendingHARM() then
+				return false
+			end
+		end
+		return true
+	end, 180)
+	Hotload.wait(settle)
+	return watch:report()
 end
 
 local function onAttacker(attacker, fn)

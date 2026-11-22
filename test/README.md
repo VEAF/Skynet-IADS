@@ -357,7 +357,10 @@ Three more libraries, loaded the same way:
 | | `attackTask(group, weaponType)` | an `AttackGroup` task, `weaponType` from the Mission Editor's `weaponTable` |
 | | `recordShots(ctx)`, `fired(shots, unit)` | every shot fired until cleanup, its weapon object included, and how many one unit fired: a scenario whose attacker never fired is `invalid`, not `fail` |
 | | `clearWrecks(zone)` | removes the debris inside a zone |
-| `insim-harm` | `attackOnceEngaged(ctx, siteRole, zone)` | a visible, immortal F-16 flies straight at `<scenario>/<siteRole>` with its weapons held, fires one HARM at it once the site has fired at it, then circles 20 km from it, above an SA-15's reach; returns the shots, the attacker and its HARM. `invalid` if either never fires |
+| `insim-harm` | `shoot(ctx, targetRole, zone, bearing)` | an invisible, immortal F-16 spawned 80 km from `zone` on `bearing` fires one HARM at `<scenario>/<targetRole>`; returns the HARM. `invalid` if it never fires |
+| | `wake(ctx, zone, bearing, km)` | a visible, immortal F-16 with nothing to fire circles `km` from `zone` on `bearing`: a target the network wakes a site for. Set the site to go live in its search range and put the orbit beyond its missiles, and the site is live on a real track without firing |
+| | `untilOver(watch, harm, sites, settle)` | waits until the HARM has ended, every one of `sites` has forgotten it and is out of any silence, then `settle` seconds more; returns `watch:report()`. Each wait is bounded |
+| | `attackOnceEngaged(ctx, siteRole, zone)` | a visible, immortal F-16 flies straight at `<scenario>/<siteRole>` with its weapons held, fires one HARM at it once the site has fired at it, then circles 20 km from it, above an SA-15's reach; returns the shots, the attacker and its HARM. `invalid` if either never fires |
 | | `firedBy(shots, prefix)` | how many shots the units whose name starts with `prefix` fired |
 
 **Rules for the code of a phase.**
