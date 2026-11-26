@@ -30,8 +30,9 @@ local mapSettings = redIADS:getDisplayMapSettings()
 
 Les réglages sont lus chaque seconde : un changement se voit sur une carte déjà affichée.
 
-Ce qui est dessiné, `layers`, une liste des valeurs suivantes, toutes par défaut. Une liste vide ne
-dessine rien :
+Ce qui est dessiné : les couches ci-dessous, toutes affichées par défaut. `setLayer()` affiche ou
+masque l'une d'elles, et `hasLayer()` dit si elle est affichée. Une carte sans aucune couche affichée
+ne dessine rien :
 
 | Couche | Ce qu'elle dessine |
 |---|---|
@@ -42,14 +43,15 @@ dessine rien :
 | `labels` | les noms sous les formes |
 
 ```lua
-mapSettings.layers = { "elements", "coverage", "rangeCircles" }
+mapSettings:setLayer(SkynetIADSMapView.layers.labels, false)
+mapSettings:setLayer(SkynetIADSMapView.layers.pointDefence, false)
 ```
 
-Qui voit le dessin, `coalition` : `coalition.side.RED`, `coalition.side.BLUE`,
+Qui voit le dessin, `targetCoalition` : `coalition.side.RED`, `coalition.side.BLUE`,
 `coalition.side.NEUTRAL`, ou `nil` pour toutes les coalitions, la valeur par défaut :
 
 ```lua
-mapSettings.coalition = coalition.side.RED
+mapSettings.targetCoalition = coalition.side.RED
 ```
 
 Chaque marque de la carte F10 a un identifiant, et DCS laisse chaque script choisir les siens. La vue

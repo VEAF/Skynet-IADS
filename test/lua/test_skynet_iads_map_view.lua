@@ -15,6 +15,7 @@ loader.loadAll()
 local F = dofile(base .. "/../common/dcs-fixtures.lua")
 
 local RED = coalition.side.RED
+local SHAPES, COLOURS, LAYERS = SkynetIADSMapView.shapes, SkynetIADSMapView.colours, SkynetIADSMapView.layers
 
 TestSkynetIADSMapView = {}
 
@@ -68,7 +69,7 @@ end
 
 --- The marks drawn for one item of the view, by the key the view files it under.
 local function marksOf(iads, key)
-	local drawn = iads.mapView.items[key]
+	local drawn = iads.mapView.drawnItems[key]
 	return drawn and drawn.markIds or {}
 end
 
@@ -80,6 +81,16 @@ local function marksOfKind(kind)
 		end
 	end
 	return found
+end
+
+--- Shows the layers in `shown` and hides every other one.
+local function showOnly(settings, shown)
+	for _, layer in pairs(LAYERS) do
+		settings:setLayer(layer, false)
+	end
+	for _, layer in ipairs(shown) do
+		settings:setLayer(layer, true)
+	end
 end
 
 local function copy(list)
@@ -201,8 +212,8 @@ function TestSkynetIADSMapView:testADestroyedElementStaysDrawnDashedWhereItWas()
 	refresh()
 	local shape = dcsStub.marks[marksOf(iads, self.ew)[1]]
 	luaunit.assertEquals(shape.kind, "rect")
-	luaunit.assertEquals(shape.args[5], SkynetIADSMapView.LineTypes.dashed)
-	luaunit.assertEquals(shape.args[1].x, SkynetIADSMapView.Sizes.ew, "centred on its last position")
+	luaunit.assertEquals(shape.args[5], SkynetIADSMapView.lineTypes.dashed)
+	luaunit.assertEquals(shape.args[1].x, SkynetIADSMapView.sizes.ew, "centred on its last position")
 end
 
 function TestSkynetIADSMapView:testALostCoverageErasesItsLine()
@@ -213,7 +224,7 @@ function TestSkynetIADSMapView:testALostCoverageErasesItsLine()
 	dcsStub.world["EW-north"]:__destroy()
 	refresh()
 	luaunit.assertNil(dcsStub.marks[line])
-	luaunit.assertNil(iads.mapView.items["coverage:EW-north>SAM-SA-6"])
+	luaunit.assertNil(iads.mapView.drawnItems["coverage:EW-north>SAM-SA-6"])
 end
 
 --- The coverage line is drawn from isCoveredBy(), the rule Skynet itself goes autonomous by: a
@@ -232,7 +243,7 @@ function TestSkynetIADSMapView:testACoverageLineFollowsSkynetsOwnCoverageRule()
 	end
 	luaunit.assertTrue(stillAParent, "the EW radar is still in the parent list")
 	refresh()
-	luaunit.assertNil(iads.mapView.items["coverage:EW-north>SAM-SA-6"])
+	luaunit.assertNil(iads.mapView.drawnItems["coverage:EW-north>SAM-SA-6"])
 end
 
 function TestSkynetIADSMapView:testAFailingItemIsLoggedAndTheRestIsDrawn()
@@ -258,22 +269,22 @@ end
 function TestSkynetIADSMapView:testStylesFollowTheElementsState()
 	self:buildNetwork()
 	local style = SkynetIADSMapView.radarElementStyle(self.ew, true)
-	luaunit.assertEquals({ style.shape, style.fill }, { "square", "blue" })
+	luaunit.assertEquals({ style.shape, style.fill }, { SHAPES.square, COLOURS.blue })
 	style = SkynetIADSMapView.radarElementStyle(self.sam, false)
-	luaunit.assertEquals({ style.shape, style.fill, style.outline }, { "triangle", "grey", "grey" })
+	luaunit.assertEquals({ style.shape, style.fill, style.outline }, { SHAPES.triangle, COLOURS.grey, COLOURS.grey })
 	self.sam:goLive()
 	style = SkynetIADSMapView.radarElementStyle(self.sam, false)
-	luaunit.assertEquals(style.fill, "red")
+	luaunit.assertEquals(style.fill, COLOURS.red)
 	self.sam:goAutonomous()
 	style = SkynetIADSMapView.radarElementStyle(self.sam, false)
-	luaunit.assertEquals(style.outline, "orange", "autonomous")
+	luaunit.assertEquals(style.outline, COLOURS.orange, "autonomous")
 	style = SkynetIADSMapView.radarElementStyle(self.pointDefence, false)
-	luaunit.assertEquals(style.shape, "invertedTriangle")
+	luaunit.assertEquals(style.shape, SHAPES.invertedTriangle)
 	style = SkynetIADSMapView.commandCenterStyle(self.commandCenter)
-	luaunit.assertEquals(style.fill, "green")
+	luaunit.assertEquals(style.fill, COLOURS.green)
 	self.powerSource:__destroy()
 	style = SkynetIADSMapView.commandCenterStyle(self.commandCenter)
-	luaunit.assertEquals(style.fill, "orange", "unpowered")
+	luaunit.assertEquals(style.fill, COLOURS.orange, "unpowered")
 end
 
 function TestSkynetIADSMapView:testStylesUnderAHARMAndOnceDestroyed()
@@ -281,15 +292,15 @@ function TestSkynetIADSMapView:testStylesUnderAHARMAndOnceDestroyed()
 	function self.sam:isDefendingHARM()
 		return true
 	end
-	luaunit.assertEquals(SkynetIADSMapView.radarElementStyle(self.sam, false).fill, "black", "silenced by a HARM")
+	luaunit.assertEquals(SkynetIADSMapView.radarElementStyle(self.sam, false).fill, COLOURS.black, "silenced by a HARM")
 	self.pointDefence:setIsPointDefending(true)
-	luaunit.assertEquals(SkynetIADSMapView.radarElementStyle(self.pointDefence, false).fill, "purple")
+	luaunit.assertEquals(SkynetIADSMapView.radarElementStyle(self.pointDefence, false).fill, COLOURS.purple)
 	dcsStub.world["SAM-SA-6"]:__destroy()
 	local style = SkynetIADSMapView.radarElementStyle(self.sam, false)
-	luaunit.assertEquals({ style.fill, style.dashed }, { "grey", true })
+	luaunit.assertEquals({ style.fill, style.dashed }, { COLOURS.grey, true })
 	dcsStub.world["CC"]:__destroy()
 	style = SkynetIADSMapView.commandCenterStyle(self.commandCenter)
-	luaunit.assertEquals({ style.fill, style.dashed }, { "red", true })
+	luaunit.assertEquals({ style.fill, style.dashed }, { COLOURS.red, true })
 end
 
 function TestSkynetIADSMapView:testAPointDefenceHeldLiveDrawsItsLineSolidPurple()
@@ -297,13 +308,13 @@ function TestSkynetIADSMapView:testAPointDefenceHeldLiveDrawsItsLineSolidPurple(
 	iads:displayMap(true)
 	refresh()
 	local key = "pointDefence:SAM-SA-15>SAM-SA-6"
-	luaunit.assertEquals(dcsStub.marks[marksOf(iads, key)[1]].args[4], SkynetIADSMapView.LineTypes.dashed)
+	luaunit.assertEquals(dcsStub.marks[marksOf(iads, key)[1]].args[4], SkynetIADSMapView.lineTypes.dashed)
 	self.pointDefence:setIsPointDefending(true)
 	refresh()
-	luaunit.assertNil(iads.mapView.items[key])
+	luaunit.assertNil(iads.mapView.drawnItems[key])
 	local line = dcsStub.marks[marksOf(iads, "pointDefending:SAM-SA-15>SAM-SA-6")[1]]
-	luaunit.assertEquals(line.args[4], SkynetIADSMapView.LineTypes.solid)
-	luaunit.assertEquals(line.args[3], SkynetIADSMapView.colour("purple"), "the colour of the point defence")
+	luaunit.assertEquals(line.args[4], SkynetIADSMapView.lineTypes.solid)
+	luaunit.assertEquals(line.args[3], SkynetIADSMapView.colour(COLOURS.purple), "the colour of the point defence")
 end
 
 function TestSkynetIADSMapView:testALostPowerSourceIsRedrawnDashedRed()
@@ -313,18 +324,18 @@ function TestSkynetIADSMapView:testALostPowerSourceIsRedrawnDashedRed()
 	self.powerSource:__destroy()
 	refresh()
 	local square = dcsStub.marks[marksOf(iads, self.powerSource)[1]]
-	luaunit.assertEquals(square.args[5], SkynetIADSMapView.LineTypes.dashed)
-	luaunit.assertEquals(square.args[3], SkynetIADSMapView.colour("red"))
+	luaunit.assertEquals(square.args[5], SkynetIADSMapView.lineTypes.dashed)
+	luaunit.assertEquals(square.args[3], SkynetIADSMapView.colour(COLOURS.red))
 	local commandCenter = dcsStub.marks[marksOf(iads, self.commandCenter)[1]]
-	luaunit.assertEquals(commandCenter.args[3], SkynetIADSMapView.colour("orange"), "unpowered")
+	luaunit.assertEquals(commandCenter.args[3], SkynetIADSMapView.colour(COLOURS.orange), "unpowered")
 end
 
 --- An airborne EW radar never stops: it is redrawn past a longer distance than a ground element.
 function TestSkynetIADSMapView:testAnAirborneRadarMovesFurtherBeforeItIsRedrawn()
 	self:buildNetwork()
 	local awacs = F.awacsUnit("AWACS")
-	luaunit.assertEquals(SkynetIADSMapView.moveThresholdOf(awacs), SkynetIADSMapView.AirMoveThreshold)
-	luaunit.assertEquals(SkynetIADSMapView.moveThresholdOf(self.sam), SkynetIADSMapView.GroundMoveThreshold)
+	luaunit.assertEquals(SkynetIADSMapView.moveThresholdOf(awacs), SkynetIADSMapView.airMoveThreshold)
+	luaunit.assertEquals(SkynetIADSMapView.moveThresholdOf(self.sam), SkynetIADSMapView.groundMoveThreshold)
 end
 
 function TestSkynetIADSMapView:testTwoShapesTooCloseForALineDrawNone()
@@ -332,7 +343,7 @@ function TestSkynetIADSMapView:testTwoShapesTooCloseForALineDrawNone()
 	iads:displayMap(true)
 	F.moveSamGroup("SAM-SA-15", { x = 20100, y = 0, z = 0 })
 	refresh()
-	luaunit.assertNotNil(iads.mapView.items["pointDefence:SAM-SA-15>SAM-SA-6"])
+	luaunit.assertNotNil(iads.mapView.drawnItems["pointDefence:SAM-SA-15>SAM-SA-6"])
 	luaunit.assertEquals(#marksOf(iads, "pointDefence:SAM-SA-15>SAM-SA-6"), 0)
 end
 
@@ -341,8 +352,10 @@ end
 function TestSkynetIADSMapView:testEveryLayerIsOnAndEveryCoalitionSeesByDefault()
 	local iads = self:buildNetwork()
 	local settings = iads:getDisplayMapSettings()
-	luaunit.assertEquals(settings.layers, { "elements", "coverage", "pointDefence", "rangeCircles", "labels" })
-	luaunit.assertNil(settings.coalition)
+	for _, layer in pairs(LAYERS) do
+		luaunit.assertTrue(settings:hasLayer(layer), layer)
+	end
+	luaunit.assertNil(settings.targetCoalition)
 	iads:displayMap(true)
 	refresh()
 	for _, mark in pairs(dcsStub.marks) do
@@ -352,7 +365,7 @@ end
 
 function TestSkynetIADSMapView:testAnEmptyLayerListDrawsNothing()
 	local iads = self:buildNetwork()
-	iads:getDisplayMapSettings().layers = {}
+	showOnly(iads:getDisplayMapSettings(), {})
 	iads:displayMap(true)
 	refresh()
 	luaunit.assertEquals(dcsStub.markCount(), 0)
@@ -363,11 +376,11 @@ function TestSkynetIADSMapView:testALayerTakenOutWhileShownIsErasedAtTheNextTick
 	iads:displayMap(true)
 	refresh()
 	luaunit.assertEquals(#marksOfKind("text") > 0, true)
-	iads:getDisplayMapSettings().layers = { "elements", "rangeCircles" }
+	showOnly(iads:getDisplayMapSettings(), { LAYERS.elements, LAYERS.rangeCircles })
 	refresh()
 	luaunit.assertEquals(#marksOfKind("text"), 0, "labels")
-	luaunit.assertNil(iads.mapView.items["coverage:EW-north>SAM-SA-6"])
-	luaunit.assertNil(iads.mapView.items["pointDefence:SAM-SA-15>SAM-SA-6"])
+	luaunit.assertNil(iads.mapView.drawnItems["coverage:EW-north>SAM-SA-6"])
+	luaunit.assertNil(iads.mapView.drawnItems["pointDefence:SAM-SA-15>SAM-SA-6"])
 	luaunit.assertTrue(#marksOf(iads, self.sam) > 0, "the shapes stay")
 end
 
@@ -379,7 +392,7 @@ function TestSkynetIADSMapView:testRangeCirclesAreDrawnForLiveSitesOnly()
 	self.sam:goLive()
 	refresh()
 	luaunit.assertEquals(#marksOfKind("circle"), 1)
-	iads:getDisplayMapSettings().layers = { "elements" }
+	showOnly(iads:getDisplayMapSettings(), { LAYERS.elements })
 	refresh()
 	luaunit.assertEquals(#marksOfKind("circle"), 0)
 end
@@ -421,7 +434,7 @@ function TestSkynetIADSMapView:testTheCoalitionSettingRedrawsEverythingForThatCo
 	iads:displayMap(true)
 	refresh()
 	local count = dcsStub.markCount()
-	iads:getDisplayMapSettings().coalition = coalition.side.BLUE
+	iads:getDisplayMapSettings().targetCoalition = coalition.side.BLUE
 	refresh()
 	luaunit.assertEquals(dcsStub.markCount(), count)
 	for _, mark in pairs(dcsStub.marks) do
@@ -468,15 +481,15 @@ function TestSkynetIADSMapView:testTheMapRadioCommandsSwitchTheMapAndItsLayers()
 	end
 	click("Map - Show/hide")
 	luaunit.assertEquals(iads:isMapDisplayed(), true)
+	local settings = iads:getDisplayMapSettings()
 	click("Map - Show/hide coverage lines (EW -> SAM)")
-	luaunit.assertEquals(iads:getDisplayMapSettings().layers, { "elements", "pointDefence", "rangeCircles", "labels" })
+	luaunit.assertFalse(settings:hasLayer(LAYERS.coverage))
+	luaunit.assertTrue(settings:hasLayer(LAYERS.rangeCircles), "the other layers are left alone")
+	luaunit.assertNil(iads.mapView.drawnItems["coverage:EW-north>SAM-SA-6"], "erased at once, not at the next tick")
 	click("Map - Show/hide coverage lines (EW -> SAM)")
-	luaunit.assertEquals(
-		iads:getDisplayMapSettings().layers,
-		{ "elements", "pointDefence", "rangeCircles", "labels", "coverage" }
-	)
+	luaunit.assertTrue(settings:hasLayer(LAYERS.coverage))
 	click("Map - Show/hide range circles")
-	luaunit.assertEquals(iads:getDisplayMapSettings().layers, { "elements", "pointDefence", "labels", "coverage" })
+	luaunit.assertFalse(settings:hasLayer(LAYERS.rangeCircles))
 	click("Map - Show/hide")
 	luaunit.assertEquals(iads:isMapDisplayed(), false)
 end
