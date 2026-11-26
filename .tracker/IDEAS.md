@@ -212,6 +212,33 @@ description, but nothing fixes a release pull request's title or what its descri
 | Prepare, `release/<x.y.z>` → `develop` | `chore(release): prepare <x.y.z>` | points at the `[x.y.z]` section of `CHANGELOG.md` as the release notes, rather than copying them; says `release.py` packaged cleanly; gives the in-sim result, or "not flown" |
 | Promote, `develop` → `master` | `chore(release): promote <x.y.z>` | links the prepare pull request; says what `develop` received since — nothing, or prepare again |
 
+## The build, not each source, could wrap a file in `do ... end`
+
+Every file in `skynet-iads-source/` opens with `do` and closes with `end`, so that once the build
+concatenates them into one chunk, each file's top-level locals stay its own: no clash between two
+files' locals of the same name, and no sum across files toward Lua 5.1's limit of 200 locals per
+function, which the whole compiled chunk counts as.
+
+The convention is held by hand, and nothing checks it. `test/common/skynet-loader.lua` loads each
+source with `loadfile`, in its own chunk, so a file that forgot its `do` would pass every Lua test
+and break only the compiled script, in DCS.
+
+VEAF-Mission-Creation-Tools hit exactly that (`FIX-BUNDLE-LOCAL-LIMIT`): the modules' locals added
+up past 200, DCS refused the whole bundle with *"main function has more than 200 local variables"*,
+and every test stayed green. Its build now wraps each module itself (`bundle_section()` in
+`veaf_build/worker.py`), between `-- START script <name>` and `-- END script <name>` banners, and
+its sources carry no `do` of their own. `test/python/veaf_build/test_lua_bundle_runs.py` checks the
+wrapper and the order, and runs the real bundle under Lua 5.1 against its DCS mocks; it skips
+without an interpreter unless `VEAF_REQUIRE_LUA51` is set, which its CI does.
+
+**Shape if taken**: `build()` in `build-tools/build-compiled-script.py` wraps each file; the
+`do`/`end` leave the twenty sources, which lose one level of indentation; a test runs the compiled
+script under Lua 5.1 with `test/common/dcs-stub.lua`. The banners are optional, and would help find
+a file in the compiled script from a `dcs.log`.
+
+**The cost**: a diff across every source file, which conflicts with any branch in flight and
+clutters `git blame`; and the compiled script's lines shift by one per file from the sources'.
+
 ## Dropped
 
 ### A comment saying `setupRangeData` reads a radar's range once
