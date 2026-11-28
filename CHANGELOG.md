@@ -33,8 +33,8 @@ between two copies.
 
 - A network can be drawn on the F10 map, and the drawing follows it every second: which sites are
   live, dark or autonomous, which EW radar covers which SAM site, what each point defence protects,
-  and whether a command center still has power. `iads:displayMap(true)` shows it,
-  `iads:getDisplayMapSettings()` chooses what is drawn and for which coalition, and the radio menu
+  and whether a command center still has power. `iads:showMapView(true)` shows it,
+  `iads:getMapViewSettings()` chooses what is drawn and for which coalition, and the radio menu
   has commands for it. See the documentation's *Map view* page.
 
 ### Changed

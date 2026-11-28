@@ -7,12 +7,12 @@ has power. It is a tool for building and checking a mission.
 ## Showing the map {#showing-the-map}
 
 ```lua
-redIADS:displayMap(true)  -- draw the network, and keep the drawing current
-redIADS:displayMap(false) -- erase it
-redIADS:isMapDisplayed()  -- whether it is shown
+redIADS:showMapView(true)  -- draw the network, and keep the drawing current
+redIADS:showMapView(false) -- erase it
+redIADS:isMapViewShown()   -- whether it is shown
 ```
 
-The drawing appears a second after `displayMap(true)`, and follows the network every second from
+The drawing appears a second after `showMapView(true)`, and follows the network every second from
 then on. `redIADS:deactivate()` erases it.
 
 The [radio menu](api.en.md#iads-configuration) of a network has three commands for its map. Each
@@ -25,7 +25,7 @@ switches at every click:
 ## Settings {#settings}
 
 ```lua
-local mapSettings = redIADS:getDisplayMapSettings()
+local mapSettings = redIADS:getMapViewSettings()
 ```
 
 The settings are read every second, so a change shows on a map already displayed.
@@ -40,6 +40,8 @@ What to draw: the layers below, every one shown by default. `setLayer()` shows o
 | `pointDefence` | the lines from a point defence to the site it protects |
 | `rangeCircles` | the go-live range of live SAM sites |
 | `labels` | the names under the shapes |
+
+The lines and the range circles are drawn with or without `elements`; the labels only with it.
 
 ```lua
 mapSettings:setLayer(SkynetIADSMapView.layers.labels, false)
@@ -58,7 +60,7 @@ counts its marks from `7300000`, for every network. A mission whose own marks us
 it, before any map is displayed:
 
 ```lua
-SkynetIADSMapView.firstMarkId = 9000000
+SkynetIADSMapView.firstDcsMarkId = 9000000
 ```
 
 ## Legend {#legend}

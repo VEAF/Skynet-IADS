@@ -7,12 +7,12 @@ commandement est encore alimenté. C'est un outil pour construire et vérifier u
 ## Afficher la carte {#showing-the-map}
 
 ```lua
-redIADS:displayMap(true)  -- dessine le réseau et tient le dessin à jour
-redIADS:displayMap(false) -- l'efface
-redIADS:isMapDisplayed()  -- indique s'il est affiché
+redIADS:showMapView(true)  -- dessine le réseau et tient le dessin à jour
+redIADS:showMapView(false) -- l'efface
+redIADS:isMapViewShown()   -- indique s'il est affiché
 ```
 
-Le dessin apparaît une seconde après `displayMap(true)`, puis suit le réseau chaque seconde.
+Le dessin apparaît une seconde après `showMapView(true)`, puis suit le réseau chaque seconde.
 `redIADS:deactivate()` l'efface.
 
 Le [menu radio](api.md#iads-configuration) d'un réseau a trois commandes pour sa carte. Chacune
@@ -25,7 +25,7 @@ bascule à chaque clic :
 ## Réglages {#settings}
 
 ```lua
-local mapSettings = redIADS:getDisplayMapSettings()
+local mapSettings = redIADS:getMapViewSettings()
 ```
 
 Les réglages sont lus chaque seconde : un changement se voit sur une carte déjà affichée.
@@ -41,6 +41,8 @@ ne dessine rien :
 | `pointDefence` | les lignes d'une défense rapprochée au site qu'elle protège |
 | `rangeCircles` | la distance d'allumage des sites SAM allumés |
 | `labels` | les noms sous les formes |
+
+Les lignes et les cercles de portée sont dessinés avec ou sans `elements` ; les noms seulement avec.
 
 ```lua
 mapSettings:setLayer(SkynetIADSMapView.layers.labels, false)
@@ -59,7 +61,7 @@ carte compte ses marques à partir de `7300000`, pour tous les réseaux. Une mis
 utilisent déjà cette plage la déplace, avant d'afficher une carte :
 
 ```lua
-SkynetIADSMapView.firstMarkId = 9000000
+SkynetIADSMapView.firstDcsMarkId = 9000000
 ```
 
 ## Légende {#legend}

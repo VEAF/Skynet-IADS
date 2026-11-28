@@ -808,7 +808,7 @@ do
 		self:deactivateEarlyWarningRadars()
 		self:deactivateCommandCenters()
 		--a deactivated network leaves nothing behind
-		self:displayMap(false)
+		self:showMapView(false)
 		if self.radioMenu ~= nil then
 			self:removeRadioMenu()
 		end
@@ -856,7 +856,7 @@ do
 			SkynetIADS.updateDisplay,
 			{ self = self, option = "contacts" }
 		)
-		self:addMapRadioCommands()
+		self:addMapViewRadioCommands()
 	end
 
 	function SkynetIADS:removeRadioMenu()

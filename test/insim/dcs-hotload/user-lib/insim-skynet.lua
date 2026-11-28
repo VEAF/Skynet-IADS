@@ -75,7 +75,7 @@ function S.iads(ctx, configure)
 		debugSettings.radarWentDark = true
 		debugSettings.harmDefence = true
 		iads:addRadioMenu()
-		iads:displayMap(true)
+		iads:showMapView(true)
 		iads:activate()
 	end)
 	if not ok then

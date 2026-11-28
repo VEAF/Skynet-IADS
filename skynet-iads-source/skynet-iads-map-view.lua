@@ -1,9 +1,9 @@
 do
-	-- The map view: draws one Skynet network on the F10 map, and keeps the drawing current.
+	-- The map view: a live view of a Skynet network on the F10 map, refreshed at every tick.
 	--
 	-- Legend (each shape carries its DCS name):
-	--   EW radar (or a SAM site acting as EW)   square          blue: live, grey: dark, black: defending HARM
-	--   SAM site                                triangle        red: live, grey: dark, black: defending HARM, outline orange: autonomous
+	--   EW radar (or a SAM site acting as EW)   square          blue: live, grey: dark, black: silenced by a HARM
+	--   SAM site                                triangle        red: live, grey: dark, black: silenced by a HARM, outline orange: autonomous
 	--   point defence                           small triangle, pointing down: purple while point defending
 	--   command center                          rectangle       green: powered, orange: unpowered, red: destroyed
 	--   command center power source             small square    green: alive, red: destroyed
@@ -15,17 +15,11 @@ do
 	--
 	-- Vocabulary:
 	--   element      a Skynet element: an EW radar, a SAM site (point defences included), a command center, a power source
-	--   relation     a line between two elements: coverage, point defence, power
+	--   relation     a line between two elements
+	--   item         what the view draws and redraws as a whole: a radar element, a command center, a power source, a relation
 	--   anchor       an element whose position an item's drawing depends on
-	--   mark         one DCS F10 map drawing, known by its id
-	--   item         what the view draws, erases and redraws as a whole, with its own marks: a radar element
-	--                (its shape, label and range circle), a command center, a power source, or a relation.
-	--                The view lists the items it should draw afresh at every tick
-	--   drawn item   the record of an item that is on the map: its marks, and the state and anchor positions
-	--                it was drawn with. Kept from one tick to the next, under the item's key
-	--
-	-- A tick compares the two: an item whose state changed or whose anchors moved is erased and drawn
-	-- again, an item listed and not drawn is drawn, a drawn item no longer listed is erased.
+	--   drawn item   the record of an item on the map
+	--   tick         a timer run of update()
 
 	SkynetIADSMapView = {}
 
@@ -33,14 +27,15 @@ do
 	--- Global parameters
 	SkynetIADSMapView.logPrefix = "SKYNET MAP VIEW: "
 	SkynetIADSMapView.refreshPeriod = 1 -- seconds between two ticks
-	SkynetIADSMapView.firstMarkId = 7300000 -- DCS allocates no mark ids: every script picks its own. A mission can change this if it collides with its own
-	SkynetIADSMapView.lastMarkId = nil -- nil until the first mark; one counter for every network, so two never share an id
+	SkynetIADSMapView.firstDcsMarkId = 7300000 -- every script picks its own DCS mark ids; a mission can change this one if it collides
+	SkynetIADSMapView.lastDcsMarkId = nil -- nil until the first mark; one counter for every network, so two never share an id
 	SkynetIADSMapView.groundMoveThreshold = 2000 -- metres a ground element moves before what is drawn for it is redrawn
 	SkynetIADSMapView.airMoveThreshold = 10000 -- metres an airborne element moves before what is drawn for it is redrawn
 
 	---------------------------------------------------------------------------------------------------
 	--- Enums
 	--- What a map can draw. Every layer is shown by default.
+	--- Lines and range circles are drawn with or without the elements; labels only with them.
 	SkynetIADSMapView.layers = {
 		elements = "elements", -- the shapes: radars, SAM sites, command centers, power sources, and power lines
 		coverage = "coverage", -- coverage lines, EW radar -> SAM site
@@ -67,7 +62,7 @@ do
 	SkynetIADSMapView.allCoalitions = -1 -- DCS mark coalition seen by everyone
 
 	---------------------------------------------------------------------------------------------------
-	--- Drawing parameters (sizes in meters)
+	--- Drawing parameters (sizes in metres)
 	SkynetIADSMapView.fillAlpha = 0.35
 	SkynetIADSMapView.colours = {
 		red = { 1, 0, 0 },
@@ -101,8 +96,7 @@ do
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 	---  SkynetIADSMapViewSettings class
-	---  What a map view draws, and for whom. Read at every tick; changing it changes nothing on the map
-	---  until the view's next update.
+	---  What the view draws, and for whom. Read at every update.
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 	SkynetIADSMapViewSettings = {}
@@ -139,16 +133,14 @@ do
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 	---  Item classes
-	---  Every item has the same interface:
-	---    view                the map view that listed it
-	---    key                 what the item is filed under, the same from one tick to the next: the
-	---                        element itself, or a string for a relation
-	---    name                what a log calls it
-	---    anchorElements      the elements whose position the drawing depends on
-	---    getState()          everything the drawing depends on but the anchors' positions, as a string:
-	---                        two equal states draw the same marks
-	---    draw(drawn)         draws the item's marks, filed in `drawn`
-	---  Items are thrown away at the end of the tick that listed them.
+	---  Listed afresh from the network at every update, and thrown away after it.
+	---  Every item has:
+	---    view
+	---    key                 what the item is filed under, stable from one update to the next
+	---    name                the item's name: its element's DCS name, or a relation's kind and ends' names
+	---    anchorElements
+	---    getState()          what the drawing depends on, anchors' positions aside, as a string
+	---    draw(drawn)         draws the item, its DCS marks filed in `drawn`
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 
@@ -170,20 +162,6 @@ do
 		self.__index = self
 
 		return this
-	end
-
-	--- The range circle drawn around the element, in metres: 0 for an EW radar, a dark or a destroyed
-	--- site, or when the range circles are left out.
-	function SkynetIADSMapViewRadarItem:getDrawnRange()
-		if
-			self.isEwRadar
-			or not self.view.settings:hasLayer(SkynetIADSMapView.layers.rangeCircles)
-			or not self.element:isActive()
-			or self.element:isDestroyed()
-		then
-			return 0
-		end
-		return SkynetIADSMapView.goLiveRange(self.element)
 	end
 
 	function SkynetIADSMapViewRadarItem:getState()
@@ -218,6 +196,21 @@ do
 				SkynetIADSMapView.drawLabel(drawn, position, style.size, style.outline, name, fontSize)
 			end
 		end
+	end
+
+	--- The range circle drawn around the element, in metres.
+	--- 0 for an EW radar or a site acting as one, a dark or a destroyed site, or when the range circles are left out.
+	function SkynetIADSMapViewRadarItem:getDrawnRange()
+		if
+			self.isEwRadar
+			or self.element:getActAsEW()
+			or not self.view.settings:hasLayer(SkynetIADSMapView.layers.rangeCircles)
+			or not self.element:isActive()
+			or self.element:isDestroyed()
+		then
+			return 0
+		end
+		return SkynetIADSMapView.goLiveRange(self.element)
 	end
 
 	---------------------------------------------------------------------------------------------------
@@ -300,9 +293,9 @@ do
 		if not position then
 			return
 		end
-		local colours = SkynetIADSMapView.colours
+
 		local alive = SkynetIADSMapView.powerSourceIsAlive(self.powerSource)
-		local colour = alive and colours.green or colours.red
+		local colour = alive and SkynetIADSMapView.colours.green or SkynetIADSMapView.colours.red
 		local style = { fill = colour, outline = colour, dashed = not alive }
 		local size = SkynetIADSMapView.sizes.powerSource
 		SkynetIADSMapView.drawRectangle(drawn, position, size, size, style)
@@ -317,11 +310,10 @@ do
 
 	--- `kind` is one of SkynetIADSMapView.relationKinds.
 	function SkynetIADSMapViewRelationItem:create(view, kind, from, to)
-		local key = kind .. ":" .. view:nameOf(from) .. ">" .. view:nameOf(to)
 		local this = {
 			view = view,
-			key = key,
-			name = key,
+			key = SkynetIADSMapViewRelationItem.keyOf(kind, from, to),
+			name = kind .. ":" .. view:nameOf(from) .. ">" .. view:nameOf(to),
 			anchorElements = { from, to },
 			kind = kind,
 			from = from,
@@ -334,7 +326,12 @@ do
 		return this
 	end
 
-	--- A relation's look depends only on its kind, which is in its key, and on where its ends are.
+	--- By the ends themselves, not their names: two elements may both have answered none.
+	function SkynetIADSMapViewRelationItem.keyOf(kind, from, to)
+		return kind .. ":" .. tostring(from) .. ">" .. tostring(to)
+	end
+
+	--- The kind, already in the key: only the ends' positions change a line.
 	function SkynetIADSMapViewRelationItem:getState()
 		return self.kind
 	end
@@ -367,7 +364,7 @@ do
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 	---  SkynetIADSMapViewDrawnItem class
-	---  The record of an item on the map: its marks, and what it was drawn with.
+	---  An item as it is on the map: its DCS marks, and what it was drawn with.
 	---------------------------------------------------------------------------------------------------
 	---------------------------------------------------------------------------------------------------
 	SkynetIADSMapViewDrawnItem = {}
@@ -380,7 +377,7 @@ do
 			anchorElements = item.anchorElements,
 			anchorPositions = {}, -- anchorPositions[i]: where anchorElements[i] was when drawn, nil if unknown
 			coalition = view.drawnCoalition, -- the coalition its marks are drawn for
-			markIds = {},
+			dcsMarkIds = {},
 		}
 		for i, anchor in ipairs(item.anchorElements) do
 			this.anchorPositions[i] = view:positionOf(anchor)
@@ -392,18 +389,19 @@ do
 		return this
 	end
 
-	--- A new mark id, filed in this drawn item so it can be erased alone.
-	function SkynetIADSMapViewDrawnItem:newMarkId()
-		SkynetIADSMapView.lastMarkId = (SkynetIADSMapView.lastMarkId or (SkynetIADSMapView.firstMarkId - 1)) + 1
-		table.insert(self.markIds, SkynetIADSMapView.lastMarkId)
-		return SkynetIADSMapView.lastMarkId
+	--- A new DCS mark id, filed in this drawn item.
+	function SkynetIADSMapViewDrawnItem:newDcsMarkId()
+		SkynetIADSMapView.lastDcsMarkId = (SkynetIADSMapView.lastDcsMarkId or (SkynetIADSMapView.firstDcsMarkId - 1))
+			+ 1
+		table.insert(self.dcsMarkIds, SkynetIADSMapView.lastDcsMarkId)
+		return SkynetIADSMapView.lastDcsMarkId
 	end
 
 	function SkynetIADSMapViewDrawnItem:erase()
-		for _, id in ipairs(self.markIds) do
+		for _, id in ipairs(self.dcsMarkIds) do
 			pcall(trigger.action.removeMark, id)
 		end
-		self.markIds = {}
+		self.dcsMarkIds = {}
 	end
 
 	--- Has any anchor moved past its threshold, or appeared, or gone, since it was drawn?
@@ -476,7 +474,11 @@ do
 	function SkynetIADSMapView:toggleLayer(layer)
 		self.settings:toggleLayer(layer)
 		if self:isShown() then
-			self:update()
+			-- a radio command, outside the timer's guard
+			local ok, err = pcall(self.update, self)
+			if not ok then
+				env.warning(SkynetIADSMapView.logPrefix .. "update failed: " .. tostring(err))
+			end
 		end
 	end
 
@@ -582,7 +584,9 @@ do
 			for _, list in ipairs({ iads:getEarlyWarningRadars() or {}, samSites }) do
 				for _, protected in ipairs(list) do
 					for _, pointDefence in ipairs(protected:getPointDefences() or {}) do
-						local kind = pointDefence:getIsPointDefending() and kinds.pointDefending or kinds.pointDefence
+						-- destroyed first, as for its shape: Skynet keeps the flag until the protected site is released
+						local defending = pointDefence:getIsPointDefending() and not pointDefence:isDestroyed()
+						local kind = defending and kinds.pointDefending or kinds.pointDefence
 						table.insert(items, SkynetIADSMapViewRelationItem:create(self, kind, pointDefence, protected))
 					end
 				end
@@ -682,8 +686,8 @@ do
 
 	--- Where Skynet wakes the site, in metres: the range of its longest-reaching launcher in the kill zone,
 	--- of its longest-reaching search radar in the search range, scaled by the go-live percentage, as
-	--- isInHorizontalRange() scales them. 0 when it has none. In the kill zone, Skynet also wants a
-	--- tracking radar in range: the circle is the deciding radius, not the whole rule.
+	--- isInHorizontalRange() scales them. 0 when it has none left. Skynet also wants a search radar in
+	--- range, and in the kill zone a tracking radar: the circle is the deciding radius, not the whole rule.
 	function SkynetIADSMapView.goLiveRange(samSite)
 		local units = samSite:getLaunchers()
 		if samSite:getEngagementZone() == SkynetIADSAbstractRadarElement.GO_LIVE_WHEN_IN_SEARCH_RANGE then
@@ -691,7 +695,9 @@ do
 		end
 		local range = 0
 		for _, unit in ipairs(units or {}) do
-			local ok, unitRange = pcall(unit.getMaxRangeFindingTarget, unit)
+			local ok, unitRange = pcall(function()
+				return unit:isExist() and unit:getMaxRangeFindingTarget() or nil
+			end)
 			if ok and unitRange and unitRange > range then
 				range = unitRange
 			end
@@ -732,7 +738,6 @@ do
 
 	function SkynetIADSMapView.radarElementStyle(element, isEwRadar)
 		local shapes = SkynetIADSMapView.shapes
-		local colours = SkynetIADSMapView.colours
 		local style = {}
 		if isEwRadar or element:getActAsEW() then
 			style.shape = shapes.square
@@ -747,18 +752,19 @@ do
 		-- destroyed first: a site killed with missiles in flight is never told to go dark, so Skynet
 		-- still reports it live
 		if element:isDestroyed() then
-			style.fill = colours.grey
+			style.fill = SkynetIADSMapView.colours.grey
 		elseif element:isDefendingHARM() then
-			style.fill = colours.black
+			style.fill = SkynetIADSMapView.colours.black
 		elseif element:getIsPointDefending() then
-			style.fill = colours.purple -- held live to shoot down a HARM aimed at the site it protects
+			style.fill = SkynetIADSMapView.colours.purple -- held live to shoot down a HARM aimed at the site it protects
 		elseif element:isActive() then
-			style.fill = style.shape == shapes.square and colours.blue or colours.red
+			style.fill = style.shape == shapes.square and SkynetIADSMapView.colours.blue
+				or SkynetIADSMapView.colours.red
 		else
-			style.fill = colours.grey
+			style.fill = SkynetIADSMapView.colours.grey
 		end
 		if style.shape ~= shapes.square and element:getAutonomousState() then
-			style.outline = colours.orange
+			style.outline = SkynetIADSMapView.colours.orange
 		else
 			style.outline = style.fill
 		end
@@ -767,14 +773,13 @@ do
 	end
 
 	function SkynetIADSMapView.commandCenterStyle(commandCenter)
-		local colours = SkynetIADSMapView.colours
 		local style = { dashed = false }
 		if commandCenter:isDestroyed() then
-			style.fill, style.dashed = colours.red, true
+			style.fill, style.dashed = SkynetIADSMapView.colours.red, true
 		elseif not commandCenter:hasWorkingPowerSource() then
-			style.fill = colours.orange
+			style.fill = SkynetIADSMapView.colours.orange
 		else
-			style.fill = colours.green
+			style.fill = SkynetIADSMapView.colours.green
 		end
 		style.outline = style.fill
 		return style
@@ -795,7 +800,7 @@ do
 	end
 
 	---------------------------------------------------------------------------------------------------
-	--- Drawing primitives: each draws marks filed in `drawn`, a SkynetIADSMapViewDrawnItem, for its coalition
+	--- Drawing primitives: each files its DCS marks in `drawn`, a SkynetIADSMapViewDrawnItem
 
 	--- One of SkynetIADSMapView.colours as DCS wants it, with an alpha.
 	function SkynetIADSMapView.colour(rgb, alpha)
@@ -811,7 +816,7 @@ do
 	function SkynetIADSMapView.drawRectangle(drawn, centre, halfWidth, halfHeight, style)
 		trigger.action.rectToAll(
 			drawn.coalition,
-			drawn:newMarkId(),
+			drawn:newDcsMarkId(),
 			{ x = centre.x + halfHeight, y = centre.y, z = centre.z - halfWidth },
 			{ x = centre.x - halfHeight, y = centre.y, z = centre.z + halfWidth },
 			SkynetIADSMapView.colour(style.outline),
@@ -832,7 +837,7 @@ do
 		trigger.action.markupToAll(
 			SkynetIADSMapView.freeformPolygon,
 			drawn.coalition,
-			drawn:newMarkId(),
+			drawn:newDcsMarkId(),
 			points[1],
 			points[2],
 			points[3],
@@ -855,7 +860,7 @@ do
 	function SkynetIADSMapView.drawLine(drawn, from, to, colour, dashed)
 		trigger.action.lineToAll(
 			drawn.coalition,
-			drawn:newMarkId(),
+			drawn:newDcsMarkId(),
 			from,
 			to,
 			SkynetIADSMapView.colour(colour),
@@ -867,7 +872,7 @@ do
 	function SkynetIADSMapView.drawCircle(drawn, centre, radius, colour)
 		trigger.action.circleToAll(
 			drawn.coalition,
-			drawn:newMarkId(),
+			drawn:newDcsMarkId(),
 			centre,
 			radius,
 			SkynetIADSMapView.colour(colour),
@@ -881,7 +886,7 @@ do
 	function SkynetIADSMapView.drawLabel(drawn, centre, size, colour, text, fontSize)
 		trigger.action.textToAll(
 			drawn.coalition,
-			drawn:newMarkId(),
+			drawn:newDcsMarkId(),
 			{ x = centre.x - size - SkynetIADSMapView.labelOffset, y = centre.y, z = centre.z },
 			SkynetIADSMapView.colour(colour),
 			SkynetIADSMapView.colour(colour, 0),
@@ -905,10 +910,10 @@ do
 		return self.mapView
 	end
 
-	--- Show (true) or erase (false) this network's drawing on the F10 map. Showing starts the timer that
+	--- Shows (true) or hides (false) this network's map view. Showing starts the timer that
 	--- keeps it current, from the next tick; hiding stops it.
-	function SkynetIADS:displayMap(bDisplay)
-		if bDisplay then
+	function SkynetIADS:showMapView(bShow)
+		if bShow then
 			self:getMapView():show()
 		else
 			self:getMapView():hide()
@@ -916,17 +921,17 @@ do
 		return self
 	end
 
-	function SkynetIADS:isMapDisplayed()
+	function SkynetIADS:isMapViewShown()
 		return self:getMapView():isShown()
 	end
 
-	--- The map's settings, a SkynetIADSMapViewSettings, read at every tick.
-	function SkynetIADS:getDisplayMapSettings()
+	--- The map view's settings, a SkynetIADSMapViewSettings, read at every update.
+	function SkynetIADS:getMapViewSettings()
 		return self:getMapView().settings
 	end
 
-	--- The map's commands in the network's radio menu; addRadioMenu() calls it.
-	function SkynetIADS:addMapRadioCommands()
+	--- The map view's commands in the network's radio menu; addRadioMenu() calls it.
+	function SkynetIADS:addMapViewRadioCommands()
 		self:getMapView():addRadioCommands(self.radioMenu)
 	end
 end
