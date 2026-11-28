@@ -1,515 +1,513 @@
-do
-	--this file contains the required units per sam type
-	samTypesDB = {
-		["S-200"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["RLS_19J6"] = {
-					["name"] = {
-						["NATO"] = "Tin Shield",
-					},
-				},
-				["p-19 s-125 sr"] = {
-					["name"] = {
-						["NATO"] = "Flat Face",
-					},
+--this file contains the required units per sam type
+samTypesDB = {
+	["S-200"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["RLS_19J6"] = {
+				["name"] = {
+					["NATO"] = "Tin Shield",
 				},
 			},
-			["EWR P-37 BAR LOCK"] = {
-				["Name"] = {
-					["NATO"] = "Bar lock",
+			["p-19 s-125 sr"] = {
+				["name"] = {
+					["NATO"] = "Flat Face",
 				},
 			},
-			["trackingRadar"] = {
-				["RPC_5N62V"] = {},
-			},
-			["launchers"] = {
-				["S-200_Launcher"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-5 Gammon",
-			},
-			["harm_detection_chance"] = 60,
 		},
-		["S-300"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["S-300PS 40B6MD sr"] = {
-					["name"] = {
-						["NATO"] = "Clam Shell",
-					},
-				},
-				["S-300PS 64H6E sr"] = {
-					["name"] = {
-						["NATO"] = "Big Bird",
-					},
-				},
-				["S-300PS 40B6MD sr_19J6"] = {
-					["name"] = {
-						["NATO"] = "Tin Shield",
-					},
-				},
+		["EWR P-37 BAR LOCK"] = {
+			["Name"] = {
+				["NATO"] = "Bar lock",
 			},
-			["trackingRadar"] = {
-				["S-300PS 40B6M tr"] = {},
-				["S-300PS 5H63C 30H6_tr"] = {},
-			},
-			["launchers"] = {
-				["S-300PS 5P85D ln"] = {},
-				["S-300PS 5P85C ln"] = {},
-			},
-			["misc"] = {
-				["S-300PS 54K6 cp"] = {
-					["required"] = true,
-				},
-			},
-			["name"] = {
-				["NATO"] = "SA-10 Grumble",
-			},
-			["harm_detection_chance"] = 90,
-			["can_engage_harm"] = true,
-			["can_engage_missile"] = true,
 		},
-		["Buk"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["SA-11 Buk SR 9S18M1"] = {
-					["name"] = {
-						["NATO"] = "Snow Drift",
-					},
-				},
-			},
-			["launchers"] = {
-				["SA-11 Buk LN 9A310M1"] = {},
-			},
-			["misc"] = {
-				["SA-11 Buk CC 9S470M1"] = {
-					["required"] = true,
-				},
-			},
-			["name"] = {
-				["NATO"] = "SA-11 Gadfly",
-			},
-			["harm_detection_chance"] = 70,
+		["trackingRadar"] = {
+			["RPC_5N62V"] = {},
 		},
-		["S-125"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["p-19 s-125 sr"] = {
-					["name"] = {
-						["NATO"] = "Flat Face",
-					},
-				},
-			},
-			["trackingRadar"] = {
-				["snr s-125 tr"] = {},
-			},
-			["launchers"] = {
-				["5p73 s-125 ln"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-3 Goa",
-			},
-			["harm_detection_chance"] = 30,
+		["launchers"] = {
+			["S-200_Launcher"] = {},
 		},
-		["S-75"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["p-19 s-125 sr"] = {
-					["name"] = {
-						["NATO"] = "Flat Face",
-					},
-				},
-			},
-			["trackingRadar"] = {
-				["SNR_75V"] = {},
-			},
-			["launchers"] = {
-				["S_75M_Volhov"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-2 Guideline",
-			},
-			["harm_detection_chance"] = 30,
+		["name"] = {
+			["NATO"] = "SA-5 Gammon",
 		},
-		["Kub"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["Kub 1S91 str"] = {
-					["name"] = {
-						["NATO"] = "Straight Flush",
-					},
+		["harm_detection_chance"] = 60,
+	},
+	["S-300"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["S-300PS 40B6MD sr"] = {
+				["name"] = {
+					["NATO"] = "Clam Shell",
 				},
 			},
-			["launchers"] = {
-				["Kub 2P25 ln"] = {},
+			["S-300PS 64H6E sr"] = {
+				["name"] = {
+					["NATO"] = "Big Bird",
+				},
 			},
-			["name"] = {
-				["NATO"] = "SA-6 Gainful",
+			["S-300PS 40B6MD sr_19J6"] = {
+				["name"] = {
+					["NATO"] = "Tin Shield",
+				},
 			},
-			["harm_detection_chance"] = 40,
 		},
-		["Patriot"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["Patriot str"] = {
-					["name"] = {
-						["NATO"] = "Patriot str",
-					},
-				},
-			},
-			["launchers"] = {
-				["Patriot ln"] = {},
-			},
-			["misc"] = {
-				["Patriot cp"] = {
-					["required"] = false,
-				},
-				["Patriot EPP"] = {
-					["required"] = false,
-				},
-				["Patriot ECS"] = {
-					["required"] = true,
-				},
-				["Patriot AMG"] = {
-					["required"] = false,
-				},
-			},
-			["name"] = {
-				["NATO"] = "Patriot",
-			},
-			["harm_detection_chance"] = 90,
-			["can_engage_harm"] = true,
-			["can_engage_missile"] = true,
+		["trackingRadar"] = {
+			["S-300PS 40B6M tr"] = {},
+			["S-300PS 5H63C 30H6_tr"] = {},
 		},
-		["Hawk"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["Hawk sr"] = {
-					["name"] = {
-						["NATO"] = "Hawk str",
-					},
+		["launchers"] = {
+			["S-300PS 5P85D ln"] = {},
+			["S-300PS 5P85C ln"] = {},
+		},
+		["misc"] = {
+			["S-300PS 54K6 cp"] = {
+				["required"] = true,
+			},
+		},
+		["name"] = {
+			["NATO"] = "SA-10 Grumble",
+		},
+		["harm_detection_chance"] = 90,
+		["can_engage_harm"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Buk"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["SA-11 Buk SR 9S18M1"] = {
+				["name"] = {
+					["NATO"] = "Snow Drift",
 				},
 			},
-			["trackingRadar"] = {
-				["Hawk tr"] = {},
+		},
+		["launchers"] = {
+			["SA-11 Buk LN 9A310M1"] = {},
+		},
+		["misc"] = {
+			["SA-11 Buk CC 9S470M1"] = {
+				["required"] = true,
 			},
-			["launchers"] = {
-				["Hawk ln"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-11 Gadfly",
+		},
+		["harm_detection_chance"] = 70,
+	},
+	["S-125"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["p-19 s-125 sr"] = {
+				["name"] = {
+					["NATO"] = "Flat Face",
+				},
 			},
+		},
+		["trackingRadar"] = {
+			["snr s-125 tr"] = {},
+		},
+		["launchers"] = {
+			["5p73 s-125 ln"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-3 Goa",
+		},
+		["harm_detection_chance"] = 30,
+	},
+	["S-75"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["p-19 s-125 sr"] = {
+				["name"] = {
+					["NATO"] = "Flat Face",
+				},
+			},
+		},
+		["trackingRadar"] = {
+			["SNR_75V"] = {},
+		},
+		["launchers"] = {
+			["S_75M_Volhov"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-2 Guideline",
+		},
+		["harm_detection_chance"] = 30,
+	},
+	["Kub"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["Kub 1S91 str"] = {
+				["name"] = {
+					["NATO"] = "Straight Flush",
+				},
+			},
+		},
+		["launchers"] = {
+			["Kub 2P25 ln"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-6 Gainful",
+		},
+		["harm_detection_chance"] = 40,
+	},
+	["Patriot"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["Patriot str"] = {
+				["name"] = {
+					["NATO"] = "Patriot str",
+				},
+			},
+		},
+		["launchers"] = {
+			["Patriot ln"] = {},
+		},
+		["misc"] = {
+			["Patriot cp"] = {
+				["required"] = false,
+			},
+			["Patriot EPP"] = {
+				["required"] = false,
+			},
+			["Patriot ECS"] = {
+				["required"] = true,
+			},
+			["Patriot AMG"] = {
+				["required"] = false,
+			},
+		},
+		["name"] = {
+			["NATO"] = "Patriot",
+		},
+		["harm_detection_chance"] = 90,
+		["can_engage_harm"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Hawk"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["Hawk sr"] = {
+				["name"] = {
+					["NATO"] = "Hawk str",
+				},
+			},
+		},
+		["trackingRadar"] = {
+			["Hawk tr"] = {},
+		},
+		["launchers"] = {
+			["Hawk ln"] = {},
+		},
 
-			["name"] = {
-				["NATO"] = "Hawk",
-			},
-			["harm_detection_chance"] = 40,
+		["name"] = {
+			["NATO"] = "Hawk",
 		},
-		["Roland ADS"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["Roland Radar"] = {
-					["name"] = {
-						["NATO"] = "Roland EWR",
-					},
+		["harm_detection_chance"] = 40,
+	},
+	["Roland ADS"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["Roland Radar"] = {
+				["name"] = {
+					["NATO"] = "Roland EWR",
 				},
 			},
-			["launchers"] = {
-				["Roland ADS"] = {},
-			},
-			["name"] = {
-				["NATO"] = "Roland ADS",
-			},
-			["harm_detection_chance"] = 60,
-			["can_engage_missile"] = true,
 		},
-		["NASAMS"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["NASAMS_Radar_MPQ64F1"] = {},
-			},
-			["launchers"] = {
-				["NASAMS_LN_B"] = {},
-				["NASAMS_LN_C"] = {},
-			},
+		["launchers"] = {
+			["Roland ADS"] = {},
+		},
+		["name"] = {
+			["NATO"] = "Roland ADS",
+		},
+		["harm_detection_chance"] = 60,
+		["can_engage_missile"] = true,
+	},
+	["NASAMS"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["NASAMS_Radar_MPQ64F1"] = {},
+		},
+		["launchers"] = {
+			["NASAMS_LN_B"] = {},
+			["NASAMS_LN_C"] = {},
+		},
 
-			["name"] = {
-				["NATO"] = "NASAMS",
+		["name"] = {
+			["NATO"] = "NASAMS",
+		},
+		["misc"] = {
+			["NASAMS_Command_Post"] = {
+				["required"] = false,
 			},
-			["misc"] = {
-				["NASAMS_Command_Post"] = {
-					["required"] = false,
+		},
+		["can_engage_harm"] = true,
+		["can_engage_missile"] = true,
+		["harm_detection_chance"] = 90,
+	},
+	["2S6 Tunguska"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["2S6 Tunguska"] = {},
+		},
+		["launchers"] = {
+			["2S6 Tunguska"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-19 Grison",
+		},
+	},
+	["Osa"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["Osa 9A33 ln"] = {},
+		},
+		["launchers"] = {
+			["Osa 9A33 ln"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-8 Gecko",
+		},
+		["harm_detection_chance"] = 20,
+	},
+	["Strela-10M3"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["Strela-10M3"] = {
+				["trackingRadar"] = true,
+			},
+		},
+		["launchers"] = {
+			["Strela-10M3"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-13 Gopher",
+		},
+	},
+	["Strela-1 9P31"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["Strela-1 9P31"] = {},
+		},
+		["launchers"] = {
+			["Strela-1 9P31"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-9 Gaskin",
+		},
+		["harm_detection_chance"] = 20,
+	},
+	["Tor"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["Tor 9A331"] = {},
+		},
+		["launchers"] = {
+			["Tor 9A331"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-15 Gauntlet",
+		},
+		["harm_detection_chance"] = 90,
+		["can_engage_harm"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Gepard"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["Gepard"] = {},
+		},
+		["launchers"] = {
+			["Gepard"] = {},
+		},
+		["name"] = {
+			["NATO"] = "Gepard",
+		},
+		["harm_detection_chance"] = 10,
+	},
+	["Rapier"] = {
+		["searchRadar"] = {
+			["rapier_fsa_blindfire_radar"] = {},
+		},
+		["launchers"] = {
+			["rapier_fsa_launcher"] = {
+				["trackingRadar"] = true,
+			},
+		},
+		["misc"] = {
+			["rapier_fsa_optical_tracker_unit"] = {
+				["required"] = true,
+			},
+		},
+		["name"] = {
+			["NATO"] = "Rapier",
+		},
+		["harm_detection_chance"] = 10,
+	},
+	["ZSU-23-4 Shilka"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["ZSU-23-4 Shilka"] = {},
+		},
+		["launchers"] = {
+			["ZSU-23-4 Shilka"] = {},
+		},
+		["name"] = {
+			["NATO"] = "Zeus",
+		},
+		["harm_detection_chance"] = 10,
+	},
+	["Phalanx"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["HEMTT_C-RAM_Phalanx"] = {},
+		},
+		["launchers"] = {
+			["HEMTT_C-RAM_Phalanx"] = {},
+		},
+		["name"] = {
+			["NATO"] = "Phalanx",
+		},
+		["harm_detection_chance"] = 10,
+		["can_engage_harm"] = true,
+		["can_engage_bomb"] = true,
+		["can_engage_missile"] = true,
+	},
+	["HQ-7"] = {
+		["searchRadar"] = {
+			["HQ-7_STR_SP"] = {
+				["name"] = {
+					["NATO"] = "CSA-4",
 				},
 			},
-			["can_engage_harm"] = true,
-			["can_engage_missile"] = true,
-			["harm_detection_chance"] = 90,
 		},
-		["2S6 Tunguska"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["2S6 Tunguska"] = {},
-			},
-			["launchers"] = {
-				["2S6 Tunguska"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-19 Grison",
-			},
+		["launchers"] = {
+			["HQ-7_LN_SP"] = {},
 		},
-		["Osa"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["Osa 9A33 ln"] = {},
-			},
-			["launchers"] = {
-				["Osa 9A33 ln"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-8 Gecko",
-			},
-			["harm_detection_chance"] = 20,
+		["name"] = {
+			["NATO"] = "CSA-4",
 		},
-		["Strela-10M3"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["Strela-10M3"] = {
-					["trackingRadar"] = true,
+		["harm_detection_chance"] = 30,
+		["can_engage_harm"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Tor M2"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["CHAP_TorM2"] = {},
+		},
+		["launchers"] = {
+			["CHAP_TorM2"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-15 Gauntlet M2",
+		},
+		["harm_detection_chance"] = 90,
+		["can_engage_harm"] = true,
+		["can_engage_bomb"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Pantsir S1"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["CHAP_PantsirS1"] = {},
+		},
+		["launchers"] = {
+			["CHAP_PantsirS1"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-22 Greyhound",
+		},
+		["harm_detection_chance"] = 10,
+		["can_engage_harm"] = true,
+		["can_engage_bomb"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Iris-T SLM"] = {
+		["type"] = "complex",
+		["searchRadar"] = {
+			["CHAP_IRISTSLM_STR"] = {
+				["name"] = {
+					["NATO"] = "Hensoldt TRML-4D",
 				},
 			},
-			["launchers"] = {
-				["Strela-10M3"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-13 Gopher",
-			},
 		},
-		["Strela-1 9P31"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["Strela-1 9P31"] = {},
-			},
-			["launchers"] = {
-				["Strela-1 9P31"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-9 Gaskin",
-			},
-			["harm_detection_chance"] = 20,
+		["launchers"] = {
+			["CHAP_IRISTSLM_LN"] = {},
 		},
-		["Tor"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["Tor 9A331"] = {},
-			},
-			["launchers"] = {
-				["Tor 9A331"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-15 Gauntlet",
-			},
-			["harm_detection_chance"] = 90,
-			["can_engage_harm"] = true,
-			["can_engage_missile"] = true,
+		["name"] = {
+			["NATO"] = "Iris-T SLM",
 		},
-		["Gepard"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["Gepard"] = {},
-			},
-			["launchers"] = {
-				["Gepard"] = {},
-			},
-			["name"] = {
-				["NATO"] = "Gepard",
-			},
-			["harm_detection_chance"] = 10,
+		["harm_detection_chance"] = 90,
+		["can_engage_harm"] = true,
+		["can_engage_bomb"] = true,
+		["can_engage_missile"] = true,
+	},
+	["Buk Solo"] = {
+		["type"] = "single",
+		["searchRadar"] = {
+			["SA-11 Buk LN 9A310M1"] = {},
 		},
-		["Rapier"] = {
-			["searchRadar"] = {
-				["rapier_fsa_blindfire_radar"] = {},
-			},
-			["launchers"] = {
-				["rapier_fsa_launcher"] = {
-					["trackingRadar"] = true,
+		["launchers"] = {
+			["SA-11 Buk LN 9A310M1"] = {},
+		},
+		["name"] = {
+			["NATO"] = "SA-11 Gadfly Solo",
+		},
+		["harm_detection_chance"] = 70,
+	},
+	-- Start of RED EW radars:
+	["1L13 EWR"] = {
+		["type"] = "ewr",
+		["searchRadar"] = {
+			["1L13 EWR"] = {
+				["name"] = {
+					["NATO"] = "Box Spring",
 				},
 			},
-			["misc"] = {
-				["rapier_fsa_optical_tracker_unit"] = {
-					["required"] = true,
+		},
+		["harm_detection_chance"] = 60,
+	},
+	["55G6 EWR"] = {
+		["type"] = "ewr",
+		["searchRadar"] = {
+			["55G6 EWR"] = {
+				["name"] = {
+					["NATO"] = "Tall Rack",
 				},
 			},
-			["name"] = {
-				["NATO"] = "Rapier",
-			},
-			["harm_detection_chance"] = 10,
 		},
-		["ZSU-23-4 Shilka"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["ZSU-23-4 Shilka"] = {},
-			},
-			["launchers"] = {
-				["ZSU-23-4 Shilka"] = {},
-			},
-			["name"] = {
-				["NATO"] = "Zeus",
-			},
-			["harm_detection_chance"] = 10,
-		},
-		["Phalanx"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["HEMTT_C-RAM_Phalanx"] = {},
-			},
-			["launchers"] = {
-				["HEMTT_C-RAM_Phalanx"] = {},
-			},
-			["name"] = {
-				["NATO"] = "Phalanx",
-			},
-			["harm_detection_chance"] = 10,
-			["can_engage_harm"] = true,
-			["can_engage_bomb"] = true,
-			["can_engage_missile"] = true,
-		},
-		["HQ-7"] = {
-			["searchRadar"] = {
-				["HQ-7_STR_SP"] = {
-					["name"] = {
-						["NATO"] = "CSA-4",
-					},
+		["harm_detection_chance"] = 60,
+	},
+	["Dog Ear"] = {
+		["type"] = "ewr",
+		["searchRadar"] = {
+			["Dog Ear radar"] = {
+				["name"] = {
+					["NATO"] = "Dog Ear",
 				},
 			},
-			["launchers"] = {
-				["HQ-7_LN_SP"] = {},
-			},
-			["name"] = {
-				["NATO"] = "CSA-4",
-			},
-			["harm_detection_chance"] = 30,
-			["can_engage_harm"] = true,
-			["can_engage_missile"] = true,
 		},
-		["Tor M2"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["CHAP_TorM2"] = {},
-			},
-			["launchers"] = {
-				["CHAP_TorM2"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-15 Gauntlet M2",
-			},
-			["harm_detection_chance"] = 90,
-			["can_engage_harm"] = true,
-			["can_engage_bomb"] = true,
-			["can_engage_missile"] = true,
-		},
-		["Pantsir S1"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["CHAP_PantsirS1"] = {},
-			},
-			["launchers"] = {
-				["CHAP_PantsirS1"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-22 Greyhound",
-			},
-			["harm_detection_chance"] = 10,
-			["can_engage_harm"] = true,
-			["can_engage_bomb"] = true,
-			["can_engage_missile"] = true,
-		},
-		["Iris-T SLM"] = {
-			["type"] = "complex",
-			["searchRadar"] = {
-				["CHAP_IRISTSLM_STR"] = {
-					["name"] = {
-						["NATO"] = "Hensoldt TRML-4D",
-					},
+		["harm_detection_chance"] = 20,
+	},
+	-- Start of BLUE EW radars:
+	["FPS-117 Dome"] = {
+		["type"] = "ewr",
+		["searchRadar"] = {
+			["FPS-117 Dome"] = {
+				["name"] = {
+					["NATO"] = "FPS-117 Dome",
 				},
 			},
-			["launchers"] = {
-				["CHAP_IRISTSLM_LN"] = {},
-			},
-			["name"] = {
-				["NATO"] = "Iris-T SLM",
-			},
-			["harm_detection_chance"] = 90,
-			["can_engage_harm"] = true,
-			["can_engage_bomb"] = true,
-			["can_engage_missile"] = true,
 		},
-		["Buk Solo"] = {
-			["type"] = "single",
-			["searchRadar"] = {
-				["SA-11 Buk LN 9A310M1"] = {},
-			},
-			["launchers"] = {
-				["SA-11 Buk LN 9A310M1"] = {},
-			},
-			["name"] = {
-				["NATO"] = "SA-11 Gadfly Solo",
-			},
-			["harm_detection_chance"] = 70,
-		},
-		-- Start of RED EW radars:
-		["1L13 EWR"] = {
-			["type"] = "ewr",
-			["searchRadar"] = {
-				["1L13 EWR"] = {
-					["name"] = {
-						["NATO"] = "Box Spring",
-					},
+		["harm_detection_chance"] = 80,
+	},
+	["FPS-117"] = {
+		["type"] = "ewr",
+		["searchRadar"] = {
+			["FPS-117"] = {
+				["name"] = {
+					["NATO"] = "FPS-117",
 				},
 			},
-			["harm_detection_chance"] = 60,
 		},
-		["55G6 EWR"] = {
-			["type"] = "ewr",
-			["searchRadar"] = {
-				["55G6 EWR"] = {
-					["name"] = {
-						["NATO"] = "Tall Rack",
-					},
-				},
-			},
-			["harm_detection_chance"] = 60,
-		},
-		["Dog Ear"] = {
-			["type"] = "ewr",
-			["searchRadar"] = {
-				["Dog Ear radar"] = {
-					["name"] = {
-						["NATO"] = "Dog Ear",
-					},
-				},
-			},
-			["harm_detection_chance"] = 20,
-		},
-		-- Start of BLUE EW radars:
-		["FPS-117 Dome"] = {
-			["type"] = "ewr",
-			["searchRadar"] = {
-				["FPS-117 Dome"] = {
-					["name"] = {
-						["NATO"] = "FPS-117 Dome",
-					},
-				},
-			},
-			["harm_detection_chance"] = 80,
-		},
-		["FPS-117"] = {
-			["type"] = "ewr",
-			["searchRadar"] = {
-				["FPS-117"] = {
-					["name"] = {
-						["NATO"] = "FPS-117",
-					},
-				},
-			},
-			["harm_detection_chance"] = 80,
-		},
-	}
-end
+		["harm_detection_chance"] = 80,
+	},
+}

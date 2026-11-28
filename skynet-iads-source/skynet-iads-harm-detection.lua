@@ -1,140 +1,138 @@
-do
-	SkynetIADSHARMDetection = {}
-	SkynetIADSHARMDetection.__index = SkynetIADSHARMDetection
+SkynetIADSHARMDetection = {}
+SkynetIADSHARMDetection.__index = SkynetIADSHARMDetection
 
-	function SkynetIADSHARMDetection:create(iads)
-		local harmDetection = {}
-		setmetatable(harmDetection, self)
-		harmDetection.contacts = {}
-		harmDetection.iads = iads
-		harmDetection.contactRadarsEvaluated = {}
-		return harmDetection
-	end
+function SkynetIADSHARMDetection:create(iads)
+	local harmDetection = {}
+	setmetatable(harmDetection, self)
+	harmDetection.contacts = {}
+	harmDetection.iads = iads
+	harmDetection.contactRadarsEvaluated = {}
+	return harmDetection
+end
 
-	function SkynetIADSHARMDetection:setContacts(contacts)
-		self.contacts = contacts
-	end
+function SkynetIADSHARMDetection:setContacts(contacts)
+	self.contacts = contacts
+end
 
-	function SkynetIADSHARMDetection:evaluateContacts()
-		self:cleanAgedContacts()
-		for i = 1, #self.contacts do
-			local contact = self.contacts[i]
-			local groundSpeed = contact:getGroundSpeedInKnots(0)
-			--if a contact has only been hit by a radar once it's speed is 0, and informOfHARM needs a speed
-			--to compute the time to impact: the contact waits for its next sighting
-			if groundSpeed > 0 then
-				local newRadarsToEvaluate = self:getNewRadarsThatHaveDetectedContact(contact)
-				--self.iads:printOutputToLog(contact:getName().." new Radars to evaluate: "..#newRadarsToEvaluate)
-				--self.iads:printOutputToLog(contact:getName().." ground speed: "..groundSpeed)
-				if
-					#newRadarsToEvaluate > 0
-					and contact:isIdentifiedAsHARM() == false
-					and contact:getTargetClass() == SkynetIADSContact.CLASS_ARM
-				then
-					local detectionProbability = self:getDetectionProbability(newRadarsToEvaluate)
-					--self.iads:printOutputToLog("DETECTION PROB: "..detectionProbability)
-					if self:shallReactToHARM(detectionProbability) then
-						contact:setHARMState(SkynetIADSContact.HARM)
-						if self.iads:getDebugSettings().harmDefence then
-							self.iads:printOutputToLog(
-								"HARM IDENTIFIED: "
-									.. contact:getTypeName()
-									.. " | DETECTION PROBABILITY WAS: "
-									.. detectionProbability
-									.. "%"
-							)
-						end
-					else
-						contact:setHARMState(SkynetIADSContact.NOT_HARM)
-						if self.iads:getDebugSettings().harmDefence then
-							self.iads:printOutputToLog(
-								"HARM NOT IDENTIFIED: "
-									.. contact:getTypeName()
-									.. " | DETECTION PROBABILITY WAS: "
-									.. detectionProbability
-									.. "%"
-							)
-						end
+function SkynetIADSHARMDetection:evaluateContacts()
+	self:cleanAgedContacts()
+	for i = 1, #self.contacts do
+		local contact = self.contacts[i]
+		local groundSpeed = contact:getGroundSpeedInKnots(0)
+		--if a contact has only been hit by a radar once it's speed is 0, and informOfHARM needs a speed
+		--to compute the time to impact: the contact waits for its next sighting
+		if groundSpeed > 0 then
+			local newRadarsToEvaluate = self:getNewRadarsThatHaveDetectedContact(contact)
+			--self.iads:printOutputToLog(contact:getName().." new Radars to evaluate: "..#newRadarsToEvaluate)
+			--self.iads:printOutputToLog(contact:getName().." ground speed: "..groundSpeed)
+			if
+				#newRadarsToEvaluate > 0
+				and contact:isIdentifiedAsHARM() == false
+				and contact:getTargetClass() == SkynetIADSContact.CLASS_ARM
+			then
+				local detectionProbability = self:getDetectionProbability(newRadarsToEvaluate)
+				--self.iads:printOutputToLog("DETECTION PROB: "..detectionProbability)
+				if self:shallReactToHARM(detectionProbability) then
+					contact:setHARMState(SkynetIADSContact.HARM)
+					if self.iads:getDebugSettings().harmDefence then
+						self.iads:printOutputToLog(
+							"HARM IDENTIFIED: "
+								.. contact:getTypeName()
+								.. " | DETECTION PROBABILITY WAS: "
+								.. detectionProbability
+								.. "%"
+						)
+					end
+				else
+					contact:setHARMState(SkynetIADSContact.NOT_HARM)
+					if self.iads:getDebugSettings().harmDefence then
+						self.iads:printOutputToLog(
+							"HARM NOT IDENTIFIED: "
+								.. contact:getTypeName()
+								.. " | DETECTION PROBABILITY WAS: "
+								.. detectionProbability
+								.. "%"
+						)
 					end
 				end
+			end
 
-				if contact:isIdentifiedAsHARM() then
-					self:informRadarsOfHARM(contact)
-				end
+			if contact:isIdentifiedAsHARM() then
+				self:informRadarsOfHARM(contact)
 			end
 		end
 	end
+end
 
-	function SkynetIADSHARMDetection:cleanAgedContacts()
-		local activeContactRadars = {}
-		for contact, radars in pairs(self.contactRadarsEvaluated) do
-			if contact:getAge() < 32 then
-				activeContactRadars[contact] = radars
-			end
-		end
-		self.contactRadarsEvaluated = activeContactRadars
-	end
-
-	function SkynetIADSHARMDetection:getNewRadarsThatHaveDetectedContact(contact)
-		local radarsFromContact = contact:getAbstractRadarElementsDetected()
-		local evaluatedRadars = self.contactRadarsEvaluated[contact]
-		local newRadars = {}
-		if evaluatedRadars == nil then
-			evaluatedRadars = {}
-			self.contactRadarsEvaluated[contact] = evaluatedRadars
-		end
-		for i = 1, #radarsFromContact do
-			local contactRadar = radarsFromContact[i]
-			if self:isElementInTable(evaluatedRadars, contactRadar) == false then
-				table.insert(evaluatedRadars, contactRadar)
-				table.insert(newRadars, contactRadar)
-			end
-		end
-		return newRadars
-	end
-
-	function SkynetIADSHARMDetection:isElementInTable(tbl, element)
-		for i = 1, #tbl do
-			local tblElement = tbl[i]
-			if tblElement == element then
-				return true
-			end
-		end
-		return false
-	end
-
-	function SkynetIADSHARMDetection:informRadarsOfHARM(contact)
-		local samSites = self.iads:getUsableSAMSites()
-		self:updateRadarsOfSites(samSites, contact)
-
-		local ewRadars = self.iads:getUsableEarlyWarningRadars()
-		self:updateRadarsOfSites(ewRadars, contact)
-	end
-
-	function SkynetIADSHARMDetection:updateRadarsOfSites(sites, contact)
-		for i = 1, #sites do
-			local site = sites[i]
-			site:informOfHARM(contact)
+function SkynetIADSHARMDetection:cleanAgedContacts()
+	local activeContactRadars = {}
+	for contact, radars in pairs(self.contactRadarsEvaluated) do
+		if contact:getAge() < 32 then
+			activeContactRadars[contact] = radars
 		end
 	end
+	self.contactRadarsEvaluated = activeContactRadars
+end
 
-	function SkynetIADSHARMDetection:shallReactToHARM(chance)
-		return chance >= math.random(1, 100)
+function SkynetIADSHARMDetection:getNewRadarsThatHaveDetectedContact(contact)
+	local radarsFromContact = contact:getAbstractRadarElementsDetected()
+	local evaluatedRadars = self.contactRadarsEvaluated[contact]
+	local newRadars = {}
+	if evaluatedRadars == nil then
+		evaluatedRadars = {}
+		self.contactRadarsEvaluated[contact] = evaluatedRadars
 	end
-
-	function SkynetIADSHARMDetection:getDetectionProbability(radars)
-		local detectionChance = 0
-		local missChance = 100
-		local detection = 0
-		for i = 1, #radars do
-			detection = radars[i]:getHARMDetectionChance()
-			if detectionChance == 0 then
-				detectionChance = detection
-			else
-				detectionChance = detectionChance + (detection * (missChance / 100))
-			end
-			missChance = 100 - detection
+	for i = 1, #radarsFromContact do
+		local contactRadar = radarsFromContact[i]
+		if self:isElementInTable(evaluatedRadars, contactRadar) == false then
+			table.insert(evaluatedRadars, contactRadar)
+			table.insert(newRadars, contactRadar)
 		end
-		return detectionChance
 	end
+	return newRadars
+end
+
+function SkynetIADSHARMDetection:isElementInTable(tbl, element)
+	for i = 1, #tbl do
+		local tblElement = tbl[i]
+		if tblElement == element then
+			return true
+		end
+	end
+	return false
+end
+
+function SkynetIADSHARMDetection:informRadarsOfHARM(contact)
+	local samSites = self.iads:getUsableSAMSites()
+	self:updateRadarsOfSites(samSites, contact)
+
+	local ewRadars = self.iads:getUsableEarlyWarningRadars()
+	self:updateRadarsOfSites(ewRadars, contact)
+end
+
+function SkynetIADSHARMDetection:updateRadarsOfSites(sites, contact)
+	for i = 1, #sites do
+		local site = sites[i]
+		site:informOfHARM(contact)
+	end
+end
+
+function SkynetIADSHARMDetection:shallReactToHARM(chance)
+	return chance >= math.random(1, 100)
+end
+
+function SkynetIADSHARMDetection:getDetectionProbability(radars)
+	local detectionChance = 0
+	local missChance = 100
+	local detection = 0
+	for i = 1, #radars do
+		detection = radars[i]:getHARMDetectionChance()
+		if detectionChance == 0 then
+			detectionChance = detection
+		else
+			detectionChance = detectionChance + (detection * (missChance / 100))
+		end
+		missChance = 100 - detection
+	end
+	return detectionChance
 end

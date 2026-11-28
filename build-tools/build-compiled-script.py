@@ -1,5 +1,6 @@
-"""Builds the deliverable: every source listed in build-tools/listToMerge.txt, concatenated in that
-order under a first line naming the version read from skynet-iads-source/skynet-iads.lua.
+"""Builds the deliverable: every source listed in build-tools/listToMerge.txt, each wrapped in a
+`do ... end` block of its own, concatenated in that order under a first line naming the version
+read from skynet-iads-source/skynet-iads.lua.
 
 Usage, from anywhere:
 
@@ -49,7 +50,11 @@ def build(root=ROOT):
         raise BuildError("Missing source file(s) listed in listToMerge.txt: %s" % ", ".join(missing))
 
     banner = 'env.info("--- SKYNET VERSION: %s ---")\n' % match.group(1)
-    return banner + "".join(_read(sources / name) for name in names)
+    # Each source in a block of its own: once concatenated, the sources are one chunk, and Lua 5.1
+    # caps a chunk's main function at 200 locals. The block keeps a file's top-level locals its own,
+    # so they neither add up across files nor clash with another file's. The name on both ends lets
+    # a line of a dcs.log be traced back to its file.
+    return banner + "".join("do -- %s\n%send -- %s\n" % (name, _read(sources / name), name) for name in names)
 
 
 def main(argv):
