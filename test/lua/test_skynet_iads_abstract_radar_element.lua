@@ -382,6 +382,60 @@ function TestSkynetIADSAbstractRadarElement:testSetToCorrectAutonomousState()
 	luaunit.assertEquals(self.samSite:getAutonomousState(), true)
 end
 
+--- isCoveredBy() is hasValidParentRadar() for one parent: the map view draws a coverage line from
+--- it, so the line and the autonomous state cannot disagree. Each condition, on either side, is
+--- enough to break the coverage on its own.
+function TestSkynetIADSAbstractRadarElement:testIsCoveredByAsksEveryConditionOfOneParent()
+	self.samSiteName = "SAM-SA-6-2"
+	self:setUp()
+	local siteConnected = true
+	function self.samSite:hasActiveConnectionNode()
+		return siteConnected
+	end
+	local parent = { power = true, connected = true, actAsEW = true, destroyed = false }
+	function parent:hasWorkingPowerSource()
+		return self.power
+	end
+	function parent:hasActiveConnectionNode()
+		return self.connected
+	end
+	function parent:getActAsEW()
+		return self.actAsEW
+	end
+	function parent:isDestroyed()
+		return self.destroyed
+	end
+	self.samSite:addParentRadar(parent)
+
+	luaunit.assertEquals(self.samSite:isCoveredBy(parent), true)
+	luaunit.assertEquals(self.samSite:hasValidParentRadar(), true)
+
+	local breaks = {
+		function()
+			parent.power = false
+		end,
+		function()
+			parent.connected = false
+		end,
+		function()
+			parent.actAsEW = false
+		end,
+		function()
+			parent.destroyed = true
+		end,
+		function()
+			siteConnected = false
+		end,
+	}
+	for i, breakIt in ipairs(breaks) do
+		parent.power, parent.connected, parent.actAsEW, parent.destroyed = true, true, true, false
+		siteConnected = true
+		breakIt()
+		luaunit.assertEquals(self.samSite:isCoveredBy(parent), false, "condition " .. i)
+		luaunit.assertEquals(self.samSite:hasValidParentRadar(), false, "condition " .. i)
+	end
+end
+
 function TestSkynetIADSAbstractRadarElement:testWillGoLiveWhenAutonomousAndHARMDefenceFinished()
 	self.samSiteName = "SAM-SA-6-2"
 	self:setUp()

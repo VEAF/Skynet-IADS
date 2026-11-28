@@ -24,7 +24,13 @@ local function readFile(path)
 end
 
 -- Runs from a DO SCRIPT action at mission start, outside any hotload run: nothing here may pause.
+-- Hotload.root is set only once dcs-hotload has started; when it has not, it has already logged why
+-- (a DCS update reverting the MissionScripting.lua edit, most often), so boot only logs and skips.
 function S.boot()
+	if not Hotload.root then
+		env.warning("insim-skynet: dcs-hotload did not start, the Skynet script is not loaded")
+		return
+	end
 	local path = scriptPath()
 	local text = readFile(path)
 	if not text then
@@ -62,6 +68,14 @@ function S.iads(ctx, configure)
 		if configure then
 			configure(iads)
 		end
+		-- so a run can be watched: the network on the F10 map, its radio menu, and what it decides
+		-- in dcs.log. Its deactivation at cleanup takes the map and the menu away.
+		local debugSettings = iads:getDebugSettings()
+		debugSettings.radarWentLive = true
+		debugSettings.radarWentDark = true
+		debugSettings.harmDefence = true
+		iads:addRadioMenu()
+		iads:showMapView(true)
 		iads:activate()
 	end)
 	if not ok then

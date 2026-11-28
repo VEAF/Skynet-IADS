@@ -6,10 +6,11 @@ message will be displayed when the mission loads.
 The following examples use static objects for command centers, connection nodes and power sources,
 you can also use units instead.
 
-## IADS configuration
+## IADS configuration {#iads-configuration}
 
-Call this method to add or remove a radio menu to toggle the status output of the IADS. By default
-the radio menu option is not visible:
+Call this method to add or remove a radio menu to toggle the status output of the IADS, the
+contacts, and the [map view](map-view.en.md). Each command switches at every click. By default the
+radio menu option is not visible:
 
 ```lua
 redIADS:addRadioMenu()
@@ -20,7 +21,8 @@ redIADS:removeRadioMenu()
 ```
 
 If you dereference the IADS remember to call `deactivate()` otherwise background tasks of the IADS
-will continue running, resulting in unexpected behaviour:
+will continue running, resulting in unexpected behaviour. It also removes the radio menu and erases
+the map view:
 
 ```lua
 redIADS:deactivate()
@@ -284,7 +286,7 @@ range systems like the S-300:
 samSite:setActAsEW(true)
 ```
 
-### Engagement zone
+### Engagement zone {#engagement-zone}
 
 Set the distance at which a SAM site will switch on its radar:
 

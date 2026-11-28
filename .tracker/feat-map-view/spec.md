@@ -1,6 +1,6 @@
 # A map view of the network on the F10 map
 
-Status: in-progress
+Status: done
 
 ## The problem
 
@@ -10,20 +10,20 @@ power. The debug settings print messages, which do not show how the network is l
 
 ## What to build
 
-- **`iads:displayMap(true)`** draws the network on the F10 map and starts the network's timer that keeps
-  the drawing current; **`iads:displayMap(false)`** stops it and erases the drawing. It is the only way
-  to show or hide the map, so a timer never runs for a map that is hidden. `iads:isMapDisplayed()`
+- **`iads:showMapView(true)`** draws the network on the F10 map and starts the network's timer that keeps
+  the drawing current; **`iads:showMapView(false)`** stops it and erases the drawing. It is the only way
+  to show or hide the map, so a timer never runs for a map that is hidden. `iads:isMapViewShown()`
   answers which.
-- **`iads:getDisplayMapSettings()`** answers the network's map settings, a table read on each tick, so a
+- **`iads:getMapViewSettings()`** answers the network's map settings, a table read on each tick, so a
   change made while the map is shown appears within a tick:
   - `layers`: the parts to draw, values defined in the map-view file: `elements`, `coverage`,
     `pointDefence`, `rangeCircles`, `labels`; all of them by default.
-  - `coalition`: the coalition that sees the drawing, or `nil` for every coalition (the default). One
+  - `targetCoalition`: the coalition that sees the drawing, or `nil` for every coalition (the default). One
     value, because each DCS mark goes to one coalition or to all; two coalitions would draw every mark
     twice. A change redraws everything.
 - **The radio menu.** `iads:addRadioMenu()` adds three commands, each switching its state at every call,
   under a label that does not change:
-  - `Map - Show/hide`: `displayMap()`.
+  - `Map - Show/hide`: `showMapView()`.
   - `Map - Show/hide coverage lines (EW -> SAM)`: `coverage` in `layers`.
   - `Map - Show/hide range circles`: `rangeCircles` in `layers`.
 
@@ -45,7 +45,9 @@ What the prototype already does, and what is worth keeping:
   event handler, and each Skynet element is one. On one network a full redraw (607 marks out, 607 in) cost
   121,400 Skynet handler calls and froze the game for about a second.
 - **A failure in one drawing step is logged and the rest goes on.**
-- **Destroyed elements stay drawn**, dashed, at their last known position.
+- **Destroyed elements stay drawn**, dashed, at their last known position. With no timer while the map
+  is hidden, a position is known from the ticks of a displayed map only: an element first drawn after
+  it was destroyed is not drawn.
 
 ## Decided
 
@@ -75,7 +77,7 @@ What the prototype already does, and what is worth keeping:
 6. **Mark ids are counted from a fixed first id, `7300000` by default, which a mission can change.** DCS
    allocates no mark ids: every script picks its own, so a collision cannot be ruled out, only moved
    away from. One counter serves every network, so two networks never draw over each other's ids; the
-   first id is therefore one value for all, `SkynetIADSMapView.firstMarkId`, not a per-network setting.
+   first id is therefore one value for all, `SkynetIADSMapView.firstDcsMarkId`, not a per-network setting.
 7. **No reload guard.** The map-view file defines its tables plainly, as the logger does its debug
    settings; the prototype's `SkynetIADSMapView = SkynetIADSMapView or {}` served reloading it in a
    running mission, which the deliverable does not do.
@@ -85,7 +87,7 @@ What the prototype already does, and what is worth keeping:
    (`S.iads` in `test/insim/dcs-hotload/user-lib/insim-skynet.lua`), add its radio menu, and turn on
    the debug settings `radarWentLive`, `radarWentDark` and `harmDefence`, so a run can be watched. A
    documentation page with the legend; a changelog entry.
-9. **`iads:deactivate()` stops the map's timer and erases the drawing**, as `displayMap(false)` does. A
+9. **`iads:deactivate()` stops the map's timer and erases the drawing**, as `showMapView(false)` does. A
    deactivated network keeps no drawing of a state that no longer runs. One line in
    `SkynetIADS:deactivate()`.
 10. **`iads:deactivate()` removes the radio menu too**, for the same reason: a deactivated network
@@ -97,4 +99,4 @@ What the prototype already does, and what is worth keeping:
 
 - Drawing contacts, or anything Skynet does not hold about its own network.
 - Menu commands for `pointDefence`, `labels` or the coalition: a mission sets them through
-  `getDisplayMapSettings()`.
+  `getMapViewSettings()`.

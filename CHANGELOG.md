@@ -29,6 +29,20 @@ between two copies.
   it weighs against its point defences' missiles only grew, and it went silent for a later HARM its
   point defence could have taken.
 
+### Added
+
+- A network can be drawn on the F10 map, and the drawing follows it every second: which sites are
+  live, dark or autonomous, which EW radar covers which SAM site, what each point defence protects,
+  and whether a command center still has power. `iads:showMapView(true)` shows it,
+  `iads:getMapViewSettings()` chooses what is drawn and for which coalition, and the radio menu
+  has commands for it. See the documentation's *Map view* page.
+
+### Changed
+
+- The radio menu's commands switch at each click: `IADS Status - Show/hide` and
+  `Contacts - Show/hide` replace the four `show …` / `hide …` commands.
+- `iads:deactivate()` removes the network's radio menu, and erases its map.
+
 ## [3.6.0] — 2026-11-08
 
 ### Highlights

@@ -17,6 +17,7 @@ dcsStub.eventHandlers = {} -- appended by world.addEventHandler
 dcsStub.groups = {} -- every group fixture in creation order, backs coalition.getGroups
 dcsStub.screenText = {} -- { { text=, duration= }, ... } from trigger.action.outText
 dcsStub.radioItems = {} -- { { name=, path={...}, handler=, args= }, ... } from missionCommands
+dcsStub.marks = {} -- id -> { kind=, coalition=, args= } from trigger.action.*ToAll
 
 function dcsStub.now()
 	return now
@@ -35,6 +36,7 @@ function dcsStub.reset()
 	dcsStub.groups = {}
 	dcsStub.screenText = {}
 	dcsStub.radioItems = {}
+	dcsStub.marks = {}
 	timerTasks = {}
 	nextTimerId = 0
 	utilsSchedulerTasks = nil
@@ -148,6 +150,44 @@ trigger = {
 		explosion = function() end,
 	},
 }
+
+-- F10 map drawings, which SkynetIADSMapView makes. The signatures are DCS's, as the map view's
+-- prototype called them in a running mission:
+--   markupToAll(shapeId, coalition, id, point1, ..., pointN, colour, fillColour, lineType, readOnly)
+--   rectToAll(coalition, id, corner1, corner2, colour, fillColour, lineType, readOnly)
+--   lineToAll(coalition, id, from, to, colour, lineType, readOnly)
+--   circleToAll(coalition, id, centre, radius, colour, fillColour, lineType, readOnly)
+--   textToAll(coalition, id, point, colour, fillColour, fontSize, readOnly, text)
+--   removeMark(id)
+-- dcsStub.marks holds what is on the map, by id: { kind =, coalition =, args = { every argument } }.
+--
+-- Deliberately NOT modelled: the S_EVENT_MARK_ADDED / S_EVENT_MARK_REMOVED events DCS fires to every
+-- event handler for each of these, and drawing a second mark under an id already on the map, which
+-- raises here because what DCS does then is not verified.
+local function drawMark(kind, coalitionId, id, ...)
+	assert(dcsStub.marks[id] == nil, "dcsStub: mark id " .. tostring(id) .. " is already on the map")
+	dcsStub.marks[id] = { kind = kind, coalition = coalitionId, args = { ... } }
+end
+function trigger.action.markupToAll(shapeId, coalitionId, id, ...)
+	drawMark("markup", coalitionId, id, shapeId, ...)
+end
+for _, kind in ipairs({ "rect", "line", "circle", "text" }) do
+	trigger.action[kind .. "ToAll"] = function(coalitionId, id, ...)
+		drawMark(kind, coalitionId, id, ...)
+	end
+end
+function trigger.action.removeMark(id)
+	dcsStub.marks[id] = nil
+end
+
+--- How many marks are on the map.
+function dcsStub.markCount()
+	local count = 0
+	for _ in pairs(dcsStub.marks) do
+		count = count + 1
+	end
+	return count
+end
 
 -- missionCommands builds the F10 "Other" radio menu players see. SkynetIADS:addRadioMenu() is its
 -- only caller here: one submenu per network, four commands under it, and removeRadioMenu() takes

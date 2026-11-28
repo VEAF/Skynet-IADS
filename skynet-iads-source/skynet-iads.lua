@@ -807,6 +807,11 @@ do
 		self:deativateSAMSites()
 		self:deactivateEarlyWarningRadars()
 		self:deactivateCommandCenters()
+		--a deactivated network leaves nothing behind
+		self:showMapView(false)
+		if self.radioMenu ~= nil then
+			self:removeRadioMenu()
+		end
 	end
 
 	function SkynetIADS:deactivateCommandCenters()
@@ -838,30 +843,20 @@ do
 			return
 		end
 		self.radioMenu = missionCommands.addSubMenu("SKYNET IADS " .. self:getCoalitionString())
+		--each command switches its setting at every click, under a label that does not change
 		missionCommands.addCommand(
-			"show IADS Status",
+			"IADS Status - Show/hide",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
-			{ self = self, value = true, option = "IADSStatus" }
+			{ self = self, option = "IADSStatus" }
 		)
 		missionCommands.addCommand(
-			"hide IADS Status",
+			"Contacts - Show/hide",
 			self.radioMenu,
 			SkynetIADS.updateDisplay,
-			{ self = self, value = false, option = "IADSStatus" }
+			{ self = self, option = "contacts" }
 		)
-		missionCommands.addCommand(
-			"show contacts",
-			self.radioMenu,
-			SkynetIADS.updateDisplay,
-			{ self = self, value = true, option = "contacts" }
-		)
-		missionCommands.addCommand(
-			"hide contacts",
-			self.radioMenu,
-			SkynetIADS.updateDisplay,
-			{ self = self, value = false, option = "contacts" }
-		)
+		self:addMapViewRadioCommands()
 	end
 
 	function SkynetIADS:removeRadioMenu()
@@ -874,11 +869,8 @@ do
 	function SkynetIADS.updateDisplay(params)
 		local option = params.option
 		local self = params.self
-		local value = params.value
-		if option == "IADSStatus" then
-			self:getDebugSettings()[option] = value
-		elseif option == "contacts" then
-			self:getDebugSettings()[option] = value
+		if option == "IADSStatus" or option == "contacts" then
+			self:getDebugSettings()[option] = not self:getDebugSettings()[option]
 		end
 	end
 

@@ -40,3 +40,4 @@ skynet-iads-sam-tracking-radar.lua
 skynet-iads-sam-launcher.lua
 skynet-iads-harm-detection.lua
 skynet-iads-last-line-of-defence.lua
+skynet-iads-map-view.lua

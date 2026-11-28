@@ -58,6 +58,7 @@ plugins:
             Setting up an IADS: Mettre en place un IADS
             Tactics: Tactique
             API reference: Référence de l'API
+            Map view: Vue carte
         - locale: en
           name: English
           build: true
@@ -69,6 +70,7 @@ nav:
   - Setting up an IADS: setting-up.md
   - Tactics: tactics.md
   - API reference: api.md
+  - Map view: map-view.md
   - FAQ: faq.md
 
 markdown_extensions:
