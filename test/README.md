@@ -14,7 +14,8 @@ Every test of this repository lives under `test/`, one folder per place tests ru
 Everything but the in-sim tests runs without DCS: these are the *standalone* tests, run through one
 runner per language. With no folder specified, a runner finds every folder directly under `test/`
 that holds a `test_*` file of its language, so a new test folder runs without being registered
-anywhere. Specifying a folder or a name as a parameter narrows the run.
+anywhere. Specifying a folder or a name as a parameter narrows the run. A run that finds no test
+fails, so a name that matches nothing cannot pass for a clean run.
 
 ## The Lua tests
 

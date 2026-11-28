@@ -24,4 +24,4 @@ jobs:
           sudo apt-get install -y lua5.1
 
       - name: Load and run the compiled script against the DCS stub
-        run: lua5.1 test/common/run.lua test_compiled_script
+        run: lua5.1 test/lua/test_compiled_script.lua

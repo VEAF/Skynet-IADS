@@ -106,10 +106,12 @@ for _, folder in ipairs(folders) do
 		suites[#suites + 1] = { name = name, target = folder .. sep .. name }
 	end
 end
+-- A run that finds nothing fails, filter or not: CI names a suite by filter, and a suite renamed or
+-- moved must turn that step red rather than leave it green having run nothing.
 if #suites == 0 then
 	if filter then
 		print("run.lua: no suites match '" .. filter .. "'")
-		os.exit(0)
+		os.exit(1)
 	end
 	print("run.lua: no suites found in " .. table.concat(folders, ", "))
 	os.exit(1)

@@ -32,6 +32,10 @@ def main(argv):
             print("run.py: no such folder: %s" % folder)
             return 1
         suite.addTests(loader.discover(folder, pattern=pattern, top_level_dir=folder))
+    # A run that finds nothing fails, as run.lua's does: unittest alone reports zero tests a success.
+    if suite.countTestCases() == 0:
+        print("run.py: no tests match '%s'" % names[-1] if names else "run.py: no tests found")
+        return 1
     result = unittest.TextTestRunner().run(suite)
     return 0 if result.wasSuccessful() else 1
 

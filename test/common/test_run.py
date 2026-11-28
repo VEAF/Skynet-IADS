@@ -46,6 +46,14 @@ class SuiteFoldersTest(unittest.TestCase):
 
             self.assertEqual(run.suite_folders(root), [os.path.join(root, "a"), os.path.join(root, "c")])
 
+    def test_a_run_that_finds_no_test_fails(self):
+        # A gate that ran nothing must not read as one that found nothing wrong.
+        with tempfile.TemporaryDirectory() as root:
+            touch(root, "a", "test_x.py")
+            for args in ([os.path.join(root, "a"), "no_such_name"], [os.path.join(root, "a")]):
+                with self.subTest(args=args):
+                    self.assertEqual(run.main(args), 1)
+
 
 
 class RunLuaTest(unittest.TestCase):
@@ -62,6 +70,12 @@ class RunLuaTest(unittest.TestCase):
         result = self.run_lua(missing, "contact")
         self.assertEqual(result.returncode, 1)
         self.assertIn("run.lua: no such folder: " + missing, result.stdout)
+
+    def test_a_filter_that_matches_nothing_fails(self):
+        # CI names a suite by filter: a renamed suite must turn the step red, not skip it.
+        result = self.run_lua("no_such_suite")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("run.lua: no suites match 'no_such_suite'", result.stdout)
 
     def test_with_no_folder_it_finds_the_suites_of_every_folder(self):
         # test_dcs_stub.lua is in test/common/, which no list ever named: only discovery finds it.
