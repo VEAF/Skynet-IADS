@@ -25,7 +25,7 @@ If `lua5.1` is on `PATH` (Linux, macOS, CI):
 
     lua5.1 test/common/run.lua                       # every Lua test
     lua5.1 test/common/run.lua test/lua              # one folder
-    lua5.1 test/common/run.lua test/lua contact      # the test modules whose file name contains "contact"
+    lua5.1 test/common/run.lua test_skynet_iads_contact  # one test module, by its file name without .lua
     lua5.1 test/lua/test_skynet_iads_contact.lua     # one test module directly
 
 On Windows without `lua5.1` on `PATH`, use the *Lua for Windows* binary, usually

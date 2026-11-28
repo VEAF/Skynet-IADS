@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python test/common/run.py test/build-tools build_compiled
+    python test/common/run.py test/build-tools test_build_compiled_script
 
 Each test builds a repository of its own, so what is pinned is the build's rules and not the
 sources of the day. Two builds of the same commit must give the same bytes on any machine: that is

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,6 +55,20 @@ class SuiteFoldersTest(unittest.TestCase):
                 with self.subTest(args=args):
                     self.assertEqual(run.main(args), 1)
 
+    def test_a_name_runs_that_suite_and_no_other(self):
+        with tempfile.TemporaryDirectory() as root:
+            # Module names of their own: discovery imports them, and sys.modules outlives the folder.
+            for name in ("test_named_only.py", "test_named_only_more.py"):
+                with open(os.path.join(root, name), "w") as f:
+                    f.write("import unittest\n\n\nclass T(unittest.TestCase):\n    def test_it(self):\n        pass\n")
+            folder = os.path.join(root, "")
+            with mock.patch.object(run.unittest.TextTestRunner, "run", autospec=True) as ran:
+                ran.return_value.wasSuccessful.return_value = True
+                self.assertEqual(run.main([folder, "test_named_only"]), 0)
+            self.assertEqual(ran.call_args[0][1].countTestCases(), 1)
+            # A part of a name is no name: it matches nothing, and a run that finds nothing fails.
+            self.assertEqual(run.main([folder, "named_only"]), 1)
+
 
 
 class RunLuaTest(unittest.TestCase):
@@ -71,11 +86,16 @@ class RunLuaTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("run.lua: no such folder: " + missing, result.stdout)
 
-    def test_a_filter_that_matches_nothing_fails(self):
-        # CI names a suite by filter: a renamed suite must turn the step red, not skip it.
+    def test_a_name_that_matches_nothing_fails(self):
+        # CI names a suite: a renamed suite must turn the step red, not skip it.
         result = self.run_lua("no_such_suite")
         self.assertEqual(result.returncode, 1, result.stdout)
-        self.assertIn("run.lua: no suites match 'no_such_suite'", result.stdout)
+        self.assertIn("run.lua: no suite named 'no_such_suite'", result.stdout)
+
+    def test_a_part_of_a_name_matches_nothing(self):
+        result = self.run_lua("dcs_stub")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("run.lua: no suite named 'dcs_stub'", result.stdout)
 
     def test_with_no_folder_it_finds_the_suites_of_every_folder(self):
         # test_dcs_stub.lua is in test/common/, which no list ever named: only discovery finds it.

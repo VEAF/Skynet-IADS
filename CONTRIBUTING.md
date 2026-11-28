@@ -94,7 +94,7 @@ carries no build time, and the output is UTF-8 with LF line endings. Whether a f
 the current sources is answered by building again and comparing.
 
 CI runs the same build on every pull request and on pushes to `develop` and `master`
-(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
+(`.github/workflows/build.yml`), then runs `test/lua/test_compiled_script.lua` through `test/common/run.lua`, which builds into `build/test/` and executes the result against `test/common/dcs-stub.lua` — a build proves the sources concatenate, not
 that the result runs without raising. A `vX.Y.Z` tag on `master` (`.github/workflows/release.yml`)
 publishes a GitHub release carrying what `build-tools/release.py` packages into `build/release/`:
 the artifact, the demos and the changelog's section for that version. Any other tag is refused.

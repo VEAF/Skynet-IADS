@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python test/common/run.py test/build-tools release
+    python test/common/run.py test/build-tools test_release
 
 The changelog and version rules are pinned on strings and small files; the packaging on a repository
 built per test, so what is pinned is the release's rules and not the sources of the day.
@@ -265,7 +265,7 @@ class PackageTest(RepoTest):
         with mock.patch.object(rel.subprocess, "run", return_value=subprocess.CompletedProcess([], 1)) as run:
             self.assertEqual(self.quietly(rel.package, self.repo), 1)
         args, kwargs = run.call_args
-        self.assertEqual(args[0][-1:], ["test/lua/test_compiled_script.lua"])
+        self.assertEqual(args[0][-2:], ["test/common/run.lua", "test_compiled_script"])
         self.assertEqual(kwargs["cwd"], self.repo)
 
 

@@ -212,7 +212,7 @@ def package(root, tag=None):
     lua = find_lua()
     if lua is None:
         _refuse_or_warn(tag is not None, "no Lua 5.1 found, test_compiled_script skipped")
-    elif subprocess.run(lua + ["test/lua/test_compiled_script.lua"], cwd=root).returncode != 0:
+    elif subprocess.run(lua + ["test/common/run.lua", "test_compiled_script"], cwd=root).returncode != 0:
         return 1
     print("release: build/release/ holds %s" % version)
     return 0

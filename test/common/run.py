@@ -1,9 +1,10 @@
 """Discover and run every test_*.py of the given folders in one unittest run.
 
-Usage:  python test/common/run.py [folder...] [filenameSubstring]
+Usage:  python test/common/run.py [folder...] [suiteName]
 
 An argument holding a path separator is a folder; with none, every folder directly under test/ that
-holds a test_*.py runs. The same rule as run.lua, so one command line shape serves both languages.
+holds a test_*.py runs. A suite name is a file name without its .py, matched whole. The same rules as
+run.lua, so one command line shape serves both languages.
 """
 
 import glob
@@ -23,7 +24,7 @@ def suite_folders(root):
 def main(argv):
     folders = [a for a in argv if "/" in a or "\\" in a]
     names = [a for a in argv if a not in folders]
-    pattern = "test_*%s*.py" % names[-1] if names else "test_*.py"
+    pattern = names[-1] + ".py" if names else "test_*.py"
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     for folder in folders or suite_folders(os.path.join(HERE, "..")):
@@ -34,7 +35,7 @@ def main(argv):
         suite.addTests(loader.discover(folder, pattern=pattern, top_level_dir=folder))
     # A run that finds nothing fails, as run.lua's does: unittest alone reports zero tests a success.
     if suite.countTestCases() == 0:
-        print("run.py: no tests match '%s'" % names[-1] if names else "run.py: no tests found")
+        print("run.py: no suite named '%s'" % names[-1] if names else "run.py: no tests found")
         return 1
     result = unittest.TextTestRunner().run(suite)
     return 0 if result.wasSuccessful() else 1
