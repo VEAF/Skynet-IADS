@@ -45,6 +45,10 @@ between two copies.
 - The build, not each source file, now wraps every file of the compiled script in a block of its own,
   named on both ends: `do -- skynet-iads-jammer.lua` … `end -- skynet-iads-jammer.lua`. A line of
   `dcs.log` can now be traced back to its file. Nothing changes in a mission.
+- A jammer's success probability now means what it says: a probability of *p* jams a site on *p*
+  rolls in a hundred, so 100 is certain. It used to jam on *p* − 1, so a site always had a 1% chance
+  of shooting through any jamming. Every jammed site is now jammed slightly more often: one more
+  roll in a hundred.
 
 ## [3.6.0] — 2026-11-08
 

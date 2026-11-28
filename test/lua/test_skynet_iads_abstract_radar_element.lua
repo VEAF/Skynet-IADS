@@ -549,6 +549,49 @@ function TestSkynetIADSAbstractRadarElement:testTheReleaseHappensOnceNotOnEveryS
 	luaunit.assertEquals(self.samSite.lastJammerUpdate, 0)
 end
 
+--- Replaces math.random for the duration of `body`, so the roll inside jam() is one the test
+--- chooses. Restored through pcall, so a failing assertion cannot leave a fixed math.random behind
+--- for the tests that run after it. Assigning a field of a standard global is the point here, and
+--- silenced at the two lines that do it rather than in the .luacheckrc ratchet.
+local function withRoll(value, body)
+	local realRandom = math.random
+	math.random = function() -- luacheck: ignore 122
+		return value
+	end
+	local ok, err = pcall(body)
+	math.random = realRandom -- luacheck: ignore 122
+	if not ok then
+		error(err, 0)
+	end
+end
+
+--- A probability p jams on p rolls of math.random(1, 100) out of 100: the roll equal to p jams,
+--- the one above it does not. So 100 is certain, and 0 never jams.
+function TestSkynetIADSAbstractRadarElement:testAProbabilityJamsOnThatManyRollsInAHundred()
+	self.samSiteName = "SAM-SA-6"
+	self:setUp()
+
+	withRoll(100, function()
+		self.samSite:jam(100)
+	end)
+	luaunit.assertEquals(lastROE(self.samSite), AI.Option.Air.val.ROE.WEAPON_HOLD, "100 jams on the highest roll")
+
+	withRoll(40, function()
+		self.samSite:jam(40)
+	end)
+	luaunit.assertEquals(lastROE(self.samSite), AI.Option.Air.val.ROE.WEAPON_HOLD, "40 jams on a roll of 40")
+
+	withRoll(41, function()
+		self.samSite:jam(40)
+	end)
+	luaunit.assertEquals(lastROE(self.samSite), AI.Option.Air.val.ROE.WEAPON_FREE, "40 does not jam on a roll of 41")
+
+	withRoll(1, function()
+		self.samSite:jam(0)
+	end)
+	luaunit.assertEquals(lastROE(self.samSite), AI.Option.Air.val.ROE.WEAPON_FREE, "0 never jams")
+end
+
 -- ---- slice 2: the two engagement flags ---------------------------------------------------
 --
 -- setCanEngageAirWeapons() is the only thing that ever writes the DCS ENGAGE_AIR_WEAPONS option,
