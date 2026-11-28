@@ -15,17 +15,76 @@ why.
 `SkynetIADSLogger` (`skynet-iads-logger.lua`) and calls to it spread through the sources:
 
 - **Two outputs, mixed.** `printOutput` writes to the screen, `printOutputToLog` to `dcs.log` under
-  `SKYNET: `. Which one a message uses follows no rule.
+  `SKYNET: `. Which one a message uses follows no rule: the jammer writes its probability to the log and
+  its distance to the screen (`skynet-iads-jammer.lua`); "no connection" and "no power" go to the screen
+  only (`skynet-iads-abstract-element.lua`).
+- **Not everything goes through the logger.** The scheduler writes its errors with `env.info` under
+  `SkynetIADS: ` (`skynet-iads-utils.lua`); the map view writes its failures with `env.warning` under
+  `SKYNET MAP VIEW: ` (`skynet-iads-map-view.lua`). Three prefixes in the same log.
+- **No log levels.** Everything the logger writes goes out through `env.info`, warnings included; the
+  scheduler's errors too. `printOutputToLog` also passes a stray second argument, `4`, to `env.info`.
+- **The filter is the caller's job.** Each debug message is written as
+  `if self.iads:getDebugSettings().<key> then self.iads:printOutputToLog(...) end`, about fourteen times
+  across five files. A warning is written twice by hand, `printOutputToLog(message)` then
+  `printOutput(message, true)`, four times in `skynet-iads.lua`.
 - **Switches, not levels.** `getDebugSettings()` is a table of booleans, one per kind of message. Its
   defaults and its readers disagree: it sets `samWentDark`, the code reads `radarWentDark`; the code reads
-  `samNoConnection` and `hasNoPower`, which it never sets. A key misspelled by a mission is silently
-  ignored.
+  `samNoConnection` and `hasNoPower`, which it never sets. `documentation/api.md` documents
+  `radarWentDark` and `samNoConnection`, so the readers are right and the defaults are wrong. A key
+  misspelled by a mission is silently ignored.
+- **Dead debug lines.** Commented-out `printOutputToLog` calls remain in `skynet-iads-harm-detection.lua`
+  and `skynet-iads-abstract-radar-element.lua`.
 - **No reasons.** `GOING LIVE: <site>` and `GOING DARK: <site>` do not say which contact, which rule, or
   which state of the network led there.
 - **Status dumps meant for the eye.** `printSAMSiteStatus` and its siblings write multi-line blocks,
   ruled with dashes, that a tool cannot read back.
 
-## What to build
+## Step 1: one entry point for every message
+
+A refactor that changes no behaviour, and can be done and merged on its own, before or without the rest.
+It is the ground the rest of this spec builds on.
+
+**What it does:**
+
+1. **Logging methods on `SkynetIADSLogger`**, one per level, each writing to `dcs.log` through the
+   matching `env` function under one prefix:
+
+   ```lua
+   logger:error(message)      -- env.error
+   logger:warn(message)       -- env.warning; also on screen while debugOutput.warnings is on
+   logger:info(message)       -- env.info
+   logger:debug(key, message) -- env.info, only while debugOutput[key] is on
+   logger:notify(message)     -- on screen
+   ```
+
+   `warn` replaces the four hand-written log-then-screen pairs; `debug` takes the switch check out of the
+   callers.
+2. **Every call site goes through them**: the gated debug messages, the warnings, the deprecation
+   notices, the scheduler's errors and the map view's failures. Code with no network at hand, such as
+   the scheduler, needs the methods callable without a logger instance.
+3. **The debug keys are fixed to match their readers and the documentation**: `radarWentDark` replaces
+   `samWentDark` in the defaults, and `samNoConnection` and `hasNoPower` get defaults, `false`. Nothing
+   that was off comes on.
+4. **The public API stays**: `getDebugSettings()`, `printOutput` and `printOutputToLog` remain, as thin
+   wrappers, for the missions that call them.
+5. **The commented-out debug lines go**, or become `debug` calls.
+
+**What it leaves:** each message keeps its text and its output, screen or log; the status dumps are
+untouched; no reasons, no line format.
+
+**To decide for this step:**
+
+1. **The prefix of the scheduler and the map view.** `SKYNET: ` for every line is the point, but a line
+   whose prefix changes breaks a reader that searches for the old one. Keep a sub-tag (`SKYNET: MAP VIEW:
+   `), or not.
+2. **`warn` on `env.warning`** moves today's warnings from the log's `INFO` level to `WARNING`. A change
+   of the log, not of Skynet's behaviour; to confirm.
+3. **The stray `4`** passed to `env.info`: what DCS does with a second argument, to check against the
+   datamine before dropping it.
+4. **How the static form is reached** by code with no network: a module function such as
+   `SkynetIADSLogger.error(message)`, or a default logger.
+
+## What to build beyond step 1
 
 1. **One logger, with levels and categories.** Every message goes through it, with a level (error,
    warning, info, debug) and a category (network, site state, contacts, HARM, jammer, …). A mission
@@ -73,9 +132,10 @@ first, and it costs nothing after start.
 3. **The volume** on a long session with a large network: what is on by default, what goes only to the
    buffer.
 4. **`getDebugSettings()`**: kept as it is, mapped onto the new levels and categories, or deprecated. The
-   missions that set it must keep working.
+   missions that set it must keep working. Step 1 keeps it, with its keys fixed.
 5. **The screen messages** (`trigger.action.outText`): a separate output of the logger, or left as they
-   are.
+   are. Step 1 routes them through `notify` and `warn` without changing which messages reach the screen;
+   which ones should is decided here.
 6. **The status dumps**: rewritten as snapshots, or kept beside them.
 7. **The offline reader**: in `build-tools/`, in its own folder, or later.
 8. **Shared hooks with `feat-map-view`.** Both are called where an element changes state. If both are
