@@ -16,7 +16,7 @@
         <link rel="prev" href="../tactics/">
       
       
-        <link rel="next" href="../faq/">
+        <link rel="next" href="../map-view/">
       
       
         
@@ -435,7 +435,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration-de-liads" class="md-nav__link">
+  <a href="#iads-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
         Configuration de l'IADS
@@ -602,7 +602,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zone-dengagement" class="md-nav__link">
+  <a href="#engagement-zone" class="md-nav__link">
     <span class="md-ellipsis">
       
         Zone d'engagement
@@ -949,6 +949,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../map-view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue carte
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         
   
@@ -996,7 +1023,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration-de-liads" class="md-nav__link">
+  <a href="#iads-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
         Configuration de l'IADS
@@ -1163,7 +1190,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zone-dengagement" class="md-nav__link">
+  <a href="#engagement-zone" class="md-nav__link">
     <span class="md-ellipsis">
       
         Zone d'engagement
@@ -1522,15 +1549,17 @@ Les fonctions ci-dessous vous permettent de façonner votre IADS à la main. Si 
 unités qui n'existent pas, un message s'affiche au chargement de la mission.
 Les exemples qui suivent utilisent des objets statiques pour les centres de commandement, les nœuds
 de liaison et les sources d'énergie ; vous pouvez tout aussi bien employer des unités.</p>
-<h2 id="configuration-de-liads">Configuration de l'IADS<a class="headerlink" href="#configuration-de-liads" title="Permanent link">&para;</a></h2>
+<h2 id="iads-configuration">Configuration de l'IADS<a class="headerlink" href="#iads-configuration" title="Permanent link">&para;</a></h2>
 <p>Appelez cette méthode pour ajouter ou retirer une entrée du menu radio permettant d'afficher ou de
-masquer l'état de l'IADS. Par défaut, cette entrée n'est pas visible :</p>
+masquer l'état de l'IADS, les contacts et la <a href="../map-view/">vue carte</a>. Chaque commande bascule à
+chaque clic. Par défaut, cette entrée n'est pas visible :</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addRadioMenu</span><span class="p">()</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">removeRadioMenu</span><span class="p">()</span>
 </code></pre></div>
 <p>Si vous déréférencez l'IADS, pensez à appeler <code>deactivate()</code>, sans quoi ses tâches de fond
-continueront de tourner et produiront des comportements inattendus :</p>
+continueront de tourner et produiront des comportements inattendus. Il retire aussi le menu radio et
+efface la vue carte :</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">deactivate</span><span class="p">()</span>
 </code></pre></div>
 <p>Définit l'intervalle de mise à jour de l'IADS, en secondes. Il détermine la cadence à laquelle
@@ -1711,7 +1740,7 @@ et les contacts qu'il détecte seront transmis à l'IADS. Option recommandée po
 longue portée comme le S-300 :</p>
 <div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setActAsEW</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="zone-dengagement">Zone d'engagement<a class="headerlink" href="#zone-dengagement" title="Permanent link">&para;</a></h3>
+<h3 id="engagement-zone">Zone d'engagement<a class="headerlink" href="#engagement-zone" title="Permanent link">&para;</a></h3>
 <p>Définit la distance à laquelle un site SAM allume son radar :</p>
 <div class="highlight"><pre><span></span><code><span class="nv">samSite</span><span class="p">:</span><span class="nf">setEngagementZone</span><span class="p">(</span><span class="nv">SkynetIADSAbstractRadarElement</span><span class="p">.</span><span class="py">GO_LIVE_WHEN_IN_SEARCH_RANGE</span><span class="p">)</span>
 </code></pre></div>

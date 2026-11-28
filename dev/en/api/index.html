@@ -16,7 +16,7 @@
         <link rel="prev" href="../tactics/">
       
       
-        <link rel="next" href="../faq/">
+        <link rel="next" href="../map-view/">
       
       
         
@@ -949,6 +949,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../map-view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Map view
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         
   
@@ -1522,14 +1549,16 @@ message will be displayed when the mission loads.
 The following examples use static objects for command centers, connection nodes and power sources,
 you can also use units instead.</p>
 <h2 id="iads-configuration">IADS configuration<a class="headerlink" href="#iads-configuration" title="Permanent link">&para;</a></h2>
-<p>Call this method to add or remove a radio menu to toggle the status output of the IADS. By default
-the radio menu option is not visible:</p>
+<p>Call this method to add or remove a radio menu to toggle the status output of the IADS, the
+contacts, and the <a href="../map-view/">map view</a>. Each command switches at every click. By default the
+radio menu option is not visible:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">addRadioMenu</span><span class="p">()</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">removeRadioMenu</span><span class="p">()</span>
 </code></pre></div>
 <p>If you dereference the IADS remember to call <code>deactivate()</code> otherwise background tasks of the IADS
-will continue running, resulting in unexpected behaviour:</p>
+will continue running, resulting in unexpected behaviour. It also removes the radio menu and erases
+the map view:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">redIADS</span><span class="p">:</span><span class="nf">deactivate</span><span class="p">()</span>
 </code></pre></div>
 <p>Set the update interval in seconds of the IADS. This determines in what interval the IADS will turn
