@@ -67,7 +67,7 @@ class SkynetScriptTest(unittest.TestCase):
     def test_default_build_is_the_repository_build(self):
         (self.repo / "skynet-iads-source" / "skynet-iads.lua").write_text('SkynetIADS.version = "9.9.9"\n', encoding="utf-8")
         (self.repo / "build-tools" / "listToMerge.txt").write_text("a.lua\n", encoding="utf-8")
-        self.assertEqual(skynet_script.build_text(self.repo), 'env.info("--- SKYNET VERSION: 9.9.9 ---")\na = 1\n')
+        self.assertEqual(skynet_script.build_text(self.repo), 'env.info("--- SKYNET VERSION: 9.9.9 ---")\ndo -- a.lua\na = 1\nend -- a.lua\n')
 
     def test_a_failed_build_raises_build_error(self):
         with self.assertRaisesRegex(skynet_script.BuildError, "SkynetIADS.version"):
