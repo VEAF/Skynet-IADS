@@ -934,7 +934,7 @@ function SkynetIADSAbstractRadarElement:jam(successProbability)
 		if self.iads:getDebugSettings().jammerProbability then
 			self.iads:printOutputToLog("JAMMER: " .. self:getDescription() .. ": Probability: " .. successProbability)
 		end
-		if successProbability > probability then
+		if successProbability >= probability then
 			controller:setOption(AI.Option.Air.id.ROE, AI.Option.Air.val.ROE.WEAPON_HOLD)
 			if self.iads:getDebugSettings().jammerProbability then
 				self.iads:printOutputToLog("JAMMER: " .. self:getDescription() .. ": jammed, setting to weapon hold")
