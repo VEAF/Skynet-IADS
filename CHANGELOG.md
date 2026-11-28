@@ -42,6 +42,9 @@ between two copies.
 - The radio menu's commands switch at each click: `IADS Status - Show/hide` and
   `Contacts - Show/hide` replace the four `show …` / `hide …` commands.
 - `iads:deactivate()` removes the network's radio menu, and erases its map.
+- The build, not each source file, now wraps every file of the compiled script in a block of its own,
+  named on both ends: `do -- skynet-iads-jammer.lua` … `end -- skynet-iads-jammer.lua`. A line of
+  `dcs.log` can now be traced back to its file. Nothing changes in a mission.
 
 ## [3.6.0] — 2026-11-08
 

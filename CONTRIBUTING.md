@@ -89,6 +89,11 @@ It produces `build/skynet-iads-compiled.lua`, or the file `--output` names, the 
 added — never to the script.** The version in the artifact's first line comes from
 `SkynetIADS.version` in `skynet-iads-source/skynet-iads.lua`; there is no argument to pass.
 
+**The build wraps each source in a `do ... end` block of its own**, so a source has none: once
+concatenated, the sources are one chunk, and the block keeps a file's top-level locals from clashing
+with another file's or adding up toward Lua 5.1's limit of 200 locals per chunk. Tests that load the
+sources one at a time cannot see either; `test/lua/test_compiled_script.lua` runs the whole chunk.
+
 **The build is reproducible**: the same commit gives the same bytes on any machine. The first line
 carries no build time, and the output is UTF-8 with LF line endings. Whether a file is the build of
 the current sources is answered by building again and comparing.
