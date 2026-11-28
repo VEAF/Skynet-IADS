@@ -1,7 +1,7 @@
 --- Discover and run every test_*.lua of the given folders as a child process, aggregating
---- exit codes.  Usage:  lua run.lua [folder...] [filenameSubstring]
+--- exit codes.  Usage:  lua run.lua [folder...] [suiteName]
 --- An argument holding a path separator is a folder; with none, every folder directly under test/
---- that holds a test_*.lua runs.
+--- that holds a test_*.lua runs. A suite name is a file name without its .lua, matched whole.
 
 assert(_VERSION == "Lua 5.1", "run.lua: needs Lua 5.1 (DCS runtime); got " .. _VERSION)
 
@@ -65,7 +65,7 @@ local function listSuites(folder)
 	for line in p:lines() do
 		local name = line:match("([^\\/]+)$")
 		if name and name:match("^test_.+%.lua$") then
-			if not filter or name:find(filter, 1, true) then
+			if not filter or name == filter .. ".lua" then
 				names[#names + 1] = name
 			end
 		end
@@ -106,10 +106,12 @@ for _, folder in ipairs(folders) do
 		suites[#suites + 1] = { name = name, target = folder .. sep .. name }
 	end
 end
+-- A run that finds nothing fails, named or not: CI names a suite, and a suite renamed or moved must
+-- turn that step red rather than leave it green having run nothing.
 if #suites == 0 then
 	if filter then
-		print("run.lua: no suites match '" .. filter .. "'")
-		os.exit(0)
+		print("run.lua: no suite named '" .. filter .. "'")
+		os.exit(1)
 	end
 	print("run.lua: no suites found in " .. table.concat(folders, ", "))
 	os.exit(1)

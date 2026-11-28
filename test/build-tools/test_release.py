@@ -2,7 +2,7 @@
 
 Run from anywhere:
 
-    python test/common/run.py test/build-tools release
+    python test/common/run.py test/build-tools test_release
 
 The changelog and version rules are pinned on strings and small files; the packaging on a repository
 built per test, so what is pinned is the release's rules and not the sources of the day.
